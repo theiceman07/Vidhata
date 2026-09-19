@@ -8,17 +8,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useSession } from "@/lib/session";
+import { DEMO_USERNAME, DEMO_PASSWORD } from "@/lib/mock/auth.mock";
 
 export default function LawyerLoginPage() {
   const router = useRouter();
   const { setRole } = useSession();
   const [barNumber, setBarNumber] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setRole("lawyer");
-    router.push("/queue");
+    if (barNumber === DEMO_USERNAME && password === DEMO_PASSWORD) {
+      setError("");
+      setRole("lawyer");
+      router.push("/queue");
+    } else {
+      setError("Invalid Bar enrolment number or password.");
+    }
   }
 
   return (
@@ -34,7 +41,8 @@ export default function LawyerLoginPage() {
             required
             value={barNumber}
             onChange={(e) => setBarNumber(e.target.value)}
-            placeholder="MH/2210/2018"
+            placeholder="admin"
+            autoComplete="username"
           />
         </div>
         <div>
@@ -45,13 +53,18 @@ export default function LawyerLoginPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
           />
         </div>
+        {error && <p className="text-small text-flagged">{error}</p>}
         <Button type="submit" className="w-full">
           Sign in
         </Button>
       </form>
       <p className="mt-4 text-center text-small text-muted-fg">
+        Preview credentials: admin / admin
+      </p>
+      <p className="mt-2 text-center text-small text-muted-fg">
         New advocate?{" "}
         <button
           type="button"

@@ -8,17 +8,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useSession } from "@/lib/session";
+import { DEMO_USERNAME, DEMO_PASSWORD } from "@/lib/mock/auth.mock";
 
 export default function ClientLoginPage() {
   const router = useRouter();
   const { setRole } = useSession();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setRole("client");
-    router.push("/dashboard");
+    if (username === DEMO_USERNAME && password === DEMO_PASSWORD) {
+      setError("");
+      setRole("client");
+      router.push("/dashboard");
+    } else {
+      setError("Invalid username or password.");
+    }
   }
 
   return (
@@ -28,14 +35,15 @@ export default function ClientLoginPage() {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <Label htmlFor="email">Work email</Label>
+          <Label htmlFor="username">Username</Label>
           <Input
-            id="email"
-            type="email"
+            id="username"
+            type="text"
             required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@company.com"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="admin"
+            autoComplete="username"
           />
         </div>
         <div>
@@ -46,13 +54,18 @@ export default function ClientLoginPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
           />
         </div>
+        {error && <p className="text-small text-flagged">{error}</p>}
         <Button type="submit" className="w-full">
           Sign in
         </Button>
       </form>
       <p className="mt-4 text-center text-small text-muted-fg">
+        Preview credentials: admin / admin
+      </p>
+      <p className="mt-2 text-center text-small text-muted-fg">
         Don&apos;t have an account?{" "}
         <button
           type="button"

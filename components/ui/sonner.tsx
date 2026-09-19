@@ -7,17 +7,14 @@ import {
   OctagonX,
   TriangleAlert,
 } from "lucide-react"
-import { useTheme } from "next-themes"
 import { Toaster as Sonner } from "sonner"
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
-
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme="light"
       className="toaster group"
       icons={{
         success: <CircleCheck className="h-4 w-4" />,
@@ -29,12 +26,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-oklch(1 0 0) group-[.toaster]:text-oklch(0.145 0 0) group-[.toaster]:border-oklch(0.922 0 0) group-[.toaster]:shadow-lg dark:group-[.toaster]:bg-oklch(0.145 0 0) dark:group-[.toaster]:text-oklch(0.985 0 0) dark:group-[.toaster]:border-oklch(1 0 0 / 10%)",
-          description: "group-[.toast]:text-oklch(0.556 0 0) dark:group-[.toast]:text-oklch(0.708 0 0)",
+            "group toast group-[.toaster]:bg-paper group-[.toaster]:text-ink group-[.toaster]:border-line group-[.toaster]:shadow-lg",
+          description: "group-[.toast]:text-muted-fg",
           actionButton:
-            "group-[.toast]:bg-oklch(0.205 0 0) group-[.toast]:text-oklch(0.985 0 0) dark:group-[.toast]:bg-oklch(0.922 0 0) dark:group-[.toast]:text-oklch(0.205 0 0)",
-          cancelButton:
-            "group-[.toast]:bg-oklch(0.97 0 0) group-[.toast]:text-oklch(0.556 0 0) dark:group-[.toast]:bg-oklch(0.269 0 0) dark:group-[.toast]:text-oklch(0.708 0 0)",
+            "group-[.toast]:bg-brand group-[.toast]:text-brand-fg",
+          cancelButton: "group-[.toast]:bg-canvas group-[.toast]:text-muted-fg",
         },
       }}
       {...props}
