@@ -3,6 +3,7 @@ import { Cormorant_Infant, Outfit } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/lib/session";
 import { DevRoleSwitcher } from "@/components/shared/dev-role-switcher";
+import { Toaster } from "@/components/ui/sonner";
 
 const cormorantInfant = Cormorant_Infant({
   variable: "--font-cormorant",
@@ -37,6 +38,7 @@ export default function RootLayout({
         <SessionProvider>
           {children}
           <DevRoleSwitcher />
+          <Toaster />
         </SessionProvider>
       </body>
     </html>

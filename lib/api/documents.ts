@@ -1,6 +1,77 @@
-import type { ContractDocument, Finding } from "@/lib/types";
+import type { ContractDocument, ExecutionStep, Finding } from "@/lib/types";
 import { mockDocuments } from "@/lib/mock/documents.mock";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
+
+// Illustrative flat stamp duty figures for the demo pipeline's output —
+// not legal advice, mirrors the pattern already used in the settled NDA
+// fixture (lib/mock/documents.mock.ts).
+const STAMP_DUTY_BY_STATE: Record<string, string> = {
+  Delhi: "Rs 100",
+  Maharashtra: "Rs 500",
+  Karnataka: "Rs 200",
+  "Tamil Nadu": "Rs 100",
+  Telangana: "Rs 100",
+  Gujarat: "Rs 300",
+  "West Bengal": "Rs 150",
+  Haryana: "Rs 200",
+  "Uttar Pradesh": "Rs 100",
+  Kerala: "Rs 200",
+};
+
+function buildExecutionSteps(doc: ContractDocument): ExecutionStep[] {
+  const stampDuty = STAMP_DUTY_BY_STATE[doc.stateOfExecution] ?? "Rs 100";
+  const requiresRegistration =
+    doc.type === "msa" && doc.transactionValue > 1000000;
+
+  return [
+    {
+      kind: "stamping",
+      applicable: true,
+      headline: `Stamp duty: ${stampDuty} (${doc.stateOfExecution})`,
+      detail: `Flat-rate stamp duty for a ${doc.type.toUpperCase()} executed in ${doc.stateOfExecution}.`,
+      reason: `Documents of this kind executed in ${doc.stateOfExecution} attract a flat stamp duty.`,
+      instructions: [
+        "Purchase e-stamp paper via SHCIL or an authorised vendor.",
+        "Print the settled document on the stamp paper.",
+        "Have both signatories sign on the last page.",
+      ],
+      complete: false,
+    },
+    {
+      kind: "registration",
+      applicable: requiresRegistration,
+      headline: requiresRegistration
+        ? "Registration: required"
+        : "Registration: not required",
+      detail: requiresRegistration
+        ? "File the document with the local Sub-Registrar."
+        : "No registration filing needed.",
+      reason: requiresRegistration
+        ? "High-value MSAs are compulsorily registrable under Section 17 of the Registration Act, 1908."
+        : "This document type is not compulsorily registrable under Section 17 of the Registration Act, 1908.",
+      instructions: requiresRegistration
+        ? [
+            "Book an appointment with the Sub-Registrar's office.",
+            "Carry two witnesses and original identity proof.",
+          ]
+        : [],
+      complete: false,
+    },
+    {
+      kind: "esignature",
+      applicable: true,
+      headline: "e-signature: valid under the IT Act",
+      detail: "Aadhaar-based e-sign satisfies Section 5 of the IT Act, 2000.",
+      reason:
+        "This document type is not among the classes excluded from electronic execution.",
+      instructions: [
+        "Both signatories complete Aadhaar e-sign via the settlement portal.",
+        "Download the signed PDF with the embedded audit trail.",
+      ],
+      complete: false,
+    },
+  ];
+}
 
 // In-memory mutable store so adjudication/claim/sign-off actions persist
 // for the duration of the tab. Resets on reload — there is no backend yet.
@@ -149,6 +220,9 @@ export async function signOffDocument(
   }
   doc.status = "settled";
   doc.settledAt = new Date().toISOString();
+  if (doc.executionSteps.length === 0) {
+    doc.executionSteps = buildExecutionSteps(doc);
+  }
   return structuredClone(doc);
 }
 
