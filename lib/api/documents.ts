@@ -63,6 +63,31 @@ export async function createDraftDocument(
   return structuredClone(doc);
 }
 
+export async function startAnalysis(id: string): Promise<ContractDocument> {
+  await randomDelay(200, 400);
+  const doc = store.find((d) => d.id === id);
+  if (!doc) throw new MockApiError("Document not found.");
+  if (doc.status === "draft") doc.status = "analysing";
+  return structuredClone(doc);
+}
+
+// Demo-only: the pipeline has no real drafting/screening logic to run, so
+// a freshly analysed document is seeded with the same representative
+// finding set used in the pending_review fixture (high non-compete,
+// medium MSMED, low blocked-citation) rather than staying empty.
+export async function completeAnalysis(id: string): Promise<ContractDocument> {
+  await randomDelay(200, 400);
+  const doc = store.find((d) => d.id === id);
+  if (!doc) throw new MockApiError("Document not found.");
+  if (doc.status !== "analysing") return structuredClone(doc);
+  doc.status = "pending_review";
+  doc.tier = "enhanced";
+  doc.findings = structuredClone(
+    mockDocuments.find((d) => d.id === "doc-msa-pending")?.findings ?? [],
+  ).map((f, i) => ({ ...f, findingId: `${doc.id}-finding-${i}` }));
+  return structuredClone(doc);
+}
+
 export async function claimDocument(
   id: string,
   advocate: { id: string; name: string; bar: string },
