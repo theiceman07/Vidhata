@@ -143,7 +143,7 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
     return (
       <div className="space-y-3">
         <Skeleton className="h-16 w-full rounded-card" />
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-[320px_1fr]">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[320px_1fr]">
           <Skeleton className="h-96 rounded-card" />
           <Skeleton className="h-96 rounded-card" />
         </div>
@@ -196,7 +196,7 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-[320px_1fr]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[320px_1fr]">
         <div>
           <div className="mb-2 flex items-center justify-between">
             <p className="text-small font-medium text-muted-fg">
@@ -213,7 +213,24 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
               }}
             />
           </div>
-          <div className="space-y-2">
+
+          <Select
+            value={selectedId ?? undefined}
+            onValueChange={(v) => setSelectedId(v)}
+          >
+            <SelectTrigger className="mb-2 lg:hidden" aria-label="Select finding">
+              <SelectValue placeholder="Choose a finding" />
+            </SelectTrigger>
+            <SelectContent>
+              {sortedFindings.map((f) => (
+                <SelectItem key={f.findingId} value={f.findingId}>
+                  {f.clauseReference} — {f.severity}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="hidden space-y-2 lg:block">
             {sortedFindings.map((f) => (
               <button
                 key={f.findingId}
