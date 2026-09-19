@@ -120,9 +120,6 @@ export function FindingCard({
               >
                 Override
               </Button>
-              <Button size="sm" variant="ghost">
-                Add note
-              </Button>
             </div>
           )}
         </div>

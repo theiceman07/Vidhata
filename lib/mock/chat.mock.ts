@@ -23,7 +23,6 @@ function findTermDefinition(text: string): string | null {
 
 const ADVICE_PATTERN =
   /\b(should i|sue|advice|advise|worth it|what should i do|can i win)\b/i;
-const DEFINITION_PATTERN = /\b(what('|’)?s a|what is a|define|meaning of)\b/i;
 
 export interface ChatReply {
   text: string;
@@ -40,13 +39,6 @@ export function getMockReply(
   }
 
   const definition = findTermDefinition(userText);
-  if (definition && DEFINITION_PATTERN.test(userText)) {
-    return {
-      text: definition,
-      citedClauseReference: null,
-      isEscalation: false,
-    };
-  }
   if (definition) {
     return {
       text: definition,

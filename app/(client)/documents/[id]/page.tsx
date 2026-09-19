@@ -28,7 +28,7 @@ export default function DocumentPage({
   const [doc, setDoc] = useState<ContractDocument | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
-  const analysisKickedOff = useRef(false);
+  const kickedOffForStatus = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     setState("loading");
@@ -50,16 +50,16 @@ export default function DocumentPage({
   }, [load]);
 
   useEffect(() => {
-    if (!doc || analysisKickedOff.current) return;
+    if (!doc || kickedOffForStatus.current === doc.status) return;
 
     if (doc.status === "draft") {
-      analysisKickedOff.current = true;
+      kickedOffForStatus.current = "draft";
       startAnalysis(doc.id).then(setDoc);
       return;
     }
 
     if (doc.status === "analysing") {
-      analysisKickedOff.current = true;
+      kickedOffForStatus.current = "analysing";
       const timer = setTimeout(() => {
         completeAnalysis(doc.id).then(setDoc);
       }, PIPELINE_DURATION_MS);
