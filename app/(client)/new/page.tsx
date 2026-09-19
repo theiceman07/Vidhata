@@ -1,5 +1,14 @@
 import { PageHeader } from "@/components/shared/page-header";
+import { IntakeWizard } from "@/components/domain/intake-wizard";
 
 export default function NewDealPage() {
-  return <PageHeader title="New deal" description="Placeholder" />;
+  return (
+    <div>
+      <PageHeader
+        title="New deal"
+        description="Describe the deal. We'll draft, screen and route it to an advocate."
+      />
+      <IntakeWizard />
+    </div>
+  );
 }
