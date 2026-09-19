@@ -1,0 +1,214 @@
+import type { ContractDocument } from "@/lib/types";
+
+const settledNda: ContractDocument = {
+  id: "doc-nda-settled",
+  title: "Mutual NDA — Kavach Robotics",
+  type: "nda",
+  status: "settled",
+  tier: "standard",
+  clientName: "Anaya Textiles Pvt Ltd",
+  counterpartyName: "Kavach Robotics Pvt Ltd",
+  stateOfExecution: "Delhi",
+  transactionValue: 0,
+  counterpartyIsMsme: false,
+  createdAt: "2026-08-02T09:12:00.000Z",
+  settledAt: "2026-08-05T14:40:00.000Z",
+  advocate: { id: "adv-1", name: "Rhea Kapoor", bar: "D/1842/2016" },
+  findings: [],
+  executionSteps: [
+    {
+      kind: "stamping",
+      applicable: true,
+      headline: "Stamp duty: Rs 100 (Delhi)",
+      detail: "Flat rate for a mutual NDA under the Delhi Stamp Act.",
+      reason: "NDAs executed in Delhi attract a fixed Rs 100 stamp duty.",
+      instructions: [
+        "Purchase Rs 100 e-stamp paper via SHCIL or an authorised vendor.",
+        "Print the settled document on the stamp paper.",
+        "Have both signatories sign on the last page.",
+      ],
+      complete: true,
+    },
+    {
+      kind: "registration",
+      applicable: false,
+      headline: "Registration: not required",
+      detail: "No registration filing needed.",
+      reason:
+        "NDAs are not compulsorily registrable under Section 17 of the Registration Act, 1908.",
+      instructions: [],
+      complete: true,
+    },
+    {
+      kind: "esignature",
+      applicable: true,
+      headline: "e-signature: valid under the IT Act",
+      detail: "Aadhaar-based e-sign satisfies Section 5 of the IT Act, 2000.",
+      reason:
+        "NDAs are not among the classes of documents excluded from electronic execution.",
+      instructions: [
+        "Both signatories complete Aadhaar e-sign via the settlement portal.",
+        "Download the signed PDF with the embedded audit trail.",
+      ],
+      complete: true,
+    },
+  ],
+};
+
+const pendingReviewMsa: ContractDocument = {
+  id: "doc-msa-pending",
+  title: "Master Services Agreement — Sundargarh Logistics",
+  type: "msa",
+  status: "pending_review",
+  tier: "enhanced",
+  clientName: "Bharosa Fintech Pvt Ltd",
+  counterpartyName: "Sundargarh Logistics Pvt Ltd",
+  stateOfExecution: "Maharashtra",
+  transactionValue: 4200000,
+  counterpartyIsMsme: true,
+  createdAt: "2026-09-14T06:05:00.000Z",
+  settledAt: null,
+  advocate: null,
+  findings: [
+    {
+      findingId: "find-1",
+      layer: 2,
+      severity: "high",
+      clauseReference: "Clause 7.2",
+      clauseText:
+        "The Service Provider shall not, for a period of three (3) years following termination, engage in any business activity within India that competes with the Client.",
+      description:
+        "This non-compete clause is broader than what Indian law will enforce against an independent service provider.",
+      ruleApplied: "ICA-S27-NONCOMPETE-V2",
+      remedySuggested:
+        "Narrow the restriction to solicitation of the Client's active customers for 12 months, and remove the nationwide scope.",
+      citations: [
+        {
+          id: "cite-1",
+          text: "Indian Contract Act, 1872, s.27",
+          status: "verified",
+          corpusRef: "ica-1872-s27",
+        },
+      ],
+      disposition: "pending",
+      overrideNote: null,
+    },
+    {
+      findingId: "find-2",
+      layer: 3,
+      severity: "medium",
+      clauseReference: "Clause 4.1",
+      clauseText:
+        "Payment shall be made within sixty (60) days of receipt of a valid invoice.",
+      description:
+        "The counterparty is a registered MSME. A 60-day payment term exceeds the statutory ceiling for micro and small enterprises.",
+      ruleApplied: "MSMED-S15-PAYMENT-TERM",
+      remedySuggested:
+        "Reduce the payment term to 45 days to comply with Section 15 of the MSMED Act, 2006.",
+      citations: [
+        {
+          id: "cite-2",
+          text: "Micro, Small and Medium Enterprises Development Act, 2006, s.15",
+          status: "verified",
+          corpusRef: "msmed-2006-s15",
+        },
+      ],
+      disposition: "pending",
+      overrideNote: null,
+    },
+    {
+      findingId: "find-3",
+      layer: 4,
+      severity: "low",
+      clauseReference: "Clause 11.4",
+      clauseText:
+        "Any dispute arising under this Agreement shall be resolved by arbitration seated in Singapore.",
+      description:
+        "A foreign arbitration seat for a wholly domestic contract raises enforceability questions the pipeline could not resolve against the corpus.",
+      ruleApplied: "JURIS-SEAT-DOMESTIC-V1",
+      remedySuggested:
+        "Confirm whether a domestic seat (Mumbai) was intended before this clause is finalised.",
+      citations: [
+        {
+          id: "cite-3",
+          text: "Purported precedent on foreign-seated domestic arbitration",
+          status: "blocked",
+          corpusRef: null,
+        },
+      ],
+      disposition: "pending",
+      overrideNote: null,
+    },
+  ],
+  executionSteps: [],
+};
+
+const analysingEmployment: ContractDocument = {
+  id: "doc-employment-analysing",
+  title: "Employment Agreement — Senior Engineer",
+  type: "employment",
+  status: "analysing",
+  tier: "standard",
+  clientName: "Trivandrum Cloud Labs Pvt Ltd",
+  counterpartyName: "Individual — Meera Nair",
+  stateOfExecution: "Karnataka",
+  transactionValue: 2400000,
+  counterpartyIsMsme: false,
+  createdAt: "2026-09-19T10:00:00.000Z",
+  settledAt: null,
+  advocate: null,
+  findings: [],
+  executionSteps: [],
+};
+
+const revisionVendor: ContractDocument = {
+  id: "doc-vendor-revision",
+  title: "Vendor Agreement — Packaging Supply",
+  type: "vendor",
+  status: "revision",
+  tier: "standard",
+  clientName: "Anaya Textiles Pvt Ltd",
+  counterpartyName: "Ganesh Packaging Works",
+  stateOfExecution: "Tamil Nadu",
+  transactionValue: 850000,
+  counterpartyIsMsme: true,
+  createdAt: "2026-09-08T11:30:00.000Z",
+  settledAt: null,
+  advocate: { id: "adv-2", name: "Farhan Sheikh", bar: "TN/0932/2019" },
+  findings: [
+    {
+      findingId: "find-4",
+      layer: 3,
+      severity: "medium",
+      clauseReference: "Clause 5.3",
+      clauseText: "Payment shall be made within ninety (90) days of delivery.",
+      description:
+        "The counterparty is a registered MSME. A 90-day payment term exceeds the statutory ceiling.",
+      ruleApplied: "MSMED-S15-PAYMENT-TERM",
+      remedySuggested: "Reduce the payment term to 45 days.",
+      citations: [
+        {
+          id: "cite-4",
+          text: "Micro, Small and Medium Enterprises Development Act, 2006, s.15",
+          status: "verified",
+          corpusRef: "msmed-2006-s15",
+        },
+      ],
+      disposition: "overridden",
+      overrideNote:
+        "Client and counterparty agreed 90 days in writing prior to intake; retaining per commercial agreement, flagged for client awareness.",
+    },
+  ],
+  executionSteps: [],
+};
+
+export const mockDocuments: ContractDocument[] = [
+  settledNda,
+  pendingReviewMsa,
+  analysingEmployment,
+  revisionVendor,
+];
+
+export function getMockDocumentById(id: string): ContractDocument | undefined {
+  return mockDocuments.find((doc) => doc.id === id);
+}
