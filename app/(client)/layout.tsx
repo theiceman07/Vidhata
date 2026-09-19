@@ -22,7 +22,9 @@ export default function ClientPortalLayout({
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <ClientShellNav />
-      <main className="flex-1 px-4 py-6 md:px-8">{children}</main>
+      <main className="flex-1 px-4 py-6 pb-20 md:px-8 md:pb-6">
+        {children}
+      </main>
     </div>
   );
 }
