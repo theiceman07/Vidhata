@@ -8,7 +8,7 @@ const PILOT_COMPANIES = [
 
 export function LogoCloud() {
   return (
-    <section className="mx-auto max-w-4xl px-4 py-10 text-center">
+    <section className="mx-auto max-w-6xl px-4 py-10 text-center">
       <p className="mb-4 text-small text-muted-fg">
         Piloting with early-stage teams across India
       </p>

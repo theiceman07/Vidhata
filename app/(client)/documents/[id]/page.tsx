@@ -7,15 +7,11 @@ import { PageHeader } from "@/components/shared/page-header";
 import { ErrorState } from "@/components/shared/error-state";
 import { StatusBadge } from "@/components/domain/status-badge";
 import { DocumentStatusTrail } from "@/components/domain/document-status-trail";
-import { PipelineProgress, PIPELINE_DURATION_MS } from "@/components/domain/pipeline-progress";
+import { PipelineProgress } from "@/components/domain/pipeline-progress";
 import { FindingCard } from "@/components/domain/finding-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import {
-  getDocument,
-  startAnalysis,
-  completeAnalysis,
-} from "@/lib/api/documents";
+import { getDocument, startAnalysis } from "@/lib/api/documents";
 import type { ContractDocument } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
@@ -58,12 +54,19 @@ export default function DocumentPage({
       return;
     }
 
+    // QA 4.5: analysis completion is now tracked server-side (see
+    // reconcileAnalysis in lib/api/documents.ts) via a stored
+    // analysisCompletesAt timestamp, so it resolves whether or not this
+    // component stays mounted. Polling here just picks up that change —
+    // it is not what makes the state durable.
     if (doc.status === "analysing") {
       kickedOffForStatus.current = "analysing";
-      const timer = setTimeout(() => {
-        completeAnalysis(doc.id).then(setDoc);
-      }, PIPELINE_DURATION_MS);
-      return () => clearTimeout(timer);
+      const interval = setInterval(() => {
+        getDocument(doc.id).then((result) => {
+          if (result) setDoc(result);
+        });
+      }, 2000);
+      return () => clearInterval(interval);
     }
   }, [doc]);
 
@@ -94,10 +97,43 @@ export default function DocumentPage({
         title={doc.title}
         description={`${doc.clientName} vs ${doc.counterpartyName}`}
         action={<StatusBadge status={doc.status} />}
+        backHref="/dashboard"
+        backLabel="Dashboard"
       />
 
       <div className="mb-6 rounded-card border border-line bg-paper p-4 shadow-card">
         <DocumentStatusTrail status={doc.status} />
+      </div>
+
+      {/* QA 3.3: duration, governing law and key terms used to be
+          collected by the intake wizard and silently discarded — never
+          persisted, never shown anywhere on the resulting document. */}
+      <div className="mb-6 rounded-card border border-line bg-paper p-4 shadow-card">
+        <p className="mb-3 text-small font-medium text-muted-fg">
+          Deal brief
+        </p>
+        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div>
+            <dt className="text-small text-muted-fg">Duration</dt>
+            <dd className="text-body text-ink">
+              {doc.durationMonths > 0
+                ? `${doc.durationMonths} months`
+                : "Not specified"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-small text-muted-fg">Governing law</dt>
+            <dd className="text-body text-ink">
+              {doc.governingLaw || "Not specified"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-small text-muted-fg">Key terms</dt>
+            <dd className="text-body text-ink">
+              {doc.keyTerms ?? "Not specified"}
+            </dd>
+          </div>
+        </dl>
       </div>
 
       {doc.status === "settled" && (
@@ -118,7 +154,7 @@ export default function DocumentPage({
         <div className="rounded-card border border-line bg-paper p-6 text-body text-muted-fg shadow-card">
           {doc.status === "draft"
             ? "Starting the pipeline…"
-            : "No findings on this document — the full settled text is available in the downloadable PDF."}
+            : "No findings on this document — the full settled text is available on the execution checklist page, which you can print or save as a PDF."}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">

@@ -48,17 +48,31 @@ export interface ContractDocument {
   type: "nda" | "vendor" | "msa" | "employment";
   status: DocumentStatus;
   tier: ReviewTier;
+  // Mock-layer tenant scoping key (QA 3.5). Set from the session's org at
+  // creation time; the client dashboard filters on it. Presentation-only,
+  // like everything else in lib/session — a real backend must re-derive
+  // this from the authenticated subject, never trust a client-sent value.
+  orgId: string;
   clientName: string;
   counterpartyName: string;
   stateOfExecution: string;
   transactionValue: number;
   counterpartyIsMsme: boolean;
+  durationMonths: number;
+  governingLaw: string;
+  keyTerms: string | null;
   createdAt: string;
   settledAt: string | null;
+  // ISO timestamp the in-flight analysis resolves at, or null when not
+  // analysing. Durable across navigation (QA 4.5) — lib/api/documents.ts
+  // reconciles this on every read instead of relying on a component timer.
+  analysisCompletesAt: string | null;
   advocate: { id: string; name: string; bar: string } | null;
   findings: Finding[];
   executionSteps: ExecutionStep[];
 }
+
+export const PIPELINE_DURATION_MS = 28000; // 7 layers × 4s each
 
 export const PIPELINE_LAYERS: Record<
   PipelineLayer,

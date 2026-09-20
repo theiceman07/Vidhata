@@ -61,6 +61,12 @@ export function PricingTable() {
             <Button asChild className="mt-4 w-full" variant={t.featured ? "default" : "outline"}>
               <Link href="/new">Start a deal</Link>
             </Button>
+            {/* QA 3.2: the wizard now has a tier step, but there is still
+                no checkout anywhere in the product — say so instead of
+                implying a purchase happens. */}
+            <p className="mt-2 text-small text-muted-fg">
+              Billing is not enabled in this preview — no payment is taken.
+            </p>
           </div>
         ))}
       </div>

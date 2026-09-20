@@ -7,3 +7,30 @@
     @apply bg-canvas text-ink font-sans text-body;
   }
 }
+
+/* QA 2.4 — the execution checklist's "Download as PDF" control used to be a
+   toast saying the feature was unavailable. Print-to-PDF is the fastest
+   honest route: this stylesheet strips chrome and forces legible tokens so
+   "Download / print checklist" (checklist/page.tsx) produces a real,
+   readable PDF via the browser's print dialog. Tailwind's built-in print:
+   variant already handles the print:hidden / print:block toggles used in
+   markup — this block only resets colours and page-break behaviour. */
+@media print {
+  body {
+    background: #fff;
+    color: #2d2c2a;
+  }
+
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  .rounded-card,
+  li {
+    break-inside: avoid;
+  }
+}

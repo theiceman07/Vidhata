@@ -100,7 +100,12 @@ export default function ChatPage({ params }: { params: { id: string } }) {
 
   return (
     <div>
-      <PageHeader title="Ask about this document" description={doc.title} />
+      <PageHeader
+        title="Ask about this document"
+        description={doc.title}
+        backHref={`/documents/${doc.id}`}
+        backLabel={doc.title}
+      />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[280px_1fr]">
         <aside className="space-y-4">

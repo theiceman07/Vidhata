@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/session";
 import { LawyerShellNav } from "@/components/shared/lawyer-shell-nav";
+import { DevRoleSwitcher } from "@/components/shared/dev-role-switcher";
 
 export default function LawyerPortalLayout({
   children,
@@ -14,7 +15,10 @@ export default function LawyerPortalLayout({
   const router = useRouter();
 
   useEffect(() => {
-    if (role !== "lawyer") router.replace("/lawyer-login");
+    if (role === "lawyer") return;
+    // See app/(client)/layout.tsx — same fix, mirrored (QA 3.1 / 10.2).
+    if (role === "client") router.replace("/dashboard");
+    else router.replace("/lawyer-login");
   }, [role, router]);
 
   if (role !== "lawyer") return null;
@@ -22,7 +26,10 @@ export default function LawyerPortalLayout({
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <LawyerShellNav />
-      <main className="flex-1 px-4 py-6 md:px-8">{children}</main>
+      <main className="flex-1 px-4 py-6 pb-20 md:px-8 md:pb-6">{children}</main>
+      {process.env.NEXT_PUBLIC_VIDHATA_PREVIEW_MODE === "1" && (
+        <DevRoleSwitcher />
+      )}
     </div>
   );
 }

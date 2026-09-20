@@ -29,7 +29,7 @@ const CHECKS = [
 export function IndiaChecks() {
   return (
     <section className="bg-paper py-16">
-      <div className="mx-auto max-w-4xl px-4">
+      <div className="mx-auto max-w-6xl px-4">
         <h2 className="mb-2 text-center font-display text-h2 text-ink">
           Built for Indian contracts, not adapted for them
         </h2>

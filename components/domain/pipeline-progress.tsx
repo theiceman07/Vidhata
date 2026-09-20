@@ -2,12 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
-import { PIPELINE_LAYERS, type PipelineLayer } from "@/lib/types";
+import {
+  PIPELINE_LAYERS,
+  PIPELINE_DURATION_MS,
+  type PipelineLayer,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const LAYER_ORDER: PipelineLayer[] = [0, 1, 2, 3, 4, 5, 6];
 const MS_PER_LAYER = 4000;
-export const PIPELINE_DURATION_MS = LAYER_ORDER.length * MS_PER_LAYER;
+export { PIPELINE_DURATION_MS };
 
 function useElapsedSeconds() {
   const [seconds, setSeconds] = useState(0);
@@ -30,14 +34,22 @@ export function PipelineProgress() {
 
   const minutes = Math.floor(elapsedSeconds / 60);
   const seconds = elapsedSeconds % 60;
+  const currentLayerInfo = PIPELINE_LAYERS[LAYER_ORDER[currentLayerIndex]];
 
   return (
     <div className="mx-auto max-w-xl">
       <div className="mb-6 text-center">
         <p className="font-display text-h2 text-ink">Running the pipeline</p>
-        <p className="mt-1 text-small text-muted-fg">
+        <p aria-hidden className="mt-1 text-small text-muted-fg">
           {minutes}:{seconds.toString().padStart(2, "0")} elapsed · Usually
           under two minutes
+        </p>
+        {/* QA 5.4: announce layer transitions, not the per-second ticker
+            above — a live region that updates every second is its own
+            accessibility failure. */}
+        <p role="status" aria-live="polite" className="sr-only">
+          Running layer {currentLayerIndex + 1} of {LAYER_ORDER.length}:{" "}
+          {currentLayerInfo.name}.
         </p>
       </div>
 

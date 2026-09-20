@@ -8,8 +8,12 @@ const ROLES = [
   { value: "lawyer" as const, label: "Advocate" },
 ];
 
+// Rendered only when NEXT_PUBLIC_VIDHATA_PREVIEW_MODE=1 (see
+// app/(client)/layout.tsx and app/(lawyer)/layout.tsx) and never on public
+// routes — QA 2.3/6.2/7.1: this used to render unconditionally on every
+// route, including the public landing and pricing pages.
 export function DevRoleSwitcher() {
-  const { role, setRole } = useSession();
+  const { role, setRole, signOut } = useSession();
 
   return (
     <div className="fixed bottom-4 right-4 z-50 flex items-center gap-1 rounded-control border border-line bg-paper p-1 shadow-card">
@@ -31,7 +35,7 @@ export function DevRoleSwitcher() {
       ))}
       <button
         type="button"
-        onClick={() => setRole(null)}
+        onClick={signOut}
         className="rounded-control px-2 py-1 text-small text-muted-fg hover:bg-canvas"
       >
         Sign out

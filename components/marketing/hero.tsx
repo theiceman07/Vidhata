@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 
 export function Hero() {
   return (
-    <section className="mx-auto max-w-4xl px-4 py-20 text-center">
+    <section className="mx-auto max-w-5xl px-4 py-20 text-center">
       <h1 className="font-display text-display text-ink">
         AI drafts your contract.
         <br />

@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { format } from "date-fns";
-import { toast } from "sonner";
-import { Download } from "lucide-react";
+import { Printer } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { ErrorState } from "@/components/shared/error-state";
 import { ExecutionChecklist } from "@/components/domain/execution-checklist";
@@ -67,23 +66,34 @@ export default function ChecklistPage({
   const isSettled = doc.status === "settled" || doc.status === "executed";
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <PageHeader
-        title="Execution checklist"
-        description={doc.title}
-        action={
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() =>
-              toast.info("PDF export isn't available in this preview.")
-            }
-          >
-            <Download className="mr-2 h-4 w-4" aria-hidden />
-            Download as PDF
-          </Button>
-        }
-      />
+    <div className="mx-auto max-w-2xl print:max-w-none">
+      <div className="print:hidden">
+        <PageHeader
+          title="Execution checklist"
+          description={doc.title}
+          backHref={`/documents/${doc.id}`}
+          backLabel={doc.title}
+          action={
+            isSettled && (
+              <Button size="sm" variant="outline" onClick={() => window.print()}>
+                <Printer className="mr-2 h-4 w-4" aria-hidden />
+                Download / print checklist
+              </Button>
+            )
+          }
+        />
+      </div>
+
+      {/* Print-only heading — screen readers and the screen layout use the
+          PageHeader above; this is what actually ends up in the PDF/print
+          output (QA 2.4: the "downloadable PDF" used to not exist at all). */}
+      <div className="hidden print:block print:mb-6">
+        <h1 className="font-display text-h1 text-ink">{doc.title}</h1>
+        <p className="text-body text-muted-fg">
+          {doc.clientName} vs {doc.counterpartyName} · Execution checklist ·
+          Generated {format(new Date(), "d MMM yyyy, HH:mm")}
+        </p>
+      </div>
 
       {!isSettled ? (
         <div className="rounded-card border border-line bg-paper p-6 text-body text-muted-fg shadow-card">
@@ -93,7 +103,7 @@ export default function ChecklistPage({
       ) : (
         <>
           {doc.advocate && (
-            <div className="mb-6 rounded-card border border-verified/30 bg-verified/10 p-4 text-body text-ink">
+            <div className="mb-6 rounded-card border border-verified/30 bg-verified/10 p-4 text-body text-ink print:border-line print:bg-transparent">
               Signed off by {doc.advocate.name} ({doc.advocate.bar})
               {doc.settledAt &&
                 ` on ${format(new Date(doc.settledAt), "d MMM yyyy")}`}

@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, ClipboardCheck } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { ErrorState } from "@/components/shared/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -46,6 +47,9 @@ export default function SignOffPage({ params }: { params: { id: string } }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [signedOffDoc, setSignedOffDoc] = useState<ContractDocument | null>(
+    null,
+  );
 
   const load = useCallback(async () => {
     setState("loading");
@@ -89,8 +93,16 @@ export default function SignOffPage({ params }: { params: { id: string } }) {
     if (!doc) return;
     setSubmitting(true);
     try {
-      await signOffDocument(doc.id);
-      router.push(`/documents/${doc.id}/checklist`);
+      const settled = await signOffDocument(doc.id);
+      // QA 3.1: this used to router.push to /documents/[id]/checklist — a
+      // client-portal route. The (client) layout guard immediately bounced
+      // the advocate to /login. Sign-off now stays on an advocate-owned
+      // URL and shows its own success state.
+      setDoc(settled);
+      setSignedOffDoc(settled);
+      toast.success(
+        "Sign-off recorded. The client can now view the settled document.",
+      );
     } catch (err) {
       setErrorMessage(
         err instanceof Error ? err.message : "Could not complete sign-off.",
@@ -101,12 +113,45 @@ export default function SignOffPage({ params }: { params: { id: string } }) {
     }
   }
 
+  if (signedOffDoc) {
+    return (
+      <div className="mx-auto max-w-xl text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-verified/15">
+          <ClipboardCheck className="h-7 w-7 text-verified" aria-hidden />
+        </div>
+        <h1 className="font-display text-h1 text-ink">Sign-off recorded</h1>
+        <p className="mt-2 text-body text-muted-fg">
+          {signedOffDoc.title} was settled
+          {signedOffDoc.settledAt &&
+            ` on ${format(new Date(signedOffDoc.settledAt), "d MMM yyyy, HH:mm")}`}
+          , signed by {CURRENT_ADVOCATE.name} ({CURRENT_ADVOCATE.bar}).
+        </p>
+        <p className="mt-1 text-small text-muted-fg">
+          {signedOffDoc.findings.length} finding
+          {signedOffDoc.findings.length === 1 ? "" : "s"} adjudicated · the
+          client can now view the settled document and execution checklist.
+        </p>
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+          <Button onClick={() => router.push("/queue")}>Back to queue</Button>
+          <Button
+            variant="outline"
+            onClick={() => router.push(`/review/${signedOffDoc.id}`)}
+          >
+            View reviewed document
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl">
       <PageHeader
         title="Sign off"
         description={doc.title}
         breadcrumb={`${doc.clientName} vs ${doc.counterpartyName}`}
+        backHref={`/review/${doc.id}`}
+        backLabel="Review"
       />
 
       {pendingCount > 0 && (

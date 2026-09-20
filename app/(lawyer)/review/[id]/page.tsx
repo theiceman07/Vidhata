@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import Link from "next/link";
+import { Plus, ChevronLeft } from "lucide-react";
+import { toast } from "sonner";
 import { ErrorState } from "@/components/shared/error-state";
 import { StatusBadge } from "@/components/domain/status-badge";
 import { SeverityPill } from "@/components/domain/severity-pill";
@@ -101,15 +103,36 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
   );
 
   const handleConfirm = useCallback(
-    async (findingId: string) => {
+    async (findingId: string, opts?: { announceUndo?: boolean }) => {
       if (!doc) return;
       const updated = await updateFinding(doc.id, findingId, {
         disposition: "confirmed",
         overrideNote: null,
       });
       setDoc(updated);
+      // QA 4.3 / 5.2: the C shortcut confirms a finding in a single
+      // keystroke with no confirmation dialog. A dialog would slow down
+      // legitimate rapid-fire confirmation, so instead every confirm — not
+      // just the keyboard one — is undoable from the toast.
+      if (opts?.announceUndo) {
+        const clauseRef =
+          sortedFindings.find((f) => f.findingId === findingId)
+            ?.clauseReference ?? "Finding";
+        toast.success(`${clauseRef} confirmed`, {
+          action: {
+            label: "Undo",
+            onClick: async () => {
+              const reverted = await updateFinding(doc.id, findingId, {
+                disposition: "pending",
+                overrideNote: null,
+              });
+              setDoc(reverted);
+            },
+          },
+        });
+      }
     },
-    [doc],
+    [doc, sortedFindings],
   );
 
   const handleOverride = useCallback(
@@ -125,14 +148,26 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
   );
 
   useEffect(() => {
+    // QA 4.3: the guard used to check tagName === INPUT/TEXTAREA only, so
+    // typing "c" inside an open Select, a contenteditable node, or a Radix
+    // popover/dialog would silently confirm a finding. Also ignore any
+    // modified keystroke (browser/OS shortcuts).
+    function isTypingTarget(target: EventTarget | null): boolean {
+      if (!(target instanceof HTMLElement)) return false;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return true;
+      if (target.isContentEditable) return true;
+      return !!target.closest(
+        '[role="dialog"], [role="listbox"], [data-radix-popper-content-wrapper]',
+      );
+    }
+
     function onKeyDown(e: KeyboardEvent) {
-      if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement)?.tagName)) {
-        return;
-      }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isTypingTarget(e.target)) return;
       if (e.key === "j" || e.key === "J") selectIndex(1);
       if (e.key === "k" || e.key === "K") selectIndex(-1);
       if ((e.key === "c" || e.key === "C") && selectedFinding) {
-        handleConfirm(selectedFinding.findingId);
+        handleConfirm(selectedFinding.findingId, { announceUndo: true });
       }
     }
     window.addEventListener("keydown", onKeyDown);
@@ -157,6 +192,30 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
 
   return (
     <div>
+      {/* QA 10.7: no consistent back navigation on secondary screens. */}
+      <Link
+        href="/queue"
+        className="mb-3 inline-flex items-center gap-1 text-small text-muted-fg hover:text-ink"
+      >
+        <ChevronLeft className="h-4 w-4" aria-hidden />
+        Queue
+      </Link>
+
+      {/* QA 4.3 / 5.2: J/K/C shortcuts were invisible and undocumented. */}
+      <p className="mb-3 text-small text-muted-fg">
+        <kbd className="rounded border border-line bg-canvas px-1.5 py-0.5 font-sans text-small">
+          J
+        </kbd>{" "}
+        /{" "}
+        <kbd className="rounded border border-line bg-canvas px-1.5 py-0.5 font-sans text-small">
+          K
+        </kbd>{" "}
+        to move between findings ·{" "}
+        <kbd className="rounded border border-line bg-canvas px-1.5 py-0.5 font-sans text-small">
+          C
+        </kbd>{" "}
+        to confirm
+      </p>
       <div className="sticky top-0 z-10 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-paper p-4 shadow-card">
         <div>
           <p className="font-display text-h3 text-ink">{doc.title}</p>
@@ -271,7 +330,7 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
               key={selectedFinding.findingId}
               finding={selectedFinding}
               mode="adjudicable"
-              onConfirm={handleConfirm}
+              onConfirm={(id) => handleConfirm(id, { announceUndo: true })}
               onOverride={handleOverride}
             />
           ) : (

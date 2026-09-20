@@ -12,8 +12,10 @@ const SEVERITY_CONFIG: Record<
     Icon: AlertTriangle,
   },
   medium: {
+    // QA 5.1: see status-badge.tsx — text-caution on bg-caution/15 fails
+    // WCAG AA at this size; text-caution-fg passes.
     label: "Medium",
-    className: "bg-caution/15 text-caution",
+    className: "bg-caution/15 text-caution-fg",
     Icon: AlertCircle,
   },
   low: {

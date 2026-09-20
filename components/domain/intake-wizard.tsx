@@ -26,6 +26,12 @@ const intakeSchema = z.object({
   type: z.enum(["nda", "vendor", "msa", "employment"], {
     required_error: "Choose a contract type.",
   }),
+  // QA 3.2: the wizard never asked for a tier — every deal was silently
+  // created as "standard" then force-upgraded to "enhanced" once analysis
+  // finished, so "Senior review" (advertised on /pricing) was unreachable.
+  tier: z.enum(["standard", "enhanced", "senior"], {
+    required_error: "Choose a review tier.",
+  }),
   clientName: z.string().min(2, "Enter your company name."),
   counterpartyName: z.string().min(2, "Enter the counterparty's name."),
   counterpartyIsMsme: z.boolean(),
@@ -41,7 +47,14 @@ const intakeSchema = z.object({
 type IntakeFormValues = z.infer<typeof intakeSchema>;
 
 const STEP_FIELDS: (keyof IntakeFormValues)[][] = [
-  ["title", "type", "clientName", "counterpartyName", "counterpartyIsMsme"],
+  [
+    "title",
+    "type",
+    "tier",
+    "clientName",
+    "counterpartyName",
+    "counterpartyIsMsme",
+  ],
   [
     "transactionValue",
     "durationMonths",
@@ -52,6 +65,12 @@ const STEP_FIELDS: (keyof IntakeFormValues)[][] = [
 ];
 
 const STEP_LABELS = ["Deal basics", "Transaction details", "Key terms"];
+
+const TIER_OPTIONS: { value: IntakeFormValues["tier"]; label: string; price: string }[] = [
+  { value: "standard", label: "Standard", price: "₹4,999" },
+  { value: "enhanced", label: "Enhanced", price: "₹12,999" },
+  { value: "senior", label: "Senior review", price: "₹24,999" },
+];
 
 export function IntakeWizard() {
   const router = useRouter();
@@ -71,6 +90,7 @@ export function IntakeWizard() {
     defaultValues: {
       title: "",
       type: "nda",
+      tier: "standard",
       clientName: "",
       counterpartyName: "",
       counterpartyIsMsme: false,
@@ -100,11 +120,15 @@ export function IntakeWizard() {
       const doc = await createDraftDocument({
         title: data.title,
         type: data.type,
+        tier: data.tier,
         clientName: data.clientName,
         counterpartyName: data.counterpartyName,
         stateOfExecution: data.stateOfExecution,
         transactionValue: data.transactionValue,
         counterpartyIsMsme: data.counterpartyIsMsme,
+        durationMonths: data.durationMonths,
+        governingLaw: data.governingLaw,
+        keyTerms: data.keyTerms ?? "",
       });
       router.push(`/documents/${doc.id}`);
     } catch (err) {
@@ -213,6 +237,31 @@ export function IntakeWizard() {
               <Label htmlFor="counterpartyIsMsme" className="font-normal">
                 The counterparty is a registered MSME
               </Label>
+            </div>
+            <div>
+              <Label htmlFor="tier">Review tier</Label>
+              <Select
+                value={values.tier}
+                onValueChange={(v) =>
+                  setValue("tier", v as IntakeFormValues["tier"])
+                }
+              >
+                <SelectTrigger id="tier">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIER_OPTIONS.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label} — {t.price}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {/* QA 3.2: billing is not enabled in this preview — no
+                  payment is taken for any tier. */}
+              <p className="mt-1 text-small text-muted-fg">
+                Billing is not enabled in this preview — no payment is taken.
+              </p>
             </div>
           </>
         )}

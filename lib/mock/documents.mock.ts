@@ -1,4 +1,5 @@
 import type { ContractDocument } from "@/lib/types";
+import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 
 const settledNda: ContractDocument = {
   id: "doc-nda-settled",
@@ -6,13 +7,18 @@ const settledNda: ContractDocument = {
   type: "nda",
   status: "settled",
   tier: "standard",
+  orgId: MOCK_CLIENT_ORG.id,
   clientName: "Anaya Textiles Pvt Ltd",
   counterpartyName: "Kavach Robotics Pvt Ltd",
   stateOfExecution: "Delhi",
   transactionValue: 0,
   counterpartyIsMsme: false,
+  durationMonths: 24,
+  governingLaw: "Laws of India",
+  keyTerms: "Mutual confidentiality; 3-year survival on trade secrets.",
   createdAt: "2026-08-02T09:12:00.000Z",
   settledAt: "2026-08-05T14:40:00.000Z",
+  analysisCompletesAt: null,
   advocate: { id: "adv-1", name: "Rhea Kapoor", bar: "D/1842/2016" },
   findings: [],
   executionSteps: [
@@ -61,13 +67,18 @@ const pendingReviewMsa: ContractDocument = {
   type: "msa",
   status: "pending_review",
   tier: "enhanced",
+  orgId: "org-bharosa-fintech",
   clientName: "Bharosa Fintech Pvt Ltd",
   counterpartyName: "Sundargarh Logistics Pvt Ltd",
   stateOfExecution: "Maharashtra",
   transactionValue: 4200000,
   counterpartyIsMsme: true,
+  durationMonths: 36,
+  governingLaw: "Laws of India",
+  keyTerms: "Exclusivity for the term; auto-renewal unless terminated with 90 days' notice.",
   createdAt: "2026-09-14T06:05:00.000Z",
   settledAt: null,
+  analysisCompletesAt: null,
   advocate: null,
   findings: [
     {
@@ -149,13 +160,23 @@ const analysingEmployment: ContractDocument = {
   type: "employment",
   status: "analysing",
   tier: "standard",
+  orgId: "org-trivandrum-cloud-labs",
   clientName: "Trivandrum Cloud Labs Pvt Ltd",
   counterpartyName: "Individual — Meera Nair",
   stateOfExecution: "Karnataka",
   transactionValue: 2400000,
   counterpartyIsMsme: false,
+  durationMonths: 0,
+  governingLaw: "Laws of India",
+  keyTerms: null,
   createdAt: "2026-09-19T10:00:00.000Z",
   settledAt: null,
+  // Seeded in the past on purpose (QA 4.5): the fixture used to sit in
+  // "analysing" forever because the client-side timer that would have
+  // resolved it only ever ran while a component was mounted to own it.
+  // getDocument/listDocuments now reconcile a past analysisCompletesAt on
+  // read, so this resolves to pending_review on first load.
+  analysisCompletesAt: "2026-09-19T10:01:00.000Z",
   advocate: null,
   findings: [],
   executionSteps: [],
@@ -167,13 +188,18 @@ const revisionVendor: ContractDocument = {
   type: "vendor",
   status: "revision",
   tier: "standard",
+  orgId: MOCK_CLIENT_ORG.id,
   clientName: "Anaya Textiles Pvt Ltd",
   counterpartyName: "Ganesh Packaging Works",
   stateOfExecution: "Tamil Nadu",
   transactionValue: 850000,
   counterpartyIsMsme: true,
+  durationMonths: 12,
+  governingLaw: "Laws of India",
+  keyTerms: "Packaging specification per Annexure A; quarterly price review.",
   createdAt: "2026-09-08T11:30:00.000Z",
   settledAt: null,
+  analysisCompletesAt: null,
   advocate: { id: "adv-2", name: "Farhan Sheikh", bar: "TN/0932/2019" },
   findings: [
     {

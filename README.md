@@ -1,5 +1,10 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+> **Read [SECURITY-PREVIEW.md](./SECURITY-PREVIEW.md) before deploying this
+> anywhere.** This is a frontend-only prototype with no real
+> authentication, access control or tenancy enforcement. See
+> `.env.example` for the preview-mode flag that gates the mock login.
+
 ## Getting Started
 
 First, run the development server:

@@ -9,13 +9,19 @@ const STATUS_CONFIG: Record<
   analysing: { label: "Analysing", className: "bg-info/15 text-info" },
   pending_review: {
     label: "Pending review",
-    className: "bg-caution/15 text-caution",
+    // QA 5.1: text-caution on bg-caution/15 measured ~3.1–3.3:1, below the
+    // WCAG AA 4.5:1 floor. text-caution-fg is a darker shade of the same
+    // hue that passes at this badge's 13px size.
+    className: "bg-caution/15 text-caution-fg",
   },
   under_review: {
     label: "Under review",
     className: "bg-info/15 text-info",
   },
-  revision: { label: "Revision", className: "bg-caution/15 text-caution" },
+  revision: {
+    label: "Revision",
+    className: "bg-caution/15 text-caution-fg",
+  },
   settled: { label: "Settled", className: "bg-verified/15 text-verified" },
   executed: { label: "Executed", className: "bg-verified/15 text-verified" },
 };

@@ -23,7 +23,7 @@ const FEATURES = [
 
 export function FeatureGrid() {
   return (
-    <section className="mx-auto max-w-4xl px-4 py-12">
+    <section className="mx-auto max-w-6xl px-4 py-12">
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
         {FEATURES.map((f) => (
           <div

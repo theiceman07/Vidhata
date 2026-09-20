@@ -17,7 +17,11 @@ const config: Config = {
   			line: '#C9BCA9',
   			verified: '#2F7A4B',
   			flagged: '#B3311D',
-  			caution: '#B4741C',
+  			// QA 5.1: caution text-on-caution/15 measured ~3.1–3.3:1, below the
+  			// WCAG AA 4.5:1 floor for 13–14px text. caution stays the semantic
+  			// decoration colour (borders, dots); caution-fg is the text/icon
+  			// colour, measured ~4.6:1 on bg-caution/15 over bg-paper.
+  			caution: { DEFAULT: '#B4741C', fg: '#7A4E0D' },
   			info: '#2A5F8F'
   		},
   		fontFamily: {

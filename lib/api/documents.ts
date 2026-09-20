@@ -1,6 +1,26 @@
-import type { ContractDocument, ExecutionStep, Finding } from "@/lib/types";
+import type {
+  ContractDocument,
+  ExecutionStep,
+  Finding,
+  ReviewTier,
+} from "@/lib/types";
+import { PIPELINE_DURATION_MS } from "@/lib/types";
 import { mockDocuments } from "@/lib/mock/documents.mock";
+import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
+
+// QA 7.3: tier ordering used to sort the advocate queue, so the pricing
+// page's "Priority turnaround" claim (Enhanced/Senior tiers) is backed by
+// real routing behaviour instead of being decorative copy.
+const TIER_PRIORITY: Record<ReviewTier, number> = {
+  senior: 0,
+  enhanced: 1,
+  standard: 2,
+};
+
+export function getQueuePriority(doc: ContractDocument): number {
+  return TIER_PRIORITY[doc.tier];
+}
 
 // Illustrative flat stamp duty figures for the demo pipeline's output —
 // not legal advice, mirrors the pattern already used in the settled NDA
@@ -61,7 +81,7 @@ function buildExecutionSteps(doc: ContractDocument): ExecutionStep[] {
       kind: "esignature",
       applicable: true,
       headline: "e-signature: valid under the IT Act",
-      detail: "Aadhaar-based e-sign satisfies Section 5 of the IT Act, 2000.",
+      detail: `Aadhaar-based e-sign satisfies Section 5 of the IT Act, 2000, for a document governed by ${doc.governingLaw}.`,
       reason:
         "This document type is not among the classes excluded from electronic execution.",
       instructions: [
@@ -77,12 +97,49 @@ function buildExecutionSteps(doc: ContractDocument): ExecutionStep[] {
 // for the duration of the tab. Resets on reload — there is no backend yet.
 let store: ContractDocument[] = structuredClone(mockDocuments);
 
-export async function listDocuments(): Promise<ContractDocument[]> {
+// QA 4.5: analysis used to complete via a setTimeout owned by the document
+// detail page component, cleared on unmount — a document left "analysing"
+// stayed that way forever if the user navigated away before the timer
+// fired. Reconciling against a stored analysisCompletesAt on every read
+// makes the state durable regardless of what's mounted, the same shape a
+// real background job would have.
+function reconcileAnalysis(doc: ContractDocument): void {
+  if (doc.status !== "analysing" || !doc.analysisCompletesAt) return;
+  if (Date.now() < new Date(doc.analysisCompletesAt).getTime()) return;
+
+  doc.status = "pending_review";
+  doc.analysisCompletesAt = null;
+  // Demo-only: the pipeline has no real drafting/screening logic to run,
+  // so a freshly analysed document is seeded with the same representative
+  // finding set used in the pending_review fixture (high non-compete,
+  // medium MSMED, low blocked-citation) rather than staying empty. The
+  // tier chosen at intake is preserved — it used to be force-upgraded to
+  // "enhanced" here regardless of what the client selected (QA 3.2).
+  doc.findings = structuredClone(
+    mockDocuments.find((d) => d.id === "doc-msa-pending")?.findings ?? [],
+  ).map((f, i) => ({ ...f, findingId: `${doc.id}-finding-${i}` }));
+}
+
+function reconcileAll(): void {
+  store.forEach(reconcileAnalysis);
+}
+
+/**
+ * @param orgId When provided, scopes the result to that org only (QA 3.5 —
+ *   every client used to see every tenant's documents on one dashboard).
+ *   Omitted for the advocate queue, which is intentionally cross-org: an
+ *   advocate must see documents from every client company.
+ */
+export async function listDocuments(
+  orgId?: string,
+): Promise<ContractDocument[]> {
   await randomDelay();
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not load your documents.");
   }
-  return structuredClone(store);
+  reconcileAll();
+  const scoped = orgId ? store.filter((d) => d.orgId === orgId) : store;
+  return structuredClone(scoped);
 }
 
 export async function getDocument(
@@ -93,17 +150,23 @@ export async function getDocument(
     throw new MockApiError("Could not load this document.");
   }
   const doc = store.find((d) => d.id === id);
-  return doc ? structuredClone(doc) : null;
+  if (!doc) return null;
+  reconcileAnalysis(doc);
+  return structuredClone(doc);
 }
 
 export interface IntakeInput {
   title: string;
   type: ContractDocument["type"];
+  tier: ReviewTier;
   clientName: string;
   counterpartyName: string;
   stateOfExecution: string;
   transactionValue: number;
   counterpartyIsMsme: boolean;
+  durationMonths: number;
+  governingLaw: string;
+  keyTerms: string;
 }
 
 export async function createDraftDocument(
@@ -118,14 +181,23 @@ export async function createDraftDocument(
     title: input.title,
     type: input.type,
     status: "draft",
-    tier: "standard",
+    tier: input.tier,
+    // The mock layer only ever authenticates one client identity, so every
+    // document a client creates belongs to that identity's org regardless
+    // of the "your company name" text entered in the wizard (that field is
+    // display text on the contract, not a tenant selector).
+    orgId: MOCK_CLIENT_ORG.id,
     clientName: input.clientName,
     counterpartyName: input.counterpartyName,
     stateOfExecution: input.stateOfExecution,
     transactionValue: input.transactionValue,
     counterpartyIsMsme: input.counterpartyIsMsme,
+    durationMonths: input.durationMonths,
+    governingLaw: input.governingLaw,
+    keyTerms: input.keyTerms.trim() ? input.keyTerms.trim() : null,
     createdAt: new Date().toISOString(),
     settledAt: null,
+    analysisCompletesAt: null,
     advocate: null,
     findings: [],
     executionSteps: [],
@@ -138,24 +210,12 @@ export async function startAnalysis(id: string): Promise<ContractDocument> {
   await randomDelay(200, 400);
   const doc = store.find((d) => d.id === id);
   if (!doc) throw new MockApiError("Document not found.");
-  if (doc.status === "draft") doc.status = "analysing";
-  return structuredClone(doc);
-}
-
-// Demo-only: the pipeline has no real drafting/screening logic to run, so
-// a freshly analysed document is seeded with the same representative
-// finding set used in the pending_review fixture (high non-compete,
-// medium MSMED, low blocked-citation) rather than staying empty.
-export async function completeAnalysis(id: string): Promise<ContractDocument> {
-  await randomDelay(200, 400);
-  const doc = store.find((d) => d.id === id);
-  if (!doc) throw new MockApiError("Document not found.");
-  if (doc.status !== "analysing") return structuredClone(doc);
-  doc.status = "pending_review";
-  doc.tier = "enhanced";
-  doc.findings = structuredClone(
-    mockDocuments.find((d) => d.id === "doc-msa-pending")?.findings ?? [],
-  ).map((f, i) => ({ ...f, findingId: `${doc.id}-finding-${i}` }));
+  if (doc.status === "draft") {
+    doc.status = "analysing";
+    doc.analysisCompletesAt = new Date(
+      Date.now() + PIPELINE_DURATION_MS,
+    ).toISOString();
+  }
   return structuredClone(doc);
 }
 

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Cormorant_Infant, Outfit } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/lib/session";
-import { DevRoleSwitcher } from "@/components/shared/dev-role-switcher";
 import { Toaster } from "@/components/ui/sonner";
 
 const cormorantInfant = Cormorant_Infant({
@@ -18,10 +17,25 @@ const outfit = Outfit({
   weight: ["400", "500", "600"],
 });
 
+// QA 4.1: every route used to share one <title>/description with no
+// robots.txt or sitemap.xml. metadataBase + a title template let each
+// route (app/(public)/*) set its own unique metadata below; see
+// app/robots.ts and app/sitemap.ts for the crawler files.
 export const metadata: Metadata = {
-  title: "Vidhata — AI-drafted, lawyer-verified contracts",
+  metadataBase: new URL("https://vidhata-pi.vercel.app"),
+  title: {
+    default: "Vidhata — AI-drafted, lawyer-verified contracts",
+    template: "%s · Vidhata",
+  },
   description:
     "AI-drafted, lawyer-verified contracts for Indian startups and MSMEs.",
+  openGraph: {
+    title: "Vidhata — AI-drafted, lawyer-verified contracts",
+    description:
+      "AI-drafted, lawyer-verified contracts for Indian startups and MSMEs.",
+    siteName: "Vidhata",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -37,7 +51,6 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <SessionProvider>
           {children}
-          <DevRoleSwitcher />
           <Toaster />
         </SessionProvider>
       </body>
