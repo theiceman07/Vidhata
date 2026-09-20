@@ -17,7 +17,7 @@ export default function LandingPage() {
             whitespace either side of every section. */}
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-y-2">
           <Link href="/" className="text-ink">
-            <BrandLogo />
+            <BrandLogo size="lg" />
           </Link>
           <nav className="flex flex-wrap items-center gap-4 text-body">
             <Link href="/pricing" className="text-muted-fg hover:text-ink">

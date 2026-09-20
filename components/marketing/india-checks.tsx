@@ -24,6 +24,11 @@ const CHECKS = [
     description:
       "Every document is checked against the IT Act's rules on what can and can't be signed electronically.",
   },
+  {
+    title: "Registration Act requirements",
+    description:
+      "Documents are checked against the Registration Act to flag when compulsory registration applies before execution.",
+  },
 ];
 
 export function IndiaChecks() {
@@ -34,7 +39,7 @@ export function IndiaChecks() {
           Built for Indian contracts, not adapted for them
         </h2>
         <p className="mb-8 text-center text-body text-muted-fg">
-          Five checks a generic drafting tool has no way to run.
+          Six checks a generic drafting tool has no way to run.
         </p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {CHECKS.map((c) => (

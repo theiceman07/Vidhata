@@ -27,20 +27,28 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section className="bg-canvas py-16">
+    <section className="bg-canvas py-20">
       <div className="mx-auto max-w-6xl px-4">
-        <h2 className="mb-8 text-center font-display text-h2 text-ink">
+        <h2 className="mb-2 text-center font-display text-h2 text-ink">
           How it works
         </h2>
+        <p className="mb-12 text-center text-body text-muted-fg">
+          Three steps from a description to a settled document.
+        </p>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {STEPS.map((step, i) => (
-            <div key={step.title} className="relative">
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-brand text-brand-fg">
-                <step.icon className="h-5 w-5" aria-hidden />
+            <div
+              key={step.title}
+              className="flex h-full flex-col rounded-control border border-line bg-paper p-6 shadow-sm"
+            >
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-brand-fg">
+                  <step.icon className="h-5 w-5" aria-hidden />
+                </div>
+                <span className="font-display text-h1 text-line">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
               </div>
-              <p className="mb-1 text-small font-medium text-muted-fg">
-                Step {i + 1}
-              </p>
               <h3 className="mb-1 font-display text-h3 text-ink">
                 {step.title}
               </h3>

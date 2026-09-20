@@ -12,7 +12,7 @@ export function SiteFooter() {
     <footer className="border-t border-line px-4 py-8">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 text-center text-small text-muted-fg sm:flex-row sm:justify-between sm:text-left">
         <div className="text-ink">
-          <BrandLogo className="mb-1" />
+          <BrandLogo className="mb-1" size="sm" />
           <p className="text-small text-muted-fg">
             AI-drafted, lawyer-verified contracts.
           </p>

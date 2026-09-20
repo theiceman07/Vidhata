@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AuthSplitLayout } from "@/components/shared/auth-split-layout";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,9 @@ export default function ClientLoginPage() {
           Sign-in is not yet available. Vidhata does not have a production
           identity provider connected in this environment.
         </p>
+        <Button asChild className="mt-4 w-full">
+          <Link href="/">Go to home</Link>
+        </Button>
       </AuthSplitLayout>
     );
   }
