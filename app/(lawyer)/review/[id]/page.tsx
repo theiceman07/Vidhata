@@ -2,12 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ChevronLeft, Plus } from "lucide-react";
+import { Icon } from "@/components/shared/icon";
 import { toast } from "sonner";
 import { ErrorState } from "@/components/shared/error-state";
 import { DocumentWorkspace } from "@/components/document/workspace";
-import { Dateline } from "@/components/document/dateline";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -143,29 +141,22 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
   const blocked = hasBlockedCitation(doc);
   const canSignOff = openCount === 0 && !blocked;
 
+  // State the fact, then the owner. The reason sign-off is unavailable is
+  // stated in text beside the control, never hidden in a tooltip.
+  const notice = canSignOff
+    ? null
+    : blocked
+      ? "Sign-off is unavailable while a citation is blocked. Resolve the source against the corpus first."
+      : `Sign-off is unavailable while ${openCount} ${openCount === 1 ? "finding is" : "findings are"} open.`;
+
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-canvas px-4 py-3">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/queue"
-            className="inline-flex items-center gap-1 text-meta text-muted-fg hover:text-ink"
-          >
-            <ChevronLeft className="h-4 w-4" aria-hidden />
-            Queue
-          </Link>
-          <Dateline
-            segments={[doc.clientName, doc.counterpartyName, `${doc.tier} tier`]}
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          {/* QA 4.3 / 5.2: the shortcuts are documented on the screen that
-              uses them rather than being invisible. */}
-          <p className="hidden text-meta text-muted-fg xl:block">
-            <Kbd>J</Kbd> <Kbd>K</Kbd> move · <Kbd>C</Kbd> settle
-          </p>
-
+    <DocumentWorkspace
+      doc={doc}
+      role="advocate"
+      back={{ href: "/queue", label: "Queue" }}
+      notice={notice}
+      actions={
+        <>
           <AddFindingDialog
             open={dialogOpen}
             onOpenChange={setDialogOpen}
@@ -175,7 +166,6 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
               setDialogOpen(false);
             }}
           />
-
           <Button
             size="sm"
             disabled={!canSignOff}
@@ -183,37 +173,12 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
           >
             Sign off
           </Button>
-        </div>
-      </div>
-
-      {/* State the fact, then the owner. The reason sign-off is unavailable
-          is stated in text, not hidden in a tooltip. */}
-      {!canSignOff && (
-        <p className="border-b border-line bg-canvas px-4 pb-3 text-meta text-muted-fg">
-          {blocked
-            ? "Sign-off is unavailable while a citation is blocked. Resolve the source against the corpus first."
-            : `Sign-off is unavailable while ${openCount} ${openCount === 1 ? "finding is" : "findings are"} open.`}
-        </p>
-      )}
-
-      <div className="min-h-0 flex-1">
-        <DocumentWorkspace
-          doc={doc}
-          role="advocate"
-          onSettle={handleSettle}
-          onReopen={handleReopen}
-          busy={busy}
-        />
-      </div>
-    </div>
-  );
-}
-
-function Kbd({ children }: { children: React.ReactNode }) {
-  return (
-    <kbd className="rounded-control border border-line bg-paper px-1.5 py-0.5 font-mono text-notation">
-      {children}
-    </kbd>
+        </>
+      }
+      onSettle={handleSettle}
+      onReopen={handleReopen}
+      busy={busy}
+    />
   );
 }
 
@@ -248,7 +213,7 @@ function AddFindingDialog({
     >
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
-          <Plus className="mr-1 h-3.5 w-3.5" aria-hidden />
+          <Icon name="add" size={18} />
           Add finding
         </Button>
       </DialogTrigger>

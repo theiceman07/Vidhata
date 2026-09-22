@@ -2,13 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { format } from "date-fns";
-import { ChevronLeft } from "lucide-react";
 import { ErrorState } from "@/components/shared/error-state";
-import { DocumentStatusTrail } from "@/components/domain/document-status-trail";
+import { Icon } from "@/components/shared/icon";
 import { PipelineProgress } from "@/components/domain/pipeline-progress";
 import { DocumentWorkspace } from "@/components/document/workspace";
-import { Dateline } from "@/components/document/dateline";
+import { Provenance } from "@/components/document/provenance";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { getDocument, startAnalysis } from "@/lib/api/documents";
@@ -90,61 +88,33 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
     );
   }
 
-  return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="space-y-3 border-b border-line bg-canvas px-4 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link
-            href="/documents"
-            className="inline-flex items-center gap-1 text-meta text-muted-fg hover:text-ink"
-          >
-            <ChevronLeft className="h-4 w-4" aria-hidden />
-            Documents
-          </Link>
+  const settled = doc.status === "settled" || doc.status === "executed";
 
-          {doc.status === "settled" && (
+  return (
+    <DocumentWorkspace
+      doc={doc}
+      role="client"
+      back={{ href: "/documents", label: "Documents" }}
+      subheader={<Provenance doc={doc} />}
+      actions={
+        settled && (
+          <>
             <Button asChild size="sm" variant="outline">
               <Link href={`/documents/${doc.id}/checklist`}>
                 Execution checklist
               </Link>
             </Button>
-          )}
-        </div>
-
-        <DocumentStatusTrail status={doc.status} />
-
-        {/* QA 3.3: duration, governing law and key terms were collected at
-            intake and silently discarded. They are the deal brief the
-            draft was built from, so they stay visible with it. */}
-        <Dateline
-          segments={[
-            doc.counterpartyName,
-            doc.durationMonths > 0 ? `${doc.durationMonths} months` : null,
-            doc.governingLaw || null,
-            doc.keyTerms,
-          ]}
-        />
-
-        {doc.status === "settled" && doc.advocate && (
-          <p className="text-meta text-ink">
-            Settled by {doc.advocate.name}
-            {doc.settledAt &&
-              ` on ${format(new Date(doc.settledAt), "d MMM yyyy")}`}
-            .
-          </p>
-        )}
-      </div>
-
-      <div className="min-h-0 flex-1">
-        {/* Read-only. Only an advocate adjudicates, so this carries no
-            settle control, no rule ids and no override notes. */}
-        <DocumentWorkspace
-          doc={doc}
-          role="client"
-          onSettle={() => undefined}
-          onReopen={() => undefined}
-        />
-      </div>
-    </div>
+            <Button size="sm" variant="outline" onClick={() => window.print()}>
+              <Icon name="print" size={18} />
+              Save as PDF
+            </Button>
+          </>
+        )
+      }
+      // Read-only. Only an advocate adjudicates, so this carries no settle
+      // control, no rule ids and no override notes.
+      onSettle={() => undefined}
+      onReopen={() => undefined}
+    />
   );
 }

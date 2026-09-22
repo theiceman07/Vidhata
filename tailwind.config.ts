@@ -93,7 +93,13 @@ const config: Config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  // Container queries: the document canvas changes width when the finding
+  // panel opens, so its internal layout has to answer to the pane it sits
+  // in rather than to the viewport.
+  plugins: [
+    require("tailwindcss-animate"),
+    require("@tailwindcss/container-queries"),
+  ],
 };
 
 export default config;

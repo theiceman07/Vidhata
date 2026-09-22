@@ -34,8 +34,10 @@ function withHighlight(paragraph: string, quotes: string[]) {
  *
  * The clause number sits in the gutter in the notation voice; the body
  * is Newsreader, because the clause is the part with legal consequence.
- * Findings render beneath the body inside the clause's own measure — a
- * note in the margin, not a tile in a separate column.
+ * The body holds a reading measure and the findings sit in the margin
+ * beside it, level with the words that caused them. Where the screen is
+ * too narrow for a margin, they fall in beneath the clause rather than
+ * squeezing the prose.
  */
 export function ClauseBlock({
   clause,
@@ -64,49 +66,55 @@ export function ClauseBlock({
       data-clause={clause.id}
       aria-labelledby={`clause-heading-${clause.id}`}
       className={cn(
-        "scroll-mt-24 py-8 transition-colors",
+        "scroll-mt-14 py-8 transition-colors",
         active && "bg-parchment/40",
       )}
     >
-      <div className="flex items-center gap-2">
-        {revised && <MarginMark kind="human" />}
-        <p className="font-mono text-notation uppercase tracking-notation text-muted-fg">
-          Clause {clause.number}
-        </p>
-      </div>
+      <div className="grid gap-x-10 gap-y-6 @3xl:grid-cols-[minmax(0,68ch)_minmax(200px,17rem)]">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            {revised && <MarginMark kind="human" />}
+            <p className="font-mono text-notation uppercase tracking-notation text-muted-fg">
+              Clause {clause.number}
+            </p>
+          </div>
 
-      <h2
-        id={`clause-heading-${clause.id}`}
-        className="mt-1 font-display text-h3 text-ink"
-      >
-        {clause.heading}
-      </h2>
+          <h2
+            id={`clause-heading-${clause.id}`}
+            className="mt-1 font-display text-h3 text-ink"
+          >
+            {clause.heading}
+          </h2>
 
-      <div className="mt-3 space-y-4 font-display text-body leading-relaxed text-ink">
-        {paragraphs.map((paragraph, i) => (
-          <p key={i}>{withHighlight(paragraph, quotes)}</p>
-        ))}
-      </div>
+          <div className="mt-3 space-y-4 font-display text-body leading-relaxed text-ink">
+            {paragraphs.map((paragraph, i) => (
+              <p key={i}>{withHighlight(paragraph, quotes)}</p>
+            ))}
+          </div>
 
-      {findings.length > 0 && (
-        <div className="mt-6 space-y-1">
-          {findings.map((finding) => (
-            <FindingBar
-              key={finding.findingId}
-              finding={finding}
-              number={findingNumbers[finding.findingId] ?? "--"}
-              selected={selectedFindingId === finding.findingId}
-              onSelect={() => onSelectFinding(finding.findingId)}
-            />
-          ))}
+          {revised && (
+            <p className="mt-4 font-mono text-notation uppercase tracking-notation text-accent">
+              Revised by advocate
+            </p>
+          )}
         </div>
-      )}
 
-      {revised && (
-        <p className="mt-4 font-mono text-notation uppercase tracking-notation text-accent">
-          Revised by advocate
-        </p>
-      )}
+        {/* The margin. Empty for most clauses, which is what makes a
+            note in it worth looking at. */}
+        {findings.length > 0 && (
+          <div className="space-y-1 @3xl:pt-6">
+            {findings.map((finding) => (
+              <FindingBar
+                key={finding.findingId}
+                finding={finding}
+                number={findingNumbers[finding.findingId] ?? "--"}
+                selected={selectedFindingId === finding.findingId}
+                onSelect={() => onSelectFinding(finding.findingId)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </section>
   );
 }

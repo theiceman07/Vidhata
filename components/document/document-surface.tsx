@@ -49,25 +49,42 @@ export function DocumentSurface({
     );
     if (nodes.length === 0) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const topMost = entries
-          .filter((e) => e.isIntersecting)
-          .sort(
-            (a, b) => a.boundingClientRect.top - b.boundingClientRect.top,
-          )[0];
-        if (topMost) {
-          const id = (topMost.target as HTMLElement).dataset.clause;
-          if (id) reportRef.current(id);
-        }
-      },
-      // A band across the upper third of the viewport: the clause the
-      // reader is actually looking at, not the one scrolling off.
-      { rootMargin: "-20% 0px -70% 0px", threshold: 0 },
-    );
+    // The pane scrolls, not the window, so positions are measured
+    // against the pane. The observer only says "something moved"; the
+    // reading itself is taken from the nodes, because at a boundary two
+    // clauses intersect any band at once and the one the reader is on is
+    // the last one whose heading has passed the top of the pane.
+    const scrollRoot = root.parentElement;
+    if (!scrollRoot) return;
+
+    // Matches scroll-mt-14 on ClauseBlock, so a clause scrolled to rest
+    // reports itself rather than the clause above it.
+    const ANCHOR = 57;
+
+    const report = () => {
+      const top = scrollRoot.getBoundingClientRect().top + ANCHOR;
+      let current = nodes[0];
+      for (const node of nodes) {
+        if (node.getBoundingClientRect().top <= top) current = node;
+        else break;
+      }
+      const id = current?.dataset.clause;
+      if (id) reportRef.current(id);
+    };
+
+    const observer = new IntersectionObserver(report, {
+      root: scrollRoot,
+      threshold: [0, 1],
+    });
+
+    scrollRoot.addEventListener("scroll", report, { passive: true });
+    report();
 
     nodes.forEach((node) => observer.observe(node));
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      scrollRoot.removeEventListener("scroll", report);
+    };
   }, [doc.id, clauseCount]);
 
   const byId = new Map(doc.findings.map((f) => [f.findingId, f]));
@@ -79,8 +96,13 @@ export function DocumentSurface({
   const unattached = doc.findings.filter((f) => !attached.has(f.findingId));
 
   return (
-    <article ref={containerRef} className="mx-auto max-w-measure px-6 py-8">
-      <header className="border-b border-line pb-8">
+    <article
+      ref={containerRef}
+      className="@container mx-auto max-w-[76rem] px-6 py-8 md:px-10"
+    >
+      {/* The document's own title page. The chrome above states which
+          document this is for navigation; here it opens the instrument. */}
+      <header className="max-w-measure border-b border-line pb-8">
         <h1 className="font-display text-h1 text-ink">{doc.title}</h1>
       </header>
 
@@ -101,7 +123,7 @@ export function DocumentSurface({
       </div>
 
       {unattached.length > 0 && (
-        <section className="border-t border-line pt-8">
+        <section className="max-w-measure border-t border-line pt-8">
           <p className="font-mono text-notation uppercase tracking-notation text-muted-fg">
             Findings not attached to a clause
           </p>
