@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- The Vidhata mark on a paper ground, so it reads against light and
+       dark browser chrome alike. Coordinates match components/shared/brand-logo.tsx. -->
+  <rect width="32" height="32" fill="#FFFFFF"/>
+  <rect x="0.75" y="0.75" width="30.5" height="30.5" stroke="#141414" stroke-width="1.5"/>
+  <path d="M6.5 7H13.5V8H12.3L17.1 20.4L22.6 8H20.6V7H25.8V8H24.4L16.7 25.2H15.5L8.4 8H6.5Z" fill="#141414"/>
+</svg>

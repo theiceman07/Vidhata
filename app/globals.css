@@ -20,6 +20,23 @@
   }
 }
 
+
+/* Motion explains a state transition, and nothing here is load-bearing for
+   meaning, so when a reader asks for less of it they get none. Framer
+   Motion components take this route via useReducedMotion; this rule is the
+   backstop for CSS transitions and keyframes anywhere in the app,
+   including the shadcn primitives and animate-pulse. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* QA 2.4 — the execution checklist's "Download as PDF" control used to be a
    toast saying the feature was unavailable. Print-to-PDF is the fastest
    honest route: this stylesheet strips chrome and forces legible tokens so

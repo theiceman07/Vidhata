@@ -50,6 +50,9 @@ const config: Config = {
         h3: ["18px", { lineHeight: "1.4", fontWeight: "500" }],
         body: ["15px", { lineHeight: "1.6", fontWeight: "400" }],
         meta: ["13px", { lineHeight: "1.5", fontWeight: "400" }],
+        // Helper text and fine print. Same measure as meta; kept as its own
+        // name because older screens were written against it.
+        small: ["13px", { lineHeight: "1.5", fontWeight: "400" }],
         notation: ["13px", { lineHeight: "1.5", fontWeight: "400" }],
       },
       letterSpacing: {

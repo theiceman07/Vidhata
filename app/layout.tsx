@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Newsreader, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/lib/session";
 import { Toaster } from "@/components/ui/sonner";
+import { MATERIAL_SYMBOLS_HREF } from "@/components/shared/icon";
 
 // Three voices, Brand Board V2.0. Newsreader carries legal substance,
 // Inter operates the product, IBM Plex Mono carries notation. The serif
@@ -47,6 +48,12 @@ export const metadata: Metadata = {
   },
 };
 
+// The browser chrome takes the accent: the one colour the product uses,
+// shown where the product meets the operating system.
+export const viewport: Viewport = {
+  themeColor: "#1B4332",
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -57,6 +64,13 @@ export default function RootLayout({
       lang="en"
       className={`${newsreader.variable} ${inter.variable} ${plexMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* Material Symbols Outlined, subset to the names the product
+            uses. See components/shared/icon.tsx. */}
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link rel="stylesheet" href={MATERIAL_SYMBOLS_HREF} />
+      </head>
       <body className="min-h-full flex flex-col">
         <SessionProvider>
           {children}

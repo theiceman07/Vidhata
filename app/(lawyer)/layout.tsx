@@ -1,10 +1,26 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "@/lib/session";
-import { LawyerShellNav } from "@/components/shared/lawyer-shell-nav";
-import { DevRoleSwitcher } from "@/components/shared/dev-role-switcher";
+import { AppShell, type ShellSection } from "@/components/shared/app-shell";
+import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
+
+const SECTIONS: ShellSection[] = [
+  {
+    label: "Review",
+    links: [{ href: "/queue", label: "Queue", icon: "description" }],
+  },
+  {
+    label: "Account",
+    links: [{ href: "/profile", label: "Profile", icon: "person" }],
+  },
+];
+
+/** The review workspace manages its own three-pane scrolling. */
+function isWorkspace(pathname: string): boolean {
+  return /^\/review\/[^/]+$/.test(pathname);
+}
 
 export default function LawyerPortalLayout({
   children,
@@ -13,6 +29,7 @@ export default function LawyerPortalLayout({
 }) {
   const { role } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (role === "lawyer") return;
@@ -24,12 +41,17 @@ export default function LawyerPortalLayout({
   if (role !== "lawyer") return null;
 
   return (
-    <div className="flex min-h-screen flex-col md:flex-row">
-      <LawyerShellNav />
-      <main className="flex-1 px-4 py-6 pb-20 md:px-8 md:pb-6">{children}</main>
-      {process.env.NEXT_PUBLIC_VIDHATA_PREVIEW_MODE === "1" && (
-        <DevRoleSwitcher />
-      )}
-    </div>
+    <AppShell
+      sections={SECTIONS}
+      homeHref="/queue"
+      identity={{
+        name: CURRENT_ADVOCATE.name,
+        standing: "Advocate",
+        menuHref: "/profile",
+      }}
+      fullBleed={isWorkspace(pathname)}
+    >
+      {children}
+    </AppShell>
   );
 }
