@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { ContractDocument, Finding } from "@/lib/types";
 import { ClauseBlock } from "./clause-block";
+import { FindingBar } from "./finding-bar";
 
 /**
  * The contract, set as a document.
@@ -71,6 +72,12 @@ export function DocumentSurface({
 
   const byId = new Map(doc.findings.map((f) => [f.findingId, f]));
 
+  // An advocate can raise a finding against a clause reference this
+  // contract does not contain. It still belongs to the record, so it is
+  // listed at the foot of the document rather than dropped.
+  const attached = new Set(doc.clauses.flatMap((c) => c.findingIds));
+  const unattached = doc.findings.filter((f) => !attached.has(f.findingId));
+
   return (
     <article ref={containerRef} className="mx-auto max-w-measure px-6 py-8">
       <header className="border-b border-line pb-8">
@@ -92,6 +99,25 @@ export function DocumentSurface({
           />
         ))}
       </div>
+
+      {unattached.length > 0 && (
+        <section className="border-t border-line pt-8">
+          <p className="font-mono text-notation uppercase tracking-notation text-muted-fg">
+            Findings not attached to a clause
+          </p>
+          <div className="mt-4 space-y-1">
+            {unattached.map((finding) => (
+              <FindingBar
+                key={finding.findingId}
+                finding={finding}
+                number={findingNumbers[finding.findingId] ?? "--"}
+                selected={selectedFindingId === finding.findingId}
+                onSelect={() => onSelectFinding(finding.findingId)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
     </article>
   );
 }

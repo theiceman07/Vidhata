@@ -379,6 +379,18 @@ export async function addFinding(
   const doc = store.find((d) => d.id === docId);
   if (!doc) throw new MockApiError("Document not found.");
   doc.findings = [...doc.findings, finding];
+
+  // Attach it to the clause it names, so an advocate-added finding is a
+  // margin note like any other rather than floating free of the document.
+  // If the reference names no clause in this contract the finding still
+  // stands; the workspace lists it separately instead of losing it.
+  const clause = doc.clauses.find(
+    (c) => c.number === clauseNumberFromReference(finding.clauseReference),
+  );
+  if (clause && !clause.findingIds.includes(finding.findingId)) {
+    clause.findingIds.push(finding.findingId);
+  }
+
   return structuredClone(doc);
 }
 

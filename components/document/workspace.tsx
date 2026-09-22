@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { openFindingCount } from "@/lib/findings";
+import { canSettle, findingState, openFindingCount } from "@/lib/findings";
 import type { ContractDocument } from "@/lib/types";
 import { Dateline } from "./dateline";
 import { StateLabel } from "./state-label";
@@ -85,33 +85,63 @@ export function DocumentWorkspace({
     [doc.clauses, scrollToClause],
   );
 
-  // J and K step through findings, the convention for a reviewer working
-  // a queue without leaving the keyboard.
+  /**
+   * J and K step between findings, C settles the one in hand — the
+   * convention for a reviewer working a queue without leaving the
+   * keyboard. Selection lives here, so the shortcuts do too.
+   *
+   * QA 4.3: the guard checks Radix surfaces as well as form fields, so a
+   * "c" typed into an open Select, a dialog or a contenteditable node
+   * cannot silently settle a finding. Modified keystrokes are OS or
+   * browser shortcuts and are left alone.
+   */
   useEffect(() => {
     if (doc.findings.length === 0) return;
 
+    function isTypingTarget(target: EventTarget | null): boolean {
+      if (!(target instanceof HTMLElement)) return false;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return true;
+      if (target.isContentEditable) return true;
+      return !!target.closest(
+        '[role="dialog"], [role="listbox"], [data-radix-popper-content-wrapper]',
+      );
+    }
+
     const onKey = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (
-        target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable)
-      ) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isTypingTarget(e.target)) return;
+
+      const key = e.key.toLowerCase();
+
+      if (key === "j" || key === "k") {
+        e.preventDefault();
+        const ids = doc.findings.map((f) => f.findingId);
+        const at = ids.indexOf(selectedFindingId ?? ids[0]);
+        const next = (at + (key === "j" ? 1 : -1) + ids.length) % ids.length;
+        selectFinding(ids[next]);
         return;
       }
-      if (e.key !== "j" && e.key !== "k") return;
 
-      e.preventDefault();
-      const ids = doc.findings.map((f) => f.findingId);
-      const at = ids.indexOf(selectedFindingId ?? ids[0]);
-      const next = (at + (e.key === "j" ? 1 : -1) + ids.length) % ids.length;
-      selectFinding(ids[next]);
+      // Only an advocate adjudicates, and a blocked source blocks the
+      // settle here exactly as it does on the button.
+      if (key === "c" && role === "advocate" && selectedFinding) {
+        if (findingState(selectedFinding) === "settled") return;
+        if (!canSettle(selectedFinding)) return;
+        e.preventDefault();
+        onSettle(selectedFinding.findingId, null);
+      }
     };
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [doc.findings, selectedFindingId, selectFinding]);
+  }, [
+    doc.findings,
+    selectedFindingId,
+    selectFinding,
+    role,
+    selectedFinding,
+    onSettle,
+  ]);
 
   return (
     <div className="flex h-full min-h-0 flex-col">

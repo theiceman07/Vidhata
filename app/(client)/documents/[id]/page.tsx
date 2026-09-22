@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { PageHeader } from "@/components/shared/page-header";
+import { ChevronLeft } from "lucide-react";
 import { ErrorState } from "@/components/shared/error-state";
-import { StatusBadge } from "@/components/domain/status-badge";
 import { DocumentStatusTrail } from "@/components/domain/document-status-trail";
 import { PipelineProgress } from "@/components/domain/pipeline-progress";
-import { FindingCard } from "@/components/domain/finding-card";
+import { DocumentWorkspace } from "@/components/document/workspace";
+import { Dateline } from "@/components/document/dateline";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { getDocument, startAnalysis } from "@/lib/api/documents";
@@ -16,11 +16,7 @@ import type { ContractDocument } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
 
-export default function DocumentPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function DocumentPage({ params }: { params: { id: string } }) {
   const [doc, setDoc] = useState<ContractDocument | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -54,7 +50,7 @@ export default function DocumentPage({
       return;
     }
 
-    // QA 4.5: analysis completion is now tracked server-side (see
+    // QA 4.5: analysis completion is tracked in the data layer (see
     // reconcileAnalysis in lib/api/documents.ts) via a stored
     // analysisCompletesAt timestamp, so it resolves whether or not this
     // component stays mounted. Polling here just picks up that change —
@@ -72,9 +68,10 @@ export default function DocumentPage({
 
   if (state === "loading") {
     return (
-      <div>
-        <Skeleton className="mb-4 h-10 w-2/3 rounded-card" />
-        <Skeleton className="h-96 w-full rounded-card" />
+      <div className="grid min-h-[60vh] gap-px lg:grid-cols-[240px_1fr_360px]">
+        <Skeleton className="h-full rounded-none" />
+        <Skeleton className="h-full rounded-none" />
+        <Skeleton className="hidden h-full rounded-none lg:block" />
       </div>
     );
   }
@@ -83,7 +80,9 @@ export default function DocumentPage({
     return <ErrorState message={errorMessage} onRetry={load} />;
   }
 
-  if (doc.status === "analysing") {
+  // There is no settled text to read yet, so the first pass owns the
+  // screen until it finishes.
+  if (doc.status === "analysing" || doc.status === "draft") {
     return (
       <div className="py-10">
         <PipelineProgress />
@@ -92,95 +91,60 @@ export default function DocumentPage({
   }
 
   return (
-    <div>
-      <PageHeader
-        title={doc.title}
-        description={`${doc.clientName} vs ${doc.counterpartyName}`}
-        action={<StatusBadge status={doc.status} />}
-        backHref="/dashboard"
-        backLabel="Dashboard"
-      />
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="space-y-3 border-b border-line bg-canvas px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link
+            href="/documents"
+            className="inline-flex items-center gap-1 text-meta text-muted-fg hover:text-ink"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden />
+            Documents
+          </Link>
 
-      <div className="mb-6 rounded-card border border-line bg-paper p-4 shadow-card">
+          {doc.status === "settled" && (
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/documents/${doc.id}/checklist`}>
+                Execution checklist
+              </Link>
+            </Button>
+          )}
+        </div>
+
         <DocumentStatusTrail status={doc.status} />
-      </div>
 
-      {/* QA 3.3: duration, governing law and key terms used to be
-          collected by the intake wizard and silently discarded — never
-          persisted, never shown anywhere on the resulting document. */}
-      <div className="mb-6 rounded-card border border-line bg-paper p-4 shadow-card">
-        <p className="mb-3 text-small font-medium text-muted-fg">
-          Deal brief
-        </p>
-        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div>
-            <dt className="text-small text-muted-fg">Duration</dt>
-            <dd className="text-body text-ink">
-              {doc.durationMonths > 0
-                ? `${doc.durationMonths} months`
-                : "Not specified"}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-small text-muted-fg">Governing law</dt>
-            <dd className="text-body text-ink">
-              {doc.governingLaw || "Not specified"}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-small text-muted-fg">Key terms</dt>
-            <dd className="text-body text-ink">
-              {doc.keyTerms ?? "Not specified"}
-            </dd>
-          </div>
-        </dl>
-      </div>
+        {/* QA 3.3: duration, governing law and key terms were collected at
+            intake and silently discarded. They are the deal brief the
+            draft was built from, so they stay visible with it. */}
+        <Dateline
+          segments={[
+            doc.counterpartyName,
+            doc.durationMonths > 0 ? `${doc.durationMonths} months` : null,
+            doc.governingLaw || null,
+            doc.keyTerms,
+          ]}
+        />
 
-      {doc.status === "settled" && (
-        <div className="mb-6 flex items-center justify-between rounded-card border border-verified/30 bg-verified/10 p-4">
-          <p className="text-body text-ink">
-            Settled by {doc.advocate?.name} on{" "}
-            {doc.settledAt && format(new Date(doc.settledAt), "d MMM yyyy")}.
+        {doc.status === "settled" && doc.advocate && (
+          <p className="text-meta text-ink">
+            Settled by {doc.advocate.name}
+            {doc.settledAt &&
+              ` on ${format(new Date(doc.settledAt), "d MMM yyyy")}`}
+            .
           </p>
-          <Button asChild size="sm" variant="outline">
-            <Link href={`/documents/${doc.id}/checklist`}>
-              View execution checklist
-            </Link>
-          </Button>
-        </div>
-      )}
+        )}
+      </div>
 
-      {doc.findings.length === 0 ? (
-        <div className="rounded-card border border-line bg-paper p-6 text-body text-muted-fg shadow-card">
-          {doc.status === "draft"
-            ? "Starting the pipeline…"
-            : "No findings on this document — the full settled text is available on the execution checklist page, which you can print or save as a PDF."}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
-          <nav className="space-y-1">
-            <p className="mb-2 text-small font-medium text-muted-fg">
-              Clause outline
-            </p>
-            {doc.findings.map((f) => (
-              <a
-                key={f.findingId}
-                href={`#${f.findingId}`}
-                className="block rounded-control px-2 py-1.5 text-small text-ink hover:bg-canvas"
-              >
-                {f.clauseReference}
-              </a>
-            ))}
-          </nav>
-          <div className="space-y-4">
-            {doc.findings.map((f) => (
-              <div key={f.findingId} id={f.findingId}>
-                <FindingCard finding={f} mode="read-only" />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <div className="min-h-0 flex-1">
+        {/* Read-only. Only an advocate adjudicates, so this carries no
+            settle control, no rule ids and no override notes. */}
+        <DocumentWorkspace
+          doc={doc}
+          role="client"
+          onSettle={() => undefined}
+          onReopen={() => undefined}
+        />
+      </div>
     </div>
   );
 }
