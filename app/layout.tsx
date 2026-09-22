@@ -71,7 +71,13 @@ export default function RootLayout({
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link rel="stylesheet" href={MATERIAL_SYMBOLS_HREF} />
       </head>
-      <body className="min-h-full flex flex-col">
+      {/* The column is what keeps a short page's footer at the bottom.
+          Children stretch to it by default, but a child that centres
+          itself with `mx-auto` would otherwise shrink to its own content
+          width — which is how every section on the landing page ended up
+          narrower than the canvas it was given. `items-stretch` is the
+          default; `[&>*]:w-full` is what holds it against auto margins. */}
+      <body className="flex min-h-full flex-col [&>*]:w-full">
         <SessionProvider>
           {children}
           <Toaster />

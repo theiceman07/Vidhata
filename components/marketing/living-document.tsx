@@ -10,7 +10,7 @@ import {
 } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Dateline } from "@/components/document/dateline";
-import { Seal } from "@/components/document/seal";
+import { getMockDocumentById } from "@/lib/mock/documents.mock";
 
 /**
  * The living document.
@@ -27,6 +27,9 @@ import { Seal } from "@/components/document/seal";
  * stages, stacked and labelled, with no pinning and no scroll hijack.
  */
 
+/** The advocate who signs off in the settled fixture. */
+const ADVOCATE = getMockDocumentById("doc-nda-settled")?.advocate;
+
 const STAGES = [
   { n: "01", label: "Document", caption: "As drafted" },
   { n: "02", label: "AI interpretation", caption: "Finding raised" },
@@ -34,11 +37,14 @@ const STAGES = [
   { n: "04", label: "Trusted release", caption: "Settled" },
 ] as const;
 
-const FINDING =
-  "The fifteen-day notice period may be shorter than the statutory minimum applicable to this class of tenancy. Confirm before release.";
-
-const ADVOCATE_NOTE =
-  "Notice period extended to thirty days. The revised wording is within the period this class of tenancy requires.";
+// The MSA fixture's payment-terms finding, verbatim, with the source the
+// pipeline actually verified against the corpus. Nothing on this page is
+// drafted for the page: an unsourced concern in a marketing section would
+// be exactly the "probably fine" the product refuses to produce.
+const MSA = getMockDocumentById("doc-msa-pending");
+const FINDING = MSA?.findings.find((f) => f.clauseReference === "Clause 4.1");
+const CLAUSE = MSA?.clauses.find((c) => c.number === "4.1");
+const CITATION = FINDING?.citations[0];
 
 /**
  * The document itself. `stage` drives what is shown, so the animated and
@@ -49,16 +55,21 @@ function DocumentCard({ stage }: { stage: number }) {
   const revised = stage >= 2;
   const settled = stage >= 3;
 
+  if (!FINDING || !CLAUSE || !CITATION) return null;
+
   return (
-    <div className="bg-paper p-6 sm:p-10">
-      <Dateline segments={["Clause 7.1"]} />
-      <h3 className="mt-1 font-display text-h2 text-ink">Termination</h3>
+    // The clause keeps a reading measure even though the canvas is wide:
+    // legal prose set to the full width of a desk is unreadable.
+    <div className="max-w-measure bg-paper p-6 sm:p-10">
+      <Dateline segments={[`Clause ${CLAUSE.number}`]} />
+      <h3 className="mt-1 font-display text-h2 text-ink">{CLAUSE.heading}</h3>
 
       <p className="mt-4 font-display text-body leading-relaxed text-ink">
-        Either party may terminate this agreement by giving{" "}
+        The Service Provider shall invoice the Client monthly in arrears.
+        Payment shall be made within{" "}
         {revised ? (
           <span className="border-b border-accent bg-accent/[0.08]">
-            thirty days&rsquo;
+            forty-five (45) days
           </span>
         ) : (
           <span
@@ -67,14 +78,14 @@ function DocumentCard({ stage }: { stage: number }) {
               stage >= 1 && "border-b border-caution bg-caution/[0.15]",
             )}
           >
-            fifteen days&rsquo;
+            sixty (60) days
           </span>
         )}{" "}
-        written notice to the other, without assigning any reason.
+        of receipt of a valid invoice.
       </p>
 
       {/* Stage 02 · the concern, attached to its clause, with its source
-          named at the same moment. */}
+          named at the same moment. Never behind a disclosure. */}
       {stage >= 1 && (
         <div
           className={cn(
@@ -82,11 +93,11 @@ function DocumentCard({ stage }: { stage: number }) {
             settled ? "border-verified" : "border-caution",
           )}
         >
-          <Dateline segments={["Finding 04", settled ? "Settled" : "Open"]} />
-          <p className="mt-2 text-meta text-ink">{FINDING}</p>
+          <Dateline segments={["Finding 02", settled ? "Settled" : "Open"]} />
+          <p className="mt-2 text-meta text-ink">{FINDING.description}</p>
           <Dateline
-            segments={["Raised by AI first pass"]}
-            className="mt-2"
+            segments={["Source", CITATION.text, "Citation verified"]}
+            className="mt-3"
           />
         </div>
       )}
@@ -94,23 +105,26 @@ function DocumentCard({ stage }: { stage: number }) {
       {/* Stage 03 · a human has touched this passage. */}
       {stage >= 2 && (
         <div className="mt-4 border-l-2 border-accent pl-4">
-          <Dateline segments={["Advocate note", "R. Kapoor"]} />
-          <p className="mt-2 text-meta text-ink">{ADVOCATE_NOTE}</p>
+          <Dateline
+            segments={["Advocate note", ADVOCATE?.name ?? "Advocate"]}
+          />
+          <p className="mt-2 text-meta text-ink">{FINDING.remedySuggested}</p>
         </div>
       )}
 
-      {/* Stage 04 · the seal, once, at the end. */}
+      {/* Stage 04 · settled, and attributable. The seal itself belongs to
+          the sign-off section, where it is struck once. */}
       {settled && (
-        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-6">
+        <div className="mt-8 flex flex-wrap items-baseline justify-between gap-4 border-t border-line pt-6">
           <div>
             <Dateline segments={["Advocate"]} />
-            <p className="mt-1 font-display text-h3 text-ink">R. Kapoor</p>
-            <Dateline
-              segments={["Bar council no. D/1842/2016", "Empanelled"]}
-              className="mt-1"
-            />
+            <p className="mt-1 font-display text-h3 text-ink">
+              {ADVOCATE?.name ?? "Advocate"}
+            </p>
           </div>
-          <Seal className="h-16 w-16" />
+          <p className="font-mono text-notation uppercase tracking-notation text-accent">
+            Settled · 0 open findings
+          </p>
         </div>
       )}
     </div>
@@ -204,9 +218,12 @@ export function LivingDocument() {
   // arc is information, so it must survive the animation being removed.
   if (reduced) {
     return (
-      <section className="mx-auto max-w-4xl px-6 py-[clamp(72px,10vw,140px)]">
+      <section
+        id="arc"
+        className="mx-auto max-w-[95rem] px-6 py-[clamp(72px,10vw,140px)] lg:px-10"
+      >
         <Header />
-        <div className="mt-12">
+        <div className="mt-12 max-w-3xl">
           {STAGES.map((_, i) => (
             <StaticStage key={i} index={i} />
           ))}
@@ -216,13 +233,16 @@ export function LivingDocument() {
   }
 
   return (
-    <section className="mx-auto max-w-4xl px-6 py-[clamp(72px,10vw,140px)]">
+    <section
+      id="arc"
+      className="mx-auto max-w-[95rem] px-6 py-[clamp(72px,10vw,140px)] lg:px-10"
+    >
       <Header />
 
       {/* Two screens of scroll drive four stages, then release. */}
       <div ref={ref} className="relative mt-12 h-[240svh]">
-        <div className="sticky top-[12vh]">
-          <ol className="grid grid-cols-2 gap-x-6 gap-y-3 border-b border-line pb-4 sm:grid-cols-4">
+        <div className="sticky top-[12vh] grid gap-x-16 gap-y-8 lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
+          <ol className="grid grid-cols-2 gap-x-6 gap-y-3 border-b border-line pb-4 sm:grid-cols-4 lg:block lg:space-y-6 lg:border-b-0 lg:border-l lg:pb-0 lg:pl-5">
             {STAGES.map((stage, i) => (
               <StageIndexItem
                 key={stage.n}
@@ -233,7 +253,7 @@ export function LivingDocument() {
             ))}
           </ol>
 
-          <div className="relative mt-6 min-h-[30rem]">
+          <div className="relative min-h-[30rem] border border-line">
             {STAGES.map((_, i) => (
               <AnimatedStage key={i} progress={scrollYProgress} index={i} />
             ))}
