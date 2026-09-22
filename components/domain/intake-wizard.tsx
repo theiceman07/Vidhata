@@ -140,39 +140,40 @@ export function IntakeWizard() {
   });
 
   return (
-    <div className="mx-auto max-w-xl">
-      <ol className="mb-6 flex items-center gap-2">
+    <div className="grid max-w-5xl gap-x-16 gap-y-8 md:grid-cols-[minmax(0,14rem)_minmax(0,32rem)]">
+      {/* The steps are a schedule down the margin, not a row of numbered
+          discs: the same notation the rest of the product uses to say
+          where you are. */}
+      <ol className="space-y-3 md:sticky md:top-10 md:self-start">
         {STEP_LABELS.map((label, i) => (
-          <li key={label} className="flex flex-1 items-center gap-2">
-            <span
-              className={cn(
-                "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-small font-medium",
-                i <= step
-                  ? "bg-accent text-accent-fg"
-                  : "bg-line text-muted-fg",
-              )}
-            >
-              {i + 1}
+          <li
+            key={label}
+            aria-current={i === step ? "step" : undefined}
+            className={cn(
+              "flex items-baseline gap-3 border-l-2 py-1 pl-4",
+              i === step
+                ? "border-ink"
+                : i < step
+                  ? "border-verified"
+                  : "border-line",
+            )}
+          >
+            <span className="font-mono text-notation tracking-notation text-muted-fg">
+              {String(i + 1).padStart(2, "0")}
             </span>
             <span
               className={cn(
-                "text-small",
+                "text-meta",
                 i === step ? "font-medium text-ink" : "text-muted-fg",
               )}
             >
               {label}
             </span>
-            {i < STEP_LABELS.length - 1 && (
-              <span className="h-px flex-1 bg-line" aria-hidden />
-            )}
           </li>
         ))}
       </ol>
 
-      <form
-        onSubmit={onSubmit}
-        className="space-y-4 rounded-card border border-line bg-paper p-6 shadow-card"
-      >
+      <form onSubmit={onSubmit} className="space-y-5">
         {step === 0 && (
           <>
             <div>

@@ -26,6 +26,18 @@ off. The client gets the settled document plus an execution checklist
 - Types come from lib/types.ts. Do not redeclare shapes inline.
 - Tailwind tokens only (bg-paper, text-ink, border-line). No raw hex.
 - Every list view needs loading, empty and error states.
+- Icons come from Google Material Symbols Outlined through
+  components/shared/icon.tsx. The font is subset to ICON_NAMES, so a new
+  icon means adding its name there. No other icon library.
+- Both portals share components/shared/app-shell.tsx. Role switching is a
+  preview-only item inside the identity menu, never a control in the
+  product's visual layer.
+- The mark lives in components/shared/brand-logo.tsx (BrandMark/BrandLogo)
+  and is drawn as a path, so app/icon.svg and app/apple-icon.png can reuse
+  the same geometry.
+- body is a flex column. A container that centres itself with mx-auto is
+  shrink-to-fit there, so it also needs w-full (app/layout.tsx holds the
+  rule that does this globally).
 
 ## Vocabulary (use these exact words in UI copy)
 - advocate, not lawyer, in client-facing copy
