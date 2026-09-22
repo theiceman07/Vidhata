@@ -20,8 +20,9 @@ type LoadState = "loading" | "error" | "loaded";
  * The work queue.
  *
  * Deliberately not a KPI dashboard. It answers one question — what
- * requires a decision — so documents needing attention sort first and
- * the count of them is the headline rather than a total.
+ * requires a decision — so the document that needs one is set larger
+ * than the rest, and everything settled recedes to a quiet list. The
+ * count of what is waiting is the headline rather than a total.
  */
 
 /** Documents awaiting attention sort above settled work. */
@@ -82,12 +83,13 @@ export default function DocumentsPage() {
 
   if (state === "loading") {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-12">
-        <Skeleton className="h-12 w-2/3" />
-        <div className="mt-decision space-y-px">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
+      <div className="mx-auto max-w-[90rem]">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="mt-4 h-12 w-2/3 max-w-xl" />
+        <div className="mt-decision space-y-4">
+          <Skeleton className="h-40 w-full max-w-3xl" />
+          <Skeleton className="h-16 w-full max-w-3xl" />
+          <Skeleton className="h-16 w-full max-w-3xl" />
         </div>
       </div>
     );
@@ -99,16 +101,22 @@ export default function DocumentsPage() {
 
   if (docs.length === 0) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-12">
-        <EmptyState
-          title="No documents yet"
-          description="Describe a deal and the first pass will draft it. An advocate settles it before it reaches you."
-          action={
-            <Button asChild>
-              <Link href="/new">Start a document</Link>
-            </Button>
-          }
-        />
+      <div className="mx-auto max-w-[90rem]">
+        <Dateline segments={[greeting()]} />
+        <h1 className="mt-3 font-display text-h1 text-ink">
+          The desk is clear.
+        </h1>
+        <div className="mt-decision max-w-xl">
+          <EmptyState
+            title="No documents yet"
+            description="Describe a deal and the first pass will draft it. An advocate settles it before it reaches you."
+            action={
+              <Button asChild>
+                <Link href="/new">Start a document</Link>
+              </Button>
+            }
+          />
+        </div>
       </div>
     );
   }
@@ -116,47 +124,187 @@ export default function DocumentsPage() {
   const sorted = [...docs].sort(
     (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status],
   );
-  const needing = sorted.filter(
-    (d) => STATUS_ORDER[d.status] <= STATUS_ORDER.under_review,
+  const waiting = sorted.filter(
+    (d) => STATUS_ORDER[d.status] <= STATUS_ORDER.draft,
+  );
+  const settled = sorted.filter(
+    (d) => STATUS_ORDER[d.status] > STATUS_ORDER.draft,
+  );
+
+  // The document that most needs a decision is the screen's subject.
+  const [lead, ...rest] = waiting;
+  const awaitingAdvocate = waiting.filter(
+    (d) => d.status === "pending_review" || d.status === "under_review",
   ).length;
+  // "Changes requested" is the one state where the next move is the
+  // client's, so it outranks anything sitting with an advocate.
+  const needsYou = waiting.filter((d) => d.status === "revision").length;
+
+  // Execution is work the client still owes after sign-off, and it is the
+  // only thing on this screen that is not about waiting.
+  const outstanding = settled.filter((doc) =>
+    doc.executionSteps.some((step) => step.applicable && !step.complete),
+  );
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12">
-      <header>
-        <Dateline segments={[greeting()]} />
-        {/* The one display moment on this screen. */}
-        <h1 className="mt-3 font-display text-h1 text-ink">
-          {needing === 0
-            ? "Nothing is waiting on you."
-            : `${needing} ${needing === 1 ? "document is" : "documents are"} awaiting advocate review.`}
-        </h1>
-      </header>
-
-      <ul className="mt-decision border-t border-line">
-        {sorted.map((doc) => (
-          <li key={doc.id} className="border-b border-line">
-            <Link
-              href={`/documents/${doc.id}`}
-              className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 py-5 transition-colors hover:bg-parchment/60"
-            >
-              <div className="min-w-0">
-                <p className="font-display text-h3 text-ink">{doc.title}</p>
-                <Dateline
-                  segments={[doc.type.toUpperCase(), standing(doc)]}
-                  className="mt-1"
-                />
-              </div>
-              <StateLabel state={doc.status} />
-            </Link>
-          </li>
-        ))}
-      </ul>
-
-      <div className="mt-decision">
-        <Button asChild variant="outline">
+    <div className="mx-auto max-w-[90rem]">
+      <header className="flex flex-wrap items-end justify-between gap-6">
+        <div>
+          <Dateline segments={[greeting(), MOCK_CLIENT_ORG.name]} />
+          {/* The one display moment on this screen. */}
+          <h1 className="mt-3 max-w-2xl font-display text-h1 text-ink">
+            {needsYou > 0
+              ? `${needsYou} ${needsYou === 1 ? "document needs" : "documents need"} your attention.`
+              : awaitingAdvocate > 0
+                ? `${awaitingAdvocate} ${awaitingAdvocate === 1 ? "document is" : "documents are"} awaiting advocate review.`
+                : "Nothing is waiting on you."}
+          </h1>
+        </div>
+        <Button asChild>
           <Link href="/new">Start a document</Link>
         </Button>
+      </header>
+
+      <div className="mt-decision grid gap-x-16 gap-y-12 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div>
+          {lead && <LeadDocument doc={lead} />}
+
+          {rest.length > 0 && (
+            <section className="mt-decision">
+              <SectionHeading>Also in progress</SectionHeading>
+              <ul className="border-t border-line">
+                {rest.map((doc) => (
+                  <DocumentRow key={doc.id} doc={doc} />
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {settled.length > 0 && (
+            <section className="mt-decision">
+              <SectionHeading>Settled</SectionHeading>
+              <ul className="border-t border-line">
+                {settled.map((doc) => (
+                  <DocumentRow key={doc.id} doc={doc} />
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
+
+        {outstanding.length > 0 && (
+          <aside className="xl:border-l xl:border-line xl:pl-10">
+            <SectionHeading>To execute</SectionHeading>
+            <ul className="space-y-6 border-t border-line pt-5">
+              {outstanding.map((doc) => {
+                const steps = doc.executionSteps.filter((s) => s.applicable);
+                const done = steps.filter((s) => s.complete).length;
+
+                return (
+                  <li key={doc.id}>
+                    <Link
+                      href={`/documents/${doc.id}/checklist`}
+                      className="group block"
+                    >
+                      <p className="font-display text-h3 text-ink group-hover:underline">
+                        {doc.title}
+                      </p>
+                      <p className="mt-1 text-meta text-muted-fg">
+                        {done} of {steps.length} steps complete on the execution
+                        checklist.
+                      </p>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </aside>
+        )}
       </div>
     </div>
+  );
+}
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="mb-5 font-mono text-notation uppercase tracking-notation text-muted-fg">
+      {children}
+    </h2>
+  );
+}
+
+/** What is actually happening to this document, and whose move it is. */
+const LEAD_NOTE: Record<ContractDocument["status"], string> = {
+  draft: "This document has not been submitted yet. Nothing reaches an advocate until it is.",
+  analysing:
+    "The first pass is drafting and screening the document. Nothing reaches an advocate until it finishes.",
+  pending_review:
+    "The document is in the advocate queue. You will be able to read it once it is settled and signed off.",
+  under_review:
+    "An advocate is working through the findings. You will be able to read the settled document once it is signed off.",
+  revision:
+    "An advocate has asked for changes before this document can be settled. Open it to read what they need.",
+  settled: "Settled and signed off. The execution checklist is ready.",
+  executed: "Executed. Stamping and signature are recorded as complete.",
+};
+
+/**
+ * The document in front of you, set at the size of its importance.
+ * Hierarchy here is scale and space, not a coloured card.
+ */
+function LeadDocument({ doc }: { doc: ContractDocument }) {
+  const open = openFindingCount(doc);
+  const blocked = hasBlockedCitation(doc);
+  const standingNote = LEAD_NOTE[doc.status];
+
+  return (
+    <section className="border-t-2 border-ink pt-6">
+      <div className="flex flex-wrap items-center gap-3">
+        <StateLabel state={doc.status} />
+        {blocked && (
+          <span className="font-mono text-notation uppercase tracking-notation text-flagged">
+            1 citation unresolved
+          </span>
+        )}
+      </div>
+
+      <h2 className="mt-4 max-w-3xl font-display text-h1 text-ink">
+        {doc.title}
+      </h2>
+      <p className="mt-2 text-body text-ink">
+        {doc.counterpartyName}
+        <span className="mx-2 text-line">·</span>
+        {open > 0
+          ? `${open} open ${open === 1 ? "finding" : "findings"}`
+          : standing(doc)}
+      </p>
+
+      <p className="mt-4 max-w-xl text-meta text-muted-fg">{standingNote}</p>
+
+      <div className="mt-8">
+        <Button asChild size="lg">
+          <Link href={`/documents/${doc.id}`}>Open the document</Link>
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+/** Everything that is not the subject of the screen. Quieter, in a row. */
+function DocumentRow({ doc }: { doc: ContractDocument }) {
+  return (
+    <li className="border-b border-line">
+      <Link
+        href={`/documents/${doc.id}`}
+        className="grid gap-x-8 gap-y-2 py-5 transition-colors hover:bg-parchment/50 sm:grid-cols-[minmax(0,1fr)_14rem_auto] sm:items-baseline"
+      >
+        <div className="min-w-0">
+          <p className="font-display text-h3 text-ink">{doc.title}</p>
+          <p className="mt-1 text-meta text-muted-fg">{doc.counterpartyName}</p>
+        </div>
+        <p className="text-meta text-ink">{standing(doc)}</p>
+        <StateLabel state={doc.status} className="justify-self-start" />
+      </Link>
+    </li>
   );
 }

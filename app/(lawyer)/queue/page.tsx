@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
+import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { StateLabel } from "@/components/document/state-label";
@@ -25,13 +26,17 @@ type LoadState = "loading" | "error" | "loaded";
 /**
  * The review queue.
  *
- * A queue, not a personal document list: it is ordered by what most
- * needs an advocate, and every row states the shape of the work waiting
- * inside it rather than a generic status.
+ * A queue, not a personal document list. It answers one question — what
+ * requires my judgment — so work already in the advocate's hands leads
+ * the screen, unclaimed work follows in the order it should be offered,
+ * and everything settled is a record rather than a task.
+ *
+ * Monospace is for notation, not for sentences: the shape of the work is
+ * said in words and only the states are set as notation.
  */
 
-/** "3 findings · 1 high, 2 medium" — the shape of the work in one line. */
-function findingSummary(doc: ContractDocument): string | null {
+/** "1 high, 2 medium" — the shape of the work in one phrase. */
+function severityPhrase(doc: ContractDocument): string | null {
   if (doc.findings.length === 0) return null;
 
   const counts: Record<Severity, number> = { high: 0, medium: 0, low: 0 };
@@ -39,41 +44,72 @@ function findingSummary(doc: ContractDocument): string | null {
     counts[f.severity] += 1;
   });
 
-  const parts = (["high", "medium", "low"] as Severity[])
+  return (["high", "medium", "low"] as Severity[])
     .filter((s) => counts[s] > 0)
-    .map((s) => `${counts[s]} ${s}`);
-
-  const total = doc.findings.length;
-  return `${total} ${total === 1 ? "finding" : "findings"} · ${parts.join(", ")}`;
+    .map((s) => `${counts[s]} ${s}`)
+    .join(", ");
 }
 
 function QueueRow({
   doc,
   action,
+  lead = false,
 }: {
   doc: ContractDocument;
   action: React.ReactNode;
+  /** The work in hand is set larger than the work on offer. */
+  lead?: boolean;
 }) {
   const open = openFindingCount(doc);
+  const blocked = hasBlockedCitation(doc);
+  const shape = severityPhrase(doc);
 
   return (
     <li className="border-b border-line">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-3 py-5">
+      <div className="grid gap-x-10 gap-y-4 py-6 lg:grid-cols-[minmax(0,1fr)_16rem_auto] lg:items-baseline">
         <div className="min-w-0">
-          <p className="font-display text-h3 text-ink">{doc.title}</p>
-          <Dateline
-            segments={[
-              doc.clientName,
-              `${doc.tier} tier`,
-              findingSummary(doc),
-              open > 0 ? `${open} open` : null,
-              hasBlockedCitation(doc) ? "Citation blocked" : null,
-              `In queue ${formatDistanceToNow(new Date(doc.createdAt))}`,
-            ]}
-            className="mt-1"
-          />
+          <h3
+            className={cn(
+              "font-display text-ink",
+              lead ? "text-h2" : "text-h3",
+            )}
+          >
+            <Link
+              href={`/review/${doc.id}`}
+              className="transition-colors hover:text-accent"
+            >
+              {doc.title}
+            </Link>
+          </h3>
+          <p className="mt-1 text-meta text-muted-fg">
+            {doc.clientName}
+            <span className="mx-2 text-line">·</span>
+            {doc.tier} tier
+            <span className="mx-2 text-line">·</span>
+            in queue {formatDistanceToNow(new Date(doc.createdAt))}
+          </p>
         </div>
-        <div className="flex shrink-0 items-center gap-3">
+
+        <div>
+          <p className="text-meta text-ink">
+            {open > 0
+              ? `${open} open ${open === 1 ? "finding" : "findings"}`
+              : "No open findings"}
+            {shape && (
+              <span className="text-muted-fg">
+                <span className="mx-2 text-line">·</span>
+                {shape}
+              </span>
+            )}
+          </p>
+          {blocked && (
+            <p className="mt-1 font-mono text-notation uppercase tracking-notation text-flagged">
+              1 citation blocked
+            </p>
+          )}
+        </div>
+
+        <div className="flex shrink-0 items-center gap-3 lg:justify-self-end">
           <StateLabel state={doc.status} />
           {action}
         </div>
@@ -167,12 +203,12 @@ export default function QueuePage() {
 
   if (state === "loading") {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-12">
-        <Skeleton className="h-12 w-2/3" />
-        <div className="mt-decision space-y-px">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
+      <div className="mx-auto max-w-[90rem]">
+        <Skeleton className="h-4 w-48" />
+        <Skeleton className="mt-4 h-12 w-2/3 max-w-xl" />
+        <div className="mt-decision space-y-4">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
         </div>
       </div>
     );
@@ -182,22 +218,42 @@ export default function QueuePage() {
     return <ErrorState message={errorMessage} onRetry={load} />;
   }
 
-  const waiting = unclaimed.length + claimed.length;
+  const inHand = [...claimed, ...unclaimed];
+  const waiting = inHand.length;
+  const unresolved = inHand.reduce((sum, d) => sum + openFindingCount(d), 0);
+  const blockedCount = inHand.filter(hasBlockedCitation).length;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12">
-      <header>
-        <Dateline segments={[CURRENT_ADVOCATE.name, CURRENT_ADVOCATE.bar]} />
-        {/* The one display moment on this screen. */}
-        <h1 className="mt-3 font-display text-h1 text-ink">
-          {waiting === 0
-            ? "Nothing is awaiting review."
-            : `${waiting} ${waiting === 1 ? "document needs" : "documents need"} your review.`}
-        </h1>
+    <div className="mx-auto max-w-[90rem]">
+      <header className="flex flex-wrap items-end justify-between gap-x-16 gap-y-6">
+        <div>
+          <Dateline segments={[CURRENT_ADVOCATE.name, CURRENT_ADVOCATE.bar]} />
+          {/* The one display moment on this screen. */}
+          <h1 className="mt-3 max-w-2xl font-display text-h1 text-ink">
+            {waiting === 0
+              ? "Nothing is awaiting review."
+              : `${waiting} ${waiting === 1 ? "document needs" : "documents need"} your review.`}
+          </h1>
+        </div>
+
+        {waiting > 0 && (
+          <p className="text-body text-ink">
+            {unresolved} {unresolved === 1 ? "finding" : "findings"} unresolved
+            {blockedCount > 0 && (
+              <>
+                <span className="mx-2 text-line">·</span>
+                <span className="text-flagged">
+                  {blockedCount} {blockedCount === 1 ? "citation" : "citations"}{" "}
+                  blocked
+                </span>
+              </>
+            )}
+          </p>
+        )}
       </header>
 
       {!available && (
-        <p className="mt-6 border-l-2 border-caution pl-4 text-meta text-ink">
+        <p className="mt-8 border-l-2 border-caution pl-4 text-meta text-ink">
           You are marked unavailable for new claims. Change this in{" "}
           <Link href="/profile" className="text-accent underline">
             your profile
@@ -208,14 +264,13 @@ export default function QueuePage() {
 
       {claimed.length > 0 && (
         <section className="mt-decision">
-          <h2 className="font-mono text-notation uppercase tracking-notation text-muted-fg">
-            Claimed by you
-          </h2>
-          <ul className="mt-4 border-t border-line">
+          <SectionHeading>Claimed by you</SectionHeading>
+          <ul className="border-t-2 border-ink">
             {claimed.map((doc) => (
               <QueueRow
                 key={doc.id}
                 doc={doc}
+                lead
                 action={
                   <Button asChild size="sm">
                     <Link href={`/review/${doc.id}`}>Continue review</Link>
@@ -228,22 +283,21 @@ export default function QueuePage() {
       )}
 
       <section className="mt-decision">
-        <h2 className="font-mono text-notation uppercase tracking-notation text-muted-fg">
-          Unclaimed
-        </h2>
+        <SectionHeading>Unclaimed</SectionHeading>
         {unclaimed.length === 0 ? (
-          <div className="mt-4 border-t border-line pt-6">
+          <div className="border-t border-line pt-6">
             <EmptyState
-              title="No documents awaiting review"
+              title="The desk is clear."
               description="Work arrives here once the first pass completes. Documents on the enhanced and senior tiers are offered first."
             />
           </div>
         ) : (
-          <ul className="mt-4 border-t border-line">
+          <ul className="border-t border-line">
             {unclaimed.map((doc) => (
               <QueueRow
                 key={doc.id}
                 doc={doc}
+                lead={claimed.length === 0}
                 action={
                   <Button
                     size="sm"
@@ -261,10 +315,8 @@ export default function QueuePage() {
 
       {settled.length > 0 && (
         <section className="mt-decision">
-          <h2 className="font-mono text-notation uppercase tracking-notation text-muted-fg">
-            Settled by you
-          </h2>
-          <ul className="mt-4 border-t border-line">
+          <SectionHeading>Settled by you</SectionHeading>
+          <ul className="border-t border-line">
             {settled.map((doc) => (
               <QueueRow
                 key={doc.id}
@@ -280,5 +332,13 @@ export default function QueuePage() {
         </section>
       )}
     </div>
+  );
+}
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="mb-5 font-mono text-notation uppercase tracking-notation text-muted-fg">
+      {children}
+    </h2>
   );
 }
