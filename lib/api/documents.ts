@@ -1,10 +1,11 @@
 import type {
+  Clause,
   ContractDocument,
   ExecutionStep,
   Finding,
   ReviewTier,
 } from "@/lib/types";
-import { PIPELINE_DURATION_MS } from "@/lib/types";
+import { PIPELINE_DURATION_MS, clauseNumberFromReference } from "@/lib/types";
 import { mockDocuments } from "@/lib/mock/documents.mock";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
@@ -118,6 +119,22 @@ function reconcileAnalysis(doc: ContractDocument): void {
   doc.findings = structuredClone(
     mockDocuments.find((d) => d.id === "doc-msa-pending")?.findings ?? [],
   ).map((f, i) => ({ ...f, findingId: `${doc.id}-finding-${i}` }));
+
+  // A finding is a note in the margin of a clause, so the join has to hold
+  // in both directions. buildClauses drafts the three clauses these
+  // findings quote; attach each finding to its clause, and drop any
+  // finding whose clause is not in this document rather than leaving it
+  // pointing at nothing.
+  const byNumber = new Map(doc.clauses.map((c) => [c.number, c]));
+  doc.clauses.forEach((c) => {
+    c.findingIds = [];
+  });
+  doc.findings = doc.findings.filter((f) => {
+    const clause = byNumber.get(clauseNumberFromReference(f.clauseReference));
+    if (!clause) return false;
+    clause.findingIds.push(f.findingId);
+    return true;
+  });
 }
 
 function reconcileAll(): void {
@@ -169,6 +186,104 @@ export interface IntakeInput {
   keyTerms: string;
 }
 
+// A drafted document needs a body, or the workspace has nothing to
+// annotate. The pipeline's clause drafting layer (layer 1) would assemble
+// these from the curated corpus; here they are a standard skeleton with
+// the intake facts interpolated. Contract language only, never statute.
+function buildClauses(input: IntakeInput): Clause[] {
+  const counterparty = input.counterpartyName || "the Counterparty";
+  const term = input.durationMonths
+    ? `continues for ${input.durationMonths} months`
+    : "continues until terminated in accordance with this Agreement";
+
+  return [
+    {
+      id: "cl-1",
+      number: "1.1",
+      heading: "Parties",
+      body: `This Agreement is made between ${input.clientName} and ${counterparty}, and is executed in ${input.stateOfExecution}.`,
+      findingIds: [],
+      revisedAt: null,
+    },
+    {
+      id: "cl-2",
+      number: "2.1",
+      heading: "Scope",
+      body:
+        input.keyTerms.trim() ||
+        "The scope of this Agreement is as described in the Schedule, which forms part of this Agreement.",
+      findingIds: [],
+      revisedAt: null,
+    },
+    {
+      id: "cl-3",
+      number: "3.1",
+      heading: "Consideration",
+      body: input.transactionValue
+        ? `The total consideration payable under this Agreement is Rs ${input.transactionValue.toLocaleString("en-IN")}, payable in accordance with Clause 4.1.`
+        : "No monetary consideration is payable under this Agreement; the mutual covenants set out below constitute sufficient consideration.",
+      findingIds: [],
+      revisedAt: null,
+    },
+    {
+      id: "cl-4",
+      number: "4.1",
+      heading: "Payment terms",
+      body: "Payment shall be made within sixty (60) days of receipt of a valid invoice.",
+      findingIds: [],
+      revisedAt: null,
+    },
+    {
+      id: "cl-5",
+      number: "5.1",
+      heading: "Confidentiality",
+      body: "Each party shall keep confidential all information of the other party that is designated as confidential or that ought reasonably to be regarded as confidential, and shall not use it other than for the performance of this Agreement.",
+      findingIds: [],
+      revisedAt: null,
+    },
+    {
+      id: "cl-6",
+      number: "6.1",
+      heading: "Term",
+      body: `This Agreement commences on the date of last signature and ${term}.`,
+      findingIds: [],
+      revisedAt: null,
+    },
+    {
+      id: "cl-7",
+      number: "6.2",
+      heading: "Termination",
+      body: "Either party may terminate this Agreement on thirty (30) days written notice, or immediately on written notice if the other party commits a material breach that it fails to remedy within thirty (30) days of being required to do so.",
+      findingIds: [],
+      revisedAt: null,
+    },
+    {
+      id: "cl-8",
+      number: "7.2",
+      heading: "Non-compete",
+      body: "The Service Provider shall not, for a period of three (3) years following termination, engage in any business activity within India that competes with the Client.",
+      findingIds: [],
+      revisedAt: null,
+    },
+    {
+      id: "cl-9",
+      number: "11.1",
+      heading: "Governing law",
+      body: `This Agreement is governed by the ${input.governingLaw}.`,
+      findingIds: [],
+      revisedAt: null,
+    },
+    {
+      id: "cl-10",
+      number: "11.4",
+      heading: "Dispute resolution",
+      body: "Any dispute arising under this Agreement shall be resolved by arbitration seated in Singapore.",
+      findingIds: [],
+      revisedAt: null,
+    },
+  ];
+}
+
 export async function createDraftDocument(
   input: IntakeInput,
 ): Promise<ContractDocument> {
@@ -199,6 +314,7 @@ export async function createDraftDocument(
     settledAt: null,
     analysisCompletesAt: null,
     advocate: null,
+    clauses: buildClauses(input),
     findings: [],
     executionSteps: [],
   };

@@ -1,9 +1,15 @@
 import type { ContractDocument } from "@/lib/types";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
+import {
+  ndaClauses,
+  msaClauses,
+  employmentClauses,
+  vendorClauses,
+} from "@/lib/mock/clauses.mock";
 
 const settledNda: ContractDocument = {
   id: "doc-nda-settled",
-  title: "Mutual NDA — Kavach Robotics",
+  title: "Mutual NDA · Kavach Robotics",
   type: "nda",
   status: "settled",
   tier: "standard",
@@ -20,6 +26,7 @@ const settledNda: ContractDocument = {
   settledAt: "2026-08-05T14:40:00.000Z",
   analysisCompletesAt: null,
   advocate: { id: "adv-1", name: "Rhea Kapoor", bar: "D/1842/2016" },
+  clauses: ndaClauses,
   findings: [],
   executionSteps: [
     {
@@ -63,7 +70,7 @@ const settledNda: ContractDocument = {
 
 const pendingReviewMsa: ContractDocument = {
   id: "doc-msa-pending",
-  title: "Master Services Agreement — Sundargarh Logistics",
+  title: "Master Services Agreement · Sundargarh Logistics",
   type: "msa",
   status: "pending_review",
   tier: "enhanced",
@@ -80,6 +87,7 @@ const pendingReviewMsa: ContractDocument = {
   settledAt: null,
   analysisCompletesAt: null,
   advocate: null,
+  clauses: msaClauses,
   findings: [
     {
       findingId: "find-1",
@@ -156,13 +164,13 @@ const pendingReviewMsa: ContractDocument = {
 
 const analysingEmployment: ContractDocument = {
   id: "doc-employment-analysing",
-  title: "Employment Agreement — Senior Engineer",
+  title: "Employment Agreement · Senior Engineer",
   type: "employment",
   status: "analysing",
   tier: "standard",
   orgId: "org-trivandrum-cloud-labs",
   clientName: "Trivandrum Cloud Labs Pvt Ltd",
-  counterpartyName: "Individual — Meera Nair",
+  counterpartyName: "Individual · Meera Nair",
   stateOfExecution: "Karnataka",
   transactionValue: 2400000,
   counterpartyIsMsme: false,
@@ -178,13 +186,14 @@ const analysingEmployment: ContractDocument = {
   // read, so this resolves to pending_review on first load.
   analysisCompletesAt: "2026-09-19T10:01:00.000Z",
   advocate: null,
+  clauses: employmentClauses,
   findings: [],
   executionSteps: [],
 };
 
 const revisionVendor: ContractDocument = {
   id: "doc-vendor-revision",
-  title: "Vendor Agreement — Packaging Supply",
+  title: "Vendor Agreement · Packaging Supply",
   type: "vendor",
   status: "revision",
   tier: "standard",
@@ -201,6 +210,7 @@ const revisionVendor: ContractDocument = {
   settledAt: null,
   analysisCompletesAt: null,
   advocate: { id: "adv-2", name: "Farhan Sheikh", bar: "TN/0932/2019" },
+  clauses: vendorClauses,
   findings: [
     {
       findingId: "find-4",

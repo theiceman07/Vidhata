@@ -18,6 +18,32 @@ export interface Citation {
   corpusRef: string | null; // null when blocked
 }
 
+/**
+ * A numbered clause of the contract. The document body exists so that a
+ * finding can be what it actually is — a note in the margin of a clause —
+ * rather than a tile in a dashboard.
+ *
+ * Backend note: clauses are a detail-page concern. List and queue
+ * endpoints must not return them. See Dashboard_Data_Spec.md.
+ */
+export interface Clause {
+  id: string;
+  /** "7.1". Joins to Finding.clauseReference ("Clause 7.1"). */
+  number: string;
+  heading: string; // "Termination"
+  /** Full prose. Paragraphs are separated by a blank line. */
+  body: string;
+  /** Finding.findingId values raised against this clause. */
+  findingIds: string[];
+  /** ISO timestamp, set when an advocate revises the wording. */
+  revisedAt: string | null;
+}
+
+/** "Clause 7.1" -> "7.1". The join between a finding and its clause. */
+export function clauseNumberFromReference(reference: string): string {
+  return reference.replace(/^clause\s+/i, "").trim();
+}
+
 export interface Finding {
   findingId: string;
   layer: PipelineLayer;
@@ -68,6 +94,12 @@ export interface ContractDocument {
   // reconciles this on every read instead of relying on a component timer.
   analysisCompletesAt: string | null;
   advocate: { id: string; name: string; bar: string } | null;
+  /**
+   * The document body. Required, not optional: a detail response without
+   * clauses has no document to annotate, and the workspace would render
+   * empty. List endpoints return a different, lighter shape.
+   */
+  clauses: Clause[];
   findings: Finding[];
   executionSteps: ExecutionStep[];
 }
