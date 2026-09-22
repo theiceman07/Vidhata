@@ -1,4 +1,4 @@
-import { Check, Minus } from "lucide-react";
+import { Icon } from "@/components/shared/icon";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -90,14 +90,18 @@ export function PricingTable() {
                 {row.values.map((v, i) => (
                   <td key={i} className="px-4 py-3 text-center">
                     {v ? (
-                      <Check
-                        className="mx-auto h-4 w-4 text-verified"
-                        aria-label="Included"
+                      <Icon
+                        name="check"
+                        size={18}
+                        label="Included"
+                        className="mx-auto text-verified"
                       />
                     ) : (
-                      <Minus
-                        className="mx-auto h-4 w-4 text-muted-fg"
-                        aria-label="Not included"
+                      <Icon
+                        name="remove"
+                        size={18}
+                        label="Not included"
+                        className="mx-auto text-muted-fg"
                       />
                     )}
                   </td>

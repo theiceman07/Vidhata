@@ -1,4 +1,4 @@
-import { FileText } from "lucide-react";
+import { Icon } from "@/components/shared/icon";
 import type { ChatMessage as ChatMessageType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +27,7 @@ export function ChatMessage({ message, onCiteClick }: ChatMessageProps) {
             onClick={() => onCiteClick?.(message.citedClauseReference!)}
             className="mt-2 inline-flex items-center gap-1 rounded-full bg-canvas px-2.5 py-0.5 text-small font-medium text-muted-fg transition-colors hover:bg-line"
           >
-            <FileText className="h-3 w-3" aria-hidden />
+            <Icon name="description" size={16} />
             {message.citedClauseReference}
           </button>
         )}

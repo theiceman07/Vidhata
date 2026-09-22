@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Send } from "lucide-react";
+import { Icon } from "@/components/shared/icon";
 import { PageHeader } from "@/components/shared/page-header";
 import { ErrorState } from "@/components/shared/error-state";
 import { ChatMessage } from "@/components/domain/chat-message";
@@ -194,7 +194,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
                 aria-label="Message"
               />
               <Button type="submit" size="icon" aria-label="Send">
-                <Send className="h-4 w-4" aria-hidden />
+                <Icon name="send" size={18} />
               </Button>
             </form>
             <p className="mt-2 text-small text-muted-fg">

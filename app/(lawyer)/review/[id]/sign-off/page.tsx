@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, ChevronLeft } from "lucide-react";
+import { Icon } from "@/components/shared/icon";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ErrorState } from "@/components/shared/error-state";
@@ -53,7 +53,7 @@ const CONFIRMATIONS = [
 function Checkline({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex items-baseline gap-3 border-b border-line py-3 last:border-b-0">
-      <Check className="h-4 w-4 shrink-0 text-verified" aria-hidden />
+      <Icon name="check" size={18} className="text-verified" />
       <span className="text-meta text-ink">{children}</span>
     </li>
   );
@@ -185,23 +185,30 @@ export default function SignOffPage({ params }: { params: { id: string } }) {
         href={`/review/${doc.id}`}
         className="inline-flex items-center gap-1 text-meta text-muted-fg hover:text-ink"
       >
-        <ChevronLeft className="h-4 w-4" aria-hidden />
+        <Icon name="chevron_left" size={16} />
         Back to the document
       </Link>
 
       <Dateline segments={["Document ready"]} className="mt-6" />
       <h1 className="mt-3 font-display text-h1 text-ink">{doc.title}</h1>
 
-      {/* Counts come from the document, never hardcoded. */}
+      {/* Counts come from the document, never hardcoded. A document the
+          first pass raised nothing against states that, rather than
+          reporting a row of zeroes as though they were achievements. */}
       <ul className="mt-decision border-y border-line">
         <Checkline>First pass completed</Checkline>
+        {citationCount > 0 && (
+          <Checkline>
+            {citationCount} {citationCount === 1 ? "citation" : "citations"}{" "}
+            checked against source
+          </Checkline>
+        )}
         <Checkline>
-          {citationCount} {citationCount === 1 ? "citation" : "citations"}{" "}
-          checked against source
-        </Checkline>
-        <Checkline>
-          {settledCount} {settledCount === 1 ? "finding" : "findings"} settled,{" "}
-          {openCount} open
+          {doc.findings.length === 0
+            ? "The first pass raised no findings"
+            : openCount === 0
+              ? `${settledCount} ${settledCount === 1 ? "finding" : "findings"} settled, none left open`
+              : `${settledCount} settled, ${openCount} still open`}
         </Checkline>
       </ul>
 

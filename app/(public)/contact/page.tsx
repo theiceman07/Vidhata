@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Mail } from "lucide-react";
+import { Icon } from "@/components/shared/icon";
 import { PageHeader } from "@/components/shared/page-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
 
@@ -17,7 +17,7 @@ export default function ContactPage() {
       <PageHeader title="Contact" backHref="/" backLabel="Home" />
       <div className="rounded-card border border-line bg-paper p-6 shadow-card">
         <p className="flex items-center gap-2 text-body text-ink">
-          <Mail className="h-4 w-4 text-accent" aria-hidden />
+          <Icon name="mail" size={18} className="text-accent" />
           <a href="mailto:hello@vidhata.example" className="hover:underline">
             hello@vidhata.example
           </a>
@@ -28,7 +28,7 @@ export default function ContactPage() {
           <a href="/advocate-login" className="text-accent hover:underline">
             advocate sign-in
           </a>{" "}
-          — this address is for general and client enquiries.
+          · this address is for general and client enquiries.
         </p>
       </div>
       <SiteFooter />

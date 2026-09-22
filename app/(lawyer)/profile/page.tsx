@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { Icon } from "@/components/shared/icon";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { Switch } from "@/components/ui/switch";
@@ -42,7 +42,7 @@ export default function ProfilePage() {
     toast.success(
       next
         ? "You're available for new claims."
-        : "You're marked unavailable — new documents won't be claimable by you.",
+        : "You're marked unavailable. New documents will not be offered to you.",
     );
   }
 
@@ -123,7 +123,7 @@ export default function ProfilePage() {
                       aria-label={`Remove declared conflict: ${name}`}
                       className="text-muted-fg hover:text-flagged"
                     >
-                      <X className="h-4 w-4" aria-hidden />
+                      <Icon name="close" size={16} />
                     </button>
                   </li>
                 ))}

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { Icon } from "@/components/shared/icon";
 import type { ReactNode } from "react";
 
 interface PageHeaderProps {
@@ -29,7 +29,7 @@ export function PageHeader({
           href={backHref}
           className="mb-3 inline-flex items-center gap-1 text-small text-muted-fg hover:text-ink"
         >
-          <ChevronLeft className="h-4 w-4" aria-hidden />
+          <Icon name="chevron_left" size={16} />
           {backLabel}
         </Link>
       )}

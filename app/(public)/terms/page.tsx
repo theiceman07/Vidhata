@@ -17,7 +17,7 @@ export default function TermsPage() {
     <div className="mx-auto max-w-3xl px-4 py-10">
       <PageHeader title="Terms of Service" backHref="/" backLabel="Home" />
       <div className="rounded-card border border-caution/30 bg-caution/10 p-6 text-body text-ink">
-        <p className="font-medium">Terms of Service — pending publication.</p>
+        <p className="font-medium">Terms of Service · pending publication.</p>
         <p className="mt-2 text-muted-fg">
           This page is a placeholder. Vidhata&apos;s Terms of Service are
           being drafted by qualified counsel and will be published here

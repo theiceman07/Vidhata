@@ -17,7 +17,7 @@ export default function PricingPage() {
       <div className="mx-auto max-w-4xl px-4 py-10">
         <PageHeader
           title="Pricing"
-          description="Fixed, transparent pricing by review tier — no hourly billing."
+          description="Fixed, transparent pricing by review tier. No hourly billing."
           backHref="/"
           backLabel="Home"
         />

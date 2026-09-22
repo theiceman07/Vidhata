@@ -50,7 +50,7 @@ export function getMockReply(
   const finding = doc.findings[0];
   if (finding) {
     return {
-      text: `${finding.clauseReference} covers this: "${finding.clauseText}" In plain terms — ${finding.description}`,
+      text: `${finding.clauseReference} covers this: "${finding.clauseText}" In plain terms: ${finding.description}`,
       citedClauseReference: finding.clauseReference,
       isEscalation: false,
     };
@@ -68,7 +68,7 @@ export function buildInitialMessages(doc: ContractDocument): ChatMessage[] {
     {
       id: "welcome",
       role: "agent",
-      text: `I can explain anything in "${doc.title}". I won't give advice on your situation — for that, book time with the settling advocate.`,
+      text: `I can explain anything in "${doc.title}". I won't give advice on your situation. For that, book time with the settling advocate.`,
       citedClauseReference: null,
       isEscalation: false,
     },
