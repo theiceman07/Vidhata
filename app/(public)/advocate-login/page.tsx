@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AuthSplitLayout } from "@/components/shared/auth-split-layout";
+import { AuthScreen } from "@/components/shared/auth-screen";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,14 @@ export default function LawyerLoginPage() {
 
   const locked = lockedUntil !== null && Date.now() < lockedUntil;
 
+  function signIn() {
+    setError("");
+    // QA 10.2: setRole runs before navigation and overwrites any stale
+    // "client" role left in storage, so this always lands on /queue.
+    setRole("lawyer");
+    router.push("/queue");
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (locked) return;
@@ -33,17 +41,10 @@ export default function LawyerLoginPage() {
       barNumber === MOCK_PREVIEW_CREDENTIALS.username &&
       password === MOCK_PREVIEW_CREDENTIALS.password
     ) {
-      setError("");
-      // QA 10.2: setRole runs before navigation and overwrites any stale
-      // "client" role left in storage, so this always lands on /queue —
-      // the discoverability half of that report (Client login sitting
-      // prominently in the header while Advocate login was buried in the
-      // footer) is fixed on the landing page nav instead.
-      setRole("lawyer");
-      router.push("/queue");
+      signIn();
       return;
     }
-    setError("Invalid Bar enrolment number or password.");
+    setError("Those details do not match an empanelled advocate.");
     setPassword("");
     const next = attempts + 1;
     setAttempts(next);
@@ -55,25 +56,42 @@ export default function LawyerLoginPage() {
 
   if (!PREVIEW_MODE) {
     return (
-      <AuthSplitLayout
-        panelTitle="Advocate sign-in"
-        panelDescription="For empanelled advocates only. Review findings, adjudicate and sign off on client documents."
+      <AuthScreen
+        title="Advocate sign in."
+        intro="For empanelled advocates only."
       >
-        <p className="text-body text-muted-fg">
+        <p className="text-body text-ink">
           Sign-in is not yet available. Vidhata does not have a production
           identity provider connected in this environment.
         </p>
-        <Button asChild className="mt-4 w-full">
+        <Button asChild className="mt-6 w-full">
           <Link href="/">Go to home</Link>
         </Button>
-      </AuthSplitLayout>
+      </AuthScreen>
     );
   }
 
   return (
-    <AuthSplitLayout
-      panelTitle="Advocate sign-in"
-      panelDescription="For empanelled advocates only. Review findings, adjudicate and sign off on client documents."
+    <AuthScreen
+      title="Advocate sign in."
+      intro="For empanelled advocates only."
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={() =>
+              toast.info("Invite requests aren't available in this preview.")
+            }
+            className="text-accent hover:underline"
+          >
+            Request an invite
+          </button>
+          <span className="mx-2 text-line">·</span>
+          <Link href="/login" className="hover:text-ink">
+            Client sign in
+          </Link>
+        </>
+      }
     >
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <div>
@@ -99,6 +117,7 @@ export default function LawyerLoginPage() {
             aria-describedby={error ? "advocate-login-error" : undefined}
           />
         </div>
+
         {error && (
           <p
             id="advocate-login-error"
@@ -110,30 +129,38 @@ export default function LawyerLoginPage() {
           </p>
         )}
         {locked && (
-          <p role="alert" aria-live="polite" className="text-small text-caution-fg">
+          <p
+            role="alert"
+            aria-live="polite"
+            className="text-small text-caution-fg"
+          >
             Too many attempts. Try again in {LOCKOUT_SECONDS} seconds.
           </p>
         )}
+
         <Button type="submit" className="w-full" disabled={locked}>
           Sign in
         </Button>
+
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() =>
+              toast.info("Password reset isn't available in this preview.")
+            }
+            className="text-small text-muted-fg hover:text-ink"
+          >
+            Forgot password?
+          </button>
+          <button
+            type="button"
+            onClick={signIn}
+            className="text-small text-accent hover:underline"
+          >
+            Use the preview workspace
+          </button>
+        </div>
       </form>
-      <p className="mt-4 text-center text-small text-muted-fg">
-        Demo preview — not a real account. Preview credentials:{" "}
-        {MOCK_PREVIEW_CREDENTIALS.username} / {MOCK_PREVIEW_CREDENTIALS.password}
-      </p>
-      <p className="mt-2 text-center text-small text-muted-fg">
-        New advocate?{" "}
-        <button
-          type="button"
-          onClick={() =>
-            toast.info("Invite requests aren't available in this preview.")
-          }
-          className="font-medium text-accent hover:underline"
-        >
-          Request an invite
-        </button>
-      </p>
-    </AuthSplitLayout>
+    </AuthScreen>
   );
 }

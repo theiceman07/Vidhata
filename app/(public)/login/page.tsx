@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AuthSplitLayout } from "@/components/shared/auth-split-layout";
+import { AuthScreen } from "@/components/shared/auth-screen";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,12 @@ export default function ClientLoginPage() {
 
   const locked = lockedUntil !== null && Date.now() < lockedUntil;
 
+  function signIn() {
+    setError("");
+    setRole("client");
+    router.push("/documents");
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (locked) return;
@@ -33,12 +39,10 @@ export default function ClientLoginPage() {
       username === MOCK_PREVIEW_CREDENTIALS.username &&
       password === MOCK_PREVIEW_CREDENTIALS.password
     ) {
-      setError("");
-      setRole("client");
-      router.push("/documents");
+      signIn();
       return;
     }
-    setError("Invalid username or password.");
+    setError("Those details do not match an account.");
     setPassword("");
     // QA 4.6: client-side throttling is a UX measure, not a security
     // control — there is still no attempt tracking, rate limiting or
@@ -54,29 +58,46 @@ export default function ClientLoginPage() {
 
   if (!PREVIEW_MODE) {
     return (
-      <AuthSplitLayout
-        panelTitle="Welcome back"
-        panelDescription="Sign in to track your documents, review findings and print your execution checklist."
+      <AuthScreen
+        title="Welcome back."
+        intro="Continue to your legal workspace."
       >
-        <p className="text-body text-muted-fg">
+        <p className="text-body text-ink">
           Sign-in is not yet available. Vidhata does not have a production
           identity provider connected in this environment.
         </p>
-        <Button asChild className="mt-4 w-full">
+        <Button asChild className="mt-6 w-full">
           <Link href="/">Go to home</Link>
         </Button>
-      </AuthSplitLayout>
+      </AuthScreen>
     );
   }
 
   return (
-    <AuthSplitLayout
-      panelTitle="Welcome back"
-      panelDescription="Sign in to track your documents, review findings and print your execution checklist."
+    <AuthScreen
+      title="Welcome back."
+      intro="Continue to your legal workspace."
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={() =>
+              toast.info("Sign-up isn't available in this preview.")
+            }
+            className="text-accent hover:underline"
+          >
+            Create an account
+          </button>
+          <span className="mx-2 text-line">·</span>
+          <Link href="/advocate-login" className="hover:text-ink">
+            Advocate sign in
+          </Link>
+        </>
+      }
     >
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <div>
-          <Label htmlFor="username">Username</Label>
+          <Label htmlFor="username">Email or username</Label>
           <Input
             id="username"
             type="text"
@@ -96,8 +117,7 @@ export default function ClientLoginPage() {
               value updates state and submits normally in manual testing.
               Most likely explanation: a password-manager overlay
               intercepting a very short value during the original test, not
-              an app defect. Left this note instead of a speculative "fix"
-              for a defect that doesn't reproduce. */}
+              an app defect. */}
           <Input
             id="password"
             type="password"
@@ -108,6 +128,7 @@ export default function ClientLoginPage() {
             aria-describedby={error ? "login-error" : undefined}
           />
         </div>
+
         {error && (
           <p
             id="login-error"
@@ -119,28 +140,40 @@ export default function ClientLoginPage() {
           </p>
         )}
         {locked && (
-          <p role="alert" aria-live="polite" className="text-small text-caution-fg">
+          <p
+            role="alert"
+            aria-live="polite"
+            className="text-small text-caution-fg"
+          >
             Too many attempts. Try again in {LOCKOUT_SECONDS} seconds.
           </p>
         )}
+
         <Button type="submit" className="w-full" disabled={locked}>
           Sign in
         </Button>
+
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() =>
+              toast.info("Password reset isn't available in this preview.")
+            }
+            className="text-small text-muted-fg hover:text-ink"
+          >
+            Forgot password?
+          </button>
+          {/* The preview account is a secondary way in, not the headline.
+              Credentials are not printed on the screen. */}
+          <button
+            type="button"
+            onClick={signIn}
+            className="text-small text-accent hover:underline"
+          >
+            Use the preview workspace
+          </button>
+        </div>
       </form>
-      <p className="mt-4 text-center text-small text-muted-fg">
-        Demo preview — not a real account. Preview credentials:{" "}
-        {MOCK_PREVIEW_CREDENTIALS.username} / {MOCK_PREVIEW_CREDENTIALS.password}
-      </p>
-      <p className="mt-2 text-center text-small text-muted-fg">
-        Don&apos;t have an account?{" "}
-        <button
-          type="button"
-          onClick={() => toast.info("Sign-up isn't available in this preview.")}
-          className="font-medium text-accent hover:underline"
-        >
-          Sign up
-        </button>
-      </p>
-    </AuthSplitLayout>
+    </AuthScreen>
   );
 }

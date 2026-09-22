@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { format } from "date-fns";
-import { Printer } from "lucide-react";
-import { PageHeader } from "@/components/shared/page-header";
+import Link from "next/link";
+import { Icon } from "@/components/shared/icon";
 import { ErrorState } from "@/components/shared/error-state";
 import { ExecutionChecklist } from "@/components/domain/execution-checklist";
 import { Button } from "@/components/ui/button";
@@ -66,22 +66,32 @@ export default function ChecklistPage({
   const isSettled = doc.status === "settled" || doc.status === "executed";
 
   return (
-    <div className="mx-auto max-w-2xl print:max-w-none">
+    <div className="mx-auto max-w-4xl print:max-w-none">
       <div className="print:hidden">
-        <PageHeader
-          title="Execution checklist"
-          description={doc.title}
-          backHref={`/documents/${doc.id}`}
-          backLabel={doc.title}
-          action={
-            isSettled && (
-              <Button size="sm" variant="outline" onClick={() => window.print()}>
-                <Printer className="mr-2 h-4 w-4" aria-hidden />
-                Download / print checklist
-              </Button>
-            )
-          }
-        />
+        <Link
+          href={`/documents/${doc.id}`}
+          className="inline-flex items-center gap-1 font-mono text-notation uppercase tracking-notation text-muted-fg transition-colors hover:text-ink"
+        >
+          <Icon name="chevron_left" size={16} />
+          {doc.title}
+        </Link>
+
+        <div className="mt-3 flex flex-wrap items-end justify-between gap-6 border-b border-line pb-8">
+          <div>
+            <h1 className="font-display text-h1 text-ink">
+              Execution checklist
+            </h1>
+            <p className="mt-2 max-w-xl text-body text-muted-fg">
+              What remains before the settled document takes effect.
+            </p>
+          </div>
+          {isSettled && (
+            <Button size="sm" variant="outline" onClick={() => window.print()}>
+              <Icon name="print" size={18} />
+              Print or save as PDF
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Print-only heading — screen readers and the screen layout use the
@@ -96,25 +106,32 @@ export default function ChecklistPage({
       </div>
 
       {!isSettled ? (
-        <div className="rounded-card border border-line bg-paper p-6 text-body text-muted-fg shadow-card">
+        <p className="mt-8 border-l-2 border-line pl-5 text-body text-ink">
           The execution checklist becomes available once this document is
           settled and signed off.
-        </div>
+        </p>
       ) : (
-        <>
+        <div className="mt-10">
           {doc.advocate && (
-            <div className="mb-6 rounded-card border border-verified/30 bg-verified/10 p-4 text-body text-ink print:border-line print:bg-transparent">
-              Signed off by {doc.advocate.name} ({doc.advocate.bar})
-              {doc.settledAt &&
-                ` on ${format(new Date(doc.settledAt), "d MMM yyyy")}`}
-              .
-            </div>
+            // The authority the sheet rests on, stated as a line of
+            // record rather than a tinted panel.
+            <p className="mb-8 font-mono text-notation uppercase tracking-notation text-muted-fg">
+              Signed off by {doc.advocate.name}
+              <span className="mx-2 text-line">·</span>
+              {doc.advocate.bar}
+              {doc.settledAt && (
+                <>
+                  <span className="mx-2 text-line">·</span>
+                  {format(new Date(doc.settledAt), "d MMM yyyy")}
+                </>
+              )}
+            </p>
           )}
           <ExecutionChecklist
             steps={doc.executionSteps}
             onToggle={handleToggle}
           />
-        </>
+        </div>
       )}
     </div>
   );
