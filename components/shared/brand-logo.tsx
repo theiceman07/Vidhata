@@ -1,9 +1,18 @@
-// QA 10.3: the header/nav rendered "Vidhata" as plain text everywhere —
-// no logo mark, no single source of truth for the identity. This is now
-// the only place the mark is defined; every nav wraps it in a Link to the
-// role-appropriate home. Uses currentColor throughout so the caller's own
-// Tailwind text colour (text-accent, text-canvas, ...) drives it — no raw
-// hex here (CLAUDE.md: Tailwind tokens only).
+// QA 10.3: the header/nav rendered "Vidhata" as plain text everywhere, with
+// no mark and no single source of truth for the identity. This is still the
+// only place the mark is defined; every nav wraps it in a Link to the
+// role-appropriate home.
+//
+// Brand Board V2.0: a seal, not a logo. A framed serif initial in the
+// engraved-plate manner, borrowed from the stamp at the foot of a signed
+// instrument. One weight, one colour, no variants by portal: client and
+// advocate are told apart by the badge beside the mark, never by a colour
+// change. currentColor throughout, so the caller's own token drives it and
+// no raw hex appears here.
+//
+// This is the wordmark used in navigation. The seal struck at sign-off is
+// components/document/seal.tsx and appears once per document; the two are
+// deliberately separate so the sign-off moment keeps its weight.
 const SIZES = {
   sm: { icon: 20, text: "text-body" },
   md: { icon: 26, text: "text-h3" },
@@ -18,35 +27,42 @@ export function BrandLogo({
   size?: keyof typeof SIZES;
 }) {
   const { icon, text } = SIZES[size];
+
   return (
-    <span className={`inline-flex items-center gap-2 ${className ?? ""}`}>
+    <span className={`inline-flex items-center gap-2.5 ${className ?? ""}`}>
       <svg
         width={icon}
         height={icon}
-        viewBox="0 0 100 100"
+        viewBox="0 0 32 32"
         fill="none"
         aria-hidden
+        focusable="false"
         className="shrink-0"
       >
-        {/* Four-petal submark from the Figma brand guidelines (file
-            hJG0r4wNbRXQnDKc3ciQCJ, node 3:3). Each petal is two lobes — an
-            outer bulge and an inner edge held near the centre axis — so a
-            thin vein of negative space runs tip-to-centre, matching the
-            reference mark. Rotated 0/90/180/270 around the centre. */}
-        {[0, 90, 180, 270].map((angle) => (
-          <g key={angle} transform={`rotate(${angle} 50 50)`}>
-            <path
-              d="M50 4 C66 15 68 36 50 50 C55 36 55 16 50 4 Z"
-              fill="currentColor"
-            />
-            <path
-              d="M50 4 C34 15 32 36 50 50 C45 36 45 16 50 4 Z"
-              fill="currentColor"
-            />
-          </g>
-        ))}
+        {/* The frame. Never a tinted or rounded container: the board
+            rules both out, so this stays a plain hairline square. */}
+        <rect
+          x="0.75"
+          y="0.75"
+          width="30.5"
+          height="30.5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <text
+          x="16"
+          y="17"
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill="currentColor"
+          fontSize="19"
+          fontWeight="500"
+          fontFamily="var(--font-newsreader), Georgia, serif"
+        >
+          V
+        </text>
       </svg>
-      <span className={`font-display ${text}`}>Vidhata</span>
+      <span className={`font-display ${text} leading-none`}>Vidhata</span>
     </span>
   );
 }

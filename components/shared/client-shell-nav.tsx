@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FileText, FilePlus2, LogOut } from "lucide-react";
+import { FileText, FilePlus2, LogOut, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/session";
@@ -11,6 +11,7 @@ import { BrandLogo } from "@/components/shared/brand-logo";
 const LINKS = [
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/new", label: "New document", icon: FilePlus2 },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function ClientShellNav() {

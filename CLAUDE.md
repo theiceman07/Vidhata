@@ -1,6 +1,6 @@
 # Vidhata Web
 
-AI-drafted, lawyer-verified contracts for Indian startups and MSMEs.
+AI-drafted, advocate-settled contracts for Indian startups and MSMEs.
 Frontend only. No backend exists yet.
 
 ## Product in one paragraph

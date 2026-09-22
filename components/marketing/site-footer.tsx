@@ -14,7 +14,7 @@ export function SiteFooter() {
         <div className="text-ink">
           <BrandLogo className="mb-1" size="sm" />
           <p className="text-small text-muted-fg">
-            AI-drafted, lawyer-verified contracts.
+            AI drafts. Advocates decide.
           </p>
         </div>
         <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">

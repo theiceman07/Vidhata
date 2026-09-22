@@ -6,15 +6,23 @@ import { Button } from "@/components/ui/button";
 // automatically for any unmatched route.
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center">
-      <p className="font-display text-h1 text-ink">Page not found</p>
-      <p className="mt-2 max-w-sm text-body text-muted-fg">
-        The page you&apos;re looking for doesn&apos;t exist or may have
-        moved.
+    <div className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center px-6">
+      <p className="font-mono text-notation uppercase tracking-notation text-muted-fg">
+        404
       </p>
-      <Button asChild className="mt-6">
-        <Link href="/">Back to home</Link>
-      </Button>
+      <h1 className="mt-3 font-display text-h1 text-ink">Page not found</h1>
+      <p className="mt-3 max-w-prose text-body text-muted-fg">
+        This address does not match anything in the product. It may have
+        moved, or the link may be out of date.
+      </p>
+      <div className="mt-8 flex flex-wrap gap-3">
+        <Button asChild>
+          <Link href="/">Back to home</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/documents">Your documents</Link>
+        </Button>
+      </div>
     </div>
   );
 }

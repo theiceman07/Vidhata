@@ -33,15 +33,15 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://vidhata-pi.vercel.app"),
   title: {
-    default: "Vidhata — AI-drafted, lawyer-verified contracts",
+    default: "Vidhata · AI drafts. Advocates decide.",
     template: "%s · Vidhata",
   },
   description:
-    "AI-drafted, lawyer-verified contracts for Indian startups and MSMEs.",
+    "AI-drafted, advocate-settled contracts for Indian startups and MSMEs. Every finding carries its source and a named advocate signs off.",
   openGraph: {
-    title: "Vidhata — AI-drafted, lawyer-verified contracts",
+    title: "Vidhata · AI drafts. Advocates decide.",
     description:
-      "AI-drafted, lawyer-verified contracts for Indian startups and MSMEs.",
+      "AI-drafted, advocate-settled contracts for Indian startups and MSMEs. Every finding carries its source and a named advocate signs off.",
     siteName: "Vidhata",
     type: "website",
   },
