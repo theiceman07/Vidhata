@@ -35,7 +35,7 @@ export default function ClientLoginPage() {
     ) {
       setError("");
       setRole("client");
-      router.push("/dashboard");
+      router.push("/documents");
       return;
     }
     setError("Invalid username or password.");

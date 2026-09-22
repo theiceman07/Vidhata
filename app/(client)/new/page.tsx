@@ -7,8 +7,8 @@ export default function NewDealPage() {
       <PageHeader
         title="New deal"
         description="Describe the deal. We'll draft, screen and route it to an advocate."
-        backHref="/dashboard"
-        backLabel="Dashboard"
+        backHref="/documents"
+        backLabel="Documents"
       />
       <IntakeWizard />
     </div>

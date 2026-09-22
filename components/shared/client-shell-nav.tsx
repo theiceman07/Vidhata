@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, FilePlus2, LogOut } from "lucide-react";
+import { FileText, FilePlus2, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/session";
 import { BrandLogo } from "@/components/shared/brand-logo";
 
 const LINKS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/new", label: "New deal", icon: FilePlus2 },
+  { href: "/documents", label: "Documents", icon: FileText },
+  { href: "/new", label: "New document", icon: FilePlus2 },
 ];
 
 export function ClientShellNav() {
@@ -34,7 +34,7 @@ export function ClientShellNav() {
     <>
       {/* Desktop: left sidebar */}
       <nav className="hidden shrink-0 border-r border-line bg-paper px-4 py-6 md:flex md:w-56 md:flex-col">
-        <Link href="/dashboard" className="mb-6 text-ink">
+        <Link href="/documents" className="mb-6 text-ink">
           <BrandLogo />
         </Link>
         <div className="flex flex-1 flex-col gap-1">
@@ -68,7 +68,7 @@ export function ClientShellNav() {
       {/* Mobile: brand bar on top (with sign-out), nav becomes a fixed
           bottom bar */}
       <header className="flex items-center justify-between border-b border-line bg-paper px-4 py-3 md:hidden">
-        <Link href="/dashboard" className="text-ink">
+        <Link href="/documents" className="text-ink">
           <BrandLogo />
         </Link>
         <button

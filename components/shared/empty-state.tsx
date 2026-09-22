@@ -2,12 +2,22 @@ import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 interface EmptyStateProps {
-  icon: LucideIcon;
+  /**
+   * Optional, and usually omitted. An icon here communicates nothing the
+   * heading does not already say, and the board is explicit that icons
+   * carry function rather than fill empty space.
+   */
+  icon?: LucideIcon;
   title: string;
   description?: string;
   action?: ReactNode;
 }
 
+/**
+ * An empty state is a quiet legal workbench, not an illustration with
+ * marketing copy. It states the fact, then offers the one action that
+ * makes sense from here.
+ */
 export function EmptyState({
   icon: Icon,
   title,
@@ -15,15 +25,15 @@ export function EmptyState({
   action,
 }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-card border border-dashed border-line px-6 py-16 text-center">
-      <Icon className="mb-3 h-8 w-8 text-muted-fg" aria-hidden />
-      <p className="text-body font-medium text-ink">{title}</p>
+    <div className="border-l-2 border-line py-6 pl-6">
+      {Icon && <Icon className="mb-3 h-5 w-5 text-muted-fg" aria-hidden />}
+      <p className="font-display text-h3 text-ink">{title}</p>
       {description && (
-        <p className="mt-1 max-w-sm text-small text-muted-fg">
+        <p className="mt-2 max-w-prose text-meta text-muted-fg">
           {description}
         </p>
       )}
-      {action && <div className="mt-4">{action}</div>}
+      {action && <div className="mt-6">{action}</div>}
     </div>
   );
 }

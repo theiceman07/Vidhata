@@ -38,8 +38,12 @@ const LABEL: Record<LabelState, { text: string; tone: string; solid: string }> =
       tone: "text-caution-fg border-caution/40",
       solid: "bg-caution text-paper border-transparent",
     },
+    // "revision" is an advocate asking the client for changes (see
+    // DocumentStatus in lib/types.ts). It is not the no-source state —
+    // a blocked citation is a property of a finding, not of a document,
+    // and is reported by hasBlockedCitation where it actually applies.
     revision: {
-      text: "Awaiting source",
+      text: "Changes requested",
       tone: "text-flagged border-flagged/30",
       solid: "bg-flagged text-paper border-transparent",
     },
