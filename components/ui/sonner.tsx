@@ -29,7 +29,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "group toast group-[.toaster]:bg-paper group-[.toaster]:text-ink group-[.toaster]:border-line group-[.toaster]:shadow-lg",
           description: "group-[.toast]:text-muted-fg",
           actionButton:
-            "group-[.toast]:bg-brand group-[.toast]:text-brand-fg",
+            "group-[.toast]:bg-accent group-[.toast]:text-accent-fg",
           cancelButton: "group-[.toast]:bg-canvas group-[.toast]:text-muted-fg",
         },
       }}

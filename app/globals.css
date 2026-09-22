@@ -6,6 +6,18 @@
   body {
     @apply bg-canvas text-ink font-sans text-body;
   }
+
+  /* The accent marks a decision, so a selection borrows it at low weight
+     rather than the browser default blue. */
+  ::selection {
+    @apply bg-accent/[0.12] text-ink;
+  }
+
+  /* One focus treatment everywhere. Keyboard users must be able to see
+     where a decision is about to be taken. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-paper;
+  }
 }
 
 /* QA 2.4 — the execution checklist's "Download as PDF" control used to be a
@@ -18,7 +30,7 @@
 @media print {
   body {
     background: #fff;
-    color: #2d2c2a;
+    color: #141414;
   }
 
   [data-sonner-toaster] {

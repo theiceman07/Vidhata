@@ -148,7 +148,7 @@ export function IntakeWizard() {
               className={cn(
                 "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-small font-medium",
                 i <= step
-                  ? "bg-brand text-brand-fg"
+                  ? "bg-accent text-accent-fg"
                   : "bg-line text-muted-fg",
               )}
             >

@@ -17,7 +17,7 @@ export function ClauseViewer({
     <blockquote
       className={cn(
         "rounded-card border border-line bg-canvas/60 p-4",
-        highlighted && "border-l-4 border-l-brand",
+        highlighted && "border-l-4 border-l-accent",
         className,
       )}
     >

@@ -35,13 +35,40 @@ off. The client gets the settled document plus an execution checklist
 - execution checklist, not next steps
 
 ## Brand
-- Product name: Vidhata.
-- Primary color: brand (#875F45, warm rust). Ink #2D2C2A, canvas #E2DED2,
-  line #C9BCA9, muted-fg #544C37.
-- Display typeface: Cormorant Infant (serif, headlines only).
-  Body typeface: Outfit (sans, everything else).
-- Status colors are semantic only, never decorative: verified (green),
-  flagged (red), caution (amber), info (blue).
+Brand Board V2.0 (22 Sep 2026). This supersedes the earlier warm rust
+palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
+
+- Product name: Vidhata. "AI drafts. Advocates decide."
+- One accent, earned: accent #1B4332 (hover #265E4A). Colour appears
+  where a decision has been made, and nowhere else.
+- Ink #141414, muted-fg #5A5A5A, line #E5E5E0, canvas #FAFAF8,
+  paper #FFFFFF, parchment #F8F5EE.
+- Three type voices. Newsreader (font-display): clauses, document titles,
+  moments of judgment. One display moment per screen. Inter (font-sans):
+  navigation, metadata, controls. IBM Plex Mono (font-mono): clause
+  numbers, citations, state labels, audit trails.
+- Headings never drop below weight 500. Body never exceeds 600. If
+  something needs weight, make it Newsreader, not bolder Inter.
+- Status colors are semantic only, never decorative: verified #2D6A4F,
+  flagged #9B2C2C, caution #B7791F (badge fills only; use caution-fg
+  #92600A for text), info #2C5282 (layer badges only).
+- Radii carry hierarchy: 6px controls, 8px cards, 12px modals, 50%
+  identity only. A single radius everywhere signals nothing.
+- Avoid: purple/violet/indigo, gradients, glassmorphism, heavy shadows,
+  decorative icon treatments, scales, gavels, sepia parchment graphics.
+- The seal appears once per document, at sign-off. That is the only place
+  the mark is used inside the product.
+- No em dashes in product copy. The separator is the middle dot.
+
+## Design
+- Annotation, not cards. A finding is a note in the margin of a clause,
+  not a tile in a dashboard.
+- Every finding carries its source, shown at the same moment as the
+  concern, never behind a disclosure.
+- Motion explains a state transition. No scroll reveals or parallax
+  inside the product. prefers-reduced-motion collapses every transition
+  to an instant state change.
+- Spec: docs/superpowers/specs/2026-09-22-vidhata-frontend-redesign-design.md
 
 ## Commands
 npm run dev / npm run build / npm run lint / npm run typecheck

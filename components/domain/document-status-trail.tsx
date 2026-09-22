@@ -39,7 +39,7 @@ export function DocumentStatusTrail({ status }: { status: DocumentStatus }) {
                   isCurrent &&
                     (isRevision
                       ? "bg-caution text-white"
-                      : "bg-brand text-brand-fg"),
+                      : "bg-accent text-accent-fg"),
                   !isComplete && !isCurrent && "bg-line text-muted-fg",
                 )}
               >

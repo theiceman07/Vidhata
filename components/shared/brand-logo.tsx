@@ -2,7 +2,7 @@
 // no logo mark, no single source of truth for the identity. This is now
 // the only place the mark is defined; every nav wraps it in a Link to the
 // role-appropriate home. Uses currentColor throughout so the caller's own
-// Tailwind text colour (text-brand, text-canvas, ...) drives it — no raw
+// Tailwind text colour (text-accent, text-canvas, ...) drives it — no raw
 // hex here (CLAUDE.md: Tailwind tokens only).
 const SIZES = {
   sm: { icon: 20, text: "text-body" },

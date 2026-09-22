@@ -16,7 +16,7 @@ export function ChatMessage({ message, onCiteClick }: ChatMessageProps) {
         className={cn(
           "max-w-[80%] rounded-card px-4 py-3 text-body",
           isUser
-            ? "bg-brand text-brand-fg"
+            ? "bg-accent text-accent-fg"
             : "border border-line bg-paper text-ink shadow-card",
         )}
       >

@@ -135,7 +135,7 @@ export default function QueuePage() {
           {!available && (
             <section className="rounded-card border border-line bg-canvas/50 p-4 text-small text-muted-fg">
               You&apos;re marked unavailable for new claims — update this in{" "}
-              <a href="/profile" className="font-medium text-brand hover:underline">
+              <a href="/profile" className="font-medium text-accent hover:underline">
                 Profile
               </a>
               . You can still continue documents already claimed.

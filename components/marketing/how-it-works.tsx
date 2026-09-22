@@ -42,7 +42,7 @@ export function HowItWorks() {
               className="flex h-full flex-col rounded-control border border-line bg-paper p-6 shadow-sm"
             >
               <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-brand-fg">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-accent-fg">
                   <step.icon className="h-5 w-5" aria-hidden />
                 </div>
                 <span className="font-display text-h1 text-line">

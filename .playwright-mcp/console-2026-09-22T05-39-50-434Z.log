@@ -1,0 +1,7 @@
+[   17750ms] [LOG] Render dpr: 1.5 store.window.dpr: 1.5 @ https://illoca.unseen.co/_nuxt/DGk6hhCZ.js:10781
+[   17949ms] [LOG] JSHandle@node @ https://illoca.unseen.co/_nuxt/DGk6hhCZ.js:10807
+[   27044ms] [WARNING] THREE.KTX2Loader: ETC1S and UASTC textures should use multiple-of-four dimensions. @ blob:https://illoca.unseen.co/c59e4242-8df0-4556-addf-d7761b9babcf:27
+[   27067ms] [WARNING] THREE.KTX2Loader: ETC1S and UASTC textures should use multiple-of-four dimensions. @ blob:https://illoca.unseen.co/c59e4242-8df0-4556-addf-d7761b9babcf:27
+[   27087ms] [WARNING] THREE.KTX2Loader: ETC1S and UASTC textures should use multiple-of-four dimensions. @ blob:https://illoca.unseen.co/c59e4242-8df0-4556-addf-d7761b9babcf:27
+[   27110ms] [WARNING] THREE.KTX2Loader: ETC1S and UASTC textures should use multiple-of-four dimensions. @ blob:https://illoca.unseen.co/c59e4242-8df0-4556-addf-d7761b9babcf:27
+[   27116ms] [WARNING] THREE.KTX2Loader: ETC1S and UASTC textures should use multiple-of-four dimensions. @ blob:https://illoca.unseen.co/c59e4242-8df0-4556-addf-d7761b9babcf:27

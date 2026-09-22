@@ -23,7 +23,7 @@ export default function TermsPage() {
           being drafted by qualified counsel and will be published here
           before general availability. If you need terms information now,
           contact us via the{" "}
-          <a href="/contact" className="text-brand hover:underline">
+          <a href="/contact" className="text-accent hover:underline">
             contact page
           </a>
           .

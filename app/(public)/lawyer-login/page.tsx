@@ -129,7 +129,7 @@ export default function LawyerLoginPage() {
           onClick={() =>
             toast.info("Invite requests aren't available in this preview.")
           }
-          className="font-medium text-brand hover:underline"
+          className="font-medium text-accent hover:underline"
         >
           Request an invite
         </button>

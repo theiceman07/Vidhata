@@ -46,7 +46,7 @@ export function ClientShellNav() {
               className={cn(
                 "flex items-center gap-2 rounded-control px-3 py-2 text-body transition-colors",
                 isActive(link.href)
-                  ? "bg-brand font-medium text-brand-fg"
+                  ? "bg-accent font-medium text-accent-fg"
                   : "text-ink hover:bg-canvas",
               )}
             >
@@ -95,7 +95,7 @@ export function ClientShellNav() {
                 // (a WCAG failure on its own, and easy to miss). A top
                 // border plus a weight change give it a second channel.
                 active
-                  ? "border-brand font-medium text-brand"
+                  ? "border-accent font-medium text-accent"
                   : "border-transparent text-muted-fg",
               )}
             >

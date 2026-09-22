@@ -52,7 +52,7 @@ export function PricingTable() {
             key={t.tier}
             className={cn(
               "rounded-card border p-6 shadow-card",
-              t.featured ? "border-brand bg-brand/5" : "border-line bg-paper",
+              t.featured ? "border-accent bg-accent/5" : "border-line bg-paper",
             )}
           >
             <h3 className="font-display text-h3 text-ink">{t.label}</h3>

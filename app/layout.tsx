@@ -1,20 +1,29 @@
 import type { Metadata } from "next";
-import { Cormorant_Infant, Outfit } from "next/font/google";
+import { Newsreader, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/lib/session";
 import { Toaster } from "@/components/ui/sonner";
 
-const cormorantInfant = Cormorant_Infant({
-  variable: "--font-cormorant",
+// Three voices, Brand Board V2.0. Newsreader carries legal substance,
+// Inter operates the product, IBM Plex Mono carries notation. The serif
+// is reserved for judgment; it is not a display font for atmosphere.
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["400", "500", "600"],
   style: ["normal", "italic"],
 });
 
-const outfit = Outfit({
-  variable: "--font-outfit",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   weight: ["400", "500", "600"],
+});
+
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
 });
 
 // QA 4.1: every route used to share one <title>/description with no
@@ -46,7 +55,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${cormorantInfant.variable} ${outfit.variable} h-full antialiased`}
+      className={`${newsreader.variable} ${inter.variable} ${plexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <SessionProvider>

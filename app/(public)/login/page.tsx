@@ -136,7 +136,7 @@ export default function ClientLoginPage() {
         <button
           type="button"
           onClick={() => toast.info("Sign-up isn't available in this preview.")}
-          className="font-medium text-brand hover:underline"
+          className="font-medium text-accent hover:underline"
         >
           Sign up
         </button>

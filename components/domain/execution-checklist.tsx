@@ -49,7 +49,7 @@ export function ExecutionChecklist({
                 className={cn(
                   "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
                   step.applicable
-                    ? "bg-brand/10 text-brand"
+                    ? "bg-accent/10 text-accent"
                     : "bg-line text-muted-fg",
                 )}
               >

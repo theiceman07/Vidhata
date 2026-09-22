@@ -299,7 +299,7 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
                 className={cn(
                   "w-full rounded-card border border-line bg-paper p-3 text-left transition-colors",
                   f.findingId === selectedId
-                    ? "border-brand ring-1 ring-brand"
+                    ? "border-accent ring-1 ring-accent"
                     : "hover:bg-canvas/60",
                 )}
               >

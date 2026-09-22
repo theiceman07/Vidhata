@@ -65,7 +65,7 @@ export function PipelineProgress() {
               className={cn(
                 "flex items-start gap-3 rounded-card border p-4 transition-colors",
                 isCurrent
-                  ? "border-brand bg-brand/5"
+                  ? "border-accent bg-accent/5"
                   : "border-line bg-paper",
               )}
             >
@@ -73,7 +73,7 @@ export function PipelineProgress() {
                 className={cn(
                   "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-small font-medium",
                   isComplete && "bg-verified text-white",
-                  isCurrent && "animate-pulse bg-brand text-brand-fg",
+                  isCurrent && "animate-pulse bg-accent text-accent-fg",
                   !isComplete && !isCurrent && "bg-line text-muted-fg",
                 )}
                 aria-hidden

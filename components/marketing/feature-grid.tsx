@@ -30,7 +30,7 @@ export function FeatureGrid() {
             key={f.title}
             className="rounded-card border border-line bg-paper p-6 shadow-card"
           >
-            <f.icon className="mb-3 h-6 w-6 text-brand" aria-hidden />
+            <f.icon className="mb-3 h-6 w-6 text-accent" aria-hidden />
             <h3 className="mb-1 font-display text-h3 text-ink">{f.title}</h3>
             <p className="text-small text-muted-fg">{f.description}</p>
           </div>

@@ -142,7 +142,7 @@ export default function DashboardPage() {
                 <Link
                   key={doc.id}
                   href={`/documents/${doc.id}`}
-                  className="block rounded-card border border-line bg-paper p-4 shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                  className="block rounded-card border border-line bg-paper p-4 shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   <div className="mb-1 flex items-start justify-between gap-2">
                     <p className="font-medium text-ink">{doc.title}</p>
@@ -189,7 +189,7 @@ export default function DashboardPage() {
                             onClick on the row. */}
                         <Link
                           href={`/documents/${doc.id}`}
-                          className="hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                          className="hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                         >
                           {doc.title}
                         </Link>

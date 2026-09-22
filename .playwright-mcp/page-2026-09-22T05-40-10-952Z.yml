@@ -1,0 +1,576 @@
+- generic [ref=e2]:
+  - status [ref=e3]: illoca – Architectural design at the speed of thought
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - link [ref=e9] [cursor=pointer]:
+        - /url: /
+      - link "Try for free" [ref=e12] [cursor=pointer]:
+        - /url: https://app.illoca.com
+      - button "Menu Close" [ref=e13]:
+        - generic [ref=e15]:
+          - generic [ref=e16]: Menu
+          - generic [ref=e17]: Close
+    - generic:
+      - generic:
+        - list:
+          - listitem:
+            - link "Features" [ref=e20] [cursor=pointer]:
+              - /url: /?section=features
+          - listitem:
+            - link "Pricing" [ref=e21] [cursor=pointer]:
+              - /url: /?section=pricing
+          - listitem:
+            - link "FAQs" [ref=e22] [cursor=pointer]:
+              - /url: /?section=faqs
+  - generic [ref=e25]:
+    - generic [ref=e30]:
+      - generic [ref=e31]:
+        - generic:
+          - generic [aria-hidden]: architectural
+          - heading "Design at the speed of thought K not software" [level=1]:
+            - generic: Design at the speed of thought
+            - generic [aria-hidden]:
+              - generic:
+                - generic: D
+                - generic: e
+                - generic: s
+                - generic: i
+                - generic: g
+                - generic: "n"
+                - generic: a
+                - generic: t
+              - generic:
+                - generic: t
+                - generic: h
+                - generic: e
+                - generic: s
+                - generic: p
+                - generic: e
+                - generic: e
+                - generic: d
+                - generic: o
+                - generic: f
+              - generic:
+                - generic: t
+                - generic: h
+                - generic: o
+                - generic: u
+                - generic: g
+                - generic: h
+                - generic: t
+            - generic [aria-hidden]:
+              - generic:
+                - generic: D
+                - generic: e
+                - generic: s
+                - generic: i
+                - generic: g
+                - generic: "n"
+                - generic: a
+                - generic: t
+              - generic:
+                - generic: t
+                - generic: h
+                - generic: e
+                - generic: s
+                - generic: p
+                - generic: e
+                - generic: e
+                - generic: d
+                - generic: o
+                - generic: f
+              - generic:
+                - generic: t
+                - generic: h
+                - generic: o
+                - generic: u
+                - generic: g
+                - generic: h
+                - generic: t
+            - generic "K not software":
+              - generic:
+                - generic [aria-hidden]: K
+              - generic:
+                - generic [aria-hidden]: "n"
+                - generic [aria-hidden]: o
+                - generic [aria-hidden]: t
+              - generic:
+                - generic [aria-hidden]: s
+                - generic [aria-hidden]: o
+                - generic [aria-hidden]: f
+                - generic [aria-hidden]: t
+                - generic [aria-hidden]: w
+                - generic [aria-hidden]: a
+                - generic [aria-hidden]: r
+                - generic [aria-hidden]: e
+      - region "Assisted sketching" [ref=e33]:
+        - generic [ref=e39]:
+          - generic "1 Intents, Translated!" [ref=e40]:
+            - generic [aria-hidden] [ref=e42]: "1"
+            - generic [ref=e43]:
+              - generic [aria-hidden] [ref=e46]: I
+              - generic [aria-hidden] [ref=e47]: "n"
+              - generic [aria-hidden] [ref=e48]: t
+              - generic [aria-hidden] [ref=e49]: e
+              - generic [aria-hidden] [ref=e50]: "n"
+              - generic [aria-hidden] [ref=e51]: t
+              - generic [aria-hidden] [ref=e52]: s
+              - generic [aria-hidden] [ref=e53]: ","
+              - generic [aria-hidden] [ref=e54]: T
+              - generic [aria-hidden] [ref=e55]: r
+              - generic [aria-hidden] [ref=e56]: a
+              - generic [aria-hidden] [ref=e57]: "n"
+              - generic [aria-hidden] [ref=e58]: s
+              - generic [aria-hidden] [ref=e59]: l
+              - generic [aria-hidden] [ref=e60]: a
+              - generic [aria-hidden] [ref=e61]: t
+              - generic [aria-hidden] [ref=e62]: e
+              - generic [aria-hidden] [ref=e63]: d
+              - generic [aria-hidden] [ref=e64]: "!"
+          - heading [level=2] [ref=e67]:
+            - generic "Augmented Sketch" [ref=e68]:
+              - generic [aria-hidden] [ref=e69]:
+                - generic [aria-hidden] [ref=e70]: A
+                - generic [aria-hidden] [ref=e71]: u
+                - generic [aria-hidden] [ref=e72]: g
+                - generic [aria-hidden] [ref=e73]: m
+                - generic [aria-hidden] [ref=e74]: e
+                - generic [aria-hidden] [ref=e75]: "n"
+                - generic [aria-hidden] [ref=e76]: t
+                - generic [aria-hidden] [ref=e77]: e
+                - generic [aria-hidden] [ref=e78]: d
+              - generic [aria-hidden] [ref=e79]:
+                - generic [aria-hidden] [ref=e80]: S
+                - generic [aria-hidden] [ref=e81]: k
+                - generic [aria-hidden] [ref=e82]: e
+                - generic [aria-hidden] [ref=e83]: t
+                - generic [aria-hidden] [ref=e84]: c
+                - generic [aria-hidden] [ref=e85]: h
+            - generic [aria-hidden] [ref=e86]:
+              - generic [aria-hidden] [ref=e87]:
+                - generic [aria-hidden] [ref=e88]: A
+                - generic [aria-hidden] [ref=e89]: u
+                - generic [aria-hidden] [ref=e90]: g
+                - generic [aria-hidden] [ref=e91]: m
+                - generic [aria-hidden] [ref=e92]: e
+                - generic [aria-hidden] [ref=e93]: "n"
+                - generic [aria-hidden] [ref=e94]: t
+                - generic [aria-hidden] [ref=e95]: e
+                - generic [aria-hidden] [ref=e96]: d
+              - generic [aria-hidden] [ref=e97]:
+                - generic [aria-hidden] [ref=e98]: S
+                - generic [aria-hidden] [ref=e99]: k
+                - generic [aria-hidden] [ref=e100]: e
+                - generic [aria-hidden] [ref=e101]: t
+                - generic [aria-hidden] [ref=e102]: c
+                - generic [aria-hidden] [ref=e103]: h
+          - generic [ref=e105]:
+            - button "Watch the demo Watch the demo":
+              - generic:
+                - generic: Watch the demo
+                - generic: Watch the demo
+      - generic [ref=e112]:
+        - generic "2 Ideas, Shaped!" [ref=e113]:
+          - generic [aria-hidden] [ref=e115]: "2"
+          - generic [ref=e116]:
+            - generic [aria-hidden] [ref=e119]: I
+            - generic [aria-hidden] [ref=e120]: d
+            - generic [aria-hidden] [ref=e121]: e
+            - generic [aria-hidden] [ref=e122]: a
+            - generic [aria-hidden] [ref=e123]: s
+            - generic [aria-hidden] [ref=e124]: ","
+            - generic [aria-hidden] [ref=e125]: S
+            - generic [aria-hidden] [ref=e126]: h
+            - generic [aria-hidden] [ref=e127]: a
+            - generic [aria-hidden] [ref=e128]: p
+            - generic [aria-hidden] [ref=e129]: e
+            - generic [aria-hidden] [ref=e130]: d
+            - generic [aria-hidden] [ref=e131]: "!"
+        - heading [level=2] [ref=e134]:
+          - generic "Adaptive Massing" [ref=e135]:
+            - generic [aria-hidden] [ref=e136]:
+              - generic [aria-hidden] [ref=e137]: A
+              - generic [aria-hidden] [ref=e138]: d
+              - generic [aria-hidden] [ref=e139]: a
+              - generic [aria-hidden] [ref=e140]: p
+              - generic [aria-hidden] [ref=e141]: t
+              - generic [aria-hidden] [ref=e142]: i
+              - generic [aria-hidden] [ref=e143]: v
+              - generic [aria-hidden] [ref=e144]: e
+            - generic [aria-hidden] [ref=e145]:
+              - generic [aria-hidden] [ref=e146]: M
+              - generic [aria-hidden] [ref=e147]: a
+              - generic [aria-hidden] [ref=e148]: s
+              - generic [aria-hidden] [ref=e149]: s
+              - generic [aria-hidden] [ref=e150]: i
+              - generic [aria-hidden] [ref=e151]: "n"
+              - generic [aria-hidden] [ref=e152]: g
+          - generic [aria-hidden] [ref=e153]:
+            - generic [aria-hidden] [ref=e154]:
+              - generic [aria-hidden] [ref=e155]: A
+              - generic [aria-hidden] [ref=e156]: d
+              - generic [aria-hidden] [ref=e157]: a
+              - generic [aria-hidden] [ref=e158]: p
+              - generic [aria-hidden] [ref=e159]: t
+              - generic [aria-hidden] [ref=e160]: i
+              - generic [aria-hidden] [ref=e161]: v
+              - generic [aria-hidden] [ref=e162]: e
+            - generic [aria-hidden] [ref=e163]:
+              - generic [aria-hidden] [ref=e164]: M
+              - generic [aria-hidden] [ref=e165]: a
+              - generic [aria-hidden] [ref=e166]: s
+              - generic [aria-hidden] [ref=e167]: s
+              - generic [aria-hidden] [ref=e168]: i
+              - generic [aria-hidden] [ref=e169]: "n"
+              - generic [aria-hidden] [ref=e170]: g
+        - generic [ref=e172]:
+          - button "Watch the demo Watch the demo":
+            - generic:
+              - generic: Watch the demo
+              - generic: Watch the demo
+      - generic [ref=e175]:
+        - generic [ref=e179]:
+          - generic "3 Iteration, Orchestrated!" [ref=e180]:
+            - generic [aria-hidden] [ref=e182]: "3"
+            - generic [ref=e183]:
+              - generic [aria-hidden] [ref=e186]: I
+              - generic [aria-hidden] [ref=e187]: t
+              - generic [aria-hidden] [ref=e188]: e
+              - generic [aria-hidden] [ref=e189]: r
+              - generic [aria-hidden] [ref=e190]: a
+              - generic [aria-hidden] [ref=e191]: t
+              - generic [aria-hidden] [ref=e192]: i
+              - generic [aria-hidden] [ref=e193]: o
+              - generic [aria-hidden] [ref=e194]: "n"
+              - generic [aria-hidden] [ref=e195]: ","
+              - generic [aria-hidden] [ref=e196]: O
+              - generic [aria-hidden] [ref=e197]: r
+              - generic [aria-hidden] [ref=e198]: c
+              - generic [aria-hidden] [ref=e199]: h
+              - generic [aria-hidden] [ref=e200]: e
+              - generic [aria-hidden] [ref=e201]: s
+              - generic [aria-hidden] [ref=e202]: t
+              - generic [aria-hidden] [ref=e203]: r
+              - generic [aria-hidden] [ref=e204]: a
+              - generic [aria-hidden] [ref=e205]: t
+              - generic [aria-hidden] [ref=e206]: e
+              - generic [aria-hidden] [ref=e207]: d
+              - generic [aria-hidden] [ref=e208]: "!"
+          - heading [level=2] [ref=e211]:
+            - generic "Prompted Plans" [ref=e212]:
+              - generic [aria-hidden] [ref=e213]:
+                - generic [aria-hidden] [ref=e214]: P
+                - generic [aria-hidden] [ref=e215]: r
+                - generic [aria-hidden] [ref=e216]: o
+                - generic [aria-hidden] [ref=e217]: m
+                - generic [aria-hidden] [ref=e218]: p
+                - generic [aria-hidden] [ref=e219]: t
+                - generic [aria-hidden] [ref=e220]: e
+                - generic [aria-hidden] [ref=e221]: d
+              - generic [aria-hidden] [ref=e222]:
+                - generic [aria-hidden] [ref=e223]: P
+                - generic [aria-hidden] [ref=e224]: l
+                - generic [aria-hidden] [ref=e225]: a
+                - generic [aria-hidden] [ref=e226]: "n"
+                - generic [aria-hidden] [ref=e227]: s
+            - generic [aria-hidden] [ref=e228]:
+              - generic [aria-hidden] [ref=e229]:
+                - generic [aria-hidden] [ref=e230]: P
+                - generic [aria-hidden] [ref=e231]: r
+                - generic [aria-hidden] [ref=e232]: o
+                - generic [aria-hidden] [ref=e233]: m
+                - generic [aria-hidden] [ref=e234]: p
+                - generic [aria-hidden] [ref=e235]: t
+                - generic [aria-hidden] [ref=e236]: e
+                - generic [aria-hidden] [ref=e237]: d
+              - generic [aria-hidden] [ref=e238]:
+                - generic [aria-hidden] [ref=e239]: P
+                - generic [aria-hidden] [ref=e240]: l
+                - generic [aria-hidden] [ref=e241]: a
+                - generic [aria-hidden] [ref=e242]: "n"
+                - generic [aria-hidden] [ref=e243]: s
+          - generic [ref=e245]:
+            - button "Watch the demo Watch the demo":
+              - generic:
+                - generic: Watch the demo
+                - generic: Watch the demo
+        - generic [ref=e246]:
+          - generic:
+            - generic "Create an office layout"
+            - generic:
+              - generic:
+                - generic: Generate
+                - generic: Generate
+      - generic [ref=e252]:
+        - generic "4 Options, Multiplied!" [ref=e253]:
+          - generic [aria-hidden] [ref=e255]: "4"
+          - generic [ref=e256]:
+            - generic [aria-hidden] [ref=e259]: O
+            - generic [aria-hidden] [ref=e260]: p
+            - generic [aria-hidden] [ref=e261]: t
+            - generic [aria-hidden] [ref=e262]: i
+            - generic [aria-hidden] [ref=e263]: o
+            - generic [aria-hidden] [ref=e264]: "n"
+            - generic [aria-hidden] [ref=e265]: s
+            - generic [aria-hidden] [ref=e266]: ","
+            - generic [aria-hidden] [ref=e267]: M
+            - generic [aria-hidden] [ref=e268]: u
+            - generic [aria-hidden] [ref=e269]: l
+            - generic [aria-hidden] [ref=e270]: t
+            - generic [aria-hidden] [ref=e271]: i
+            - generic [aria-hidden] [ref=e272]: p
+            - generic [aria-hidden] [ref=e273]: l
+            - generic [aria-hidden] [ref=e274]: i
+            - generic [aria-hidden] [ref=e275]: e
+            - generic [aria-hidden] [ref=e276]: d
+            - generic [aria-hidden] [ref=e277]: "!"
+        - heading [level=2] [ref=e280]:
+          - generic "Agentic Refinement" [ref=e281]:
+            - generic [aria-hidden] [ref=e282]:
+              - generic [aria-hidden] [ref=e283]: A
+              - generic [aria-hidden] [ref=e284]: g
+              - generic [aria-hidden] [ref=e285]: e
+              - generic [aria-hidden] [ref=e286]: "n"
+              - generic [aria-hidden] [ref=e287]: t
+              - generic [aria-hidden] [ref=e288]: i
+              - generic [aria-hidden] [ref=e289]: c
+            - generic [aria-hidden] [ref=e290]:
+              - generic [aria-hidden] [ref=e291]: R
+              - generic [aria-hidden] [ref=e292]: e
+              - generic [aria-hidden] [ref=e293]: f
+              - generic [aria-hidden] [ref=e294]: i
+              - generic [aria-hidden] [ref=e295]: "n"
+              - generic [aria-hidden] [ref=e296]: e
+              - generic [aria-hidden] [ref=e297]: m
+              - generic [aria-hidden] [ref=e298]: e
+              - generic [aria-hidden] [ref=e299]: "n"
+              - generic [aria-hidden] [ref=e300]: t
+          - generic [aria-hidden] [ref=e301]:
+            - generic [aria-hidden] [ref=e302]:
+              - generic [aria-hidden] [ref=e303]: A
+              - generic [aria-hidden] [ref=e304]: g
+              - generic [aria-hidden] [ref=e305]: e
+              - generic [aria-hidden] [ref=e306]: "n"
+              - generic [aria-hidden] [ref=e307]: t
+              - generic [aria-hidden] [ref=e308]: i
+              - generic [aria-hidden] [ref=e309]: c
+            - generic [aria-hidden] [ref=e310]:
+              - generic [aria-hidden] [ref=e311]: R
+              - generic [aria-hidden] [ref=e312]: e
+              - generic [aria-hidden] [ref=e313]: f
+              - generic [aria-hidden] [ref=e314]: i
+              - generic [aria-hidden] [ref=e315]: "n"
+              - generic [aria-hidden] [ref=e316]: e
+              - generic [aria-hidden] [ref=e317]: m
+              - generic [aria-hidden] [ref=e318]: e
+              - generic [aria-hidden] [ref=e319]: "n"
+              - generic [aria-hidden] [ref=e320]: t
+        - generic [ref=e322]:
+          - button "Watch the demo Watch the demo":
+            - generic:
+              - generic: Watch the demo
+              - generic: Watch the demo
+      - generic [ref=e329]:
+        - generic "5 Imagination, Realized!" [ref=e331]:
+          - generic [aria-hidden] [ref=e333]: "5"
+          - generic [ref=e334]:
+            - generic [aria-hidden] [ref=e337]: I
+            - generic [aria-hidden] [ref=e338]: m
+            - generic [aria-hidden] [ref=e339]: a
+            - generic [aria-hidden] [ref=e340]: g
+            - generic [aria-hidden] [ref=e341]: i
+            - generic [aria-hidden] [ref=e342]: "n"
+            - generic [aria-hidden] [ref=e343]: a
+            - generic [aria-hidden] [ref=e344]: t
+            - generic [aria-hidden] [ref=e345]: i
+            - generic [aria-hidden] [ref=e346]: o
+            - generic [aria-hidden] [ref=e347]: "n"
+            - generic [aria-hidden] [ref=e348]: ","
+            - generic [aria-hidden] [ref=e349]: R
+            - generic [aria-hidden] [ref=e350]: e
+            - generic [aria-hidden] [ref=e351]: a
+            - generic [aria-hidden] [ref=e352]: l
+            - generic [aria-hidden] [ref=e353]: i
+            - generic [aria-hidden] [ref=e354]: z
+            - generic [aria-hidden] [ref=e355]: e
+            - generic [aria-hidden] [ref=e356]: d
+            - generic [aria-hidden] [ref=e357]: "!"
+        - heading [level=2] [ref=e360]:
+          - generic "Instant Facades" [ref=e361]:
+            - generic [aria-hidden] [ref=e362]:
+              - generic [aria-hidden] [ref=e363]: I
+              - generic [aria-hidden] [ref=e364]: "n"
+              - generic [aria-hidden] [ref=e365]: s
+              - generic [aria-hidden] [ref=e366]: t
+              - generic [aria-hidden] [ref=e367]: a
+              - generic [aria-hidden] [ref=e368]: "n"
+              - generic [aria-hidden] [ref=e369]: t
+            - generic [aria-hidden] [ref=e370]:
+              - generic [aria-hidden] [ref=e371]: F
+              - generic [aria-hidden] [ref=e372]: a
+              - generic [aria-hidden] [ref=e373]: c
+              - generic [aria-hidden] [ref=e374]: a
+              - generic [aria-hidden] [ref=e375]: d
+              - generic [aria-hidden] [ref=e376]: e
+              - generic [aria-hidden] [ref=e377]: s
+          - generic [aria-hidden] [ref=e378]:
+            - generic [aria-hidden] [ref=e379]:
+              - generic [aria-hidden] [ref=e380]: I
+              - generic [aria-hidden] [ref=e381]: "n"
+              - generic [aria-hidden] [ref=e382]: s
+              - generic [aria-hidden] [ref=e383]: t
+              - generic [aria-hidden] [ref=e384]: a
+              - generic [aria-hidden] [ref=e385]: "n"
+              - generic [aria-hidden] [ref=e386]: t
+            - generic [aria-hidden] [ref=e387]:
+              - generic [aria-hidden] [ref=e388]: F
+              - generic [aria-hidden] [ref=e389]: a
+              - generic [aria-hidden] [ref=e390]: c
+              - generic [aria-hidden] [ref=e391]: a
+              - generic [aria-hidden] [ref=e392]: d
+              - generic [aria-hidden] [ref=e393]: e
+              - generic [aria-hidden] [ref=e394]: s
+        - generic [ref=e396]:
+          - button "Watch the demo Watch the demo":
+            - generic:
+              - generic: Watch the demo
+              - generic: Watch the demo
+      - generic [ref=e420]:
+        - paragraph [ref=e421]:
+          - strong [ref=e422]: To those who shape the world,
+        - paragraph [ref=e423]: Design was never meant to happen through buttons, commands, and rigid workflows.
+        - paragraph [ref=e424]: It begins more naturally than that, through sketches, markups, references, conversation, and iteration. Through the back-and-forth between instinct and judgment that gives architecture its life.
+        - paragraph [ref=e425]: But for too long, that flow has been interrupted, asking you to translate, redraw, rebuild, and re-explain instead of simply design.
+        - paragraph [ref=e426]: "We built Tracing Paper for the way this work actually happens: a place where intent can be expressed more directly, and where the production burden fades into the background."
+        - paragraph [ref=e427]: So you can explore more freely, refine more quickly, and stay closer to the ideas that matter most.
+        - paragraph [ref=e428]:
+          - strong [ref=e429]: This is for you.
+      - generic [ref=e432]:
+        - heading "Pricing" [level=2] [ref=e433]
+        - generic [ref=e437]:
+          - heading "Get 1,000 starter credits when you sign up today." [level=3] [ref=e438]
+          - generic [ref=e439]:
+            - generic [ref=e440]:
+              - heading "Explore" [level=2] [ref=e441]
+              - heading "$29.99 / person / month" [level=3] [ref=e442]
+              - list [ref=e443]:
+                - listitem [ref=e444]: Everything in Free
+                - listitem [ref=e445]: 3,000 credits per month
+                - listitem [ref=e446]: More messages
+                - listitem [ref=e447]: More floor plan / building generation
+                - listitem [ref=e448]: More export quotas
+                - listitem [ref=e449]: Early access to new features
+              - link "Sign up Sign up" [ref=e451] [cursor=pointer]:
+                - /url: https://app.illoca.com/sign-in
+                - generic [ref=e463]:
+                  - generic [ref=e464]: Sign up
+                  - generic [ref=e465]: Sign up
+            - generic [ref=e466]:
+              - heading "Team" [level=2] [ref=e467]
+              - heading "$59.99+ / team / month" [level=3] [ref=e468]
+              - list [ref=e469]:
+                - listitem [ref=e470]: Everything in Explore
+                - listitem [ref=e471]: Pooled team usage
+                - listitem [ref=e472]: Member, permissions and billing management
+                - listitem [ref=e473]: Multiplayer collaboration
+                - listitem [ref=e474]: Enhanced Support, SSO and license management
+              - link "Join waitlist Join waitlist" [ref=e476] [cursor=pointer]:
+                - /url: https://tally.so/r/RGBXJ4
+                - generic [ref=e488]:
+                  - generic [ref=e489]: Join waitlist
+                  - generic [ref=e490]: Join waitlist
+            - generic [ref=e491]:
+              - heading "Enterprise" [level=2] [ref=e492]
+              - heading "Custom pricing" [level=3] [ref=e493]
+              - list [ref=e494]:
+                - listitem [ref=e495]: Everything in Team
+                - listitem [ref=e496]: Custom agents and enterprise features
+                - listitem [ref=e497]: Enterprise-level security and controls
+                - listitem [ref=e498]: Expanded usage based on different use cases
+                - listitem [ref=e499]: 24/7 Priority Support, SLAs and custom legal terms
+              - link "Contact us Contact us" [ref=e501] [cursor=pointer]:
+                - /url: mailto:hello@illoca.com
+                - generic [ref=e513]:
+                  - generic [ref=e514]: Contact us
+                  - generic [ref=e515]: Contact us
+          - paragraph [ref=e516]: Free plan includes 100 credits that refresh every month.
+      - generic [ref=e519]:
+        - heading "FAQs" [level=2] [ref=e520]
+        - generic [ref=e525]:
+          - generic [ref=e526]:
+            - generic [ref=e527]: need help?
+            - heading "Frequently Asked Questions" [level=3] [ref=e531]
+            - link "hello@illoca.com hello@illoca.com" [ref=e532] [cursor=pointer]:
+              - /url: mailto:hello@illoca.com
+              - generic [ref=e544]:
+                - generic [ref=e545]: hello@illoca.com
+                - generic [ref=e546]: hello@illoca.com
+          - generic [ref=e547]:
+            - button [ref=e548] [cursor=pointer]
+            - button [ref=e552] [cursor=pointer]
+            - button [ref=e556] [cursor=pointer]
+            - button [ref=e560] [cursor=pointer]
+            - button [ref=e564] [cursor=pointer]
+    - generic [ref=e568]:
+      - contentinfo [ref=e570]:
+        - generic [ref=e581]:
+          - generic [ref=e582]: Architectural design at the speed of thought, not software.
+          - generic [ref=e584]:
+            - generic [ref=e585]:
+              - generic [ref=e586]:
+                - heading "Quick links" [level=3] [ref=e587]
+                - list [ref=e588]:
+                  - listitem [ref=e589]:
+                    - link "Home Home" [ref=e590] [cursor=pointer]:
+                      - /url: /
+                      - generic [ref=e592]:
+                        - generic [ref=e593]: Home
+                        - generic [ref=e594]: Home
+                  - listitem [ref=e597]:
+                    - link "Legal Legal" [ref=e598] [cursor=pointer]:
+                      - /url: /legal
+                      - generic [ref=e600]:
+                        - generic [ref=e601]: Legal
+                        - generic [ref=e602]: Legal
+              - generic [ref=e605]:
+                - heading "Connect" [level=3] [ref=e606]
+                - list [ref=e607]:
+                  - listitem [ref=e608]:
+                    - link "LinkedIn LinkedIn" [ref=e609] [cursor=pointer]:
+                      - /url: https://www.linkedin.com/company/illoca/
+                      - generic [ref=e611]:
+                        - generic [ref=e612]: LinkedIn
+                        - generic [ref=e613]: LinkedIn
+                  - listitem [ref=e616]:
+                    - link "X / Twitter X / Twitter" [ref=e617] [cursor=pointer]:
+                      - /url: https://x.com/app_illoca
+                      - generic [ref=e619]:
+                        - generic [ref=e620]: X / Twitter
+                        - generic [ref=e621]: X / Twitter
+                  - listitem [ref=e624]:
+                    - link "Instagram Instagram" [ref=e625] [cursor=pointer]:
+                      - /url: https://www.instagram.com/app.illoca
+                      - generic [ref=e627]:
+                        - generic [ref=e628]: Instagram
+                        - generic [ref=e629]: Instagram
+                  - listitem [ref=e632]:
+                    - link "hello@illoca.com hello@illoca.com" [ref=e633] [cursor=pointer]:
+                      - /url: mailto:hello@illoca.com
+                      - generic [ref=e635]:
+                        - generic [ref=e636]: hello@illoca.com
+                        - generic [ref=e637]: hello@illoca.com
+            - generic [ref=e640]:
+              - text: Copyright ©2026 illoca
+              - link "Terms" [ref=e641] [cursor=pointer]:
+                - /url: /legal/terms
+              - link "Privacy" [ref=e642] [cursor=pointer]:
+                - /url: /legal/privacy
+      - dialog "Cookie consent" [ref=e643]:
+        - paragraph [ref=e644]:
+          - text: This website uses cookies.
+          - link "Learn more" [ref=e645] [cursor=pointer]:
+            - /url: /legal/privacy#cookies
+          - text: .
+        - generic [ref=e646]:
+          - button "Accept" [ref=e647] [cursor=pointer]
+          - button "Reject" [ref=e653] [cursor=pointer]

@@ -17,7 +17,7 @@ export default function ContactPage() {
       <PageHeader title="Contact" backHref="/" backLabel="Home" />
       <div className="rounded-card border border-line bg-paper p-6 shadow-card">
         <p className="flex items-center gap-2 text-body text-ink">
-          <Mail className="h-4 w-4 text-brand" aria-hidden />
+          <Mail className="h-4 w-4 text-accent" aria-hidden />
           <a href="mailto:hello@vidhata.example" className="hover:underline">
             hello@vidhata.example
           </a>
@@ -25,7 +25,7 @@ export default function ContactPage() {
         <p className="mt-2 text-small text-muted-fg">
           We typically respond within one business day. For empanelled
           advocates, use the{" "}
-          <a href="/lawyer-login" className="text-brand hover:underline">
+          <a href="/lawyer-login" className="text-accent hover:underline">
             advocate sign-in
           </a>{" "}
           — this address is for general and client enquiries.

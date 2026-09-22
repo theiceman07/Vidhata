@@ -26,7 +26,7 @@ export function DevRoleSwitcher() {
           className={cn(
             "rounded-control px-2 py-1 text-small transition-colors",
             role === r.value
-              ? "bg-brand text-brand-fg"
+              ? "bg-accent text-accent-fg"
               : "text-ink hover:bg-canvas",
           )}
         >

@@ -126,7 +126,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
                   className={cn(
                     "rounded-control px-2 py-1.5 text-small transition-colors",
                     highlightedClause === f.clauseReference
-                      ? "bg-brand/15 text-brand"
+                      ? "bg-accent/15 text-accent"
                       : "text-ink",
                   )}
                 >
