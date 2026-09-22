@@ -1,23 +1,33 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { CheckCircle2, ClipboardCheck } from "lucide-react";
+import Link from "next/link";
+import { Check, ChevronLeft } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { PageHeader } from "@/components/shared/page-header";
 import { ErrorState } from "@/components/shared/error-state";
+import { Seal } from "@/components/document/seal";
+import { AuditTrail } from "@/components/document/audit-trail";
+import { StateLabel } from "@/components/document/state-label";
+import { Dateline } from "@/components/document/dateline";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { SeverityPill } from "@/components/domain/severity-pill";
 import { getDocument, signOffDocument } from "@/lib/api/documents";
-import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
+import { openFindingCount, hasBlockedCitation } from "@/lib/findings";
+import { buildAuditTrail } from "@/lib/audit";
 import type { ContractDocument } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
 
+/**
+ * Sign-off.
+ *
+ * The most visually authoritative moment in the interface, because the
+ * product promise is not that the first pass is clever. It is that a
+ * named advocate stood behind the result.
+ */
 const CONFIRMATIONS = [
   {
     id: "reviewed",
@@ -40,8 +50,16 @@ const CONFIRMATIONS = [
   },
 ] as const;
 
+function Checkline({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="flex items-baseline gap-3 border-b border-line py-3 last:border-b-0">
+      <Check className="h-4 w-4 shrink-0 text-verified" aria-hidden />
+      <span className="text-meta text-ink">{children}</span>
+    </li>
+  );
+}
+
 export default function SignOffPage({ params }: { params: { id: string } }) {
-  const router = useRouter();
   const [doc, setDoc] = useState<ContractDocument | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -72,9 +90,9 @@ export default function SignOffPage({ params }: { params: { id: string } }) {
 
   if (state === "loading") {
     return (
-      <div className="space-y-3">
-        <Skeleton className="h-10 w-1/2 rounded-card" />
-        <Skeleton className="h-64 w-full rounded-card" />
+      <div className="mx-auto max-w-2xl px-4 py-12">
+        <Skeleton className="h-10 w-1/2" />
+        <Skeleton className="mt-decision h-64 w-full" />
       </div>
     );
   }
@@ -83,160 +101,162 @@ export default function SignOffPage({ params }: { params: { id: string } }) {
     return <ErrorState message={errorMessage} onRetry={load} />;
   }
 
-  const pendingCount = doc.findings.filter(
-    (f) => f.disposition === "pending",
-  ).length;
-  const allChecked = CONFIRMATIONS.every((c) => checked[c.id]);
-  const canApprove = allChecked && pendingCount === 0 && !submitting;
-
-  async function handleApprove() {
-    if (!doc) return;
-    setSubmitting(true);
-    try {
-      const settled = await signOffDocument(doc.id);
-      // QA 3.1: this used to router.push to /documents/[id]/checklist — a
-      // client-portal route. The (client) layout guard immediately bounced
-      // the advocate to /login. Sign-off now stays on an advocate-owned
-      // URL and shows its own success state.
-      setDoc(settled);
-      setSignedOffDoc(settled);
-      toast.success(
-        "Sign-off recorded. The client can now view the settled document.",
-      );
-    } catch (err) {
-      setErrorMessage(
-        err instanceof Error ? err.message : "Could not complete sign-off.",
-      );
-      setState("error");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
+  // The settled document, with the seal. This is the endpoint the whole
+  // arc has been travelling towards.
   if (signedOffDoc) {
+    const settled = signedOffDoc;
     return (
-      <div className="mx-auto max-w-xl text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-verified/15">
-          <ClipboardCheck className="h-7 w-7 text-verified" aria-hidden />
+      <div className="mx-auto max-w-2xl px-4 py-12">
+        <Dateline segments={["Document ready"]} />
+        <div className="mt-3 flex flex-wrap items-baseline justify-between gap-4">
+          <h1 className="font-display text-h1 text-ink">{settled.title}</h1>
+          <StateLabel state="settled" tone="solid" />
         </div>
-        <h1 className="font-display text-h1 text-ink">Sign-off recorded</h1>
-        <p className="mt-2 text-body text-muted-fg">
-          {signedOffDoc.title} was settled
-          {signedOffDoc.settledAt &&
-            ` on ${format(new Date(signedOffDoc.settledAt), "d MMM yyyy, HH:mm")}`}
-          , signed by {CURRENT_ADVOCATE.name} ({CURRENT_ADVOCATE.bar}).
-        </p>
-        <p className="mt-1 text-small text-muted-fg">
-          {signedOffDoc.findings.length} finding
-          {signedOffDoc.findings.length === 1 ? "" : "s"} adjudicated · the
-          client can now view the settled document and execution checklist.
-        </p>
-        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-          <Button onClick={() => router.push("/queue")}>Back to queue</Button>
-          <Button
-            variant="outline"
-            onClick={() => router.push(`/review/${signedOffDoc.id}`)}
-          >
-            View reviewed document
+
+        <div className="mt-decision flex flex-wrap items-center justify-between gap-8 border-y border-line py-decision">
+          <div>
+            <Dateline segments={["Advocate"]} />
+            <p className="mt-2 font-display text-h2 text-ink">
+              {settled.advocate?.name}
+            </p>
+            <Dateline
+              segments={[
+                `Bar council no. ${settled.advocate?.bar}`,
+                "Empanelled",
+              ]}
+              className="mt-2"
+            />
+            <Dateline
+              segments={[
+                settled.settledAt
+                  ? `Signed off · ${format(new Date(settled.settledAt), "d MMM yyyy · HH:mm")} IST`
+                  : null,
+              ]}
+              className="mt-1"
+            />
+          </div>
+
+          <Seal />
+        </div>
+
+        <div className="mt-decision">
+          <AuditTrail entries={buildAuditTrail(settled)} />
+        </div>
+
+        <div className="mt-decision flex flex-wrap gap-3">
+          <Button asChild>
+            <Link href="/queue">Back to the queue</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href={`/review/${settled.id}`}>Read the document</Link>
           </Button>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="mx-auto max-w-2xl">
-      <PageHeader
-        title="Sign off"
-        description={doc.title}
-        breadcrumb={`${doc.clientName} vs ${doc.counterpartyName}`}
-        backHref={`/review/${doc.id}`}
-        backLabel="Review"
-      />
+  const openCount = openFindingCount(doc);
+  const blocked = hasBlockedCitation(doc);
+  const citationCount = doc.findings.reduce((n, f) => n + f.citations.length, 0);
+  const settledCount = doc.findings.length - openCount;
+  const allChecked = CONFIRMATIONS.every((c) => checked[c.id]);
+  const canSignOff = allChecked && openCount === 0 && !blocked && !submitting;
 
-      {pendingCount > 0 && (
-        <div className="mb-4 rounded-card border border-caution/30 bg-caution/10 p-4 text-body text-ink">
-          {pendingCount} finding{pendingCount === 1 ? "" : "s"} still pending.
-          Every finding must reach a disposition before sign-off.
-        </div>
+  async function submit() {
+    if (!doc) return;
+    setSubmitting(true);
+    try {
+      const result = await signOffDocument(doc.id);
+      setSignedOffDoc(result);
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Could not sign off this document.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-12">
+      <Link
+        href={`/review/${doc.id}`}
+        className="inline-flex items-center gap-1 text-meta text-muted-fg hover:text-ink"
+      >
+        <ChevronLeft className="h-4 w-4" aria-hidden />
+        Back to the document
+      </Link>
+
+      <Dateline segments={["Document ready"]} className="mt-6" />
+      <h1 className="mt-3 font-display text-h1 text-ink">{doc.title}</h1>
+
+      {/* Counts come from the document, never hardcoded. */}
+      <ul className="mt-decision border-y border-line">
+        <Checkline>First pass completed</Checkline>
+        <Checkline>
+          {citationCount} {citationCount === 1 ? "citation" : "citations"}{" "}
+          checked against source
+        </Checkline>
+        <Checkline>
+          {settledCount} {settledCount === 1 ? "finding" : "findings"} settled,{" "}
+          {openCount} open
+        </Checkline>
+      </ul>
+
+      {(openCount > 0 || blocked) && (
+        // State the fact, then the owner. No document reaches a client
+        // without a recorded advocate sign-off, and none is signed off
+        // over an unevidenced concern.
+        <p className="mt-6 border-l-2 border-flagged pl-4 text-meta text-flagged">
+          {blocked
+            ? "A citation on this document is blocked. Resolve the source against the corpus before signing off."
+            : `${openCount} ${openCount === 1 ? "finding is" : "findings are"} still open. Settle them before signing off.`}
+        </p>
       )}
 
-      <section className="mb-6 rounded-card border border-line bg-paper p-5 shadow-card">
-        <h2 className="mb-3 font-display text-h3 text-ink">
-          Adjudication summary
+      <section className="mt-decision">
+        <h2 className="font-mono text-notation uppercase tracking-notation text-muted-fg">
+          Confirmations
         </h2>
-        <ul className="space-y-2">
-          {doc.findings.map((f) => (
+        <ul className="mt-4 border-t border-line">
+          {CONFIRMATIONS.map((confirmation) => (
             <li
-              key={f.findingId}
-              className="flex items-center justify-between gap-3 text-body"
+              key={confirmation.id}
+              className="flex items-start gap-3 border-b border-line py-4"
             >
-              <span className="flex items-center gap-2">
-                <SeverityPill severity={f.severity} />
-                <span className="text-ink">{f.clauseReference}</span>
-              </span>
-              <span className="text-small font-medium capitalize text-muted-fg">
-                {f.disposition}
-              </span>
-            </li>
-          ))}
-          {doc.findings.length === 0 && (
-            <li className="text-small text-muted-fg">No findings recorded.</li>
-          )}
-        </ul>
-      </section>
-
-      <section className="mb-6 rounded-card border border-line bg-paper p-5 shadow-card">
-        <h2 className="mb-3 font-display text-h3 text-ink">Confirmations</h2>
-        <div className="space-y-3">
-          {CONFIRMATIONS.map((c) => (
-            <div key={c.id} className="flex items-start gap-3">
               <Checkbox
-                id={c.id}
-                checked={!!checked[c.id]}
-                onCheckedChange={(v) =>
-                  setChecked((prev) => ({ ...prev, [c.id]: v === true }))
+                id={confirmation.id}
+                checked={!!checked[confirmation.id]}
+                onCheckedChange={(value) =>
+                  setChecked((prev) => ({
+                    ...prev,
+                    [confirmation.id]: value === true,
+                  }))
                 }
               />
-              <Label htmlFor={c.id} className="text-body font-normal text-ink">
-                {c.label}
+              <Label
+                htmlFor={confirmation.id}
+                className="text-meta font-normal leading-relaxed text-ink"
+              >
+                {confirmation.label}
               </Label>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="mb-6 rounded-card border border-line bg-paper p-5 shadow-card">
-        <h2 className="mb-3 font-display text-h3 text-ink">Audit trail</h2>
-        <ul className="space-y-2 text-small text-muted-fg">
-          <li>
-            {format(new Date(doc.createdAt), "d MMM yyyy, HH:mm")} — Document
-            created for {doc.clientName}.
-          </li>
-          {doc.advocate && (
-            <li>Claimed by {doc.advocate.name} ({doc.advocate.bar}).</li>
-          )}
-          {doc.findings.map((f) => (
-            <li key={f.findingId}>
-              {f.clauseReference}: {f.disposition}
-              {f.overrideNote ? ` — "${f.overrideNote}"` : ""}
             </li>
           ))}
         </ul>
       </section>
 
-      <Button
-        size="lg"
-        className="w-full"
-        disabled={!canApprove}
-        onClick={handleApprove}
-      >
-        <CheckCircle2 className="mr-2 h-4 w-4" aria-hidden />
-        {submitting ? "Signing off…" : "Approve and sign off"}
-      </Button>
-      <p className="mt-2 text-center text-small text-muted-fg">
-        Signing as {CURRENT_ADVOCATE.name} ({CURRENT_ADVOCATE.bar})
-      </p>
+      <div className="mt-decision">
+        <Button disabled={!canSignOff} onClick={submit}>
+          {submitting ? "Signing off" : "Sign off as advocate"}
+        </Button>
+        {!allChecked && openCount === 0 && !blocked && (
+          <p className="mt-3 text-meta text-muted-fg">
+            Confirm each statement above to sign off.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

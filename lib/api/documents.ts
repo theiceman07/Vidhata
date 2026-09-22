@@ -404,7 +404,17 @@ export async function signOffDocument(
   const doc = store.find((d) => d.id === docId);
   if (!doc) throw new MockApiError("Document not found.");
   if (doc.findings.some((f) => f.disposition === "pending")) {
-    throw new MockApiError("All findings must be adjudicated before sign-off.");
+    throw new MockApiError("Every finding must be settled before sign-off.");
+  }
+  // A citation is either verified or blocked, never "probably fine". The
+  // sign-off screen disables its control over this too, but the rule
+  // belongs here as well: a UI-only guard is not a guard.
+  if (
+    doc.findings.some((f) => f.citations.some((c) => c.status === "blocked"))
+  ) {
+    throw new MockApiError(
+      "A citation on this document is blocked. Resolve the source before sign-off.",
+    );
   }
   doc.status = "settled";
   doc.settledAt = new Date().toISOString();
