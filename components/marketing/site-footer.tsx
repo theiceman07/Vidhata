@@ -30,7 +30,7 @@ export function SiteFooter() {
           <Link href="/contact" className="hover:text-ink">
             Contact
           </Link>
-          <Link href="/lawyer-login" className="hover:text-ink">
+          <Link href="/advocate-login" className="hover:text-ink">
             Advocate login
           </Link>
         </nav>

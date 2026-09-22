@@ -62,10 +62,10 @@ export function PricingTable() {
               <Link href="/new">Start a deal</Link>
             </Button>
             {/* QA 3.2: the wizard now has a tier step, but there is still
-                no checkout anywhere in the product — say so instead of
+                no checkout anywhere in the product, so say so instead of
                 implying a purchase happens. */}
             <p className="mt-2 text-small text-muted-fg">
-              Billing is not enabled in this preview — no payment is taken.
+              Billing is not enabled in this preview. No payment is taken.
             </p>
           </div>
         ))}

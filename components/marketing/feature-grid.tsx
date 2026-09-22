@@ -1,41 +1,52 @@
-import { FileCheck2, ShieldCheck, Gavel } from "lucide-react";
+import { Dateline } from "@/components/document/dateline";
 
+/**
+ * The three non-negotiables, stated plainly.
+ *
+ * Cards and icons are gone. Each of these is a promise about how the
+ * product behaves, so it is set as a statement in the serif with its
+ * qualification beneath, the way a term sheet would set it.
+ */
 const FEATURES = [
   {
-    icon: FileCheck2,
+    label: "Corpus",
     title: "Drafted from a curated corpus",
     description:
       "Every clause comes from a vetted library, not a general-purpose model guessing at contract language.",
   },
   {
-    icon: ShieldCheck,
-    title: "Citation verification gates",
+    label: "Evidence",
+    title: "A citation is verified or it is blocked",
     description:
-      "A citation is either verified against the corpus or blocked. Nothing ambiguous reaches you.",
+      "There is no third state. Nothing ambiguous reaches you, and no finding is settled on a source that could not be checked.",
   },
   {
-    icon: Gavel,
+    label: "Accountability",
     title: "Mandatory advocate sign-off",
     description:
-      "An empanelled advocate adjudicates every finding. No document settles without a recorded sign-off.",
+      "An empanelled advocate adjudicates every finding. No document settles without a recorded sign-off attributable to a named person.",
   },
-];
+] as const;
 
 export function FeatureGrid() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-12">
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-        {FEATURES.map((f) => (
-          <div
-            key={f.title}
-            className="rounded-card border border-line bg-paper p-6 shadow-card"
+    <section className="mx-auto max-w-4xl px-6 py-[clamp(72px,10vw,140px)]">
+      <ul className="border-t border-line">
+        {FEATURES.map((feature) => (
+          <li
+            key={feature.title}
+            className="grid gap-x-8 gap-y-2 border-b border-line py-8 sm:grid-cols-[8rem_1fr]"
           >
-            <f.icon className="mb-3 h-6 w-6 text-accent" aria-hidden />
-            <h3 className="mb-1 font-display text-h3 text-ink">{f.title}</h3>
-            <p className="text-small text-muted-fg">{f.description}</p>
-          </div>
+            <Dateline segments={[feature.label]} />
+            <div>
+              <h3 className="font-display text-h2 text-ink">{feature.title}</h3>
+              <p className="mt-3 max-w-prose text-body text-muted-fg">
+                {feature.description}
+              </p>
+            </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }

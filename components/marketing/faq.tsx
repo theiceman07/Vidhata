@@ -19,7 +19,7 @@ const FAQS = [
   {
     question: "What happens if a citation can't be verified?",
     answer:
-      "It's blocked, not guessed at. A blocked citation is shown clearly and routed to your advocate for judgment — it never reaches you disguised as settled.",
+      "It's blocked, not guessed at. A blocked citation is shown clearly and routed to your advocate for judgment. It never reaches you disguised as settled.",
   },
   {
     // QA 3.2 / 7.3: the tier switch this FAQ used to describe didn't
@@ -28,7 +28,7 @@ const FAQS = [
     // flow doesn't exist yet, so the answer says that plainly.
     question: "Can I switch tiers after starting a deal?",
     answer:
-      "The review tier is chosen when you start a deal. Changing tiers mid-review isn't supported yet — talk to your advocate if a document turns out to need a different level of review.",
+      "The review tier is chosen when you start a deal. Changing tiers mid-review isn't supported yet. Talk to your advocate if a document turns out to need a different level of review.",
   },
 ];
 

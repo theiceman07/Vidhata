@@ -18,7 +18,7 @@ export default function LawyerPortalLayout({
     if (role === "lawyer") return;
     // See app/(client)/layout.tsx — same fix, mirrored (QA 3.1 / 10.2).
     if (role === "client") router.replace("/documents");
-    else router.replace("/lawyer-login");
+    else router.replace("/advocate-login");
   }, [role, router]);
 
   if (role !== "lawyer") return null;

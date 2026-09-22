@@ -19,7 +19,7 @@ export function EscalationPrompt({
         </div>
         <p className="text-body text-ink">
           That question asks what you should do, not what this document says.
-          I can only explain the settled document — I can&apos;t advise on
+          I can only explain the settled document. I can&apos;t advise on
           your situation.
         </p>
         <Button size="sm" className="mt-3" onClick={onRequestConsultation}>

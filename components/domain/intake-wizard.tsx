@@ -180,7 +180,7 @@ export function IntakeWizard() {
               <Input
                 id="title"
                 {...register("title")}
-                placeholder="Vendor agreement — packaging supply"
+                placeholder="Vendor agreement · packaging supply"
               />
               {errors.title && (
                 <p className="mt-1 text-small text-flagged">
@@ -252,7 +252,7 @@ export function IntakeWizard() {
                 <SelectContent>
                   {TIER_OPTIONS.map((t) => (
                     <SelectItem key={t.value} value={t.value}>
-                      {t.label} — {t.price}
+                      {t.label} · {t.price}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -260,7 +260,7 @@ export function IntakeWizard() {
               {/* QA 3.2: billing is not enabled in this preview — no
                   payment is taken for any tier. */}
               <p className="mt-1 text-small text-muted-fg">
-                Billing is not enabled in this preview — no payment is taken.
+                Billing is not enabled in this preview. No payment is taken.
               </p>
             </div>
           </>

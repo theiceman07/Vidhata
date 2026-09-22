@@ -25,7 +25,7 @@ export default function ContactPage() {
         <p className="mt-2 text-small text-muted-fg">
           We typically respond within one business day. For empanelled
           advocates, use the{" "}
-          <a href="/lawyer-login" className="text-accent hover:underline">
+          <a href="/advocate-login" className="text-accent hover:underline">
             advocate sign-in
           </a>{" "}
           — this address is for general and client enquiries.

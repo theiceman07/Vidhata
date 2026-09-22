@@ -1,62 +1,56 @@
-import { FileText, ScanSearch, Gavel } from "lucide-react";
+import { Dateline } from "@/components/document/dateline";
 
-// QA 10.1: the home page skipped the product's actual story — describe →
-// screen → sign off — straight from hero to feature bullets. This section
-// gives the landing page one more reason to exist beyond restating
-// features, and fills the whitespace the report flagged.
+/**
+ * Three steps, as numbered editorial rows.
+ *
+ * No cards and no icons: a gavel says nothing a heading does not, and
+ * the board rules out legal costume outright. The numbers carry the
+ * sequence, the hairlines carry the separation.
+ */
 const STEPS = [
   {
-    icon: FileText,
+    n: "01",
     title: "Describe the deal",
-    description:
-      "Tell us the parties, the transaction and the key terms. AI drafts a contract from a curated clause corpus — never a general-purpose model guessing at language.",
+    body: "Tell us the parties, the transaction and the key terms. The first pass drafts a contract from a curated clause corpus, never a general-purpose model writing law from memory.",
   },
   {
-    icon: ScanSearch,
+    n: "02",
     title: "The seven-layer pipeline screens it",
-    description:
-      "Every clause is checked against Indian statute — restraint of trade, MSMED payment terms, jurisdiction, citation verification — before a human ever sees it.",
+    body: "Every clause is checked against Indian statute: restraint of trade, MSMED payment terms, jurisdiction, and a citation gate that verifies each source against the corpus.",
   },
   {
-    icon: Gavel,
+    n: "03",
     title: "Your advocate signs off",
-    description:
-      "An empanelled advocate adjudicates every finding. You get the settled document plus an execution checklist for stamping, registration and signature.",
+    body: "An empanelled advocate adjudicates every finding and signs. You get the settled document plus an execution checklist for stamping, registration and e-signature.",
   },
-];
+] as const;
 
 export function HowItWorks() {
   return (
-    <section className="bg-canvas py-20">
-      <div className="mx-auto max-w-6xl px-4">
-        <h2 className="mb-2 text-center font-display text-h2 text-ink">
-          How it works
-        </h2>
-        <p className="mb-12 text-center text-body text-muted-fg">
-          Three steps from a description to a settled document.
-        </p>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {STEPS.map((step, i) => (
-            <div
-              key={step.title}
-              className="flex h-full flex-col rounded-control border border-line bg-paper p-6 shadow-sm"
-            >
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-accent-fg">
-                  <step.icon className="h-5 w-5" aria-hidden />
-                </div>
-                <span className="font-display text-h1 text-line">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-              </div>
-              <h3 className="mb-1 font-display text-h3 text-ink">
-                {step.title}
-              </h3>
-              <p className="text-body text-muted-fg">{step.description}</p>
+    <section className="mx-auto max-w-4xl px-6 py-[clamp(72px,10vw,140px)]">
+      <Dateline segments={["How it works"]} />
+      <h2 className="mt-4 max-w-2xl font-display text-h1 text-ink">
+        Three steps from a description to a settled document.
+      </h2>
+
+      <ol className="mt-12 border-t border-line">
+        {STEPS.map((step) => (
+          <li
+            key={step.n}
+            className="grid gap-x-8 gap-y-2 border-b border-line py-8 sm:grid-cols-[4rem_1fr]"
+          >
+            <p className="font-mono text-notation uppercase tracking-notation text-muted-fg">
+              {step.n}
+            </p>
+            <div>
+              <h3 className="font-display text-h2 text-ink">{step.title}</h3>
+              <p className="mt-3 max-w-prose text-body text-muted-fg">
+                {step.body}
+              </p>
             </div>
-          ))}
-        </div>
-      </div>
+          </li>
+        ))}
+      </ol>
     </section>
   );
 }
