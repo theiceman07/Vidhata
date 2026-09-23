@@ -18,7 +18,8 @@ const config: Config = {
         ink: "#141414",
         "muted-fg": "#5A5A5A",
         line: "#E5E5E0",
-        canvas: "#FAFAF8",
+        // The page is white. Panels are told apart by hairlines, not tint.
+        canvas: "#FFFFFF",
         paper: "#FFFFFF",
         parchment: "#F8F5EE",
 
@@ -32,28 +33,40 @@ const config: Config = {
         info: "#2C5282", // layer badges only, never decorative (7.8:1)
       },
       fontFamily: {
-        // Three voices. Type carries the difference between what a machine
-        // proposed and what a person decided.
-        display: ["var(--font-newsreader)", "Georgia", "serif"],
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
-        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+        // Board V3. A serif for headlines and contract text, a grotesk
+        // for everything else, and the wordmark on its own. There is no
+        // monospace voice any more: `font-mono` is kept as a name so
+        // numbers still line up, but it renders the grotesk with tabular
+        // figures (globals.css).
+        display: ["var(--font-serif)", "Georgia", "serif"],
+        clause: ["var(--font-serif)", "Georgia", "serif"],
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-sans)", "system-ui", "sans-serif"],
+        wordmark: ["var(--font-wordmark)", "var(--font-sans)", "sans-serif"],
       },
       fontSize: {
         // Headings never drop below weight 500. Body never exceeds 600. If
         // something needs weight, make it Newsreader, not bolder Inter.
+        // One scale, two jobs: the serif sizes carry headlines, the
+        // grotesk sizes carry reading. Headlines are 500, never bold.
         display: [
-          "clamp(56px, 9vw, 88px)",
-          { lineHeight: "1.05", fontWeight: "500", letterSpacing: "-0.02em" },
+          "clamp(44px, 6.2vw, 84px)",
+          { lineHeight: "1.02", fontWeight: "500", letterSpacing: "-0.025em" },
         ],
-        h1: ["32px", { lineHeight: "1.3", fontWeight: "600" }],
-        h2: ["24px", { lineHeight: "1.3", fontWeight: "500" }],
-        h3: ["18px", { lineHeight: "1.4", fontWeight: "500" }],
-        body: ["15px", { lineHeight: "1.6", fontWeight: "400" }],
-        meta: ["13px", { lineHeight: "1.5", fontWeight: "400" }],
+        h1: ["clamp(32px, 3.6vw, 48px)", { lineHeight: "1.08", fontWeight: "500", letterSpacing: "-0.02em" }],
+        h2: ["clamp(24px, 2.2vw, 30px)", { lineHeight: "1.15", fontWeight: "500", letterSpacing: "-0.015em" }],
+        h3: ["19px", { lineHeight: "1.3", fontWeight: "500", letterSpacing: "-0.01em" }],
+        lead: ["19px", { lineHeight: "1.55", fontWeight: "400" }],
+        body: ["16px", { lineHeight: "1.6", fontWeight: "400" }],
+        meta: ["14px", { lineHeight: "1.5", fontWeight: "400" }],
         // Helper text and fine print. Same measure as meta; kept as its own
         // name because older screens were written against it.
         small: ["13px", { lineHeight: "1.5", fontWeight: "400" }],
         notation: ["13px", { lineHeight: "1.5", fontWeight: "400" }],
+        // State labels, counts and table headings inside the application.
+        // Dense surfaces carry a lot of small facts; at 13px uppercase mono
+        // they shouted over the content they describe.
+        label: ["12px", { lineHeight: "16px", fontWeight: "400" }],
       },
       letterSpacing: {
         notation: "0.08em",
@@ -68,14 +81,19 @@ const config: Config = {
         measure: "68ch", // the document's reading measure
       },
       borderRadius: {
-        // Three interface radii, one special case for avatars. Without
-        // hierarchy a dialog reads like a text field.
-        control: "6px",
-        card: "8px",
-        modal: "12px",
+        // Round, everywhere, and never square: one family of curves.
+        // Buttons and labels are pills; fields and small controls 12px;
+        // cards 20px; modals and page panels 28px.
+        control: "12px",
+        card: "20px",
+        modal: "28px",
       },
       boxShadow: {
-        card: "0 1px 2px rgba(20,20,20,0.04)",
+        // No elevation. Surfaces are separated by hairlines, and the one
+        // layer that sits over the work (menus, the palette, a sheet) is
+        // outlined in ink rather than lifted.
+        card: "none",
+        float: "0 0 0 1px #141414",
       },
       keyframes: {
         "accordion-down": {

@@ -5,74 +5,63 @@ import type { FindingState } from "@/lib/findings";
 /**
  * A workflow state, set in the notation voice.
  *
- * Status is not decoration. It explains where a document is in its
- * journey, so every label below is a position on the arc rather than a
- * severity or a colour. Colour is carried by the semantic tokens and is
- * always paired with the word, never a substitute for it.
+ * Document, finding and citation states each have their own words here,
+ * and they are never merged into one "status": a document can be with the
+ * client while one of its findings is still open with the advocate, and
+ * the screen has to be able to say both.
+ *
+ * Colour is carried by the semantic tokens and is always paired with the
+ * word, never a substitute for it.
  */
 export type LabelState =
   | DocumentStatus
   | FindingState
   | "citation_verified"
-  | "citation_blocked";
+  | "citation_blocked"
+  | "citation_withdrawn";
+
+const CAUTION = {
+  tone: "text-caution-fg border-caution/40",
+  solid: "bg-caution text-paper border-transparent",
+};
+const VERIFIED = {
+  tone: "text-verified border-verified/30",
+  solid: "bg-verified text-paper border-transparent",
+};
+const FLAGGED = {
+  tone: "text-flagged border-flagged/30",
+  solid: "bg-flagged text-paper border-transparent",
+};
+const QUIET = {
+  tone: "text-muted-fg border-line",
+  solid: "bg-muted-fg text-paper border-transparent",
+};
 
 const LABEL: Record<LabelState, { text: string; tone: string; solid: string }> =
   {
-    draft: {
-      text: "Draft",
-      tone: "text-muted-fg border-line",
-      solid: "bg-muted-fg text-paper border-transparent",
-    },
+    draft: { text: "Draft", ...QUIET },
     analysing: {
-      text: "AI first pass",
+      text: "Screening",
       tone: "text-info border-info/30",
       solid: "bg-info text-paper border-transparent",
     },
-    pending_review: {
-      text: "Awaiting advocate",
-      tone: "text-caution-fg border-caution/40",
-      solid: "bg-caution text-paper border-transparent",
-    },
-    under_review: {
-      text: "Advocate review",
-      tone: "text-caution-fg border-caution/40",
-      solid: "bg-caution text-paper border-transparent",
-    },
-    // "revision" is an advocate asking the client for changes (see
-    // DocumentStatus in lib/types.ts). It is not the no-source state —
-    // a blocked citation is a property of a finding, not of a document,
-    // and is reported by hasBlockedCitation where it actually applies.
-    revision: {
-      text: "Changes requested",
-      tone: "text-flagged border-flagged/30",
-      solid: "bg-flagged text-paper border-transparent",
-    },
-    settled: {
-      text: "Settled",
-      tone: "text-verified border-verified/30",
-      solid: "bg-verified text-paper border-transparent",
-    },
-    executed: {
-      text: "Executed",
-      tone: "text-verified border-verified/30",
-      solid: "bg-verified text-paper border-transparent",
-    },
-    open: {
-      text: "Open",
-      tone: "text-caution-fg border-caution/40",
-      solid: "bg-caution text-paper border-transparent",
-    },
-    citation_verified: {
-      text: "Citation verified",
-      tone: "text-verified border-verified/30",
-      solid: "bg-verified text-paper border-transparent",
-    },
-    citation_blocked: {
-      text: "Citation blocked",
-      tone: "text-flagged border-flagged/30",
-      solid: "bg-flagged text-paper border-transparent",
-    },
+    pending_review: { text: "Awaiting advocate", ...CAUTION },
+    under_review: { text: "Advocate review", ...CAUTION },
+    // An advocate asked the client for something. Whose move it is, not a
+    // severity, so it is caution rather than flagged: nothing is wrong.
+    revision: { text: "Changes requested", ...CAUTION },
+    settled: { text: "Settled", ...VERIFIED },
+    executed: { text: "Executed", ...VERIFIED },
+    open: { text: "Open", ...CAUTION },
+    with_client: { text: "With client", ...QUIET },
+    citation_verified: { text: "Verified", ...VERIFIED },
+    citation_blocked: { text: "Blocked", ...FLAGGED },
+    citation_withdrawn: { text: "Withdrawn", ...QUIET },
   };
+
+export function stateText(state: LabelState): string {
+  return LABEL[state].text;
+}
 
 export function StateLabel({
   state,
@@ -81,9 +70,9 @@ export function StateLabel({
 }: {
   state: LabelState;
   /**
-   * Solid is reserved for the one authoritative moment on a screen —
-   * in practice, sign-off. Everywhere else the outline keeps colour
-   * quiet enough that it still means something when it appears.
+   * Solid is reserved for the one authoritative moment on a screen,
+   * in practice sign-off. Everywhere else the outline keeps colour quiet
+   * enough that it still means something when it appears.
    */
   tone?: "outline" | "solid";
   className?: string;
@@ -93,8 +82,8 @@ export function StateLabel({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center rounded-control border px-2 py-0.5",
-        "font-mono text-notation uppercase tracking-notation",
+        "inline-flex shrink-0 items-center whitespace-nowrap rounded-full border px-2.5 py-0.5",
+        "text-label font-medium",
         tone === "solid" ? label.solid : label.tone,
         className,
       )}

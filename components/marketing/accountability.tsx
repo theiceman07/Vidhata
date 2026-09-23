@@ -3,7 +3,6 @@
 import { useRef } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import { format } from "date-fns";
-import { Dateline } from "@/components/document/dateline";
 import { Seal } from "@/components/document/seal";
 import { Icon } from "@/components/shared/icon";
 import { DURATION, EASE, duration } from "@/lib/motion";
@@ -47,33 +46,34 @@ export function Accountability() {
   return (
     <section
       id="advocates"
-      className="mx-auto max-w-[95rem] px-6 py-[clamp(72px,10vw,140px)] lg:px-10"
+      data-nav-tone="dark"
+      className="w-full scroll-mt-20 bg-ink"
     >
-      <div className="grid gap-x-16 gap-y-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,32rem)] lg:items-center">
+      <div className="mx-auto w-full max-w-6xl px-6 py-24 md:py-32">
+      <div className="grid gap-x-16 gap-y-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:items-center">
         <div>
-          <Dateline segments={["Accountability"]} />
-          <h2 className="mt-4 max-w-xl font-display text-h1 text-ink">
+          <h2 className="max-w-xl font-display text-display text-paper">
             A named advocate stands behind the result.
           </h2>
-          <p className="mt-6 max-w-lg text-body text-ink">
+          <p className="mt-8 max-w-lg text-lead text-paper/85">
             Not a disclaimer, and not a panel of reviewers in the abstract. One
             empanelled advocate adjudicates every finding on your document and
             signs it. Their name and Bar enrolment number stay on the record.
           </p>
-          <p className="mt-4 max-w-lg text-meta text-muted-fg">
+          <p className="mt-5 max-w-lg text-body text-paper/60">
             No document reaches you without that sign-off. A finding whose
             source could not be verified blocks it outright.
           </p>
         </div>
 
         {/* The record itself. */}
-        <div ref={ref} className="border border-line bg-paper">
-          <div className="border-b border-line px-6 py-4">
-            <Dateline segments={["Document settled"]} />
+        <div ref={ref} className="overflow-hidden rounded-card border border-line bg-paper">
+          <div className="border-b border-line px-7 py-6">
+            <p className="text-meta text-muted-fg">Document settled</p>
             <p className="mt-1 font-display text-h2 text-ink">{DOC.title}</p>
           </div>
 
-          <ul className="space-y-3 px-6 py-6">
+          <ul className="space-y-3 px-7 py-6">
             {record.map((line) => (
               <li key={line} className="flex items-start gap-3">
                 <Icon name="check" size={18} className="mt-0.5 text-verified" />
@@ -82,13 +82,13 @@ export function Accountability() {
             ))}
           </ul>
 
-          <div className="flex flex-wrap items-end justify-between gap-6 border-t border-line px-6 py-6">
+          <div className="flex flex-wrap items-end justify-between gap-6 border-t border-line px-7 py-6">
             <div>
-              <Dateline segments={["Advocate"]} />
+              <p className="text-meta text-muted-fg">Advocate</p>
               <p className="mt-1 font-display text-h3 text-ink">
                 {DOC.advocate.name}
               </p>
-              <p className="mt-1 font-mono text-notation uppercase tracking-notation text-muted-fg">
+              <p className="mt-1 text-meta text-muted-fg">
                 Bar {DOC.advocate.bar}
                 {DOC.settledAt && (
                   <>
@@ -113,6 +113,7 @@ export function Accountability() {
             </motion.div>
           </div>
         </div>
+      </div>
       </div>
     </section>
   );

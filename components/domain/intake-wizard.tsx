@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,6 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createDraftDocument } from "@/lib/api/documents";
+import { DRAFT_NEEDS, readBrief } from "@/lib/api/brief";
+import { BRIEF_KEY } from "@/components/marketing/deal-prompt";
 import { CONTRACT_TYPES, INDIAN_STATES } from "@/lib/mock/intake-options.mock";
 import { cn } from "@/lib/utils";
 
@@ -77,6 +79,8 @@ export function IntakeWizard() {
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  // How far the brief got: facts a draft needs that it stated, and not.
+  const [fromBrief, setFromBrief] = useState<{ found: number; missing: number } | null>(null);
 
   const {
     register,
@@ -101,6 +105,43 @@ export function IntakeWizard() {
       keyTerms: "",
     },
   });
+
+  // A brief that did not state everything a draft needs arrives here.
+  // What it did state is filled in, the brief itself becomes the key
+  // terms, and intake opens at the first step with something missing.
+  useEffect(() => {
+    let brief: string | null = null;
+    try {
+      brief = window.sessionStorage.getItem(BRIEF_KEY);
+    } catch {
+      // Storage unavailable: nothing to carry over.
+    }
+    if (!brief) return;
+
+    // The brief is cleared only once it has been applied, so an effect
+    // that is torn down before its reading lands (StrictMode runs every
+    // effect twice in development) leaves it for the next run.
+    let cancelled = false;
+    readBrief(brief).then(({ found, missing }) => {
+      if (cancelled) return;
+      try {
+        window.sessionStorage.removeItem(BRIEF_KEY);
+      } catch {
+        // Nothing to clear.
+      }
+      for (const [key, value] of Object.entries(found)) {
+        if (value !== undefined) setValue(key as keyof IntakeFormValues, value as never);
+      }
+      const first = STEP_FIELDS.findIndex((fields) =>
+        fields.some((f) => missing.includes(f as (typeof missing)[number])),
+      );
+      setStep(first === -1 ? STEP_LABELS.length - 1 : first);
+      setFromBrief({ found: DRAFT_NEEDS.length - missing.length, missing: missing.length });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [setValue]);
 
   const values = watch();
 
@@ -174,6 +215,14 @@ export function IntakeWizard() {
       </ol>
 
       <form onSubmit={onSubmit} className="space-y-5">
+        {fromBrief && (
+          <p className="rounded-control bg-parchment px-4 py-3 text-meta text-ink">
+            Your brief gave {fromBrief.found} of the {DRAFT_NEEDS.length} details a draft needs.
+            {fromBrief.missing > 0
+              ? ` ${fromBrief.missing === 1 ? "One more is" : `${fromBrief.missing} more are`} needed before the draft can start.`
+              : " Check them, then draft."}
+          </p>
+        )}
         {step === 0 && (
           <>
             <div>
@@ -367,7 +416,7 @@ export function IntakeWizard() {
             </Button>
           ) : (
             <Button type="submit" disabled={submitting}>
-              {submitting ? "Creating draft…" : "Create draft"}
+              {submitting ? "Drafting…" : "Draft the document"}
             </Button>
           )}
         </div>

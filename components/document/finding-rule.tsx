@@ -9,7 +9,8 @@ import type { Finding, Severity } from "@/lib/types";
 const SEVERITY_RULE: Record<Severity, string> = {
   high: "bg-flagged",
   medium: "bg-caution",
-  low: "bg-info",
+  // Info is reserved for layer badges. Low severity carries no colour.
+  low: "bg-muted-fg",
 };
 
 /**

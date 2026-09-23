@@ -11,6 +11,10 @@ import { cn } from "@/lib/utils";
  */
 export const ICON_NAMES = [
   "add",
+  "arrow_back",
+  "arrow_forward",
+  "arrow_upward",
+  "attach_file",
   "check",
   "check_circle",
   "chevron_left",
@@ -20,6 +24,7 @@ export const ICON_NAMES = [
   "error",
   "expand_less",
   "expand_more",
+  "history",
   "info",
   "keyboard",
   "keyboard_arrow_down",
@@ -32,9 +37,13 @@ export const ICON_NAMES = [
   "person",
   "print",
   "remove",
+  "search",
   "send",
   "settings",
-  "swap_horiz",
+  "sticky_note_2",
+  "undo",
+  "visibility",
+  "visibility_off",
   "warning",
 ] as const;
 

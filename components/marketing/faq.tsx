@@ -4,6 +4,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { cn } from "@/lib/utils";
 
 const FAQS = [
   {
@@ -22,25 +23,28 @@ const FAQS = [
       "It's blocked, not guessed at. A blocked citation is shown clearly and routed to your advocate for judgment. It never reaches you disguised as settled.",
   },
   {
-    // QA 3.2 / 7.3: the tier switch this FAQ used to describe didn't
-    // exist anywhere in the product — there was no tier selection at all,
-    // let alone a mid-deal change. Tier is now chosen at intake; a change
-    // flow doesn't exist yet, so the answer says that plainly.
+    // The tier is chosen at intake; a mid-review change flow does not exist
+    // yet, so the answer says that plainly.
     question: "Can I switch tiers after starting a deal?",
     answer:
       "The review tier is chosen when you start a deal. Changing tiers mid-review isn't supported yet. Talk to your advocate if a document turns out to need a different level of review.",
   },
 ];
 
-export function Faq() {
+/** Each question is its own rounded row, so the list reads as tiles. */
+export function Faq({ className }: { className?: string }) {
   return (
-    <Accordion type="single" collapsible className="mx-auto max-w-2xl">
+    <Accordion type="single" collapsible className={cn("space-y-3", className)}>
       {FAQS.map((f, i) => (
-        <AccordionItem key={f.question} value={`item-${i}`}>
-          <AccordionTrigger className="text-left text-body font-medium text-ink">
+        <AccordionItem
+          key={f.question}
+          value={`item-${i}`}
+          className="rounded-card border border-line bg-paper px-6 data-[state=open]:border-ink/30"
+        >
+          <AccordionTrigger className="py-5 text-left text-body font-medium text-ink hover:no-underline">
             {f.question}
           </AccordionTrigger>
-          <AccordionContent className="text-body text-muted-fg">
+          <AccordionContent className="max-w-2xl pb-6 text-body text-muted-fg">
             {f.answer}
           </AccordionContent>
         </AccordionItem>

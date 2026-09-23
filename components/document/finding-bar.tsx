@@ -1,62 +1,74 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { findingState } from "@/lib/findings";
+import { blockingCitations, findingState } from "@/lib/findings";
 import type { Finding } from "@/lib/types";
 import { FindingRule } from "./finding-rule";
+import { SeverityMark } from "./severity";
+import { StateLabel } from "./state-label";
 
 /**
  * A finding as it appears in the margin of its clause.
  *
- * Annotation, not cards: no border, no shadow, no surrounding box. A
- * rule in the severity colour, the concern beside it, and nothing else.
+ * Annotation, not cards: no border, no shadow, no surrounding box. A rule
+ * in the severity colour, then the facts a reviewer triages on (number,
+ * severity, state, whether its source holds), then the concern.
  *
- * A settled finding collapses to a single line but is never removed. A
- * legal decision stays part of the record, and a document that quietly
- * drops the concerns it resolved cannot be audited.
+ * Hovering it lights the passage it concerns, so the link between the
+ * words and the note is visible before anything is clicked.
+ *
+ * A settled finding collapses to a single line but is never removed.
  */
 export function FindingBar({
   finding,
   number,
   selected,
   onSelect,
+  onHover,
 }: {
   finding: Finding;
   /** Display ordinal, "04". Never the opaque id. */
   number: string;
   selected: boolean;
   onSelect: () => void;
+  onHover?: (hovering: boolean) => void;
 }) {
-  const settled = findingState(finding) === "settled";
+  const state = findingState(finding);
+  const settled = state === "settled";
+  const blocked = blockingCitations(finding).length > 0;
 
   return (
     <button
       type="button"
       onClick={onSelect}
-      aria-current={selected}
+      onMouseEnter={() => onHover?.(true)}
+      onMouseLeave={() => onHover?.(false)}
+      onFocus={() => onHover?.(true)}
+      onBlur={() => onHover?.(false)}
+      aria-current={selected ? "true" : undefined}
       className={cn(
-        "relative block w-full py-3 pl-4 pr-3 text-left transition-colors",
+        "relative block w-full rounded-r-control py-2.5 pl-4 pr-3 text-left transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
         selected ? "bg-parchment" : "hover:bg-parchment/60",
       )}
     >
-      <FindingRule finding={finding} />
+      <FindingRule finding={finding} className={selected ? "w-1" : undefined} />
 
-      <span className="font-mono text-notation uppercase tracking-notation text-muted-fg">
-        Finding {number}
-        <span className="mx-2 text-line">·</span>
-        <span className={settled ? "text-verified" : "text-caution-fg"}>
-          {settled ? "Settled" : "Open"}
-        </span>
+      <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="font-mono text-label text-muted-fg">Finding {number}</span>
+        {!settled && <SeverityMark severity={finding.severity} />}
+        <StateLabel state={state} />
+        {blocked && <StateLabel state="citation_blocked" />}
       </span>
 
-      <p
+      <span
         className={cn(
-          "mt-1 text-meta",
-          settled ? "truncate text-muted-fg" : "text-ink",
+          "mt-1 block text-meta",
+          settled ? "truncate text-muted-fg" : "line-clamp-3 text-ink",
         )}
       >
         {finding.description}
-      </p>
+      </span>
     </button>
   );
 }

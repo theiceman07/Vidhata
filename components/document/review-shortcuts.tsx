@@ -21,6 +21,7 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
   { keys: ["C"], action: "Settle the finding in hand" },
   { keys: ["Esc"], action: "Close the finding" },
   { keys: ["?"], action: "Open this list" },
+  { keys: ["Ctrl", "K"], action: "Search clauses, findings and commands" },
 ];
 
 export function ReviewShortcuts({
@@ -48,17 +49,15 @@ export function ReviewShortcuts({
       </PopoverTrigger>
 
       <PopoverContent>
-        <p className="font-mono text-notation uppercase tracking-notation text-muted-fg">
-          Review controls
-        </p>
+        <p className="text-label font-medium text-muted-fg">Review controls</p>
         <dl className="mt-3 space-y-2">
           {shortcuts.map((shortcut) => (
             <div key={shortcut.action} className="flex items-baseline gap-3">
-              <dt className="flex w-16 shrink-0 gap-1">
+              <dt className="flex w-20 shrink-0 gap-1">
                 {shortcut.keys.map((key) => (
                   <kbd
                     key={key}
-                    className="rounded-control border border-line bg-canvas px-1.5 py-0.5 font-mono text-notation text-ink"
+                    className="rounded-control border border-line bg-canvas px-1.5 py-0.5 font-mono text-label text-ink"
                   >
                     {key}
                   </kbd>

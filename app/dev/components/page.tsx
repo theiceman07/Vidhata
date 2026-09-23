@@ -20,7 +20,6 @@ import { getMockDocumentById } from "@/lib/mock/documents.mock";
 export default function ComponentsPage() {
   const doc = getMockDocumentById("doc-msa-pending");
   const [selected, setSelected] = useState<string | null>(null);
-  const [activeClause, setActiveClause] = useState<string | null>(null);
 
   if (!doc) return <p className="p-8">Fixture missing.</p>;
 
@@ -98,13 +97,11 @@ export default function ComponentsPage() {
         <div className="space-y-8 bg-paper p-4">
           <CitationBlock
             citations={doc.findings[0].citations}
-            raisedBy="AI first pass · 22 Sep 2026"
-            resolvedBy={null}
+            showWithdrawalNote
           />
           <CitationBlock
             citations={doc.findings[2].citations}
-            raisedBy="AI first pass · 22 Sep 2026"
-            resolvedBy={null}
+            showWithdrawalNote
           />
         </div>
       </Section>
@@ -117,8 +114,11 @@ export default function ComponentsPage() {
               finding={selectedFinding}
               number={findingNumbers[selectedFinding.findingId]}
               role="advocate"
+              canAdjudicate
               onSettle={() => undefined}
               onReopen={() => undefined}
+              onRequestChange={() => undefined}
+              onWithdrawSource={() => undefined}
             />
           )}
         </div>
@@ -132,8 +132,11 @@ export default function ComponentsPage() {
               finding={selectedFinding}
               number={findingNumbers[selectedFinding.findingId]}
               role="client"
+              canAdjudicate={false}
               onSettle={() => undefined}
               onReopen={() => undefined}
+              onRequestChange={() => undefined}
+              onWithdrawSource={() => undefined}
             />
           )}
         </div>
@@ -145,9 +148,10 @@ export default function ComponentsPage() {
             doc={doc}
             findingNumbers={findingNumbers}
             selectedFindingId={selected}
+            hoveredFindingId={null}
             onSelectFinding={setSelected}
-            activeClauseId={activeClause}
-            onActiveClauseChange={setActiveClause}
+            onHoverFinding={() => undefined}
+            onActiveClauseChange={() => undefined}
           />
         </div>
       </Section>

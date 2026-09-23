@@ -3,57 +3,102 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
-import { StateLabel } from "@/components/document/state-label";
-import { Dateline } from "@/components/document/dateline";
+import { Icon } from "@/components/shared/icon";
+import { LifecycleStepper, stageCaption } from "@/components/document/provenance";
+import { DealPrompt } from "@/components/marketing/deal-prompt";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listDocuments } from "@/lib/api/documents";
-import { openFindingCount, hasBlockedCitation } from "@/lib/findings";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { ContractDocument } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
 
 /**
- * The work queue.
+ * The client's home.
  *
- * Deliberately not a KPI dashboard. It answers one question — what
- * requires a decision — so the document that needs one is set larger
- * than the rest, and everything settled recedes to a quiet list. The
- * count of what is waiting is the headline rather than a total.
+ * A greeting and a prompt first, because the most common reason to be
+ * here is to start the next document. Below it, every document grouped
+ * by whose move it is: waiting on you, with an advocate, done. Each row
+ * says where the document is in its life and, when the move is yours,
+ * exactly what the move is.
  */
-
-/** Documents awaiting attention sort above settled work. */
-const STATUS_ORDER: Record<ContractDocument["status"], number> = {
-  revision: 0,
-  pending_review: 1,
-  under_review: 2,
-  analysing: 3,
-  draft: 4,
-  settled: 5,
-  executed: 6,
-};
 
 function greeting(): string {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good morning.";
-  if (hour < 17) return "Good afternoon.";
-  return "Good evening.";
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
 }
 
-/** The one line that says why this document is in front of you. */
-function standing(doc: ContractDocument): string {
-  const open = openFindingCount(doc);
-  if (doc.status === "analysing") return "First pass running";
-  if (doc.status === "draft") return "Not yet submitted";
-  if (hasBlockedCitation(doc)) return "1 citation unresolved";
-  if (open > 0) return `${open} open ${open === 1 ? "finding" : "findings"}`;
-  if (doc.settledAt) {
-    return `Last reviewed ${format(new Date(doc.settledAt), "d MMM yyyy")}`;
+function openRequests(doc: ContractDocument) {
+  return doc.findings.filter(
+    (f) => f.disposition === "pending" && f.changeRequest && !f.changeRequest.response,
+  );
+}
+
+function outstandingSteps(doc: ContractDocument) {
+  return doc.executionSteps.filter((s) => s.applicable && !s.complete);
+}
+
+type Group = "you" | "advocate" | "done";
+
+function groupOf(doc: ContractDocument): Group {
+  if (doc.status === "revision" || doc.status === "draft") return "you";
+  if (doc.status === "settled" && outstandingSteps(doc).length > 0) return "you";
+  if (doc.status === "settled" || doc.status === "executed") return "done";
+  return "advocate";
+}
+
+interface Move {
+  note: string;
+  action: string;
+  href: string;
+}
+
+/** The move, when it is the client's. */
+function yourMove(doc: ContractDocument): Move | null {
+  if (doc.status === "revision") {
+    const n = openRequests(doc).length;
+    const by = doc.advocate?.name ?? "your advocate";
+    return {
+      note: `${n} ${n === 1 ? "request" : "requests"} from ${by} to answer`,
+      action: "Respond",
+      href: `/documents/${doc.id}`,
+    };
   }
-  return "No open findings";
+  if (doc.status === "draft") {
+    return {
+      note: "Not submitted. Nothing reaches an advocate until it is.",
+      action: "Submit",
+      href: `/documents/${doc.id}`,
+    };
+  }
+  if (doc.status === "settled") {
+    const n = outstandingSteps(doc).length;
+    return {
+      note: `${n} ${n === 1 ? "step" : "steps"} left on the execution checklist`,
+      action: "Execution checklist",
+      href: `/documents/${doc.id}/checklist`,
+    };
+  }
+  return null;
+}
+
+/** When the document entered the stage it is in. */
+function since(doc: ContractDocument): string | null {
+  const requests = doc.findings
+    .map((f) => f.changeRequest?.requestedAt)
+    .filter((d): d is string => Boolean(d))
+    .sort();
+  const at =
+    doc.status === "revision"
+      ? requests[requests.length - 1]
+      : doc.status === "settled" || doc.status === "executed"
+        ? doc.settledAt
+        : doc.claimedAt ?? doc.createdAt;
+  return at ? format(new Date(at), "d MMM") : null;
 }
 
 export default function DocumentsPage() {
@@ -64,8 +109,7 @@ export default function DocumentsPage() {
   const load = useCallback(async () => {
     setState("loading");
     try {
-      // QA 3.5: every client used to see every tenant's documents on one
-      // dashboard. Scoped in the data layer, not with a .filter() here.
+      // Scoped in the data layer, not with a .filter() here.
       const result = await listDocuments(MOCK_CLIENT_ORG.id);
       setDocs(result);
       setState("loaded");
@@ -83,13 +127,15 @@ export default function DocumentsPage() {
 
   if (state === "loading") {
     return (
-      <div className="mx-auto max-w-[90rem]">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="mt-4 h-12 w-2/3 max-w-xl" />
-        <div className="mt-decision space-y-4">
-          <Skeleton className="h-40 w-full max-w-3xl" />
-          <Skeleton className="h-16 w-full max-w-3xl" />
-          <Skeleton className="h-16 w-full max-w-3xl" />
+      <div className="w-full">
+        <div className="flex flex-col items-center pt-16">
+          <Skeleton className="h-12 w-[28rem] max-w-full rounded-full" />
+          <Skeleton className="mt-8 h-32 w-full max-w-2xl rounded-modal" />
+        </div>
+        <div className="mt-20 space-y-3">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-card" />
+          ))}
         </div>
       </div>
     );
@@ -99,212 +145,146 @@ export default function DocumentsPage() {
     return <ErrorState message={errorMessage} onRetry={load} />;
   }
 
-  if (docs.length === 0) {
-    return (
-      <div className="mx-auto max-w-[90rem]">
-        <Dateline segments={[greeting()]} />
-        <h1 className="mt-3 font-display text-h1 text-ink">
-          The desk is clear.
-        </h1>
-        <div className="mt-decision max-w-xl">
-          <EmptyState
-            title="No documents yet"
-            description="Describe a deal and the first pass will draft it. An advocate settles it before it reaches you."
-            action={
-              <Button asChild>
-                <Link href="/new">Start a document</Link>
-              </Button>
-            }
-          />
-        </div>
-      </div>
-    );
-  }
-
-  const sorted = [...docs].sort(
-    (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status],
-  );
-  const waiting = sorted.filter(
-    (d) => STATUS_ORDER[d.status] <= STATUS_ORDER.draft,
-  );
-  const settled = sorted.filter(
-    (d) => STATUS_ORDER[d.status] > STATUS_ORDER.draft,
-  );
-
-  // The document that most needs a decision is the screen's subject.
-  const [lead, ...rest] = waiting;
-  const awaitingAdvocate = waiting.filter(
-    (d) => d.status === "pending_review" || d.status === "under_review",
-  ).length;
-  // "Changes requested" is the one state where the next move is the
-  // client's, so it outranks anything sitting with an advocate.
-  const needsYou = waiting.filter((d) => d.status === "revision").length;
-
-  // Execution is work the client still owes after sign-off, and it is the
-  // only thing on this screen that is not about waiting.
-  const outstanding = settled.filter((doc) =>
-    doc.executionSteps.some((step) => step.applicable && !step.complete),
-  );
+  const byGroup = (g: Group) => docs.filter((d) => groupOf(d) === g);
+  const you = byGroup("you");
+  const advocate = byGroup("advocate");
+  const done = byGroup("done");
 
   return (
-    <div className="mx-auto max-w-[90rem]">
-      <header className="flex flex-wrap items-end justify-between gap-6">
-        <div>
-          <Dateline segments={[greeting(), MOCK_CLIENT_ORG.name]} />
-          {/* The one display moment on this screen. */}
-          <h1 className="mt-3 max-w-2xl font-display text-h1 text-ink">
-            {needsYou > 0
-              ? `${needsYou} ${needsYou === 1 ? "document needs" : "documents need"} your attention.`
-              : awaitingAdvocate > 0
-                ? `${awaitingAdvocate} ${awaitingAdvocate === 1 ? "document is" : "documents are"} awaiting advocate review.`
-                : "Nothing is waiting on you."}
-          </h1>
-        </div>
-        <Button asChild>
-          <Link href="/new">Start a document</Link>
-        </Button>
-      </header>
+    <div className="w-full">
+      {/* The greeting and the way in: the one display moment. */}
+      <section className="flex flex-col items-center px-2 pb-16 pt-12 text-center md:pt-20">
+        <h1 className="font-display text-[clamp(36px,4.6vw,60px)] font-medium leading-[1.05] tracking-[-0.02em] text-ink">
+          {greeting()}, {MOCK_CLIENT_ORG.name.split(" ")[0]}
+        </h1>
+        <p className="mt-3 text-lead text-muted-fg">
+          {you.length > 0
+            ? `${you.length} ${you.length === 1 ? "document needs" : "documents need"} you today.`
+            : docs.length === 0
+              ? "Describe your first deal to begin."
+              : "Nothing is waiting on you."}
+        </p>
+        <DealPrompt
+          className="mt-10"
+          destination="draft"
+          restore
+          placeholder="Describe a new deal: who it is with, what it covers, where it will be signed"
+          note="Drafted, screened, then signed off by an advocate"
+        />
+      </section>
 
-      <div className="mt-decision grid gap-x-16 gap-y-12 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <div>
-          {lead && <LeadDocument doc={lead} />}
+      <div className="space-y-14 pb-10">
+        <Section
+          title="Needs your action"
+          count={you.length}
+          empty="Nothing needs you. Requests from an advocate, and execution steps after sign-off, appear here."
+        >
+          {you.map((doc) => (
+            <DocumentRow key={doc.id} doc={doc} move={yourMove(doc)} />
+          ))}
+        </Section>
 
-          {rest.length > 0 && (
-            <section className="mt-decision">
-              <SectionHeading>Also in progress</SectionHeading>
-              <ul className="border-t border-line">
-                {rest.map((doc) => (
-                  <DocumentRow key={doc.id} doc={doc} />
-                ))}
-              </ul>
-            </section>
-          )}
+        <Section
+          title="With the advocate"
+          count={advocate.length}
+          empty="No document is with an advocate right now."
+        >
+          {advocate.map((doc) => (
+            <DocumentRow key={doc.id} doc={doc} move={null} />
+          ))}
+        </Section>
 
-          {settled.length > 0 && (
-            <section className="mt-decision">
-              <SectionHeading>Settled</SectionHeading>
-              <ul className="border-t border-line">
-                {settled.map((doc) => (
-                  <DocumentRow key={doc.id} doc={doc} />
-                ))}
-              </ul>
-            </section>
-          )}
-        </div>
-
-        {outstanding.length > 0 && (
-          <aside className="xl:border-l xl:border-line xl:pl-10">
-            <SectionHeading>To execute</SectionHeading>
-            <ul className="space-y-6 border-t border-line pt-5">
-              {outstanding.map((doc) => {
-                const steps = doc.executionSteps.filter((s) => s.applicable);
-                const done = steps.filter((s) => s.complete).length;
-
-                return (
-                  <li key={doc.id}>
-                    <Link
-                      href={`/documents/${doc.id}/checklist`}
-                      className="group block"
-                    >
-                      <p className="font-display text-h3 text-ink group-hover:underline">
-                        {doc.title}
-                      </p>
-                      <p className="mt-1 text-meta text-muted-fg">
-                        {done} of {steps.length} steps complete on the execution
-                        checklist.
-                      </p>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </aside>
-        )}
+        <Section
+          title="Settled and executed"
+          count={done.length}
+          empty="A document moves here once it is signed off and every execution step is done."
+        >
+          {done.map((doc) => (
+            <DocumentRow key={doc.id} doc={doc} move={null} />
+          ))}
+        </Section>
       </div>
     </div>
   );
 }
 
-function SectionHeading({ children }: { children: React.ReactNode }) {
+function Section({
+  title,
+  count,
+  empty,
+  children,
+}: {
+  title: string;
+  count: number;
+  empty: string;
+  children: React.ReactNode;
+}) {
   return (
-    <h2 className="mb-5 font-mono text-notation uppercase tracking-notation text-muted-fg">
-      {children}
-    </h2>
-  );
-}
-
-/** What is actually happening to this document, and whose move it is. */
-const LEAD_NOTE: Record<ContractDocument["status"], string> = {
-  draft: "This document has not been submitted yet. Nothing reaches an advocate until it is.",
-  analysing:
-    "The first pass is drafting and screening the document. Nothing reaches an advocate until it finishes.",
-  pending_review:
-    "The document is in the advocate queue. You will be able to read it once it is settled and signed off.",
-  under_review:
-    "An advocate is working through the findings. You will be able to read the settled document once it is signed off.",
-  revision:
-    "An advocate has asked for changes before this document can be settled. Open it to read what they need.",
-  settled: "Settled and signed off. The execution checklist is ready.",
-  executed: "Executed. Stamping and signature are recorded as complete.",
-};
-
-/**
- * The document in front of you, set at the size of its importance.
- * Hierarchy here is scale and space, not a coloured card.
- */
-function LeadDocument({ doc }: { doc: ContractDocument }) {
-  const open = openFindingCount(doc);
-  const blocked = hasBlockedCitation(doc);
-  const standingNote = LEAD_NOTE[doc.status];
-
-  return (
-    <section className="border-t-2 border-ink pt-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <StateLabel state={doc.status} />
-        {blocked && (
-          <span className="font-mono text-notation uppercase tracking-notation text-flagged">
-            1 citation unresolved
-          </span>
-        )}
-      </div>
-
-      <h2 className="mt-4 max-w-3xl font-display text-h1 text-ink">
-        {doc.title}
+    <section>
+      <h2 className="flex items-center gap-3 font-display text-h2 text-ink">
+        {title}
+        <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-parchment px-2 font-sans text-meta font-medium tabular-nums text-ink">
+          {count}
+        </span>
       </h2>
-      <p className="mt-2 text-body text-ink">
-        {doc.counterpartyName}
-        <span className="mx-2 text-line">·</span>
-        {open > 0
-          ? `${open} open ${open === 1 ? "finding" : "findings"}`
-          : standing(doc)}
-      </p>
-
-      <p className="mt-4 max-w-xl text-meta text-muted-fg">{standingNote}</p>
-
-      <div className="mt-8">
-        <Button asChild size="lg">
-          <Link href={`/documents/${doc.id}`}>Open the document</Link>
-        </Button>
-      </div>
+      {count === 0 ? (
+        <p className="mt-4 rounded-card bg-parchment/60 px-6 py-5 text-body text-muted-fg">
+          {empty}
+        </p>
+      ) : (
+        <ul className="mt-5 space-y-3">{children}</ul>
+      )}
     </section>
   );
 }
 
-/** Everything that is not the subject of the screen. Quieter, in a row. */
-function DocumentRow({ doc }: { doc: ContractDocument }) {
+/**
+ * One document, one row: what it is, where it is in its life, and the
+ * move if it is yours. The whole row opens the document; the action goes
+ * straight to where the move is made.
+ */
+function DocumentRow({ doc, move }: { doc: ContractDocument; move: Move | null }) {
+  const date = since(doc);
+
   return (
-    <li className="border-b border-line">
-      <Link
-        href={`/documents/${doc.id}`}
-        className="grid gap-x-8 gap-y-2 py-5 transition-colors hover:bg-parchment/50 sm:grid-cols-[minmax(0,1fr)_14rem_auto] sm:items-baseline"
-      >
-        <div className="min-w-0">
-          <p className="font-display text-h3 text-ink">{doc.title}</p>
-          <p className="mt-1 text-meta text-muted-fg">{doc.counterpartyName}</p>
-        </div>
-        <p className="text-meta text-ink">{standing(doc)}</p>
-        <StateLabel state={doc.status} className="justify-self-start" />
-      </Link>
+    <li className="relative grid items-center gap-x-10 gap-y-5 rounded-card border border-line bg-paper px-6 py-6 transition-colors hover:border-ink/25 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)_12rem] lg:px-8">
+      <div className="min-w-0">
+        <Link
+          href={`/documents/${doc.id}`}
+          className="block truncate font-display text-[22px] font-medium leading-snug tracking-[-0.01em] text-ink after:absolute after:inset-0 after:content-['']"
+        >
+          {doc.title}
+        </Link>
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-meta text-muted-fg">
+          <span>{doc.counterpartyName}</span>
+          <span aria-hidden className="h-1 w-1 rounded-full bg-line" />
+          <span>Draft {doc.version}</span>
+          {date && (
+            <>
+              <span aria-hidden className="h-1 w-1 rounded-full bg-line" />
+              <span>Since {date}</span>
+            </>
+          )}
+        </p>
+        <p className={`mt-3 text-body ${move ? "text-ink" : "text-muted-fg"}`}>
+          {move ? move.note : stageCaption(doc)}
+        </p>
+      </div>
+
+      <LifecycleStepper doc={doc} />
+
+      <div className="relative z-10 lg:justify-self-end">
+        {move ? (
+          <Button asChild size="lg" variant={doc.status === "revision" ? "default" : "outline"}>
+            <Link href={move.href}>{move.action}</Link>
+          </Button>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-meta font-medium text-muted-fg">
+            Open
+            <Icon name="arrow_forward" size={18} />
+          </span>
+        )}
+      </div>
     </li>
   );
 }

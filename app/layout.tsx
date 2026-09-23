@@ -1,30 +1,34 @@
 import type { Metadata, Viewport } from "next";
-import { Newsreader, Inter, IBM_Plex_Mono } from "next/font/google";
+import { Brygada_1918, Hanken_Grotesk } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { SessionProvider } from "@/lib/session";
 import { Toaster } from "@/components/ui/sonner";
 import { MATERIAL_SYMBOLS_HREF } from "@/components/shared/icon";
 
-// Three voices, Brand Board V2.0. Newsreader carries legal substance,
-// Inter operates the product, IBM Plex Mono carries notation. The serif
-// is reserved for judgment; it is not a display font for atmosphere.
-const newsreader = Newsreader({
-  variable: "--font-newsreader",
+// Three voices (Board V3). Brygada 1918, a book serif with a legal
+// press's gravity, sets headlines and contract text. Hanken Grotesk does
+// everything else. Apfel Grotezk is the wordmark and nothing but the
+// wordmark (self-hosted, SIL OFL 1.1, from Collletttivo).
+const serif = Brygada_1918({
+  variable: "--font-serif",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],
 });
 
-const inter = Inter({
-  variable: "--font-inter",
+const sans = Hanken_Grotesk({
+  variable: "--font-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600"],
 });
 
-const plexMono = IBM_Plex_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-  weight: ["400", "500"],
+const wordmark = localFont({
+  variable: "--font-wordmark",
+  src: [
+    { path: "./fonts/apfel-grotezk-latin-400-normal.woff2", weight: "400" },
+    { path: "./fonts/apfel-grotezk-latin-700-normal.woff2", weight: "700" },
+  ],
 });
 
 // QA 4.1: every route used to share one <title>/description with no
@@ -62,7 +66,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${newsreader.variable} ${inter.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${serif.variable} ${sans.variable} ${wordmark.variable} h-full antialiased`}
     >
       <head>
         {/* Material Symbols Outlined, subset to the names the product
@@ -76,10 +80,13 @@ export default function RootLayout({
           itself with `mx-auto` would otherwise shrink to its own content
           width — which is how every section on the landing page ended up
           narrower than the canvas it was given. `items-stretch` is the
-          default; `[&>*]:w-full` is what holds it against auto margins. */}
-      <body className="flex min-h-full flex-col [&>*]:w-full">
+          default; `[&>*]:w-full` is what holds it against auto margins.
+          The rule sits on an inner column, not on body: menus, popovers
+          and tooltips mount straight into body, and a full-width
+          positioning wrapper throws them to the left edge. */}
+      <body className="flex min-h-full flex-col">
         <SessionProvider>
-          {children}
+          <div className="flex flex-1 flex-col [&>*]:w-full">{children}</div>
           <Toaster />
         </SessionProvider>
       </body>

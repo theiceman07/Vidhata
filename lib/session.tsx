@@ -12,6 +12,8 @@ export type SessionRole = "client" | "lawyer" | null;
 
 interface SessionContextValue {
   role: SessionRole;
+  /** False until the stored role has been read. Before that, role is unknown, not absent. */
+  ready: boolean;
   setRole: (role: SessionRole) => void;
   signOut: () => void;
 }
@@ -52,21 +54,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   // user to end their session at all.
   const signOut = useCallback(() => setRole(null), [setRole]);
 
-  if (!hydrated) {
-    // A brief skeleton instead of `null` avoids a blank-page flash while
-    // the client-only role hydrates from localStorage.
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-canvas">
-        <div
-          className="h-8 w-8 animate-pulse rounded-full bg-line"
-          aria-hidden
-        />
-      </div>
-    );
-  }
-
+  // Children always render. This provider used to hold the whole app
+  // behind a placeholder until the role hydrated, which meant every page,
+  // public ones included, shipped a blank server render and painted
+  // nothing until its script had run. Only the portals need the role, and
+  // they wait on `ready` themselves.
   return (
-    <SessionContext.Provider value={{ role, setRole, signOut }}>
+    <SessionContext.Provider value={{ role, ready: hydrated, setRole, signOut }}>
       {children}
     </SessionContext.Provider>
   );

@@ -3,82 +3,96 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/shared/brand-logo";
 
 /**
- * The public header.
+ * The public header: one solid bar that floats over the page.
  *
- * Transparent over the hero, then a paper surface with a hairline once
- * the page has moved. One bar, because a second bar would have to carry
- * something worth the room, and the stage index in the document arc
- * already says where the reader is.
- *
- * QA 10.2: the two portals are peer entry points, so both sign-ins sit
- * here rather than one being buried in the footer.
+ * It answers to what is behind it. At the top of the page it is ink; once
+ * the page moves it turns white over light sections and stays ink, with a
+ * faint outline, over a dark one (any section marked
+ * data-nav-tone="dark"). The page shows through the gaps around it, so
+ * there is no white strip above the content.
  */
-const LINKS = [
-  { href: "/#arc", label: "How it works" },
-  { href: "/#india", label: "India" },
-  { href: "/pricing", label: "Pricing" },
-  { href: "/#advocates", label: "For advocates" },
-];
+type Tone = "top" | "light" | "dark";
+
+/** How far down the viewport the bar reaches, for the tone test. */
+const PROBE_Y = 52;
 
 export function SiteHeader() {
-  const [scrolled, setScrolled] = useState(false);
+  const [tone, setTone] = useState<Tone>("top");
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    // One reading per frame at most: a scroll event can fire several
+    // times a frame, and each reading measures every dark band.
+    let frame = 0;
+    const schedule = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        update();
+      });
+    };
+    const update = () => {
+      if (window.scrollY < 24) {
+        setTone("top");
+        return;
+      }
+      const dark = Array.from(
+        document.querySelectorAll<HTMLElement>('[data-nav-tone="dark"]'),
+      ).some((el) => {
+        const r = el.getBoundingClientRect();
+        return r.top <= PROBE_Y && r.bottom >= PROBE_Y;
+      });
+      setTone(dark ? "dark" : "light");
+    };
+    update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+    };
   }, []);
 
+  const inked = tone !== "light";
+
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-30 transition-colors duration-200",
-        scrolled ? "border-b border-line bg-paper/95 backdrop-blur-sm" : "",
-      )}
-    >
+    <header className="pointer-events-none sticky top-0 z-30 px-4 pt-3 sm:px-6">
       <div
         className={cn(
-          "mx-auto flex max-w-[95rem] flex-wrap items-center justify-between gap-y-3 px-6 transition-all duration-200 lg:px-10",
-          scrolled ? "py-3" : "py-5",
+          "pointer-events-auto mx-auto flex h-16 max-w-6xl items-center justify-between gap-6 rounded-full border pl-7 pr-2.5 transition-colors duration-300",
+          tone === "top" && "border-transparent bg-ink text-paper",
+          tone === "light" && "border-line bg-paper text-ink",
+          tone === "dark" && "border-paper/20 bg-ink text-paper",
         )}
       >
-        <Link href="/" className="text-ink">
-          <BrandLogo size={scrolled ? "sm" : "md"} />
+        <Link href="/" aria-label="Vidhata home">
+          <BrandLogo size="md" />
         </Link>
 
-        <nav aria-label="Main" className="flex flex-wrap items-center gap-6">
-          {LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-meta text-muted-fg transition-colors hover:text-ink"
-            >
-              {link.label}
-            </Link>
-          ))}
-
-          <span aria-hidden className="hidden h-4 w-px bg-line sm:block" />
-
+        <nav aria-label="Main" className="flex items-center gap-8">
+          <Link
+            href="/pricing"
+            className={cn(
+              "text-body font-medium transition-colors",
+              inked ? "text-paper/75 hover:text-paper" : "text-muted-fg hover:text-ink",
+            )}
+          >
+            Pricing
+          </Link>
           <Link
             href="/login"
-            className="text-meta text-muted-fg transition-colors hover:text-ink"
+            className={cn(
+              "inline-flex h-11 items-center rounded-full px-6 text-body font-medium transition-colors",
+              inked
+                ? "bg-paper text-ink hover:bg-parchment"
+                : "bg-ink text-paper hover:bg-ink/85",
+            )}
           >
-            Client login
+            Sign in
           </Link>
-          <Link
-            href="/advocate-login"
-            className="text-meta text-muted-fg transition-colors hover:text-ink"
-          >
-            Advocate login
-          </Link>
-          <Button asChild size="sm">
-            <Link href="/new">Start a document</Link>
-          </Button>
         </nav>
       </div>
     </header>

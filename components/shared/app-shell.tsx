@@ -1,13 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/session";
-import { BrandMark, BrandLogo } from "@/components/shared/brand-logo";
+import { BrandLogo } from "@/components/shared/brand-logo";
 import { Icon, type IconName } from "@/components/shared/icon";
+import {
+  PaletteProvider,
+  usePalette,
+  useRegisterCommands,
+  type PaletteCommand,
+} from "@/components/shared/command-palette";
 import {
   Tooltip,
   TooltipContent,
@@ -35,68 +41,81 @@ export interface ShellSection {
   links: ShellLink[];
 }
 
-const STORAGE_KEY = "vidhata-sidebar";
-const PREVIEW_MODE = process.env.NEXT_PUBLIC_VIDHATA_PREVIEW_MODE === "1";
+const PIN_KEY = "vidhata-rail-pinned";
+/** How long the rail waits after the pointer leaves before tucking away. */
+const TUCK_DELAY_MS = 280;
 
 /**
  * The application shell.
  *
  * One navigation structure for both portals: the work a person does
- * differs, the furniture does not. The rail collapses to its icons and
- * remembers that choice, because a reviewer working a document wants the
- * screen, and someone moving between screens wants the labels.
+ * differs, the furniture does not.
  *
- * There is no role control here. Identity is a person and their standing
- * ("Ananya Rao, advocate"), and the preview build's role switch lives
- * inside that menu rather than floating over the product.
+ * The rail tucks away, as Arc's sidebar does. At rest it is a sliver of
+ * the ink capsule standing at the left edge, enough to say something is
+ * there. Pointing at it (or tabbing into it) opens it in full, with the
+ * wordmark, search, the sections and who you are, and the page makes room
+ * rather than being covered. It tucks away again when the pointer leaves.
+ * It can be kept open, and remembers that, because someone moving between
+ * screens wants it and a reviewer working a document wants the width.
+ *
+ * There is no role control here, not even in the identity menu. Identity
+ * is a person and their standing ("Ananya Rao, advocate"). The preview
+ * reaches each portal through "Use the preview workspace" on that
+ * portal's sign-in page; to move between them, sign out.
  */
-export function AppShell({
-  sections,
-  homeHref,
-  identity,
+interface AppShellProps {
+  sections: ShellSection[];
+  homeHref: string;
+  identity: { name: string; standing: string; menuHref: string };
   /**
    * Routes that own the whole viewport: the document workspace manages
    * its own scrolling in three panes, so the shell must not pad it or
    * add a second scrollbar.
    */
-  fullBleed = false,
-  children,
-}: {
-  sections: ShellSection[];
-  homeHref: string;
-  identity: { name: string; standing: string; menuHref: string };
   fullBleed?: boolean;
   children: React.ReactNode;
-}) {
+}
+
+export function AppShell(props: AppShellProps) {
+  return (
+    <PaletteProvider>
+      <ShellBody {...props} />
+    </PaletteProvider>
+  );
+}
+
+function ShellBody({
+  sections,
+  homeHref,
+  identity,
+  fullBleed = false,
+  children,
+}: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { role, setRole, signOut } = useSession();
-  const [collapsed, setCollapsed] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
+  const { signOut } = useSession();
+  const { open: openPalette } = usePalette();
+  const [isMac, setIsMac] = useState(false);
 
   useEffect(() => {
-    try {
-      setCollapsed(window.localStorage.getItem(STORAGE_KEY) === "collapsed");
-    } catch {
-      // storage unavailable · the rail simply starts expanded
-    }
-    setHydrated(true);
+    setIsMac(/Mac|iPhone|iPad/.test(navigator.platform));
   }, []);
 
-  const toggle = useCallback(() => {
-    setCollapsed((current) => {
-      const next = !current;
-      try {
-        window.localStorage.setItem(
-          STORAGE_KEY,
-          next ? "collapsed" : "expanded",
-        );
-      } catch {
-        // storage unavailable · the choice lasts this session only
-      }
-      return next;
-    });
-  }, []);
+  const navCommands = useMemo<PaletteCommand[]>(
+    () =>
+      sections.flatMap((section) =>
+        section.links.map((link) => ({
+          id: `nav-${link.href}`,
+          group: "Go to",
+          label: link.label,
+          icon: link.icon,
+          onSelect: () => router.push(link.href),
+        })),
+      ),
+    [sections, router],
+  );
+  useRegisterCommands("shell", navCommands);
 
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -112,98 +131,36 @@ export function AppShell({
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex min-h-screen flex-col md:flex-row">
-        {/* Desktop · the rail */}
-        <nav
-          aria-label="Main"
-          data-collapsed={collapsed}
-          className={cn(
-            "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-line bg-paper md:flex",
-            // Suppress the width transition until the stored state has
-            // been read, so the rail does not visibly slide on load.
-            hydrated && "transition-[width] duration-200 ease-out",
-            collapsed ? "w-[68px]" : "w-[248px]",
-          )}
-        >
-          <div
-            className={cn(
-              "flex h-16 items-center border-b border-line",
-              collapsed ? "justify-center px-2" : "justify-between px-4",
-            )}
-          >
-            <Link href={homeHref} className="text-ink" aria-label="Vidhata home">
-              {collapsed ? <BrandMark size={24} /> : <BrandLogo size="sm" />}
-            </Link>
-            {!collapsed && (
-              <RailButton
-                onClick={toggle}
-                icon="left_panel_close"
-                label="Collapse the sidebar"
-              />
-            )}
-          </div>
-
-          <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto py-5">
-            {sections.map((section) => (
-              <div key={section.label}>
-                {!collapsed && (
-                  <p className="px-4 pb-2 font-mono text-notation uppercase tracking-notation text-muted-fg">
-                    {section.label}
-                  </p>
-                )}
-                <ul className={cn(collapsed && "space-y-1")}>
-                  {section.links.map((link) => (
-                    <li key={link.href}>
-                      <RailLink
-                        link={link}
-                        active={isActive(link.href)}
-                        collapsed={collapsed}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-
-          {collapsed && (
-            <div className="flex justify-center border-t border-line py-2">
-              <RailButton
-                onClick={toggle}
-                icon="left_panel_open"
-                label="Expand the sidebar"
-              />
-            </div>
-          )}
-
-          <div
-            className={cn(
-              "border-t border-line",
-              collapsed ? "flex justify-center p-2" : "p-3",
-            )}
-          >
+      <div className="flex min-h-screen flex-col bg-paper md:flex-row">
+        {/* Desktop · the rail, tucked to a sliver until it is wanted. */}
+        <Rail
+          sections={sections}
+          homeHref={homeHref}
+          isActive={isActive}
+          isMac={isMac}
+          onSearch={openPalette}
+          renderIdentity={(onOpenChange) => (
             <IdentityMenu
               identity={identity}
-              collapsed={collapsed}
-              role={role}
-              onSwitchRole={setRole}
+              onInk
+              onOpenChange={onOpenChange}
+              onSignOut={handleSignOut}
+            />
+          )}
+        />
+
+        {/* Mobile · the same pill, lying flat */}
+        <header className="sticky top-0 z-30 px-3 pt-3 md:hidden">
+          <div className="flex h-14 items-center justify-between rounded-full bg-ink pl-6 pr-2 text-paper">
+            <Link href={homeHref} className="text-paper">
+              <BrandLogo size="md" />
+            </Link>
+            <IdentityMenu
+              identity={identity}
+              inHeader
               onSignOut={handleSignOut}
             />
           </div>
-        </nav>
-
-        {/* Mobile · brand bar above, tabs below */}
-        <header className="flex h-14 items-center justify-between border-b border-line bg-paper px-4 md:hidden">
-          <Link href={homeHref} className="text-ink">
-            <BrandLogo size="sm" />
-          </Link>
-          <IdentityMenu
-            identity={identity}
-            collapsed
-            role={role}
-            onSwitchRole={setRole}
-            onSignOut={handleSignOut}
-          />
         </header>
 
         <main
@@ -211,7 +168,7 @@ export function AppShell({
             "min-w-0 flex-1",
             fullBleed
               ? "md:h-screen md:overflow-y-auto lg:overflow-hidden"
-              : "px-4 py-8 pb-24 md:h-screen md:overflow-y-auto md:px-10 md:py-10 md:pb-10",
+              : "px-4 py-6 pb-24 md:h-screen md:overflow-y-auto md:px-8 md:py-8",
           )}
         >
           {children}
@@ -250,71 +207,213 @@ export function AppShell({
   );
 }
 
-function RailLink({
-  link,
-  active,
-  collapsed,
+/**
+ * The desktop rail. At rest, a sliver of ink (RAIL_REST wide with its
+ * gutter); open, the full capsule (RAIL_OPEN). A spacer in the page's
+ * flow takes the same width, so opening the rail moves the page over
+ * rather than covering it.
+ */
+const RAIL_GUTTER = 8;
+const RAIL_SLIVER = 8;
+const RAIL_CAPSULE = 248;
+const RAIL_REST = RAIL_GUTTER * 2 + RAIL_SLIVER;
+const RAIL_OPEN = RAIL_GUTTER * 2 + RAIL_CAPSULE;
+const RAIL_EASE = "duration-[240ms] ease-[cubic-bezier(0.2,0,0,1)]";
+
+function Rail({
+  sections,
+  homeHref,
+  isActive,
+  isMac,
+  onSearch,
+  renderIdentity,
 }: {
-  link: ShellLink;
-  active: boolean;
-  collapsed: boolean;
+  sections: ShellSection[];
+  homeHref: string;
+  isActive: (href: string) => boolean;
+  isMac: boolean;
+  onSearch: () => void;
+  /** The identity menu, told when it opens so the rail stays open under it. */
+  renderIdentity: (onOpenChange: (open: boolean) => void) => React.ReactNode;
 }) {
-  const content = (
-    <Link
-      href={link.href}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        "relative flex items-center gap-3 border-l-2 py-2 text-body transition-colors",
-        collapsed ? "mx-2 justify-center rounded-control px-0 py-2.5" : "px-4",
-        // Accent marks a decision, not a location. Where you are is said
-        // with weight and a rule, which leaves the green meaning
-        // something when it finally appears.
-        active
-          ? "border-ink bg-parchment font-medium text-ink"
-          : "border-transparent text-muted-fg hover:bg-canvas hover:text-ink",
-        collapsed && "border-l-0",
-      )}
-    >
-      <Icon name={link.icon} size={20} />
-      {!collapsed && <span className="truncate">{link.label}</span>}
-      {collapsed && <span className="sr-only">{link.label}</span>}
-    </Link>
+  const [pinned, setPinned] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const tuck = useRef<number | null>(null);
+
+  useEffect(() => {
+    try {
+      setPinned(window.localStorage.getItem(PIN_KEY) === "1");
+    } catch {
+      // Storage unavailable: the rail starts tucked away.
+    }
+  }, []);
+
+  const togglePin = useCallback(() => {
+    setPinned((was) => {
+      try {
+        window.localStorage.setItem(PIN_KEY, was ? "0" : "1");
+      } catch {
+        // Storage unavailable: the choice lasts for this page only.
+      }
+      return !was;
+    });
+  }, []);
+
+  // Ctrl+\ (Cmd+\ on a Mac) keeps it open or lets it tuck away.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "\\" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        togglePin();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [togglePin]);
+
+  useEffect(
+    () => () => {
+      if (tuck.current) window.clearTimeout(tuck.current);
+    },
+    [],
   );
 
-  if (!collapsed) return content;
+  function enter() {
+    if (tuck.current) window.clearTimeout(tuck.current);
+    setHovered(true);
+  }
+
+  function leave() {
+    if (tuck.current) window.clearTimeout(tuck.current);
+    tuck.current = window.setTimeout(() => setHovered(false), TUCK_DELAY_MS);
+  }
+
+  const open = pinned || hovered || focused || menuOpen;
+  const pinKeys = isMac ? "⌘\\" : "Ctrl \\";
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>{content}</TooltipTrigger>
-      <TooltipContent side="right">{link.label}</TooltipContent>
-    </Tooltip>
+    <>
+      {/* Holds the rail's width in the page's flow. */}
+      <div
+        aria-hidden
+        className={cn("hidden shrink-0 transition-[width] md:block", RAIL_EASE)}
+        style={{ width: open ? RAIL_OPEN : RAIL_REST }}
+      />
+
+      <div
+        className="fixed inset-y-0 left-0 z-40 hidden md:block"
+        style={{ padding: RAIL_GUTTER }}
+        onMouseEnter={enter}
+        onMouseLeave={leave}
+        onFocus={() => setFocused(true)}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocused(false);
+        }}
+      >
+        <nav
+          aria-label="Main"
+          className={cn(
+            "relative h-full overflow-hidden rounded-modal bg-ink text-paper transition-[width]",
+            RAIL_EASE,
+          )}
+          style={{ width: open ? RAIL_CAPSULE : RAIL_SLIVER }}
+        >
+          {/* The grip on the sliver: the one mark that says it opens. */}
+          <span
+            aria-hidden
+            className={cn(
+              "absolute left-1/2 top-1/2 h-8 w-[2px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-paper/45 transition-opacity duration-150",
+              open ? "opacity-0" : "opacity-100",
+            )}
+          />
+
+          {/* A fixed width inside, so nothing rewraps while the capsule
+              opens. Still reachable by Tab while tucked: focus opens it. */}
+          <div
+            className={cn(
+              "flex h-full flex-col px-3 py-5 transition-opacity",
+              open ? "opacity-100 delay-75 duration-200" : "pointer-events-none opacity-0 duration-100",
+            )}
+            style={{ width: RAIL_CAPSULE }}
+          >
+            <div className="flex items-center justify-between pl-3">
+              <Link href={homeHref} aria-label="Vidhata home" className="rounded-full text-paper">
+                <BrandLogo size="md" />
+              </Link>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={togglePin}
+                    aria-pressed={pinned}
+                    aria-label={pinned ? "Let the sidebar tuck away" : "Keep the sidebar open"}
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-paper/60 transition-colors hover:bg-paper/10 hover:text-paper"
+                  >
+                    <Icon name={pinned ? "left_panel_close" : "left_panel_open"} size={20} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  {pinned ? "Tuck away" : "Keep open"} · {pinKeys}
+                </TooltipContent>
+              </Tooltip>
+            </div>
+
+            <button
+              type="button"
+              onClick={onSearch}
+              className="mt-6 flex h-11 items-center gap-3 rounded-full px-3 text-meta text-paper/70 transition-colors hover:bg-paper/10 hover:text-paper"
+            >
+              <Icon name="search" size={20} />
+              Search
+              <kbd className="ml-auto font-mono text-label text-paper/45">
+                {isMac ? "⌘K" : "Ctrl K"}
+              </kbd>
+            </button>
+
+            <div className="mt-4 space-y-5">
+              {sections.map((section) => (
+                <div key={section.label}>
+                  <p className="px-3 pb-1.5 text-label text-paper/45">{section.label}</p>
+                  <ul className="space-y-0.5">
+                    {section.links.map((link) => {
+                      const active = isActive(link.href);
+                      return (
+                        <li key={link.href}>
+                          <Link
+                            href={link.href}
+                            aria-current={active ? "page" : undefined}
+                            className={cn(
+                              "flex h-11 items-center gap-3 rounded-full px-3 text-meta transition-colors",
+                              active
+                                ? "bg-paper font-medium text-ink"
+                                : "text-paper/70 hover:bg-paper/10 hover:text-paper",
+                            )}
+                          >
+                            <Icon name={link.icon} size={20} />
+                            {link.label}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-auto">{renderIdentity(setMenuOpen)}</div>
+          </div>
+        </nav>
+      </div>
+    </>
   );
 }
 
-function RailButton({
-  onClick,
-  icon,
-  label,
-}: {
-  onClick: () => void;
-  icon: IconName;
-  label: string;
-}) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          onClick={onClick}
-          aria-label={label}
-          className="rounded-control p-1.5 text-muted-fg transition-colors hover:bg-canvas hover:text-ink"
-        >
-          <Icon name={icon} size={20} />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="right">{label}</TooltipContent>
-    </Tooltip>
-  );
+const ITEM_ON_INK = "rounded-full text-paper focus:bg-paper/10";
+
+function iconTone(onInk: boolean): string {
+  return onInk ? "text-paper/55" : "text-muted-fg";
 }
 
 /** Initials for the identity disc. The one place a circle is allowed. */
@@ -328,74 +427,88 @@ function initials(name: string): string {
 
 function IdentityMenu({
   identity,
-  collapsed,
-  role,
-  onSwitchRole,
+  inHeader = false,
+  onInk = false,
+  onOpenChange,
   onSignOut,
 }: {
   identity: { name: string; standing: string; menuHref: string };
-  collapsed: boolean;
-  role: "client" | "lawyer" | null;
-  onSwitchRole: (role: "client" | "lawyer") => void;
+  /** The small-screen header: the disc alone, dropping down from the top-right. */
+  inHeader?: boolean;
+  /** The open rail: the disc with the name and standing, set on ink. */
+  onInk?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onSignOut: () => void;
 }) {
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={onOpenChange}>
       <DropdownMenuTrigger
         className={cn(
-          "flex w-full items-center gap-3 rounded-control text-left transition-colors hover:bg-canvas",
-          collapsed ? "justify-center p-1" : "p-2",
+          "flex items-center gap-3 rounded-full text-left transition-colors hover:bg-paper/10",
+          inHeader ? "p-1" : "w-full p-2",
         )}
         aria-label={`${identity.name}, ${identity.standing}`}
       >
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-parchment font-mono text-notation text-ink">
           {initials(identity.name)}
         </span>
-        {!collapsed && (
+        {onInk && (
           <>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-meta font-medium text-ink">
+              <span className="block truncate text-meta font-medium text-paper">
                 {identity.name}
               </span>
-              <span className="block truncate font-mono text-notation uppercase tracking-notation text-muted-fg">
+              <span className="block truncate text-label text-paper/55">
                 {identity.standing}
               </span>
             </span>
-            <Icon name="expand_more" size={18} className="text-muted-fg" />
+            <Icon name="expand_more" size={18} className="text-paper/55" />
           </>
         )}
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent side="top" align="start">
-        <DropdownMenuLabel>{identity.standing}</DropdownMenuLabel>
-        <DropdownMenuItem asChild>
+      {/* On the rail the menu is part of the capsule: the trigger's own
+          width, set on ink, rising from it. The trigger already names
+          who you are, so the menu goes straight to what you can do. */}
+      <DropdownMenuContent
+        side={inHeader ? "bottom" : "top"}
+        align={inHeader ? "end" : "start"}
+        sideOffset={8}
+        className={cn(
+          "rounded-card p-1.5",
+          onInk
+            ? "w-[var(--radix-dropdown-menu-trigger-width)] min-w-0 border-paper/15 bg-ink text-paper"
+            : "w-64 shadow-float",
+        )}
+      >
+        {!onInk && (
+          <>
+            <DropdownMenuLabel className="flex items-center gap-3 px-2 py-2">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-parchment font-mono text-label text-ink">
+                {initials(identity.name)}
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-meta font-medium text-ink">
+                  {identity.name}
+                </span>
+                <span className="block text-label text-muted-fg">
+                  Signed in as {identity.standing.toLowerCase()}
+                </span>
+              </span>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        <DropdownMenuItem asChild className={cn(onInk && ITEM_ON_INK)}>
           <Link href={identity.menuHref}>
-            <Icon name="person" size={18} className="text-muted-fg" />
+            <Icon name="person" size={18} className={iconTone(onInk)} />
             Your details
           </Link>
         </DropdownMenuItem>
 
-        {/* Preview builds only. Role switching is a development affordance
-            and has no place in the product's visual layer. */}
-        {PREVIEW_MODE && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={() =>
-                onSwitchRole(role === "lawyer" ? "client" : "lawyer")
-              }
-            >
-              <Icon name="swap_horiz" size={18} className="text-muted-fg" />
-              {role === "lawyer"
-                ? "Preview the client portal"
-                : "Preview the advocate portal"}
-            </DropdownMenuItem>
-          </>
-        )}
-
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={onSignOut}>
-          <Icon name="logout" size={18} className="text-muted-fg" />
+        <DropdownMenuSeparator className={cn(onInk && "bg-paper/15")} />
+        <DropdownMenuItem className={cn(onInk && ITEM_ON_INK)} onSelect={onSignOut}>
+          <Icon name="logout" size={18} className={iconTone(onInk)} />
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>

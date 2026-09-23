@@ -1,30 +1,165 @@
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import type { ContractDocument, DocumentStatus } from "@/lib/types";
+import type { ContractDocument } from "@/lib/types";
 
 /**
- * Where the document has been, and who is answerable for it.
+ * Where the document is in its life, and who is answerable for each part.
  *
- * Four stages, set as notation on one line. The advocate's name hangs
- * under the stage where a person took responsibility, because that is
- * the whole claim the product makes: the machine did the first pass, a
- * named advocate decided.
+ * Four stages: the first pass screens it, an advocate reviews it, the
+ * advocate signs it off, the client executes it. The names hang under
+ * the stages where a person took responsibility, because that is the
+ * whole claim the product makes: the machine did the first pass, a named
+ * advocate decided.
  *
- * This replaces the numbered-circle stepper. Circles in a row are a
- * progress widget; this is a chain of custody.
+ * Two readings of the same model. The strip is for a row in a list; the
+ * full chain is for the document itself.
  */
-const STAGES = ["Drafted", "Screened", "Reviewed", "Settled"] as const;
+type StageKey = "screened" | "review" | "signed" | "executed";
 
-const REACHED: Record<DocumentStatus, number> = {
-  draft: 0,
-  analysing: 1,
-  pending_review: 1,
-  under_review: 2,
-  revision: 2,
-  settled: 3,
-  executed: 3,
-};
+interface Stage {
+  key: StageKey;
+  label: string;
+  state: "done" | "current" | "attention" | "ahead";
+  /** Who, and when, once it has happened. */
+  detail: string | null;
+}
 
+function day(iso: string | null): string | null {
+  return iso ? format(new Date(iso), "d MMM yyyy") : null;
+}
+
+export function lifecycle(doc: ContractDocument): Stage[] {
+  const s = doc.status;
+  const applicable = doc.executionSteps.filter((step) => step.applicable);
+  const done = applicable.filter((step) => step.complete).length;
+  const findings = doc.findings.length;
+
+  const screened: Stage = {
+    key: "screened",
+    label: "Screened",
+    state: s === "draft" || s === "analysing" ? "current" : "done",
+    detail:
+      s === "draft"
+        ? "Not submitted"
+        : s === "analysing"
+          ? "First pass running"
+          : `First pass · ${findings} ${findings === 1 ? "finding" : "findings"} raised`,
+  };
+
+  const review: Stage = {
+    key: "review",
+    label: "Advocate review",
+    state:
+      s === "revision"
+        ? "attention"
+        : s === "pending_review" || s === "under_review"
+          ? "current"
+          : s === "settled" || s === "executed"
+            ? "done"
+            : "ahead",
+    detail: doc.advocate
+      ? [doc.advocate.name, day(doc.claimedAt)].filter(Boolean).join(" · ")
+      : s === "pending_review"
+        ? "In the advocate queue"
+        : null,
+  };
+
+  const signed: Stage = {
+    key: "signed",
+    label: "Signed off",
+    state: s === "settled" || s === "executed" ? "done" : "ahead",
+    detail:
+      doc.settledAt && doc.advocate
+        ? `${doc.advocate.name} · ${day(doc.settledAt)}`
+        : null,
+  };
+
+  const executed: Stage = {
+    key: "executed",
+    label: "Executed",
+    state: s === "executed" ? "done" : s === "settled" ? "current" : "ahead",
+    detail:
+      s === "settled" || s === "executed"
+        ? `${done} of ${applicable.length} steps complete`
+        : null,
+  };
+
+  return [screened, review, signed, executed];
+}
+
+/** What the document is waiting on, in a few words. */
+export function stageCaption(doc: ContractDocument): string {
+  switch (doc.status) {
+    case "draft":
+      return "Not submitted";
+    case "analysing":
+      return "First pass running";
+    case "pending_review":
+      return "In the advocate queue";
+    case "under_review":
+      return doc.advocate ? `With ${doc.advocate.name}` : "With an advocate";
+    case "revision":
+      return "Changes requested";
+    case "settled": {
+      const steps = doc.executionSteps.filter((step) => step.applicable);
+      const done = steps.filter((step) => step.complete).length;
+      return `Signed off · ${done} of ${steps.length} steps done`;
+    }
+    case "executed":
+      return "Executed";
+  }
+}
+
+/**
+ * Colour is earned. Sign-off and execution are decisions, so they are the
+ * only stages that carry the accent; a request for changes is the one
+ * stage that needs the client, so it alone carries caution.
+ */
+function segmentClass(stage: Stage): string {
+  if (stage.state === "attention") return "bg-caution";
+  if (stage.state === "current") return "bg-muted-fg/40";
+  if (stage.state === "ahead") return "bg-line";
+  return stage.key === "signed" || stage.key === "executed" ? "bg-accent" : "bg-ink";
+}
+
+/** The compact reading, for a row in a list. */
+export function LifecycleStrip({
+  doc,
+  className,
+}: {
+  doc: ContractDocument;
+  className?: string;
+}) {
+  const stages = lifecycle(doc);
+  const caption = stageCaption(doc);
+
+  return (
+    <div className={cn("flex items-center gap-3", className)}>
+      <span
+        role="img"
+        aria-label={`${caption}. ${stages.map((s) => `${s.label} ${s.state === "done" ? "complete" : s.state === "ahead" ? "not started" : "in progress"}`).join(", ")}.`}
+        className="flex shrink-0 gap-0.5"
+      >
+        {stages.map((stage) => (
+          <span
+            key={stage.key}
+            className={cn("h-1 w-6 rounded-[1px]", segmentClass(stage))}
+          />
+        ))}
+      </span>
+      <span
+        className={cn(
+          "truncate text-label",
+          doc.status === "revision" ? "text-caution-fg" : "text-muted-fg",
+        )}
+      >
+        {caption}
+      </span>
+    </div>
+  );
+}
+
+/** The full chain of custody, for the document itself. */
 export function Provenance({
   doc,
   className,
@@ -32,43 +167,106 @@ export function Provenance({
   doc: ContractDocument;
   className?: string;
 }) {
-  const reached = REACHED[doc.status];
+  const stages = lifecycle(doc);
 
   return (
-    <ol className={cn("flex flex-wrap items-start gap-x-2", className)}>
-      {STAGES.map((stage, i) => {
-        const done = i <= reached;
-        const isReviewStage = i === 2;
-
-        return (
-          <li key={stage} className="flex items-start gap-2">
-            {i > 0 && (
-              <span aria-hidden className="mt-0.5 text-line">
-                &rarr;
-              </span>
+    <ol className={cn("space-y-3", className)}>
+      {stages.map((stage) => (
+        <li key={stage.key} className="grid grid-cols-[0.75rem_minmax(0,1fr)] gap-x-3">
+          <span
+            aria-hidden
+            className={cn(
+              "mt-1.5 h-2 w-2 rounded-[1px]",
+              stage.state === "ahead"
+                ? "border border-line"
+                : stage.state === "current"
+                  ? "border border-muted-fg"
+                  : segmentClass(stage),
             )}
-            <span>
+          />
+          <div className="min-w-0">
+            <p
+              className={cn(
+                "text-meta",
+                stage.state === "ahead" ? "text-muted-fg" : "text-ink",
+                stage.state === "attention" && "text-caution-fg",
+              )}
+            >
+              {stage.label}
+              {stage.state === "attention" && " · changes requested"}
+            </p>
+            {stage.detail && (
+              <p className="text-label text-muted-fg">{stage.detail}</p>
+            )}
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+const SHORT_LABEL: Record<StageKey, string> = {
+  screened: "Screened",
+  review: "Review",
+  signed: "Signed off",
+  executed: "Executed",
+};
+
+const isDecision = (key: StageKey) => key === "signed" || key === "executed";
+
+/**
+ * The lifecycle as a labelled stepper, for rows with room to say it:
+ * four stations on one line, each named, with the one the document is
+ * at marked. Decisions (sign-off, execution) carry the accent; a request
+ * for changes carries caution.
+ */
+export function LifecycleStepper({
+  doc,
+  className,
+}: {
+  doc: ContractDocument;
+  className?: string;
+}) {
+  const stages = lifecycle(doc);
+
+  return (
+    <ol aria-label={stageCaption(doc)} className={cn("grid grid-cols-4", className)}>
+      {stages.map((stage, i) => {
+        const next = stages[i + 1];
+        return (
+          <li key={stage.key} className="relative flex flex-col items-start">
+            {next && (
               <span
+                aria-hidden
                 className={cn(
-                  "block font-mono text-notation uppercase tracking-notation",
-                  done ? "text-ink" : "text-muted-fg",
-                  // The last stage is the only one that earns the accent,
-                  // and only once it has actually happened.
-                  i === STAGES.length - 1 && done && "text-accent",
+                  "absolute left-3 right-0 top-[5px] h-0.5 rounded-full",
+                  next.state === "done"
+                    ? isDecision(next.key)
+                      ? "bg-accent"
+                      : "bg-ink"
+                    : "bg-line",
                 )}
-              >
-                {stage}
-              </span>
-              {isReviewStage && doc.advocate && reached >= 2 && (
-                <span className="block text-small text-muted-fg">
-                  {doc.advocate.name}
-                </span>
+              />
+            )}
+            <span
+              aria-hidden
+              className={cn(
+                "relative z-10 h-3 w-3 rounded-full",
+                stage.state === "done" && (isDecision(stage.key) ? "bg-accent" : "bg-ink"),
+                stage.state === "current" && "bg-paper ring-2 ring-ink",
+                stage.state === "attention" && "bg-caution ring-4 ring-caution/25",
+                stage.state === "ahead" && "bg-line",
               )}
-              {i === STAGES.length - 1 && doc.settledAt && (
-                <span className="block text-small text-muted-fg">
-                  {format(new Date(doc.settledAt), "d MMM yyyy")}
-                </span>
+            />
+            <span
+              className={cn(
+                "mt-2 text-label",
+                stage.state === "ahead" ? "text-muted-fg" : "text-ink",
+                (stage.state === "current" || stage.state === "attention") && "font-medium",
+                stage.state === "attention" && "text-caution-fg",
               )}
+            >
+              {SHORT_LABEL[stage.key]}
             </span>
           </li>
         );

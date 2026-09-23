@@ -98,6 +98,26 @@ export default function ChatPage({ params }: { params: { id: string } }) {
     return <ErrorState message={errorMessage} onRetry={load} />;
   }
 
+  // The chat agent explains the settled document. Before sign-off there
+  // is no settled document to explain, and nothing reaches the client
+  // until there is.
+  if (doc.status !== "settled" && doc.status !== "executed") {
+    return (
+      <div className="mx-auto w-full max-w-2xl">
+        <PageHeader
+          title="Ask about this document"
+          description={doc.title}
+          backHref={`/documents/${doc.id}`}
+          backLabel={doc.title}
+        />
+        <p className="border-l-2 border-line pl-4 text-body text-ink">
+          Questions open once an advocate has settled and signed off this
+          document. Until then there is no settled text to explain.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <PageHeader
@@ -174,7 +194,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
                   key={q}
                   type="button"
                   onClick={() => sendMessage(q)}
-                  className="rounded-full border border-line px-3 py-1 text-small text-muted-fg transition-colors hover:bg-canvas"
+                  className="rounded-control border border-line px-3 py-1 text-small text-muted-fg transition-colors hover:bg-canvas"
                 >
                   {q}
                 </button>

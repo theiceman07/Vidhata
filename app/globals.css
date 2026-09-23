@@ -4,7 +4,23 @@
 
 @layer base {
   body {
-    @apply bg-canvas text-ink font-sans text-body;
+    @apply bg-paper text-ink font-sans text-body;
+  }
+
+  /* No visible scrollbars anywhere. Every scroll region still scrolls
+     by wheel, touch, keyboard and trackpad. */
+  * {
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* There is no monospace voice. Where numbers must line up they use
+     the grotesk's tabular figures instead. */
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
   }
 
   /* The accent marks a decision, so a selection borrows it at low weight
@@ -17,6 +33,22 @@
      where a decision is about to be taken. */
   :focus-visible {
     @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-paper;
+  }
+
+  /* A text field matches :focus-visible on every focus, mouse included,
+     so the offset ring above would draw a second box a gap away from the
+     field's own border. Fields take the ring flush instead. */
+  :is(input, textarea, select):focus-visible {
+    @apply ring-offset-0;
+  }
+}
+
+@layer components {
+  /* A bare field inside a composed control (the prompt box, the palette,
+     the agent). The control shows focus as a whole, so the field inside
+     it draws nothing of its own. */
+  .field-bare:focus-visible {
+    box-shadow: none;
   }
 }
 
@@ -61,5 +93,141 @@
   .rounded-card,
   li {
     break-inside: avoid;
+  }
+}
+
+/* The prompt box ring: a conic sweep of the brand greens and amber
+   that travels round the border while the box has focus. */
+@property --prompt-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes prompt-spin {
+  to {
+    --prompt-angle: 360deg;
+  }
+}
+/* The caret takes one brand colour per blink. */
+@keyframes caret-cycle {
+  0%, 24.99% { caret-color: theme("colors.accent.DEFAULT"); }
+  25%, 49.99% { caret-color: theme("colors.caution.DEFAULT"); }
+  50%, 74.99% { caret-color: theme("colors.verified"); }
+  75%, 100% { caret-color: theme("colors.ink"); }
+}
+
+/* Marketing bands. The page is white, so sections that need to stand
+   apart sit on a full-width tinted band. A fine grain keeps a band from
+   reading as flat fill. Marketing only. */
+@layer components {
+  .prompt-ring {
+    background: conic-gradient(
+      from var(--prompt-angle),
+      theme("colors.accent.DEFAULT"),
+      theme("colors.verified"),
+      theme("colors.caution.DEFAULT"),
+      theme("colors.accent.hover"),
+      theme("colors.accent.DEFAULT")
+    );
+    animation: prompt-spin 4s linear infinite paused;
+  }
+  /* The ring is invisible until the prompt has focus, and an animated
+     conic gradient repaints every frame, so it only runs while shown. */
+  .group:focus-within .prompt-ring {
+    animation-play-state: running;
+  }
+  .caret-cycle {
+    caret-color: theme("colors.accent.DEFAULT");
+  }
+  .caret-cycle:focus {
+    animation: caret-cycle 4.24s linear infinite;
+  }
+
+  .tile-grain {
+    position: relative;
+    isolation: isolate;
+  }
+  .tile-grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    /* Plain alpha rather than a blend mode: a multiply layer the size of
+       a band is re-blended on every scroll frame. The grain is dark noise
+       with its own alpha, so it reads the same over a light band. */
+    opacity: 0.12;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+
+}
+
+/* The loader. The name is drafted letter by letter in muted ink, each
+   letter settles into full ink, then a rule is struck under it: AI
+   drafts, an advocate decides. Pure CSS, so it runs from the server
+   HTML before any script has loaded. */
+@keyframes loader-letter {
+  0% {
+    opacity: 0;
+    transform: translateY(0.3em);
+    color: theme("colors.muted-fg");
+  }
+  18% {
+    opacity: 1;
+    transform: none;
+    color: theme("colors.muted-fg");
+  }
+  42%,
+  84% {
+    opacity: 1;
+    transform: none;
+    color: theme("colors.ink");
+  }
+  100% {
+    opacity: 0;
+    transform: none;
+    color: theme("colors.ink");
+  }
+}
+@keyframes loader-rule {
+  0%,
+  48% {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+  68%,
+  84% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+@layer components {
+  .loader-letter {
+    display: inline-block;
+    opacity: 0;
+    animation: loader-letter 2.6s cubic-bezier(0.2, 0, 0, 1) infinite;
+    animation-delay: calc(var(--i) * 70ms);
+  }
+  .loader-rule {
+    transform: scaleX(0);
+    transform-origin: left;
+    animation: loader-rule 2.6s cubic-bezier(0.2, 0, 0, 1) infinite;
+  }
+}
+/* Stilled, the loader is simply the name with its rule. The global
+   reduced-motion backstop would otherwise freeze it on its last frame,
+   which is invisible. */
+@media (prefers-reduced-motion: reduce) {
+  .loader-letter,
+  .loader-rule {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
   }
 }

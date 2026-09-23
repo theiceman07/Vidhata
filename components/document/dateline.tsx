@@ -7,7 +7,12 @@ import { cn } from "@/lib/utils";
  * contract, where you are is the clause you are reading, the finding you
  * are holding, and the state the document is in:
  *
- *   LEASE AGREEMENT · DRAFT 03 · CLAUSE 7.1 · FINDING 04 · AWAITING ADVOCATE
+ *   Lease agreement · Draft 03 · Clause 7.1 · Finding 04 · Awaiting advocate
+ *
+ * Set in the notation face at label size, in the case it was written in.
+ * Forced capitals and wide tracking made every readout shout, and a
+ * screen of shouting readouts has no quiet place left for the one that
+ * matters.
  *
  * Segments are passed in already built, so each caller decides what is
  * worth reporting. Empty and null segments are dropped rather than
@@ -26,7 +31,7 @@ export function Dateline({
   return (
     <p
       className={cn(
-        "font-mono text-notation uppercase tracking-notation text-muted-fg",
+        "text-meta text-muted-fg",
         className,
       )}
     >

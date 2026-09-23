@@ -1,35 +1,41 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { ContractDocument, Finding } from "@/lib/types";
+import type { ContractDocument, Finding, MarginNotes } from "@/lib/types";
 import { ClauseBlock } from "./clause-block";
 import { FindingBar } from "./finding-bar";
 
 /**
  * The contract, set as a document.
  *
- * Paper, a reading measure, hairlines between clauses. No cards.
+ * Paper, a reading measure, hairlines between clauses. No cards, and no
+ * second title: the header above already says which document this is,
+ * so the page opens on the first clause.
  *
  * The surface also reports which clause the reader is currently on, so
- * the dateline can state their position. That readout is the reason this
- * pane keeps native scroll rather than inertial scroll: an interpolated
- * offset would make the reported position an approximation, and the
- * point of the readout is that it is exact.
+ * the position readout can state it. That readout is the reason this pane
+ * keeps native scroll rather than inertial scroll: an interpolated offset
+ * would make the reported position an approximation.
  */
 export function DocumentSurface({
   doc,
   findingNumbers,
   selectedFindingId,
+  hoveredFindingId,
   onSelectFinding,
-  activeClauseId,
+  onHoverFinding,
   onActiveClauseChange,
+  notes,
 }: {
   doc: ContractDocument;
   findingNumbers: Record<string, string>;
   selectedFindingId: string | null;
+  hoveredFindingId: string | null;
   onSelectFinding: (findingId: string) => void;
-  activeClauseId: string | null;
+  onHoverFinding: (findingId: string | null) => void;
   onActiveClauseChange: (clauseId: string) => void;
+  /** The advocate's margin notes. Absent on the client's copy. */
+  notes?: MarginNotes;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -44,22 +50,18 @@ export function DocumentSurface({
     const root = containerRef.current;
     if (!root) return;
 
-    const nodes = Array.from(
-      root.querySelectorAll<HTMLElement>("[data-clause]"),
-    );
+    const nodes = Array.from(root.querySelectorAll<HTMLElement>("[data-clause]"));
     if (nodes.length === 0) return;
 
-    // The pane scrolls, not the window, so positions are measured
-    // against the pane. The observer only says "something moved"; the
-    // reading itself is taken from the nodes, because at a boundary two
-    // clauses intersect any band at once and the one the reader is on is
-    // the last one whose heading has passed the top of the pane.
+    // The pane scrolls, not the window, so positions are measured against
+    // the pane. At a boundary two clauses intersect any band at once, and
+    // the one the reader is on is the last whose heading has passed the
+    // top of the pane.
     const scrollRoot = root.parentElement;
     if (!scrollRoot) return;
 
-    // Matches scroll-mt-14 on ClauseBlock, so a clause scrolled to rest
-    // reports itself rather than the clause above it.
-    const ANCHOR = 57;
+    // Matches scroll-mt-12 on ClauseBlock plus the sticky readout.
+    const ANCHOR = 24;
 
     const report = () => {
       const top = scrollRoot.getBoundingClientRect().top + ANCHOR;
@@ -72,19 +74,9 @@ export function DocumentSurface({
       if (id) reportRef.current(id);
     };
 
-    const observer = new IntersectionObserver(report, {
-      root: scrollRoot,
-      threshold: [0, 1],
-    });
-
     scrollRoot.addEventListener("scroll", report, { passive: true });
     report();
-
-    nodes.forEach((node) => observer.observe(node));
-    return () => {
-      observer.disconnect();
-      scrollRoot.removeEventListener("scroll", report);
-    };
+    return () => scrollRoot.removeEventListener("scroll", report);
   }, [doc.id, clauseCount]);
 
   const byId = new Map(doc.findings.map((f) => [f.findingId, f]));
@@ -98,14 +90,8 @@ export function DocumentSurface({
   return (
     <article
       ref={containerRef}
-      className="@container mx-auto max-w-[76rem] px-6 py-8 md:px-10"
+      className="@container mx-auto max-w-[76rem] px-6 pb-10 pt-4 md:px-10"
     >
-      {/* The document's own title page. The chrome above states which
-          document this is for navigation; here it opens the instrument. */}
-      <header className="max-w-measure border-b border-line pb-8">
-        <h1 className="font-display text-h1 text-ink">{doc.title}</h1>
-      </header>
-
       <div className="divide-y divide-line">
         {doc.clauses.map((clause) => (
           <ClauseBlock
@@ -116,18 +102,25 @@ export function DocumentSurface({
               .filter((f): f is Finding => Boolean(f))}
             findingNumbers={findingNumbers}
             selectedFindingId={selectedFindingId}
+            hoveredFindingId={hoveredFindingId}
             onSelectFinding={onSelectFinding}
-            active={clause.id === activeClauseId}
+            onHoverFinding={onHoverFinding}
+            notes={
+              notes && {
+                ...notes,
+                items: notes.items.filter((n) => n.clauseId === clause.id),
+              }
+            }
           />
         ))}
       </div>
 
       {unattached.length > 0 && (
-        <section className="max-w-measure border-t border-line pt-8">
-          <p className="font-mono text-notation uppercase tracking-notation text-muted-fg">
+        <section className="max-w-measure border-t border-line pt-6">
+          <p className="text-label font-medium text-muted-fg">
             Findings not attached to a clause
           </p>
-          <div className="mt-4 space-y-1">
+          <div className="mt-3 space-y-1">
             {unattached.map((finding) => (
               <FindingBar
                 key={finding.findingId}
@@ -135,11 +128,18 @@ export function DocumentSurface({
                 number={findingNumbers[finding.findingId] ?? "--"}
                 selected={selectedFindingId === finding.findingId}
                 onSelect={() => onSelectFinding(finding.findingId)}
+                onHover={(on) => onHoverFinding(on ? finding.findingId : null)}
               />
             ))}
           </div>
         </section>
       )}
+
+      {/* The end of the instrument is marked, so the run-out below reads
+          as the foot of the page rather than a rendering gap. */}
+      <p className="mt-10 pt-2 text-center text-meta text-muted-fg">
+        End of document · {doc.clauses.length} clauses
+      </p>
     </article>
   );
 }

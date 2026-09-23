@@ -17,7 +17,9 @@ const DropdownMenuContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        "z-50 min-w-[14rem] overflow-hidden rounded-card border border-line bg-paper p-1 shadow-card",
+        // The menu takes focus when it opens; its items show where focus is,
+        // so the panel itself draws no ring.
+        "z-50 min-w-[14rem] overflow-hidden rounded-card border border-line bg-paper p-1 shadow-card focus-visible:ring-0 focus-visible:ring-offset-0",
         "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0",
         className
       )}
@@ -50,7 +52,7 @@ const DropdownMenuLabel = React.forwardRef<
   <DropdownMenuPrimitive.Label
     ref={ref}
     className={cn(
-      "px-2.5 py-2 font-mono text-notation uppercase tracking-notation text-muted-fg",
+      "px-2.5 py-2 text-label font-medium text-muted-fg",
       className
     )}
     {...props}

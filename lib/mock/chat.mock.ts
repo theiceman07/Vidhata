@@ -47,6 +47,26 @@ export function getMockReply(
     };
   }
 
+  // A question that names a clause gets that clause, quoted from the
+  // settled text itself. Nothing is paraphrased into a legal claim.
+  const lower = userText.toLowerCase();
+  const clause = doc.clauses.find(
+    (c) =>
+      lower.includes(c.heading.toLowerCase()) ||
+      lower.includes(`clause ${c.number}`) ||
+      c.heading
+        .toLowerCase()
+        .split(/\s+/)
+        .some((word) => word.length > 4 && lower.includes(word)),
+  );
+  if (clause) {
+    return {
+      text: `Clause ${clause.number}, ${clause.heading}, reads: "${clause.body.split("\n\n")[0]}"`,
+      citedClauseReference: `Clause ${clause.number}`,
+      isEscalation: false,
+    };
+  }
+
   const finding = doc.findings[0];
   if (finding) {
     return {

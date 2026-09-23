@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AuthScreen } from "@/components/shared/auth-screen";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/shared/password-input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useSession } from "@/lib/session";
@@ -13,6 +14,7 @@ import { MOCK_PREVIEW_CREDENTIALS } from "@/lib/mock/auth.mock";
 
 const PREVIEW_MODE = process.env.NEXT_PUBLIC_VIDHATA_PREVIEW_MODE === "1";
 const MAX_ATTEMPTS = 5;
+
 const LOCKOUT_SECONDS = 30;
 
 export default function ClientLoginPage() {
@@ -59,8 +61,9 @@ export default function ClientLoginPage() {
   if (!PREVIEW_MODE) {
     return (
       <AuthScreen
+        portal="client"
         title="Welcome back."
-        intro="Continue to your legal workspace."
+        intro="For founders and teams whose contracts Vidhata drafts."
       >
         <p className="text-body text-ink">
           Sign-in is not yet available. Vidhata does not have a production
@@ -75,11 +78,13 @@ export default function ClientLoginPage() {
 
   return (
     <AuthScreen
+      portal="client"
       title="Welcome back."
-      intro="Continue to your legal workspace."
+      intro="For founders and teams whose contracts Vidhata drafts."
       footer={
         <>
-          <button
+          New to Vidhata?{" "}
+            <button
             type="button"
             onClick={() =>
               toast.info("Sign-up isn't available in this preview.")
@@ -88,14 +93,10 @@ export default function ClientLoginPage() {
           >
             Create an account
           </button>
-          <span className="mx-2 text-line">·</span>
-          <Link href="/advocate-login" className="hover:text-ink">
-            Advocate sign in
-          </Link>
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         <div>
           <Label htmlFor="username">Email or username</Label>
           <Input
@@ -109,7 +110,18 @@ export default function ClientLoginPage() {
           />
         </div>
         <div>
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <button
+              type="button"
+              onClick={() =>
+                toast.info("Password reset isn't available in this preview.")
+              }
+              className="text-meta text-muted-fg transition-colors hover:text-ink"
+            >
+              Forgot password?
+            </button>
+          </div>
           {/* QA 4.6 investigation: the reported "single-character password
               doesn't register" defect was not reproducible. This is a
               standard controlled input (components/ui/input.tsx forwards
@@ -118,9 +130,8 @@ export default function ClientLoginPage() {
               Most likely explanation: a password-manager overlay
               intercepting a very short value during the original test, not
               an app defect. */}
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -149,30 +160,13 @@ export default function ClientLoginPage() {
           </p>
         )}
 
-        <Button type="submit" className="w-full" disabled={locked}>
+        <Button type="submit" size="lg" className="w-full" disabled={locked}>
           Sign in
         </Button>
 
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() =>
-              toast.info("Password reset isn't available in this preview.")
-            }
-            className="text-small text-muted-fg hover:text-ink"
-          >
-            Forgot password?
-          </button>
-          {/* The preview account is a secondary way in, not the headline.
-              Credentials are not printed on the screen. */}
-          <button
-            type="button"
-            onClick={signIn}
-            className="text-small text-accent hover:underline"
-          >
-            Use the preview workspace
-          </button>
-        </div>
+        <Button type="button" variant="outline" size="lg" className="w-full" onClick={signIn}>
+          Use the preview workspace
+        </Button>
       </form>
     </AuthScreen>
   );

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AuthScreen } from "@/components/shared/auth-screen";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/shared/password-input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useSession } from "@/lib/session";
@@ -57,6 +58,7 @@ export default function LawyerLoginPage() {
   if (!PREVIEW_MODE) {
     return (
       <AuthScreen
+        portal="advocate"
         title="Advocate sign in."
         intro="For empanelled advocates only."
       >
@@ -73,11 +75,13 @@ export default function LawyerLoginPage() {
 
   return (
     <AuthScreen
+      portal="advocate"
       title="Advocate sign in."
       intro="For empanelled advocates only."
       footer={
         <>
-          <button
+          Not on the panel yet?{" "}
+            <button
             type="button"
             onClick={() =>
               toast.info("Invite requests aren't available in this preview.")
@@ -86,14 +90,10 @@ export default function LawyerLoginPage() {
           >
             Request an invite
           </button>
-          <span className="mx-2 text-line">·</span>
-          <Link href="/login" className="hover:text-ink">
-            Client sign in
-          </Link>
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         <div>
           <Label htmlFor="bar-number">Bar enrolment number</Label>
           <Input
@@ -106,10 +106,20 @@ export default function LawyerLoginPage() {
           />
         </div>
         <div>
-          <Label htmlFor="password">Password</Label>
-          <Input
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <button
+              type="button"
+              onClick={() =>
+                toast.info("Password reset isn't available in this preview.")
+              }
+              className="text-meta text-muted-fg transition-colors hover:text-ink"
+            >
+              Forgot password?
+            </button>
+          </div>
+          <PasswordInput
             id="password"
-            type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -138,28 +148,13 @@ export default function LawyerLoginPage() {
           </p>
         )}
 
-        <Button type="submit" className="w-full" disabled={locked}>
+        <Button type="submit" size="lg" className="w-full" disabled={locked}>
           Sign in
         </Button>
 
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() =>
-              toast.info("Password reset isn't available in this preview.")
-            }
-            className="text-small text-muted-fg hover:text-ink"
-          >
-            Forgot password?
-          </button>
-          <button
-            type="button"
-            onClick={signIn}
-            className="text-small text-accent hover:underline"
-          >
-            Use the preview workspace
-          </button>
-        </div>
+        <Button type="button" variant="outline" size="lg" className="w-full" onClick={signIn}>
+          Use the preview workspace
+        </Button>
       </form>
     </AuthScreen>
   );

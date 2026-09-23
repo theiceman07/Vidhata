@@ -4,14 +4,16 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "@/lib/session";
 import { AppShell, type ShellSection } from "@/components/shared/app-shell";
+import { BrandLoader } from "@/components/shared/brand-loader";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 
 const SECTIONS: ShellSection[] = [
   {
     label: "Work",
     links: [
+      // No "New document" here: a document starts from the prompt on
+      // Documents, which drafts it or opens intake for what is missing.
       { href: "/documents", label: "Documents", icon: "description" },
-      { href: "/new", label: "New document", icon: "note_add" },
     ],
   },
   {
@@ -30,11 +32,12 @@ export default function ClientPortalLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { role } = useSession();
+  const { role, ready } = useSession();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
+    if (!ready) return;
     if (role === "client") return;
     // QA 3.1 / 10.2: a wrong-but-present role (e.g. an advocate who landed
     // on a client route) used to be sent to /login just like a missing
@@ -43,9 +46,12 @@ export default function ClientPortalLayout({
     // role goes home to *its own* portal.
     if (role === "lawyer") router.replace("/queue");
     else router.replace("/login");
-  }, [role, router]);
+  }, [ready, role, router]);
 
-  if (role !== "client") return null;
+  // The stored role is read after the first render. Until then who you
+  // are is unknown, not absent, so this waits rather than redirecting,
+  // and a wrong role waits here while it is sent to its own portal.
+  if (!ready || role !== "client") return <BrandLoader />;
 
   return (
     <AppShell

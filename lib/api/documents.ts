@@ -57,6 +57,9 @@ function buildExecutionSteps(doc: ContractDocument): ExecutionStep[] {
         "Have both signatories sign on the last page.",
       ],
       complete: false,
+      completedAt: null,
+      completedBy: null,
+      evidence: null,
     },
     {
       kind: "registration",
@@ -77,6 +80,9 @@ function buildExecutionSteps(doc: ContractDocument): ExecutionStep[] {
           ]
         : [],
       complete: false,
+      completedAt: null,
+      completedBy: null,
+      evidence: null,
     },
     {
       kind: "esignature",
@@ -90,6 +96,9 @@ function buildExecutionSteps(doc: ContractDocument): ExecutionStep[] {
         "Download the signed PDF with the embedded audit trail.",
       ],
       complete: false,
+      completedAt: null,
+      completedBy: null,
+      evidence: null,
     },
   ];
 }
@@ -311,6 +320,8 @@ export async function createDraftDocument(
     governingLaw: input.governingLaw,
     keyTerms: input.keyTerms.trim() ? input.keyTerms.trim() : null,
     createdAt: new Date().toISOString(),
+    version: 1,
+    claimedAt: null,
     settledAt: null,
     analysisCompletesAt: null,
     advocate: null,
@@ -345,8 +356,113 @@ export async function claimDocument(
   }
   const doc = store.find((d) => d.id === id);
   if (!doc) throw new MockApiError("Document not found.");
+  // Claiming is exclusive. A second advocate cannot take a document out
+  // of the hands of the one already reviewing it.
+  if (doc.advocate && doc.advocate.id !== advocate.id) {
+    throw new MockApiError(
+      `${doc.advocate.name} has already claimed this document.`,
+    );
+  }
   doc.status = "under_review";
   doc.advocate = advocate;
+  doc.claimedAt = new Date().toISOString();
+  return structuredClone(doc);
+}
+
+function findFinding(docId: string, findingId: string) {
+  const doc = store.find((d) => d.id === docId);
+  if (!doc) throw new MockApiError("Document not found.");
+  const finding = doc.findings.find((f) => f.findingId === findingId);
+  if (!finding) throw new MockApiError("Finding not found.");
+  return { doc, finding };
+}
+
+/**
+ * Ask the client for something before a finding can be settled. The
+ * document goes back to the client at once: whatever else the advocate
+ * is still working through, the client can start on this now.
+ */
+export async function requestChange(
+  docId: string,
+  findingId: string,
+  request: string,
+  advocateName: string,
+): Promise<ContractDocument> {
+  await randomDelay(300, 600);
+  if (shouldSimulateFailure()) {
+    throw new MockApiError("Could not send this request.");
+  }
+  const { doc, finding } = findFinding(docId, findingId);
+  finding.changeRequest = {
+    request,
+    requestedAt: new Date().toISOString(),
+    requestedBy: advocateName,
+    response: null,
+    respondedAt: null,
+  };
+  doc.status = "revision";
+  return structuredClone(doc);
+}
+
+/**
+ * The client's answers go back to the advocate as one submission, which
+ * is what makes the next draft a draft rather than a stream of edits.
+ */
+export async function respondToChanges(
+  docId: string,
+  responses: Record<string, string>,
+): Promise<ContractDocument> {
+  await randomDelay(300, 600);
+  if (shouldSimulateFailure()) {
+    throw new MockApiError("Could not send your responses.");
+  }
+  const doc = store.find((d) => d.id === docId);
+  if (!doc) throw new MockApiError("Document not found.");
+  const now = new Date().toISOString();
+  doc.findings.forEach((f) => {
+    const answer = responses[f.findingId]?.trim();
+    if (f.changeRequest && !f.changeRequest.response && answer) {
+      f.changeRequest.response = answer;
+      f.changeRequest.respondedAt = now;
+    }
+  });
+  const stillWaiting = doc.findings.some(
+    (f) => f.disposition === "pending" && f.changeRequest && !f.changeRequest.response,
+  );
+  if (!stillWaiting) {
+    doc.status = doc.advocate ? "under_review" : "pending_review";
+    doc.version += 1;
+  }
+  return structuredClone(doc);
+}
+
+/**
+ * A blocked source is never re-labelled verified. Withdrawing it records
+ * that the finding no longer relies on it, with the advocate's reasoning,
+ * and the citation stays on the record as blocked.
+ */
+export async function withdrawCitation(
+  docId: string,
+  findingId: string,
+  citationId: string,
+  note: string,
+  advocateName: string,
+): Promise<ContractDocument> {
+  await randomDelay(300, 600);
+  if (shouldSimulateFailure()) {
+    throw new MockApiError("Could not withdraw this source.");
+  }
+  const { doc, finding } = findFinding(docId, findingId);
+  const citation = finding.citations.find((c) => c.id === citationId);
+  if (!citation) throw new MockApiError("Citation not found.");
+  if (citation.status !== "blocked") {
+    throw new MockApiError("Only a blocked source can be withdrawn.");
+  }
+  citation.withdrawn = {
+    note,
+    at: new Date().toISOString(),
+    by: advocateName,
+  };
   return structuredClone(doc);
 }
 
@@ -359,12 +475,19 @@ export async function updateFinding(
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not save this finding.");
   }
-  const doc = store.find((d) => d.id === docId);
-  if (!doc) throw new MockApiError("Document not found.");
-  const finding = doc.findings.find((f) => f.findingId === findingId);
-  if (!finding) throw new MockApiError("Finding not found.");
+  const { doc, finding } = findFinding(docId, findingId);
+  if (
+    patch.disposition !== "pending" &&
+    finding.citations.some((c) => c.status === "blocked" && !c.withdrawn)
+  ) {
+    throw new MockApiError(
+      "This finding's source is blocked. Withdraw it or resolve it before settling.",
+    );
+  }
   finding.disposition = patch.disposition;
   finding.overrideNote = patch.overrideNote;
+  finding.resolvedAt =
+    patch.disposition === "pending" ? null : new Date().toISOString();
   return structuredClone(doc);
 }
 
@@ -403,6 +526,9 @@ export async function signOffDocument(
   }
   const doc = store.find((d) => d.id === docId);
   if (!doc) throw new MockApiError("Document not found.");
+  if (!doc.advocate) {
+    throw new MockApiError("A document must be claimed before it is signed off.");
+  }
   if (doc.findings.some((f) => f.disposition === "pending")) {
     throw new MockApiError("Every finding must be settled before sign-off.");
   }
@@ -410,7 +536,9 @@ export async function signOffDocument(
   // sign-off screen disables its control over this too, but the rule
   // belongs here as well: a UI-only guard is not a guard.
   if (
-    doc.findings.some((f) => f.citations.some((c) => c.status === "blocked"))
+    doc.findings.some((f) =>
+      f.citations.some((c) => c.status === "blocked" && !c.withdrawn),
+    )
   ) {
     throw new MockApiError(
       "A citation on this document is blocked. Resolve the source before sign-off.",
@@ -424,10 +552,15 @@ export async function signOffDocument(
   return structuredClone(doc);
 }
 
+/**
+ * A tick on a legal execution step says who and when, and can be taken
+ * back. Undoing it clears both rather than leaving a stale name behind.
+ */
 export async function toggleExecutionStep(
   docId: string,
-  kind: ContractDocument["executionSteps"][number]["kind"],
+  kind: ExecutionStep["kind"],
   complete: boolean,
+  actorName: string,
 ): Promise<ContractDocument> {
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
@@ -436,6 +569,37 @@ export async function toggleExecutionStep(
   const doc = store.find((d) => d.id === docId);
   if (!doc) throw new MockApiError("Document not found.");
   const step = doc.executionSteps.find((s) => s.kind === kind);
-  if (step) step.complete = complete;
+  if (step) {
+    step.complete = complete;
+    step.completedAt = complete ? new Date().toISOString() : null;
+    step.completedBy = complete ? actorName : null;
+  }
+  const applicable = doc.executionSteps.filter((s) => s.applicable);
+  if (doc.status === "settled" && applicable.every((s) => s.complete)) {
+    doc.status = "executed";
+  } else if (doc.status === "executed" && !applicable.every((s) => s.complete)) {
+    doc.status = "settled";
+  }
+  return structuredClone(doc);
+}
+
+/** The preview keeps the file name only. Nothing is uploaded anywhere. */
+export async function attachEvidence(
+  docId: string,
+  kind: ExecutionStep["kind"],
+  fileName: string | null,
+): Promise<ContractDocument> {
+  await randomDelay(300, 600);
+  if (shouldSimulateFailure()) {
+    throw new MockApiError("Could not attach this file.");
+  }
+  const doc = store.find((d) => d.id === docId);
+  if (!doc) throw new MockApiError("Document not found.");
+  const step = doc.executionSteps.find((s) => s.kind === kind);
+  if (step) {
+    step.evidence = fileName
+      ? { name: fileName, attachedAt: new Date().toISOString() }
+      : null;
+  }
   return structuredClone(doc);
 }

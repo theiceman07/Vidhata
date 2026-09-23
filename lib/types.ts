@@ -16,6 +16,27 @@ export interface Citation {
   text: string; // "Indian Contract Act, 1872, s.27"
   status: "verified" | "blocked";
   corpusRef: string | null; // null when blocked
+  /**
+   * A blocked citation stays blocked: it is never promoted to verified by
+   * anything but a corpus match. An advocate may instead withdraw it, which
+   * records that the finding no longer relies on it. The citation remains
+   * on the record with the reasoning attached.
+   */
+  withdrawn: { note: string; at: string; by: string } | null;
+}
+
+/**
+ * An advocate asking the client for something before a finding can be
+ * settled: a confirmation, a document, a commercial decision. This is what
+ * "changes requested" means, so the client always sees exactly what was
+ * asked, on which clause, and by whom.
+ */
+export interface ChangeRequest {
+  request: string;
+  requestedAt: string;
+  requestedBy: string;
+  response: string | null;
+  respondedAt: string | null;
 }
 
 /**
@@ -56,6 +77,9 @@ export interface Finding {
   citations: Citation[];
   disposition: "pending" | "confirmed" | "overridden";
   overrideNote: string | null;
+  /** ISO timestamp of the advocate's decision. Null while open. */
+  resolvedAt: string | null;
+  changeRequest: ChangeRequest | null;
 }
 
 export interface ExecutionStep {
@@ -66,6 +90,11 @@ export interface ExecutionStep {
   reason: string; // why it does or does not apply
   instructions: string[];
   complete: boolean;
+  /** Set together with complete, so a tick always says who and when. */
+  completedAt: string | null;
+  completedBy: string | null;
+  /** The file the client attached as proof. Name only in the preview. */
+  evidence: { name: string; attachedAt: string } | null;
 }
 
 export interface ContractDocument {
@@ -88,6 +117,13 @@ export interface ContractDocument {
   governingLaw: string;
   keyTerms: string | null;
   createdAt: string;
+  /**
+   * Draft number. The first pass produces draft 1; each round of client
+   * responses to requested changes produces the next.
+   */
+  version: number;
+  /** When the advocate claimed it. Null while unclaimed. */
+  claimedAt: string | null;
   settledAt: string | null;
   // ISO timestamp the in-flight analysis resolves at, or null when not
   // analysing. Durable across navigation (QA 4.5) — lib/api/documents.ts
@@ -139,6 +175,44 @@ export const PIPELINE_LAYERS: Record<
     description: "Packages findings for adjudication.",
   },
 };
+
+/**
+ * An advocate's own note, stuck in the margin of a clause.
+ *
+ * Private working paper: only the advocate who wrote it sees it, it never
+ * reaches the client, and it is not a finding. It has no state and plays
+ * no part in sign-off.
+ */
+export interface AdvocateNote {
+  id: string;
+  documentId: string;
+  clauseId: string;
+  advocateId: string;
+  text: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** What the document surface needs to show and keep an advocate's notes. */
+export interface MarginNotes {
+  items: AdvocateNote[];
+  onAdd: (clauseId: string, text: string) => void | Promise<void>;
+  onUpdate: (noteId: string, text: string) => void | Promise<void>;
+  onDelete: (noteId: string) => void | Promise<void>;
+}
+
+/**
+ * A reply from the advocate's review agent. It explains the first pass
+ * and points at its evidence; `decision` marks a reply to a question the
+ * advocate alone can answer (settle, override, sign off), which the agent
+ * hands back rather than answers.
+ */
+export interface ReviewAgentReply {
+  text: string;
+  /** Findings or clauses the reply points at, each a way straight to it. */
+  refs: { label: string; findingId: string | null; clauseNumber: string | null }[];
+  decision: boolean;
+}
 
 export interface ChatMessage {
   id: string;

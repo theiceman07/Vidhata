@@ -2,16 +2,24 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { format } from "date-fns";
-import Link from "next/link";
+import { toast } from "sonner";
 import { Icon } from "@/components/shared/icon";
+import { BackButton } from "@/components/shared/back-button";
 import { ErrorState } from "@/components/shared/error-state";
 import { ExecutionChecklist } from "@/components/domain/execution-checklist";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getDocument, toggleExecutionStep } from "@/lib/api/documents";
-import type { ContractDocument } from "@/lib/types";
+import {
+  attachEvidence,
+  getDocument,
+  toggleExecutionStep,
+} from "@/lib/api/documents";
+import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
+import type { ContractDocument, ExecutionStep } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 type LoadState = "loading" | "error" | "loaded";
+type Kind = ExecutionStep["kind"];
 
 export default function ChecklistPage({
   params,
@@ -21,6 +29,7 @@ export default function ChecklistPage({
   const [doc, setDoc] = useState<ContractDocument | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
+  const [busyKind, setBusyKind] = useState<Kind | null>(null);
 
   const load = useCallback(async () => {
     setState("loading");
@@ -41,20 +50,42 @@ export default function ChecklistPage({
     load();
   }, [load]);
 
-  async function handleToggle(
-    kind: ContractDocument["executionSteps"][number]["kind"],
-    complete: boolean,
-  ) {
+  async function save(kind: Kind, action: () => Promise<ContractDocument>, failure: string) {
+    setBusyKind(kind);
+    try {
+      setDoc(await action());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : failure);
+    } finally {
+      setBusyKind(null);
+    }
+  }
+
+  function handleToggle(kind: Kind, complete: boolean) {
     if (!doc) return;
-    const updated = await toggleExecutionStep(doc.id, kind, complete);
-    setDoc(updated);
+    // The preview authenticates one client identity, the organisation.
+    save(
+      kind,
+      () => toggleExecutionStep(doc.id, kind, complete, MOCK_CLIENT_ORG.name),
+      "Could not update the checklist.",
+    );
+  }
+
+  function handleAttach(kind: Kind, fileName: string | null) {
+    if (!doc) return;
+    save(kind, () => attachEvidence(doc.id, kind, fileName), "Could not attach this file.");
   }
 
   if (state === "loading") {
     return (
-      <div className="mx-auto max-w-2xl">
-        <Skeleton className="mb-4 h-10 w-2/3 rounded-card" />
-        <Skeleton className="h-96 w-full rounded-card" />
+      <div className="w-full">
+        <Skeleton className="h-4 w-48" />
+        <Skeleton className="mt-4 h-10 w-1/3" />
+        <div className="mt-10 grid gap-4 lg:grid-cols-3">
+          <Skeleton className="h-96 rounded-card" />
+          <Skeleton className="h-96 rounded-card" />
+          <Skeleton className="h-96 rounded-card" />
+        </div>
       </div>
     );
   }
@@ -64,73 +95,103 @@ export default function ChecklistPage({
   }
 
   const isSettled = doc.status === "settled" || doc.status === "executed";
+  const applicable = doc.executionSteps.filter((s) => s.applicable);
+  const done = applicable.filter((s) => s.complete).length;
+  const owners: Record<Kind, string> = {
+    stamping: doc.clientName,
+    registration: doc.clientName,
+    esignature: "Both signatories",
+  };
 
   return (
-    <div className="mx-auto max-w-4xl print:max-w-none">
-      <div className="print:hidden">
-        <Link
-          href={`/documents/${doc.id}`}
-          className="inline-flex items-center gap-1 font-mono text-notation uppercase tracking-notation text-muted-fg transition-colors hover:text-ink"
-        >
-          <Icon name="chevron_left" size={16} />
-          {doc.title}
-        </Link>
-
-        <div className="mt-3 flex flex-wrap items-end justify-between gap-6 border-b border-line pb-8">
-          <div>
-            <h1 className="font-display text-h1 text-ink">
-              Execution checklist
-            </h1>
-            <p className="mt-2 max-w-xl text-body text-muted-fg">
+    <div className="w-full">
+      {/* The page fills the screen: the title and way back on the left,
+          the record the sheet rests on and how far it has got on the
+          right. */}
+      <header className="flex flex-wrap items-start justify-between gap-x-10 gap-y-6 print:hidden">
+        <div className="flex min-w-0 items-start gap-4">
+          <BackButton fallbackHref={`/documents/${doc.id}`} label="Back" />
+          <div className="min-w-0">
+            <p className="truncate text-meta text-muted-fg">{doc.title}</p>
+            <h1 className="mt-1 font-display text-h1 text-ink">Execution checklist</h1>
+            <p className="mt-2 text-body text-muted-fg">
               What remains before the settled document takes effect.
             </p>
           </div>
-          {isSettled && (
-            <Button size="sm" variant="outline" onClick={() => window.print()}>
-              <Icon name="print" size={18} />
-              Print or save as PDF
-            </Button>
-          )}
         </div>
-      </div>
 
-      {/* Print-only heading — screen readers and the screen layout use the
-          PageHeader above; this is what actually ends up in the PDF/print
-          output (QA 2.4: the "downloadable PDF" used to not exist at all). */}
-      <div className="hidden print:block print:mb-6">
+        {isSettled && (
+          <div className="flex flex-col items-start gap-3 sm:items-end sm:text-right">
+            {doc.advocate && (
+              // The authority the sheet rests on, stated as a line of record.
+              <p className="text-meta text-muted-fg">
+                Signed off by <span className="text-ink">{doc.advocate.name}</span>
+                <span className="mx-1.5 text-muted-fg/50">·</span>
+                <span className="font-mono text-label">{doc.advocate.bar}</span>
+                {doc.settledAt && (
+                  <>
+                    <span className="mx-1.5 text-muted-fg/50">·</span>
+                    {format(new Date(doc.settledAt), "d MMM yyyy")}
+                  </>
+                )}
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-4 sm:justify-end">
+              <span className="flex items-center gap-3">
+                <span aria-hidden className="flex gap-1">
+                  {applicable.map((s) => (
+                    <span
+                      key={s.kind}
+                      className={cn(
+                        "h-1.5 w-8 rounded-full",
+                        s.complete ? "bg-accent" : "bg-line",
+                      )}
+                    />
+                  ))}
+                </span>
+                <span className="text-meta text-ink">
+                  {done} of {applicable.length} complete
+                </span>
+              </span>
+              <Button size="sm" variant="outline" onClick={() => window.print()}>
+                <Icon name="print" size={18} />
+                Print or save as PDF
+              </Button>
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* Print-only heading: the screen header above is hidden in print. */}
+      <div className="hidden print:mb-6 print:block">
         <h1 className="font-display text-h1 text-ink">{doc.title}</h1>
         <p className="text-body text-muted-fg">
-          {doc.clientName} vs {doc.counterpartyName} · Execution checklist ·
+          {doc.clientName} and {doc.counterpartyName} · Execution checklist ·
           Generated {format(new Date(), "d MMM yyyy, HH:mm")}
         </p>
       </div>
 
       {!isSettled ? (
-        <p className="mt-8 border-l-2 border-line pl-5 text-body text-ink">
+        <p className="mt-10 max-w-2xl rounded-card bg-parchment p-6 text-body text-ink">
           The execution checklist becomes available once this document is
           settled and signed off.
         </p>
       ) : (
         <div className="mt-10">
-          {doc.advocate && (
-            // The authority the sheet rests on, stated as a line of
-            // record rather than a tinted panel.
-            <p className="mb-8 font-mono text-notation uppercase tracking-notation text-muted-fg">
-              Signed off by {doc.advocate.name}
-              <span className="mx-2 text-line">·</span>
-              {doc.advocate.bar}
-              {doc.settledAt && (
-                <>
-                  <span className="mx-2 text-line">·</span>
-                  {format(new Date(doc.settledAt), "d MMM yyyy")}
-                </>
-              )}
-            </p>
-          )}
           <ExecutionChecklist
             steps={doc.executionSteps}
+            owners={owners}
             onToggle={handleToggle}
+            onAttach={handleAttach}
+            busyKind={busyKind}
           />
+
+          {doc.status === "executed" && (
+            <p className="mt-6 inline-flex items-center gap-1.5 text-meta text-verified">
+              <Icon name="check_circle" size={18} />
+              Every step is complete. The document is recorded as executed.
+            </p>
+          )}
         </div>
       )}
     </div>

@@ -1,4 +1,3 @@
-import { Dateline } from "@/components/document/dateline";
 import { getMockDocumentById } from "@/lib/mock/documents.mock";
 
 /**
@@ -78,45 +77,32 @@ const CHECKS: Check[] = [
 
 export function IndiaChecks() {
   return (
-    <section
-      id="india"
-      className="mx-auto max-w-[95rem] px-6 py-[clamp(72px,10vw,140px)] lg:px-10"
-    >
-      <div className="grid gap-x-16 gap-y-12 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-        <div className="lg:sticky lg:top-28 lg:self-start">
-          <Dateline segments={["India"]} />
-          <h2 className="mt-4 font-display text-h1 text-ink">
-            Six checks a generic drafting tool has no way to run.
-          </h2>
-          <p className="mt-4 max-w-sm text-body text-muted-fg">
-            Built for Indian contracts rather than adapted for them. Each check
-            runs against the statute it names.
-          </p>
-        </div>
+    <section id="india" className="tile-grain w-full scroll-mt-20 bg-accent/[0.13]">
+      <div className="mx-auto w-full max-w-6xl px-6 py-24 md:py-32">
+      <div className="max-w-2xl">
+        <h2 className="font-display text-display text-ink">Built for Indian contracts</h2>
+        <p className="mt-6 text-lead text-muted-fg">
+          Six checks a generic drafting tool has no way to run. Each one runs
+          against the statute it names.
+        </p>
+      </div>
 
-        <ol className="border-t border-line">
-          {CHECKS.map((check) => (
-            <li
-              key={check.title}
-              className="grid gap-x-8 gap-y-3 border-b border-line py-8 sm:grid-cols-[7rem_minmax(0,1fr)]"
-            >
-              <p className="font-mono text-notation uppercase tracking-notation text-accent">
-                {check.notation}
+      <ul className="mt-16 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {CHECKS.map((check) => (
+          <li key={check.title} className="flex flex-col rounded-card bg-paper p-8">
+            <span className="self-start rounded-full bg-accent/10 px-3 py-1 text-meta font-medium text-accent">
+              {check.notation}
+            </span>
+            <h3 className="mt-6 font-display text-h2 text-ink">{check.title}</h3>
+            <p className="mt-3 text-body text-muted-fg">{check.description}</p>
+            {check.fragment && (
+              <p className="mt-6 border-t border-line pt-5 font-clause text-meta italic text-ink">
+                {check.fragment}
               </p>
-              <div className="min-w-0">
-                <h3 className="font-display text-h2 text-ink">{check.title}</h3>
-                <p className="mt-2 max-w-prose text-body text-muted-fg">
-                  {check.description}
-                </p>
-                {check.fragment && (
-                  <p className="mt-4 max-w-prose border-l-2 border-line pl-4 font-display text-meta italic text-ink">
-                    {check.fragment}
-                  </p>
-                )}
-              </div>
-            </li>
-          ))}
-        </ol>
+            )}
+          </li>
+        ))}
+      </ul>
       </div>
     </section>
   );

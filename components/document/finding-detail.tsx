@@ -1,191 +1,375 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { DURATION, EASE, duration } from "@/lib/motion";
-import { canSettle, findingState } from "@/lib/findings";
+import {
+  blockingCitations,
+  findingState,
+  settleNeedsNote,
+} from "@/lib/findings";
+import { buildAuditTrail } from "@/lib/audit";
 import type { ContractDocument, Finding } from "@/lib/types";
-import { PIPELINE_LAYERS } from "@/lib/types";
-import { Dateline } from "./dateline";
+import { PIPELINE_LAYERS, clauseNumberFromReference } from "@/lib/types";
 import { StateLabel } from "./state-label";
+import { SeverityMark } from "./severity";
 import { CitationBlock } from "./citation-block";
+import { AuditTrail } from "./audit-trail";
+
+type Draft =
+  | { kind: "note" }
+  | { kind: "request" }
+  | { kind: "withdraw"; citationId: string }
+  | null;
+
+const DRAFT_COPY = {
+  note: {
+    label: "Advocate note",
+    placeholder: "Record the reasoning that settles this finding.",
+    action: "Settle with note",
+  },
+  request: {
+    label: "Request to the client",
+    placeholder: "What do you need from the client before this can be settled?",
+    action: "Send to client",
+  },
+  withdraw: {
+    label: "Why the finding stands without this source",
+    placeholder: "The finding will rest on your judgment. Record why.",
+    action: "Withdraw source",
+  },
+} as const;
+
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <h3 className="mb-2 text-label font-medium text-muted-fg">{title}</h3>
+      {children}
+    </section>
+  );
+}
 
 /**
- * The finding, with its evidence beside it.
+ * The finding, as a first-class object: what the concern is, what it
+ * rests on, what was asked and answered, what has happened to it, and
+ * the decision that is available now.
  *
- * Role is not cosmetic. Per Dashboard_Data_Spec.md the rule id, the
- * override note and the pipeline layer are advocate-facing detail; the
- * client stays at the "what is happening with my document" level and
- * never sees the rule machinery. Only an advocate adjudicates, so the
- * client view carries no settle control at all.
+ * Role is not cosmetic. The rule id, the pipeline layer and the
+ * advocate's own notes are advocate-facing; the client reads the concern,
+ * its source and the outcome. Only the advocate holding the document
+ * adjudicates, so nobody else sees a decision control.
  */
 export function FindingDetail({
   doc,
   finding,
   number,
   role,
+  canAdjudicate,
+  claim,
   onSettle,
   onReopen,
+  onRequestChange,
+  onWithdrawSource,
   busy = false,
 }: {
   doc: ContractDocument;
   finding: Finding;
   number: string;
   role: "client" | "advocate";
+  /** An advocate holding this document. */
+  canAdjudicate: boolean;
+  /** Offered to an advocate looking at a document nobody has claimed. */
+  claim?: { onClaim: () => void; claiming: boolean; disabledReason: string | null };
   onSettle: (note: string | null) => void;
   onReopen: () => void;
+  onRequestChange: (request: string) => void;
+  onWithdrawSource: (citationId: string, note: string) => void;
   busy?: boolean;
 }) {
   const reduced = useReducedMotion();
-  const [noteOpen, setNoteOpen] = useState(false);
-  const [note, setNote] = useState("");
+  const [draft, setDraft] = useState<Draft>(null);
+  const [text, setText] = useState("");
 
-  const settled = findingState(finding) === "settled";
-  const settleable = canSettle(finding);
+  // A different finding in hand discards a half-written note rather than
+  // carrying it over to a finding it was not written about.
+  useEffect(() => {
+    setDraft(null);
+    setText("");
+  }, [finding.findingId]);
 
-  const raisedBy = `AI first pass · ${format(new Date(doc.createdAt), "d MMM yyyy")}`;
-  const resolvedBy =
-    settled && doc.advocate ? `${doc.advocate.name}, advocate` : null;
+  const state = findingState(finding);
+  const settled = state === "settled";
+  const blocked = blockingCitations(finding).length > 0;
+  const needsNote = settleNeedsNote(finding);
+  const clauseNumber = clauseNumberFromReference(finding.clauseReference);
+  const clause = doc.clauses.find((c) => c.number === clauseNumber);
+  const history = buildAuditTrail(doc).filter((e) => e.findingId === finding.findingId);
+  const request = finding.changeRequest;
+
+  function open(next: Draft, initial = "") {
+    setDraft(next);
+    setText(initial);
+  }
+
+  function submit() {
+    const value = text.trim();
+    if (!value || !draft) return;
+    if (draft.kind === "note") onSettle(value);
+    if (draft.kind === "request") onRequestChange(value);
+    if (draft.kind === "withdraw") onWithdrawSource(draft.citationId, value);
+    setDraft(null);
+    setText("");
+  }
 
   return (
     <motion.div
       key={finding.findingId}
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: duration(DURATION.findingOpen, reduced),
-        ease: EASE.standard,
-      }}
-      className="space-y-decision"
+      transition={{ duration: duration(DURATION.findingOpen, reduced), ease: EASE.standard }}
+      className="flex min-h-full flex-col"
     >
-      <header className="space-y-3">
-        <div className="flex items-start justify-between gap-4">
-          <Dateline segments={[`Finding ${number}`, finding.clauseReference]} />
-          <StateLabel state={settled ? "settled" : "open"} />
-        </div>
-
-        <p className="text-body text-ink">{finding.description}</p>
-
-        {/* Advocate-only: the rule machinery behind the concern. */}
-        {role === "advocate" && (
-          <Dateline
-            segments={[
-              finding.ruleApplied,
-              `Layer ${finding.layer} · ${PIPELINE_LAYERS[finding.layer].name}`,
-            ]}
-          />
-        )}
-      </header>
-
-      <section>
-        <h3 className="mb-3 font-mono text-notation uppercase tracking-notation text-muted-fg">
-          The passage
-        </h3>
-        <blockquote className="border-l-2 border-line pl-4 font-display text-body text-ink">
-          {finding.clauseText}
-        </blockquote>
-      </section>
-
-      <section>
-        <h3 className="mb-3 font-mono text-notation uppercase tracking-notation text-muted-fg">
-          Source
-        </h3>
-        <CitationBlock
-          citations={finding.citations}
-          raisedBy={raisedBy}
-          resolvedBy={resolvedBy}
-        />
-      </section>
-
-      <section>
-        <h3 className="mb-3 font-mono text-notation uppercase tracking-notation text-muted-fg">
-          Suggested remedy
-        </h3>
-        <p className="text-meta text-ink">{finding.remedySuggested}</p>
-      </section>
-
-      {/* The advocate's own words, once recorded, are part of the
-          document's record and are shown to the advocate who reads it
-          next. They are never surfaced to the client. */}
-      {role === "advocate" && finding.overrideNote && (
-        <section>
-          <h3 className="mb-3 font-mono text-notation uppercase tracking-notation text-muted-fg">
-            Advocate note
-          </h3>
-          <p className="border-l-2 border-accent pl-4 text-meta text-ink">
-            {finding.overrideNote}
+      <div className="flex-1 space-y-6 p-4 lg:p-5">
+        <header>
+          <p className="font-mono text-label text-muted-fg">
+            Finding {number}
+            <span className="mx-1.5 text-line">·</span>
+            Clause {clauseNumber}
           </p>
-        </section>
-      )}
+          <h2 className="mt-0.5 font-display text-h3 text-ink">
+            {clause?.heading ?? finding.clauseReference}
+          </h2>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <SeverityMark severity={finding.severity} />
+            <StateLabel state={state} />
+            {blocked && <StateLabel state="citation_blocked" />}
+          </div>
+          <p className="mt-3 text-body text-ink">{finding.description}</p>
+        </header>
 
+        {/* Source sits directly under the concern: never behind a disclosure. */}
+        <Section title="Source">
+          <CitationBlock
+            citations={finding.citations}
+            showWithdrawalNote={role === "advocate"}
+            blockedActions={
+              canAdjudicate && !settled
+                ? (citation) =>
+                    draft?.kind === "withdraw" ? null : (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busy}
+                          onClick={() => open({ kind: "withdraw", citationId: citation.id })}
+                        >
+                          Withdraw source
+                        </Button>
+                        {!request && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={busy}
+                            onClick={() => open({ kind: "request" }, finding.remedySuggested)}
+                          >
+                            Ask the client instead
+                          </Button>
+                        )}
+                      </div>
+                    )
+                : undefined
+            }
+          />
+        </Section>
+
+        <Section title="Passage">
+          <blockquote className="border-l-2 border-line pl-3 font-clause text-body text-ink">
+            {finding.clauseText}
+          </blockquote>
+        </Section>
+
+        <Section title="Suggested remedy">
+          <p className="text-meta text-ink">{finding.remedySuggested}</p>
+        </Section>
+
+        {request && (
+          <Section title="Requested from the client">
+            <div className="space-y-3 border-l-2 border-caution pl-3">
+              <div>
+                <p className="text-meta text-ink">{request.request}</p>
+                <p className="mt-1 text-label text-muted-fg">
+                  {request.requestedBy}, advocate ·{" "}
+                  {format(new Date(request.requestedAt), "d MMM yyyy")}
+                </p>
+              </div>
+              {request.response ? (
+                <div>
+                  <p className="text-label font-medium text-muted-fg">Client response</p>
+                  <p className="mt-1 text-meta text-ink">{request.response}</p>
+                  {request.respondedAt && (
+                    <p className="mt-1 text-label text-muted-fg">
+                      {doc.clientName} ·{" "}
+                      {format(new Date(request.respondedAt), "d MMM yyyy")}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-meta text-muted-fg">
+                  Awaiting the client&apos;s response.
+                </p>
+              )}
+            </div>
+          </Section>
+        )}
+
+        {role === "advocate" && finding.overrideNote && (
+          <Section title="Advocate note">
+            <p className="border-l-2 border-accent pl-3 text-meta text-ink">
+              {finding.overrideNote}
+            </p>
+          </Section>
+        )}
+
+        {role === "advocate" && (
+          <Section title="Raised by">
+            <p className="font-mono text-label text-muted-fg">
+              {finding.ruleApplied}
+              <span className="mx-1.5 text-line">·</span>
+              Layer {finding.layer} · {PIPELINE_LAYERS[finding.layer].name}
+            </p>
+          </Section>
+        )}
+
+        {history.length > 0 && <AuditTrail entries={history} title="History" />}
+      </div>
+
+      {/* The decision, pinned to the foot of the pane so it is always in
+          reach however long the evidence above runs. */}
       {role === "advocate" && (
-        <footer className="border-t border-line pt-6">
-          {settled ? (
-            <div className="space-y-3">
+        <footer className="sticky bottom-0 border-t border-line bg-canvas p-4 lg:px-5">
+          {!canAdjudicate ? (
+            claim ? (
+              <div className="space-y-2">
+                <p className="text-meta text-ink">
+                  Claim this document to decide its findings. Claiming
+                  assigns it to you alone.
+                </p>
+                {claim.disabledReason && (
+                  <p className="text-meta text-muted-fg">{claim.disabledReason}</p>
+                )}
+                <Button
+                  size="sm"
+                  onClick={claim.onClaim}
+                  disabled={claim.claiming || Boolean(claim.disabledReason)}
+                >
+                  {claim.claiming ? "Claiming" : "Claim document"}
+                </Button>
+              </div>
+            ) : (
               <p className="text-meta text-muted-fg">
-                This finding is settled. Reopening it returns the document
-                to the queue.
+                {doc.advocate ? `${doc.advocate.name} holds this document.` : "Read only."}
               </p>
-              <Button variant="outline" onClick={onReopen} disabled={busy}>
-                Reopen finding
+            )
+          ) : settled ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-meta text-ink">
+                Settled
+                {finding.resolvedAt &&
+                  ` · ${format(new Date(finding.resolvedAt), "d MMM yyyy, HH:mm")}`}
+              </p>
+              <Button size="sm" variant="outline" onClick={onReopen} disabled={busy}>
+                Reopen
               </Button>
             </div>
-          ) : !settleable ? (
-            // State the fact, then the owner. The reason lives in text
-            // beside the control, not only in a tooltip.
-            <div className="space-y-3">
-              <p className="text-meta text-flagged">
-                This finding cannot be settled while its source is blocked.
-                Resolve the citation against the corpus first.
-              </p>
-              <Button disabled>Settle finding</Button>
-            </div>
-          ) : noteOpen ? (
-            <div className="space-y-3">
-              <label
-                htmlFor="advocate-note"
-                className="block font-mono text-notation uppercase tracking-notation text-muted-fg"
-              >
-                Advocate note
+          ) : draft ? (
+            <div className="space-y-2">
+              <label htmlFor="finding-draft" className="block text-label font-medium text-muted-fg">
+                {DRAFT_COPY[draft.kind].label}
               </label>
               <Textarea
-                id="advocate-note"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Record the reasoning that settles this finding."
+                id="finding-draft"
+                autoFocus
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder={DRAFT_COPY[draft.kind].placeholder}
                 rows={4}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
+                  if (e.key === "Escape") {
+                    e.stopPropagation();
+                    setDraft(null);
+                  }
+                }}
               />
-              <div className="flex gap-3">
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={submit} disabled={busy || !text.trim()}>
+                  {DRAFT_COPY[draft.kind].action}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setDraft(null)} disabled={busy}>
+                  Cancel
+                </Button>
+                <span className="ml-auto hidden font-mono text-label text-muted-fg sm:inline">
+                  Ctrl ↵
+                </span>
+              </div>
+            </div>
+          ) : blocked ? (
+            <div className="space-y-1">
+              <p className="text-meta text-flagged">
+                Settling is unavailable while the source is blocked.
+              </p>
+              <p className="text-meta text-muted-fg">
+                Withdraw the source above, or ask the client to resolve the clause.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {needsNote && (
+                <p className="text-meta text-muted-fg">
+                  No verified source remains, so settling needs your reasoning
+                  on the record.
+                </p>
+              )}
+              {state === "with_client" && (
+                <p className="text-meta text-muted-fg">
+                  The client has not answered yet. You can still decide it.
+                </p>
+              )}
+              <div className="flex flex-wrap gap-2">
+                {!needsNote && (
+                  <Button size="sm" onClick={() => onSettle(null)} disabled={busy}>
+                    Settle
+                    <kbd className="font-mono text-label opacity-70">C</kbd>
+                  </Button>
+                )}
                 <Button
-                  onClick={() => onSettle(note.trim() || null)}
-                  disabled={busy || !note.trim()}
+                  size="sm"
+                  variant={needsNote ? "default" : "outline"}
+                  onClick={() => open({ kind: "note" })}
+                  disabled={busy}
                 >
                   Settle with note
                 </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => setNoteOpen(false)}
-                  disabled={busy}
-                >
-                  Cancel
-                </Button>
+                {!request && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => open({ kind: "request" }, finding.remedySuggested)}
+                    disabled={busy}
+                  >
+                    Request change
+                  </Button>
+                )}
               </div>
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-3">
-              <Button onClick={() => onSettle(null)} disabled={busy}>
-                Settle finding
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setNoteOpen(true)}
-                disabled={busy}
-              >
-                Settle with note
-              </Button>
             </div>
           )}
         </footer>
