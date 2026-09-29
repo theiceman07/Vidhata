@@ -11,7 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listDocuments } from "@/lib/api/documents";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
+import { groupOf, yourMove, type Move, type MoveGroup } from "@/lib/moves";
 import type { ContractDocument } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -30,60 +32,6 @@ function greeting(): string {
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
   return "Good evening";
-}
-
-function openRequests(doc: ContractDocument) {
-  return doc.findings.filter(
-    (f) => f.disposition === "pending" && f.changeRequest && !f.changeRequest.response,
-  );
-}
-
-function outstandingSteps(doc: ContractDocument) {
-  return doc.executionSteps.filter((s) => s.applicable && !s.complete);
-}
-
-type Group = "you" | "advocate" | "done";
-
-function groupOf(doc: ContractDocument): Group {
-  if (doc.status === "revision" || doc.status === "draft") return "you";
-  if (doc.status === "settled" && outstandingSteps(doc).length > 0) return "you";
-  if (doc.status === "settled" || doc.status === "executed") return "done";
-  return "advocate";
-}
-
-interface Move {
-  note: string;
-  action: string;
-  href: string;
-}
-
-/** The move, when it is the client's. */
-function yourMove(doc: ContractDocument): Move | null {
-  if (doc.status === "revision") {
-    const n = openRequests(doc).length;
-    const by = doc.advocate?.name ?? "your advocate";
-    return {
-      note: `${n} ${n === 1 ? "request" : "requests"} from ${by} to answer`,
-      action: "Respond",
-      href: `/documents/${doc.id}`,
-    };
-  }
-  if (doc.status === "draft") {
-    return {
-      note: "Not submitted. Nothing reaches an advocate until it is.",
-      action: "Submit",
-      href: `/documents/${doc.id}`,
-    };
-  }
-  if (doc.status === "settled") {
-    const n = outstandingSteps(doc).length;
-    return {
-      note: `${n} ${n === 1 ? "step" : "steps"} left on the execution checklist`,
-      action: "Execution checklist",
-      href: `/documents/${doc.id}/checklist`,
-    };
-  }
-  return null;
 }
 
 /** When the document entered the stage it is in. */
@@ -145,10 +93,42 @@ export default function DocumentsPage() {
     return <ErrorState message={errorMessage} onRetry={load} />;
   }
 
-  const byGroup = (g: Group) => docs.filter((d) => groupOf(d) === g);
+  const byGroup = (g: MoveGroup) => docs.filter((d) => groupOf(d) === g);
   const you = byGroup("you");
-  const advocate = byGroup("advocate");
-  const done = byGroup("done");
+
+  const groups: {
+    key: MoveGroup;
+    title: string;
+    docs: ContractDocument[];
+    empty: string;
+    promise: string;
+  }[] = [
+    {
+      key: "you",
+      title: "Needs your action",
+      docs: you,
+      empty: "Nothing needs you.",
+      promise:
+        "Requests from an advocate, and execution steps after sign-off, appear here.",
+    },
+    {
+      key: "advocate",
+      title: "With the advocate",
+      docs: byGroup("advocate"),
+      empty: "No document is with an advocate right now.",
+      promise:
+        "Submit a draft and the advocate who claims it is named here, with the day they claimed it.",
+    },
+    {
+      key: "done",
+      title: "Settled and executed",
+      docs: byGroup("done"),
+      empty: "Nothing is settled and executed yet.",
+      promise:
+        "Settled documents stay here for good, with the sign-off, the execution proof and the full record.",
+    },
+  ];
+  const empties = groups.filter((g) => g.docs.length === 0);
 
   return (
     <div className="w-full">
@@ -173,50 +153,149 @@ export default function DocumentsPage() {
         />
       </section>
 
+      {/* Groups with documents in them take the full width. Empty ones
+          collapse into a row of small cards that say what will arrive
+          there, rather than a stack of full-width bars saying nothing. */}
       <div className="space-y-14 pb-10">
-        <Section
-          title="Needs your action"
-          count={you.length}
-          empty="Nothing needs you. Requests from an advocate, and execution steps after sign-off, appear here."
-        >
-          {you.map((doc) => (
-            <DocumentRow key={doc.id} doc={doc} move={yourMove(doc)} />
+        {groups
+          .filter((g) => g.docs.length > 0)
+          .map((g) => (
+            <Section key={g.key} title={g.title} count={g.docs.length}>
+              {g.docs.map((doc) => (
+                <DocumentRow
+                  key={doc.id}
+                  doc={doc}
+                  move={g.key === "you" ? yourMove(doc) : null}
+                />
+              ))}
+            </Section>
           ))}
-        </Section>
 
-        <Section
-          title="With the advocate"
-          count={advocate.length}
-          empty="No document is with an advocate right now."
-        >
-          {advocate.map((doc) => (
-            <DocumentRow key={doc.id} doc={doc} move={null} />
-          ))}
-        </Section>
+        {empties.length > 0 && (
+          <div
+            className={cn(
+              "grid gap-4",
+              empties.length === 2 && "md:grid-cols-2",
+              empties.length === 3 && "md:grid-cols-2 xl:grid-cols-3",
+            )}
+          >
+            {empties.map((g) => (
+                <EmptyGroup key={g.key} title={g.title} empty={g.empty} promise={g.promise} />
+              ))}
+          </div>
+        )}
 
-        <Section
-          title="Settled and executed"
-          count={done.length}
-          empty="A document moves here once it is signed off and every execution step is done."
-        >
-          {done.map((doc) => (
-            <DocumentRow key={doc.id} doc={doc} move={null} />
-          ))}
-        </Section>
+        {docs.length > 0 && <YourRecord docs={docs} />}
       </div>
     </div>
+  );
+}
+
+/** A group with nothing in it: what it holds, and what will arrive. */
+function EmptyGroup({
+  title,
+  empty,
+  promise,
+}: {
+  title: string;
+  empty: string;
+  promise: string;
+}) {
+  return (
+    <section className="flex flex-col rounded-card bg-parchment p-6 md:p-7">
+      <h2 className="flex items-center gap-3 font-display text-h3 text-ink">
+        {title}
+        <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-paper px-2 font-sans text-label font-medium tabular-nums text-muted-fg">
+          0
+        </span>
+      </h2>
+      <p className="mt-2 text-meta text-ink">{empty}</p>
+      <p className="mt-auto pt-5 text-meta text-muted-fg">{promise}</p>
+    </section>
+  );
+}
+
+/**
+ * Everything Vidhata has done for this organisation, counted from the
+ * documents themselves. Nothing here is estimated.
+ */
+function YourRecord({ docs }: { docs: ContractDocument[] }) {
+  const screened = docs.filter((d) => d.status !== "draft" && d.status !== "analysing");
+  const findings = screened.reduce((n, d) => n + d.findings.length, 0);
+  const signedOff = docs.filter((d) => d.status === "settled" || d.status === "executed");
+  const steps = docs.flatMap((d) => d.executionSteps.filter((s) => s.applicable));
+  const stepsDone = steps.filter((s) => s.complete).length;
+  const advocates = Array.from(
+    new Set(docs.map((d) => d.advocate?.name).filter((n): n is string => Boolean(n))),
+  );
+
+  const figures: { label: string; value: number; note: string }[] = [
+    {
+      label: "Documents",
+      value: docs.length,
+      note: "Drafted from your briefs",
+    },
+    {
+      label: "Findings raised",
+      value: findings,
+      note: `Across ${screened.length} screened ${screened.length === 1 ? "draft" : "drafts"}`,
+    },
+    {
+      label: "Signed off",
+      value: signedOff.length,
+      note:
+        signedOff.length > 0
+          ? `By ${Array.from(new Set(signedOff.map((d) => d.advocate?.name).filter(Boolean))).join(", ")}`
+          : "None yet",
+    },
+    {
+      label: "Execution steps done",
+      value: stepsDone,
+      note: steps.length > 0 ? `Of ${steps.length} that apply` : "None apply yet",
+    },
+  ];
+
+  return (
+    <section
+      aria-label="Your record"
+      className="tile-grain grid gap-3 rounded-modal bg-parchment p-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.4fr)_repeat(4,minmax(0,1fr))]"
+    >
+      <div className="flex flex-col justify-between gap-4 p-5 md:col-span-2 xl:col-span-1">
+        <p className="text-label font-medium text-muted-fg">Your record</p>
+        <div>
+          <p className="font-display text-h2 text-ink">
+            Every draft, finding and sign-off, kept.
+          </p>
+          {advocates.length > 0 && (
+            <p className="mt-2 text-meta text-muted-fg">
+              Advocates on your documents · {advocates.join(", ")}
+            </p>
+          )}
+        </div>
+      </div>
+      {figures.map((figure) => (
+        <div
+          key={figure.label}
+          className="flex flex-col justify-between gap-6 rounded-card bg-paper p-6"
+        >
+          <p className="text-label font-medium text-muted-fg">{figure.label}</p>
+          <div>
+            <p className="font-display text-h1 tabular-nums text-ink">{figure.value}</p>
+            <p className="mt-1 truncate text-meta text-muted-fg">{figure.note}</p>
+          </div>
+        </div>
+      ))}
+    </section>
   );
 }
 
 function Section({
   title,
   count,
-  empty,
   children,
 }: {
   title: string;
   count: number;
-  empty: string;
   children: React.ReactNode;
 }) {
   return (
@@ -227,13 +306,7 @@ function Section({
           {count}
         </span>
       </h2>
-      {count === 0 ? (
-        <p className="mt-4 rounded-card bg-parchment/60 px-6 py-5 text-body text-muted-fg">
-          {empty}
-        </p>
-      ) : (
-        <ul className="mt-5 space-y-3">{children}</ul>
-      )}
+      <ul className="mt-5 space-y-3">{children}</ul>
     </section>
   );
 }
@@ -247,7 +320,7 @@ function DocumentRow({ doc, move }: { doc: ContractDocument; move: Move | null }
   const date = since(doc);
 
   return (
-    <li className="relative grid items-center gap-x-10 gap-y-5 rounded-card border border-line bg-paper px-6 py-6 transition-colors hover:border-ink/25 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)_12rem] lg:px-8">
+    <li className="relative grid items-center gap-x-10 gap-y-5 rounded-card border border-line bg-paper px-6 py-6 transition-colors hover:border-ink/25 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)_12rem] lg:px-8">
       <div className="min-w-0">
         <Link
           href={`/documents/${doc.id}`}

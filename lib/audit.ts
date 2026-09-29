@@ -168,3 +168,21 @@ export function buildAuditTrail(doc: ContractDocument): AuditEntry[] {
     (a, b) => new Date(a.at).getTime() - new Date(b.at).getTime(),
   );
 }
+
+/**
+ * The trail as the client may read it.
+ *
+ * Before sign-off the client sees status and the passages behind requests
+ * addressed to them, nothing else, so entries about a finding are kept
+ * only when the finding carries a request to the client. After sign-off
+ * the whole record is theirs.
+ */
+export function clientAuditTrail(doc: ContractDocument): AuditEntry[] {
+  const all = buildAuditTrail(doc);
+  if (doc.status === "settled" || doc.status === "executed") return all;
+
+  const addressed = new Set(
+    doc.findings.filter((f) => f.changeRequest).map((f) => f.findingId),
+  );
+  return all.filter((entry) => !entry.findingId || addressed.has(entry.findingId));
+}

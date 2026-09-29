@@ -3,8 +3,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { BackButton } from "@/components/shared/back-button";
-import { format } from "date-fns";
+import { format, formatDistanceToNowStrict } from "date-fns";
 import { toast } from "sonner";
+import { AuditTrail } from "@/components/document/audit-trail";
+import {
+  AdvocatePanel,
+  ContextPanel,
+  DealOnFile,
+  OnYourDesk,
+  WhatHappensNext,
+} from "@/components/domain/document-context";
+import { clientAuditTrail } from "@/lib/audit";
 import { ErrorState } from "@/components/shared/error-state";
 import { Icon } from "@/components/shared/icon";
 import { PipelineProgress } from "@/components/domain/pipeline-progress";
@@ -152,30 +161,96 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
         </dl>
       </header>
 
-      <div className="mt-10 grid gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,1fr)_20rem] 2xl:grid-cols-[minmax(0,1fr)_24rem]">
+      {/* The move in hand and everything that explains it on the left;
+          the record the document carries on the right. */}
+      <div className="mt-10 grid gap-x-8 gap-y-8 lg:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem]">
         <div className="min-w-0">
           {doc.status === "revision" ? (
             <>
-              <p className="max-w-3xl text-lead text-ink">
-                {doc.advocate?.name ?? "Your advocate"} needs your answer
-                before this document can be settled. The rest of the review
-                continues in the meantime.
-              </p>
-              <div className="mt-6">
+              <MoveSummary doc={doc} />
+              <div className="mt-8">
                 <ChangeRequests doc={doc} onSubmit={handleRespond} submitting={submitting} />
               </div>
             </>
           ) : (
             <WithAdvocate doc={doc} />
           )}
+
+          <div className="mt-10 grid gap-4 xl:grid-cols-2">
+            <WhatHappensNext doc={doc} />
+            <DealOnFile doc={doc} />
+          </div>
         </div>
 
-        <aside className="self-start rounded-card bg-parchment p-6 lg:sticky lg:top-0">
-          <h2 className="mb-4 text-label font-medium text-muted-fg">Where it is</h2>
-          <Provenance doc={doc} />
+        <aside className="min-w-0 space-y-4">
+          <ContextPanel title="Where it is">
+            <Provenance doc={doc} />
+          </ContextPanel>
+          <AdvocatePanel doc={doc} />
+          <ContextPanel title="Activity">
+            <AuditTrail entries={clientAuditTrail(doc)} title={null} />
+          </ContextPanel>
+          <OnYourDesk currentId={doc.id} />
         </aside>
       </div>
     </Frame>
+  );
+}
+
+/**
+ * The move, stated once in a sentence and then in three figures: how many
+ * requests are open, how long they have waited, and what the document
+ * becomes once they are answered.
+ */
+function MoveSummary({ doc }: { doc: ContractDocument }) {
+  const open = doc.findings.filter(
+    (f) => f.disposition === "pending" && f.changeRequest && !f.changeRequest.response,
+  );
+  const asked = open
+    .map((f) => f.changeRequest?.requestedAt)
+    .filter((d): d is string => Boolean(d))
+    .sort()[0];
+  const advocate = doc.advocate?.name ?? "Your advocate";
+
+  const figures: { label: string; value: string; note: string }[] = [
+    {
+      label: open.length === 1 ? "Request open" : "Requests open",
+      value: String(open.length),
+      note: `From ${advocate}`,
+    },
+    {
+      label: "Waiting",
+      value: asked ? formatDistanceToNowStrict(new Date(asked)) : "Today",
+      note: asked ? `Asked ${format(new Date(asked), "d MMM yyyy")}` : "Asked today",
+    },
+    {
+      label: "After you answer",
+      value: `Draft ${doc.version + 1}`,
+      note: "Then sign-off",
+    },
+  ];
+
+  return (
+    <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+      <p className="max-w-2xl text-lead text-ink">
+        {advocate} needs your answer before this document can be settled. The
+        rest of the review continues in the meantime.
+      </p>
+      <dl className="grid grid-cols-3 gap-2">
+        {figures.map((figure) => (
+          <div
+            key={figure.label}
+            className="min-w-0 rounded-control bg-parchment px-4 py-3 xl:min-w-[9.5rem]"
+          >
+            <dt className="truncate text-label text-muted-fg">{figure.label}</dt>
+            <dd className="mt-1 truncate font-display text-h3 tabular-nums text-ink">
+              {figure.value}
+            </dd>
+            <dd className="truncate text-label text-muted-fg">{figure.note}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 
@@ -198,7 +273,7 @@ function WithAdvocate({ doc }: { doc: ContractDocument }) {
 
   return (
     <div className="max-w-3xl space-y-8">
-      <p className="text-body text-ink">
+      <p className="text-lead text-ink">
         {doc.status === "pending_review"
           ? "The first pass has drafted and screened this document. It is in the advocate queue, and an empanelled advocate will claim it for review."
           : `${doc.advocate?.name ?? "An advocate"} is reviewing the findings the first pass raised.`}{" "}
@@ -225,17 +300,6 @@ function WithAdvocate({ doc }: { doc: ContractDocument }) {
           </ul>
         </section>
       )}
-
-      <dl className="grid grid-cols-[9rem_minmax(0,1fr)] gap-x-4 gap-y-2 rounded-card bg-parchment p-6 text-meta">
-        <dt className="text-muted-fg">Parties</dt>
-        <dd className="text-ink">
-          {doc.clientName} · {doc.counterpartyName}
-        </dd>
-        <dt className="text-muted-fg">Executed in</dt>
-        <dd className="text-ink">{doc.stateOfExecution}</dd>
-        <dt className="text-muted-fg">Governing law</dt>
-        <dd className="text-ink">{doc.governingLaw}</dd>
-      </dl>
     </div>
   );
 }

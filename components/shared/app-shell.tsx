@@ -56,8 +56,9 @@ const TUCK_DELAY_MS = 280;
  * there. Pointing at it (or tabbing into it) opens it in full, with the
  * wordmark, search, the sections and who you are, and the page makes room
  * rather than being covered. It tucks away again when the pointer leaves.
- * It can be kept open, and remembers that, because someone moving between
- * screens wants it and a reviewer working a document wants the width.
+ * Each visit lands with it kept open, so the sliver is never a mystery;
+ * tucking it away holds for the rest of the visit, because a reviewer
+ * working a document wants the width.
  *
  * There is no role control here, not even in the identity menu. Identity
  * is a person and their standing ("Ananya Rao, advocate"). The preview
@@ -242,18 +243,21 @@ function Rail({
   const [menuOpen, setMenuOpen] = useState(false);
   const tuck = useRef<number | null>(null);
 
+  // Each visit lands with the rail open, so the sliver it tucks into is
+  // never a mystery. Tucking it away holds for the rest of the visit.
   useEffect(() => {
     try {
-      setPinned(window.localStorage.getItem(PIN_KEY) === "1");
+      setPinned(window.sessionStorage.getItem(PIN_KEY) !== "0");
     } catch {
-      // Storage unavailable: the rail starts tucked away.
+      // Storage unavailable: the rail starts open.
+      setPinned(true);
     }
   }, []);
 
   const togglePin = useCallback(() => {
     setPinned((was) => {
       try {
-        window.localStorage.setItem(PIN_KEY, was ? "0" : "1");
+        window.sessionStorage.setItem(PIN_KEY, was ? "0" : "1");
       } catch {
         // Storage unavailable: the choice lasts for this page only.
       }

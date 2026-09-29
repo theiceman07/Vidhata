@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { differenceInCalendarDays } from "date-fns";
+import { differenceInCalendarDays, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/shared/icon";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { StateLabel } from "@/components/document/state-label";
-import { SeverityCounts } from "@/components/document/severity";
+import { SeverityCounts, SeverityMark } from "@/components/document/severity";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -27,7 +27,7 @@ import {
   unsettledFindings,
 } from "@/lib/findings";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
-import type { ContractDocument } from "@/lib/types";
+import { PIPELINE_LAYERS, type ContractDocument } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
 type Filter = "open" | "mine" | "unclaimed" | "client" | "blocked" | "settled";
@@ -91,6 +91,8 @@ export default function QueuePage() {
   const [filter, setFilter] = useState<Filter>("open");
   const [sort, setSort] = useState<Sort>("priority");
   const [query, setQuery] = useState("");
+  // Which of the actionable documents "Up next" is showing.
+  const [pick, setPick] = useState(0);
 
   const load = useCallback(async () => {
     setState("loading");
@@ -199,30 +201,100 @@ export default function QueuePage() {
     return <ErrorState message={errorMessage} onRetry={load} />;
   }
 
-  const undecided = buckets.open.reduce((n, d) => n + unsettledFindings(d).length, 0);
+  const openFindings = buckets.open.flatMap((d) => unsettledFindings(d));
+  const undecided = openFindings.length;
   const blockedSources = buckets.open.reduce((n, d) => n + blockedCitationCount(d), 0);
+  const oldest = buckets.open.reduce(
+    (max, d) => Math.max(max, differenceInCalendarDays(new Date(), new Date(d.createdAt))),
+    0,
+  );
+  const firstName = CURRENT_ADVOCATE.name.split(" ")[0];
+
+  // What the advocate can act on now, in queue order: work in hand,
+  // then unclaimed work, then documents the client has answered. A
+  // document waiting on the client is not a move for the advocate.
+  const candidates = [...buckets.open]
+    .filter((d) => d.status !== "revision" || clientAnswered(d))
+    .sort(
+      (a, b) =>
+        rank(a) - rank(b) ||
+        getQueuePriority(a) - getQueuePriority(b) ||
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+  const upNext = candidates.length > 0 ? candidates[pick % candidates.length] : null;
+
+  function show(next: Filter) {
+    setFilter(next);
+    setQuery("");
+    document.getElementById("queue-table")?.scrollIntoView({ block: "start" });
+  }
+
+  function actionFor(doc: ContractDocument, size: "sm" | "lg" = "sm") {
+    if (doc.status === "pending_review") {
+      return (
+        <Button
+          size={size}
+          disabled={!available || claimingId === doc.id}
+          onClick={() => claim(doc.id)}
+        >
+          {claimingId === doc.id ? "Claiming" : "Claim"}
+        </Button>
+      );
+    }
+    if (isSettled(doc)) {
+      return (
+        <Button asChild size={size} variant="ghost">
+          <Link href={`/review/${doc.id}`}>Read</Link>
+        </Button>
+      );
+    }
+    return (
+      <Button asChild size={size} variant={doc.status === "revision" ? "outline" : "default"}>
+        <Link href={`/review/${doc.id}`}>
+          {doc.status === "revision" ? "Open" : "Continue"}
+        </Link>
+      </Button>
+    );
+  }
 
   return (
     <div className="w-full">
-      <header>
-        <p className="text-meta text-muted-fg">
-          {CURRENT_ADVOCATE.name}
-          <span className="mx-1.5 text-muted-fg/50">·</span>
-          <span className="font-mono">{CURRENT_ADVOCATE.bar}</span>
-        </p>
-        {/* The one display moment on this screen. */}
-        <h1 className="mt-1 font-display text-h1 text-ink">Review queue</h1>
+      <header className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
+        <div className="min-w-0">
+          <p className="text-meta text-muted-fg">
+            {CURRENT_ADVOCATE.name}
+            <span className="mx-1.5 text-muted-fg/50">·</span>
+            <span className="font-mono">{CURRENT_ADVOCATE.bar}</span>
+          </p>
+          {/* The one display moment on this screen. */}
+          <h1 className="mt-1 font-display text-h1 text-ink">
+            {greeting()}, {firstName}
+          </h1>
+          <p className="mt-2 text-lead text-muted-fg">
+            {buckets.unclaimed.length > 0
+              ? `${buckets.unclaimed.length} ${buckets.unclaimed.length === 1 ? "document is" : "documents are"} waiting for an advocate. The oldest open work has waited ${oldest} ${oldest === 1 ? "day" : "days"}.`
+              : buckets.mine.length > 0
+                ? `${buckets.mine.length} ${buckets.mine.length === 1 ? "review is" : "reviews are"} in your hands.`
+                : "The queue is clear."}
+          </p>
+        </div>
 
-        <dl className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Figure label="Open documents" value={buckets.open.length} />
-          <Figure label="Unclaimed" value={buckets.unclaimed.length} />
-          <Figure label="Undecided findings" value={undecided} />
-          <Figure
-            label="Sources blocked"
-            value={blockedSources}
-            tone={blockedSources > 0 ? "flagged" : undefined}
+        <Link
+          href="/profile"
+          className={cn(
+            "inline-flex items-center gap-2 rounded-full px-4 py-2 text-meta transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+            available
+              ? "bg-parchment text-ink hover:bg-parchment/70"
+              : "bg-caution/15 text-caution-fg hover:bg-caution/25",
+          )}
+        >
+          <span
+            aria-hidden
+            className={cn("h-2 w-2 rounded-full", available ? "bg-verified" : "bg-caution")}
           />
-        </dl>
+          {available ? "Available for new claims" : "Unavailable for new claims"}
+          <Icon name="chevron_right" size={18} className="text-muted-fg" />
+        </Link>
       </header>
 
       {!available && (
@@ -235,7 +307,55 @@ export default function QueuePage() {
         </p>
       )}
 
-      <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3">
+      {/* The next move, in full, beside the shape of the whole queue. */}
+      <div className="mt-8 grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+        <UpNext
+          doc={upNext}
+          position={candidates.length > 0 ? (pick % candidates.length) + 1 : 0}
+          total={candidates.length}
+          onSkip={() => setPick((p) => p + 1)}
+          action={upNext ? actionFor(upNext, "lg") : null}
+        />
+
+        <dl className="grid grid-cols-2 gap-3">
+          <Figure
+            label="Open documents"
+            value={buckets.open.length}
+            note={buckets.open.length > 0 ? `Oldest ${oldest} ${oldest === 1 ? "day" : "days"}` : "Nothing open"}
+            onSelect={() => show("open")}
+          />
+          <Figure
+            label="Unclaimed"
+            value={buckets.unclaimed.length}
+            note="Senior and enhanced first"
+            onSelect={() => show("unclaimed")}
+          />
+          <Figure
+            label="Undecided findings"
+            value={undecided}
+            note={
+              undecided > 0 ? (
+                <SeverityCounts counts={severityCounts(openFindings)} />
+              ) : (
+                "Every finding decided"
+              )
+            }
+            onSelect={() => show("open")}
+          />
+          <Figure
+            label="Sources blocked"
+            value={blockedSources}
+            tone={blockedSources > 0 ? "flagged" : undefined}
+            note={blockedSources > 0 ? "Each holds sign-off until withdrawn" : "Every source verified"}
+            onSelect={() => show("blocked")}
+          />
+        </dl>
+      </div>
+
+      {/* The working table takes the full width; the reading of the
+          queue sits beneath it in three even columns. */}
+      <div id="queue-table" className="mt-12 min-w-0 scroll-mt-6">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
         <div role="group" aria-label="Filter the queue" className="flex flex-wrap gap-1">
           {FILTERS.map((f) => (
             <button
@@ -325,63 +445,402 @@ export default function QueuePage() {
           </div>
 
           {rows.map((doc) => (
-            <QueueRow
-              key={doc.id}
-              doc={doc}
-              action={
-                doc.status === "pending_review" ? (
-                  <Button
-                    size="sm"
-                    disabled={!available || claimingId === doc.id}
-                    onClick={() => claim(doc.id)}
-                  >
-                    {claimingId === doc.id ? "Claiming" : "Claim"}
-                  </Button>
-                ) : isSettled(doc) ? (
-                  <Button asChild size="sm" variant="ghost">
-                    <Link href={`/review/${doc.id}`}>Read</Link>
-                  </Button>
-                ) : (
-                  <Button
-                    asChild
-                    size="sm"
-                    variant={doc.status === "revision" ? "outline" : "default"}
-                  >
-                    <Link href={`/review/${doc.id}`}>
-                      {doc.status === "revision" ? "Open" : "Continue"}
-                    </Link>
-                  </Button>
-                )
-              }
-            />
+            <QueueRow key={doc.id} doc={doc} action={actionFor(doc)} />
           ))}
         </div>
       )}
+      </div>
+
+      <div className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <YourDesk
+          mine={buckets.mine}
+          client={buckets.client}
+          answered={buckets.open.filter(clientAnswered)}
+          onShow={show}
+        />
+        <TierMix docs={buckets.open} />
+        <SignedOffByYou docs={buckets.settled} onShow={() => show("settled")} />
+      </div>
     </div>
   );
 }
 
+function greeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+/** A figure that is also the way to the rows behind it. */
 function Figure({
   label,
   value,
+  note,
   tone,
+  onSelect,
 }: {
   label: string;
   value: number;
+  note: React.ReactNode;
   tone?: "flagged";
+  onSelect: () => void;
 }) {
   return (
-    <div className="rounded-card bg-parchment px-6 py-5">
-      <dt className="text-meta text-muted-fg">{label}</dt>
-      <dd
-        className={cn(
-          "mt-2 font-display text-h1 tabular-nums",
-          tone === "flagged" ? "text-flagged" : "text-ink",
-        )}
-      >
-        {value}
+    <div className="group relative flex flex-col justify-between gap-4 rounded-card bg-parchment px-6 py-5 transition-colors hover:bg-parchment/70">
+      <dt className="flex items-center justify-between gap-2 text-meta text-muted-fg">
+        <button
+          type="button"
+          onClick={onSelect}
+          className="text-left after:absolute after:inset-0 after:rounded-card after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-accent"
+        >
+          {label}
+        </button>
+        <Icon
+          name="arrow_forward"
+          size={18}
+          className="text-muted-fg opacity-0 transition-opacity group-hover:opacity-100 motion-reduce:transition-none"
+        />
+      </dt>
+      <dd>
+        <span
+          className={cn(
+            "block font-display text-h1 tabular-nums",
+            tone === "flagged" ? "text-flagged" : "text-ink",
+          )}
+        >
+          {value}
+        </span>
+        <span className="mt-1 block truncate text-label text-muted-fg">{note}</span>
       </dd>
     </div>
+  );
+}
+
+/**
+ * The next move, in full: the document the queue would put in front of
+ * the advocate, what the first pass raised in it, and the one action
+ * that moves it. The findings are shown with their clause and the check
+ * that raised them; their sources are a click away inside the review.
+ */
+function UpNext({
+  doc,
+  position,
+  total,
+  onSkip,
+  action,
+}: {
+  doc: ContractDocument | null;
+  position: number;
+  total: number;
+  onSkip: () => void;
+  action: React.ReactNode;
+}) {
+  if (!doc) {
+    return (
+      <section className="tile-grain flex flex-col justify-between gap-8 rounded-modal bg-parchment p-7 md:p-8">
+        <p className="text-label font-medium text-muted-fg">Up next</p>
+        <div>
+          <p className="font-display text-h2 text-ink">Nothing needs you right now.</p>
+          <p className="mt-2 max-w-lg text-meta text-muted-fg">
+            Documents arrive once the first pass completes. Work waiting on a
+            client comes back here when they answer.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  const pending = unsettledFindings(doc);
+  const blocked = blockedCitationCount(doc);
+  const days = differenceInCalendarDays(new Date(), new Date(doc.createdAt));
+  const shown = pending.slice(0, 3);
+  const why =
+    doc.status === "pending_review"
+      ? `Unclaimed · ${doc.tier} tier`
+      : clientAnswered(doc)
+        ? "The client has answered"
+        : "Claimed by you";
+
+  return (
+    <section
+      aria-label="Up next"
+      className="tile-grain flex flex-col gap-6 rounded-modal bg-parchment p-7 md:p-8"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-label font-medium text-muted-fg">
+          Up next
+          <span className="mx-1.5 text-muted-fg/50">·</span>
+          <span className="font-normal capitalize">{why}</span>
+        </p>
+        {total > 1 && (
+          <button
+            type="button"
+            onClick={onSkip}
+            className="inline-flex items-center gap-1 rounded-full bg-paper px-3 py-1.5 text-label text-ink transition-colors hover:bg-paper/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <span className="tabular-nums text-muted-fg">
+              {position} of {total}
+            </span>
+            Next in line
+            <Icon name="chevron_right" size={16} />
+          </button>
+        )}
+      </div>
+
+      <div className="min-w-0">
+        <Link
+          href={`/review/${doc.id}`}
+          className="font-display text-h2 text-ink hover:underline"
+        >
+          {doc.title}
+        </Link>
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-meta text-muted-fg">
+          <span>
+            {doc.clientName} and {doc.counterpartyName}
+          </span>
+          <span aria-hidden className="h-1 w-1 rounded-full bg-muted-fg/40" />
+          <span>Executed in {doc.stateOfExecution}</span>
+          <span aria-hidden className="h-1 w-1 rounded-full bg-muted-fg/40" />
+          <span className="font-mono tabular-nums">
+            Waiting {days} {days === 1 ? "day" : "days"}
+          </span>
+        </p>
+      </div>
+
+      {shown.length > 0 ? (
+        <ul className="grid gap-2 lg:grid-cols-2 2xl:grid-cols-3">
+          {shown.map((finding) => (
+            <li key={finding.findingId} className="min-w-0 rounded-card bg-paper p-4">
+              <div className="flex items-center justify-between gap-2">
+                <SeverityMark severity={finding.severity} />
+                <span className="font-mono text-label text-muted-fg">
+                  {finding.clauseReference}
+                </span>
+              </div>
+              <p className="mt-2 line-clamp-2 text-meta text-ink">{finding.description}</p>
+              <p className="mt-2 truncate text-label text-muted-fg">
+                {PIPELINE_LAYERS[finding.layer].name}
+              </p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="rounded-card bg-paper p-4 text-meta text-muted-fg">
+          The first pass raised no findings. The review is a read of the text and the sign-off.
+        </p>
+      )}
+
+      <div className="mt-auto flex flex-wrap items-center justify-between gap-4">
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-meta">
+          <span className="text-ink">
+            {pending.length} undecided {pending.length === 1 ? "finding" : "findings"}
+            {pending.length > shown.length && ` · ${pending.length - shown.length} more inside`}
+          </span>
+          {blocked > 0 && (
+            <span className="inline-flex items-center gap-1 text-flagged">
+              <Icon name="error" size={16} />
+              {blocked} {blocked === 1 ? "source" : "sources"} blocked
+            </span>
+          )}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="ghost" size="lg">
+            <Link href={`/review/${doc.id}`}>Preview</Link>
+          </Button>
+          {action}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SidePanel({
+  title,
+  aside,
+  children,
+}: {
+  title: string;
+  aside?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-card bg-parchment p-6">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-label font-medium text-muted-fg">{title}</h2>
+        {aside}
+      </div>
+      <div className="mt-4">{children}</div>
+    </section>
+  );
+}
+
+/** The work in the advocate's hands, split by whose move it is. */
+function YourDesk({
+  mine,
+  client,
+  answered,
+  onShow,
+}: {
+  mine: ContractDocument[];
+  client: ContractDocument[];
+  answered: ContractDocument[];
+  onShow: (filter: Filter) => void;
+}) {
+  const lines: { label: string; value: number; note: string; filter: Filter }[] = [
+    { label: "Reviews in hand", value: mine.length, note: "Claimed by you", filter: "mine" },
+    {
+      label: "Client answered",
+      value: answered.length,
+      note: "Ready for your decision",
+      filter: "open",
+    },
+    {
+      label: "Waiting on a client",
+      value: client.length,
+      note: "Back here when they answer",
+      filter: "client",
+    },
+  ];
+
+  return (
+    <SidePanel title="Your desk">
+      <ul className="space-y-2">
+        {lines.map((line) => (
+          <li key={line.label}>
+            <button
+              type="button"
+              onClick={() => onShow(line.filter)}
+              className="group flex w-full items-center gap-4 rounded-control bg-paper px-4 py-3 text-left transition-colors hover:bg-paper/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <span className="w-8 font-display text-h3 tabular-nums text-ink">{line.value}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-meta text-ink">{line.label}</span>
+                <span className="block truncate text-label text-muted-fg">{line.note}</span>
+              </span>
+              <Icon
+                name="chevron_right"
+                size={18}
+                className="text-muted-fg transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+              />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </SidePanel>
+  );
+}
+
+const TIERS: { tier: ContractDocument["tier"]; label: string }[] = [
+  { tier: "senior", label: "Senior review" },
+  { tier: "enhanced", label: "Enhanced" },
+  { tier: "standard", label: "Standard" },
+];
+
+/**
+ * Open work by tier, and the findings in it by severity: the shape of the
+ * queue, read in a glance. Tier routing is what the queue orders by, so
+ * the bars run in the order the work is offered.
+ */
+function TierMix({ docs }: { docs: ContractDocument[] }) {
+  const counts = TIERS.map((t) => ({ ...t, n: docs.filter((d) => d.tier === t.tier).length }));
+  const max = Math.max(1, ...counts.map((c) => c.n));
+  const findings = severityCounts(docs.flatMap((d) => unsettledFindings(d)));
+  const severities: { key: keyof typeof findings; label: string; fill: string }[] = [
+    { key: "high", label: "High", fill: "bg-flagged" },
+    { key: "medium", label: "Medium", fill: "bg-caution" },
+    { key: "low", label: "Low", fill: "bg-muted-fg/40" },
+  ];
+  const maxFinding = Math.max(1, findings.high, findings.medium, findings.low);
+
+  return (
+    <SidePanel title="Shape of the queue">
+      <p className="text-label text-muted-fg">Open work by tier, in the order it is offered</p>
+      <ul className="mt-3 space-y-2.5">
+        {counts.map((c) => (
+          <li key={c.tier} className="grid grid-cols-[6.5rem_minmax(0,1fr)_1.5rem] items-center gap-3">
+            <span className="text-meta text-ink">{c.label}</span>
+            <span className="h-2 overflow-hidden rounded-full bg-paper">
+              <span
+                className="block h-full rounded-full bg-ink"
+                style={{ width: `${(c.n / max) * 100}%` }}
+              />
+            </span>
+            <span className="text-right font-mono text-meta tabular-nums text-ink">{c.n}</span>
+          </li>
+        ))}
+      </ul>
+
+      <p className="mt-6 text-label text-muted-fg">Undecided findings by severity</p>
+      <ul className="mt-3 space-y-2.5">
+        {severities.map((s) => (
+          <li key={s.key} className="grid grid-cols-[6.5rem_minmax(0,1fr)_1.5rem] items-center gap-3">
+            <SeverityMark severity={s.key} className="text-meta font-normal" />
+            <span className="h-2 overflow-hidden rounded-full bg-paper">
+              <span
+                className={cn("block h-full rounded-full", s.fill)}
+                style={{ width: `${(findings[s.key] / maxFinding) * 100}%` }}
+              />
+            </span>
+            <span className="text-right font-mono text-meta tabular-nums text-ink">
+              {findings[s.key]}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </SidePanel>
+  );
+}
+
+/** The advocate's own record: what they have signed off. */
+function SignedOffByYou({ docs, onShow }: { docs: ContractDocument[]; onShow: () => void }) {
+  const recent = [...docs]
+    .sort((a, b) => new Date(b.settledAt ?? 0).getTime() - new Date(a.settledAt ?? 0).getTime())
+    .slice(0, 3);
+
+  return (
+    <SidePanel
+      title="Signed off by you"
+      aside={
+        docs.length > 0 ? (
+          <button
+            type="button"
+            onClick={onShow}
+            className="text-label text-ink underline-offset-2 hover:underline"
+          >
+            All {docs.length}
+          </button>
+        ) : null
+      }
+    >
+      {recent.length === 0 ? (
+        <p className="text-meta text-muted-fg">
+          Nothing yet. Every document you sign off is kept here, with your
+          enrolment number on the record.
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {recent.map((doc) => (
+            <li key={doc.id}>
+              <Link
+                href={`/review/${doc.id}`}
+                className="flex items-center gap-3 rounded-control bg-paper px-4 py-3 transition-colors hover:bg-paper/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <Icon name="check_circle" size={18} className="text-accent" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-meta text-ink">{doc.title}</span>
+                  {doc.settledAt && (
+                    <span className="block text-label text-muted-fg">
+                      {format(new Date(doc.settledAt), "d MMM yyyy")}
+                    </span>
+                  )}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </SidePanel>
   );
 }
 
@@ -455,7 +914,7 @@ function QueueRow({ doc, action }: { doc: ContractDocument; action: React.ReactN
       <div role="cell" className="min-w-0">
         <Link
           href={`/review/${doc.id}`}
-          className="block truncate font-display text-h3 text-ink hover:underline"
+          className="line-clamp-2 font-display text-h3 text-ink hover:underline"
         >
           {doc.title}
         </Link>

@@ -94,8 +94,10 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
 - Portals: the rail tucks away like Arc's sidebar. At rest it is a sliver
   of the ink capsule at the left edge; pointing at it or tabbing into it
   opens it in full (the Vidhata wordmark, search, sections, identity) and
-  the page makes room rather than being covered. It can be kept open
-  (Ctrl+\). On mobile it lies flat as a header.
+  the page makes room rather than being covered. Each visit lands with
+  it kept open, so the sliver is never a mystery; tucking it away (Ctrl+\)
+  holds for the rest of the visit (sessionStorage). On mobile it lies
+  flat as a header.
 - Focus: text fields take the accent ring flush, never offset. A bare
   field inside a composed control (DealPrompt, the palette, the agent)
   carries .field-bare, because the control shows the focus.

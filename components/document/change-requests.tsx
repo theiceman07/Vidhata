@@ -105,6 +105,10 @@ export function ChangeRequests({
                     }
                     placeholder="Confirm, decline, or tell the advocate what you need instead."
                   />
+                  <p className="mt-2 text-label text-muted-fg">
+                    Goes to {request.requestedBy} only, and stays on this
+                    document&apos;s record.
+                  </p>
                 </div>
               )}
             </li>
