@@ -165,6 +165,30 @@ export function IntakeWizard() {
     }
   });
 
+  const isLastStep = step === STEP_LABELS.length - 1;
+
+  // The draft is created only from the last step. A submit that arrives
+  // earlier (requestSubmit, a browser quirk) reads as Continue: it validates
+  // the step's own fields and moves on, never creates a document.
+  function onFormSubmit(e: React.FormEvent<HTMLFormElement>) {
+    if (!isLastStep) {
+      e.preventDefault();
+      void goNext();
+      return;
+    }
+    void onSubmit(e);
+  }
+
+  // Steps before the last have no submit button, so browsers do nothing on
+  // Enter. People expect it to mean Continue. A textarea keeps Enter for new
+  // lines, and a select or checkbox is not an input, so both are left alone.
+  function onFormKeyDown(e: React.KeyboardEvent<HTMLFormElement>) {
+    if (e.key !== "Enter" || isLastStep) return;
+    if (!(e.target instanceof HTMLInputElement)) return;
+    e.preventDefault();
+    void goNext();
+  }
+
   return (
     <div className="grid max-w-5xl gap-x-16 gap-y-8 md:grid-cols-[minmax(0,14rem)_minmax(0,32rem)]">
       {/* The steps are a schedule down the margin, not a row of numbered
@@ -199,7 +223,7 @@ export function IntakeWizard() {
         ))}
       </ol>
 
-      <form onSubmit={onSubmit} className="space-y-5">
+      <form onSubmit={onFormSubmit} onKeyDown={onFormKeyDown} className="space-y-5">
         {fromBrief && (
           <p className="rounded-control bg-parchment px-4 py-3 text-meta text-ink">
             Your brief gave {fromBrief.found} of the {DRAFT_NEEDS.length} details a draft needs.
@@ -377,12 +401,16 @@ export function IntakeWizard() {
           >
             Back
           </Button>
-          {step < STEP_LABELS.length - 1 ? (
-            <Button type="button" onClick={goNext}>
+          {/* Different keys, so the Continue button is never the same DOM
+              node as the submit button: validation resolves inside the
+              click, and a button that turns into type="submit" mid-click
+              submits the form. */}
+          {!isLastStep ? (
+            <Button key="continue" type="button" onClick={goNext}>
               Continue
             </Button>
           ) : (
-            <Button type="submit" disabled={submitting}>
+            <Button key="submit" type="submit" disabled={submitting}>
               {submitting ? "Drafting…" : "Draft the document"}
             </Button>
           )}
