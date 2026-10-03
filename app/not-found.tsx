@@ -6,10 +6,8 @@ import { Button } from "@/components/ui/button";
 // automatically for any unmatched route.
 export default function NotFound() {
   return (
-    <div className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center px-6">
-      <p className="font-mono text-notation uppercase tracking-notation text-muted-fg">
-        404
-      </p>
+    <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-center px-6">
+      <p className="text-label font-medium text-muted-fg">Error 404</p>
       <h1 className="mt-3 font-display text-h1 text-ink">Page not found</h1>
       <p className="mt-3 max-w-prose text-body text-muted-fg">
         This address does not match anything in the product. It may have

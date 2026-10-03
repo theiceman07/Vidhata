@@ -15,6 +15,7 @@ const GROUPS = [
       { href: "/#how", label: "How it works" },
       { href: "/#india", label: "India checks" },
       { href: "/pricing", label: "Pricing" },
+      { href: "/contracts", label: "Agreements" },
     ],
   },
   {
@@ -29,6 +30,8 @@ const GROUPS = [
     label: "Company",
     links: [
       { href: "/contact", label: "Contact" },
+      { href: "/scope", label: "Scope and limits" },
+      { href: "/security", label: "Security and data" },
       { href: "/terms", label: "Terms of service" },
       { href: "/privacy", label: "Privacy policy" },
     ],
