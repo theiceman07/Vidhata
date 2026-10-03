@@ -138,7 +138,12 @@ export interface ClientFindingRow {
   change: string;
   /** The first pass's own words. After sign-off only. */
   description: string | null;
-  /** The advocate's decision. After sign-off only. */
+  /**
+   * The advocate's decision, in a word. After sign-off only. The advocate's
+   * own note on it is deliberately not shown to the client. That is a
+   * judgment for now, not a permanent rule: the same notes ground the chat
+   * agent, so revisit whether the client may read them once that is settled.
+   */
   disposition: Finding["disposition"] | null;
   /** Said only once the record is the client's to read in full. */
   advocateAdded: boolean;

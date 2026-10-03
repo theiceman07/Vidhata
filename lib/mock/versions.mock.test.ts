@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { diffVersions } from "@/lib/diff";
+import { signOffBlockers } from "@/lib/findings";
 import type { Citation } from "@/lib/types";
 import { CORPUS } from "./corpus.mock";
 import { mockDocuments } from "./documents.mock";
@@ -72,6 +73,19 @@ describe("the settled NDA's history", () => {
     const diff = diffVersions(first, second);
     expect(changed(diff)).toEqual(["4.1 changed"]);
     expect(findingsOf(diff)).toEqual(["find-n1 resolved (settled)", "find-n2 new"]);
+  });
+
+  it("has nothing standing between it and sign-off, with or without a citation", () => {
+    // Sign-off blocks on a finding with no decision, and on a blocked source
+    // that has not been withdrawn. A finding with no source at all is
+    // allowed, and settles on the advocate's note.
+    expect(signOffBlockers(nda, "adv-1")).toEqual([]);
+    expect(
+      nda.findings.some((f) => f.citations.some((c) => c.status === "blocked" && !c.withdrawn)),
+    ).toBe(false);
+    const unsourced = nda.findings.filter((f) => f.citations.length === 0);
+    expect(unsourced.length).toBeGreaterThan(0);
+    for (const f of unsourced) expect(f.overrideNote).toBeTruthy();
   });
 
   it("gives every finding in the settled head a disposition", () => {
