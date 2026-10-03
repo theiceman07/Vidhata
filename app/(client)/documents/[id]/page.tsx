@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { BackButton } from "@/components/shared/back-button";
 import { format, formatDistanceToNowStrict } from "date-fns";
@@ -44,7 +44,6 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const kickedOffForStatus = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     setState("loading");
@@ -65,28 +64,45 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
     load();
   }, [load]);
 
-  useEffect(() => {
-    if (!doc || kickedOffForStatus.current === doc.status) return;
+  const failWith = useCallback((err: unknown) => {
+    setErrorMessage(
+      err instanceof Error ? err.message : "Could not load this document.",
+    );
+    setState("error");
+  }, []);
 
-    if (doc.status === "draft") {
-      kickedOffForStatus.current = "draft";
-      startAnalysis(doc.id).then(setDoc);
+  // Keyed on the document's id and status, not the document itself: every
+  // poll returns a fresh object, and keying on that tore the interval down
+  // after its first tick. The interval now lives until the status leaves
+  // "analysing", the load state leaves "loaded" (an error), or the page
+  // unmounts.
+  const docId = doc?.id;
+  const docStatus = doc?.status;
+  useEffect(() => {
+    if (!docId || state !== "loaded") return;
+
+    if (docStatus === "draft") {
+      startAnalysis(docId).then(setDoc).catch(failWith);
       return;
     }
 
     // Analysis completion is tracked in the data layer against a stored
     // analysisCompletesAt, so it resolves whether or not this page stays
     // mounted. Polling here only picks up that change.
-    if (doc.status === "analysing") {
-      kickedOffForStatus.current = "analysing";
+    if (docStatus === "analysing") {
       const interval = setInterval(() => {
-        getDocument(doc.id).then((result) => {
-          if (result) setDoc(result);
-        });
+        getDocument(docId)
+          .then((result) => {
+            if (result) setDoc(result);
+          })
+          .catch((err) => {
+            clearInterval(interval);
+            failWith(err);
+          });
       }, 2000);
       return () => clearInterval(interval);
     }
-  }, [doc]);
+  }, [docId, docStatus, state, failWith]);
 
   async function handleRespond(responses: Record<string, string>) {
     if (!doc) return;
