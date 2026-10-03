@@ -13,6 +13,8 @@ import {
   OnYourDesk,
   WhatHappensNext,
 } from "@/components/domain/document-context";
+import { CoveragePanel } from "@/components/domain/coverage-panel";
+import { DraftBanner } from "@/components/domain/draft-banner";
 import { clientAuditTrail } from "@/lib/audit";
 import { ErrorState } from "@/components/shared/error-state";
 import { Icon } from "@/components/shared/icon";
@@ -179,6 +181,9 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
         </dl>
       </header>
 
+      {/* Everything on this view is before sign-off, so say so up front. */}
+      <DraftBanner className="mt-6" />
+
       {/* The move in hand and everything that explains it on the left;
           the record the document carries on the right. */}
       <div className="mt-10 grid gap-x-8 gap-y-8 lg:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem]">
@@ -198,6 +203,8 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
             <WhatHappensNext doc={doc} />
             <DealOnFile doc={doc} />
           </div>
+
+          <CoveragePanel doc={doc} className="mt-4" />
         </div>
 
         <aside className="min-w-0 space-y-4">
