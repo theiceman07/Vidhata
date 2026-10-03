@@ -24,6 +24,7 @@ const settledNda: ContractDocument = {
   keyTerms: "Mutual confidentiality; 3-year survival on trade secrets.",
   createdAt: "2026-08-02T09:12:00.000Z",
   version: 1,
+  revisionCount: 0,
   claimedAt: "2026-08-04T10:05:00.000Z",
   settledAt: "2026-08-05T14:40:00.000Z",
   analysisCompletesAt: null,
@@ -99,6 +100,7 @@ const pendingReviewMsa: ContractDocument = {
   keyTerms: "Exclusivity for the term; auto-renewal unless terminated with 90 days' notice.",
   createdAt: "2026-09-14T06:05:00.000Z",
   version: 1,
+  revisionCount: 0,
   claimedAt: null,
   settledAt: null,
   analysisCompletesAt: null,
@@ -107,6 +109,7 @@ const pendingReviewMsa: ContractDocument = {
   findings: [
     {
       findingId: "find-1",
+      source: "pipeline",
       layer: 2,
       severity: "high",
       clauseReference: "Clause 7.2",
@@ -133,6 +136,7 @@ const pendingReviewMsa: ContractDocument = {
     },
     {
       findingId: "find-2",
+      source: "pipeline",
       layer: 3,
       severity: "medium",
       clauseReference: "Clause 4.1",
@@ -159,6 +163,7 @@ const pendingReviewMsa: ContractDocument = {
     },
     {
       findingId: "find-3",
+      source: "pipeline",
       layer: 4,
       severity: "low",
       clauseReference: "Clause 11.4",
@@ -204,6 +209,7 @@ const analysingEmployment: ContractDocument = {
   keyTerms: null,
   createdAt: "2026-09-19T10:00:00.000Z",
   version: 1,
+  revisionCount: 0,
   claimedAt: null,
   settledAt: null,
   // Seeded in the past on purpose (QA 4.5): the fixture used to sit in
@@ -234,7 +240,12 @@ const revisionVendor: ContractDocument = {
   governingLaw: "Laws of India",
   keyTerms: "Packaging specification per Annexure A; quarterly price review.",
   createdAt: "2026-09-08T11:30:00.000Z",
-  version: 1,
+  // Draft 3. The history is in lib/mock/versions.mock.ts: the first pass,
+  // the client's answers to the advocate's first request, and the
+  // advocate's revision that carries the request now waiting on the client.
+  version: 3,
+  // The advocate has sent it back twice: after draft 1, and after draft 2.
+  revisionCount: 2,
   claimedAt: "2026-09-09T05:45:00.000Z",
   settledAt: null,
   analysisCompletesAt: null,
@@ -243,6 +254,7 @@ const revisionVendor: ContractDocument = {
   findings: [
     {
       findingId: "find-4",
+      source: "pipeline",
       layer: 3,
       severity: "medium",
       clauseReference: "Clause 5.3",
@@ -269,11 +281,94 @@ const revisionVendor: ContractDocument = {
       changeRequest: {
         request:
           "Ganesh Packaging Works is a registered MSME, so a 90-day payment term exceeds the statutory ceiling. Tell me whether they agreed to 90 days in writing before intake. If they did, I can retain the term and record that you were told it exceeds the ceiling. If not, I will revise Clause 5.3 to 45 days.",
-        requestedAt: "2026-09-10T08:20:00.000Z",
+        requestedAt: "2026-09-16T07:40:00.000Z",
         requestedBy: "Farhan Sheikh",
         response: null,
         respondedAt: null,
       },
+    },
+    {
+      // Raised by the draft 2 run, decided by the advocate on 16 Sep. It
+      // names no statute: the rule is a cross-clause check, so settling it
+      // carries the advocate's note.
+      findingId: "find-8",
+      source: "pipeline",
+      layer: 3,
+      severity: "low",
+      clauseReference: "Clause 3.2",
+      clauseText:
+        "Rejected goods shall be replaced by the Supplier at its own cost within fourteen (14) days.",
+      description:
+        "Replacement is the Supplier's obligation at its own cost, but the clause states no consequence if replacement is late. The risk of delay sits with the Buyer without the clause saying so.",
+      ruleApplied: "LIABILITY-ASYMMETRY-V1",
+      remedySuggested:
+        "State what the Buyer may do if replacement is not made within the period.",
+      citations: [],
+      disposition: "confirmed",
+      overrideNote:
+        "Confirmed. No source applies, so this rests on judgment: the concern stands and is carried to the quarterly price review in Clause 4.1.",
+      resolvedAt: "2026-09-16T07:20:00.000Z",
+      changeRequest: null,
+    },
+    {
+      // Added by the advocate in review. Its source verifies against the
+      // corpus, so it can be settled once the advocate has decided it.
+      findingId: "find-9",
+      source: "advocate",
+      layer: 6,
+      severity: "medium",
+      clauseReference: "Clause 5.3",
+      clauseText:
+        "The Supplier shall invoice the Buyer on delivery of each consignment.",
+      description:
+        "Clause 5.3 counts the payment period from delivery. It does not say when delivered goods are treated as accepted, and Clause 3.2 gives the Buyer seven days to inspect. Where the period starts is unclear.",
+      ruleApplied: "MANUAL-ADVOCATE-ADDED",
+      remedySuggested:
+        "Say when delivered goods are treated as accepted, then state the period from that date.",
+      citations: [
+        {
+          id: "cite-9",
+          text: "Micro, Small and Medium Enterprises Development Act, 2006, s.15",
+          status: "verified",
+          corpusRef: "msmed-2006-s15",
+          withdrawn: null,
+        },
+      ],
+      disposition: "pending",
+      overrideNote: null,
+      resolvedAt: null,
+      changeRequest: null,
+    },
+    {
+      // Added by the advocate with a reference the corpus does not hold. It
+      // is saved, and it stays blocked: it cannot be settled or signed off
+      // until the source is withdrawn with a note. The citation text is a
+      // plain placeholder on purpose, so it cannot be mistaken for a real
+      // authority.
+      findingId: "find-10",
+      source: "advocate",
+      layer: 6,
+      severity: "low",
+      clauseReference: "Clause 7.1",
+      clauseText:
+        "It renews automatically for successive twelve month periods unless either party gives sixty (60) days written notice of non-renewal.",
+      description:
+        "The Agreement renews on silence. The advocate wants an authority on renewal by silence checked before this clause is settled.",
+      ruleApplied: "MANUAL-ADVOCATE-ADDED",
+      remedySuggested: "Advocate judgment · see the concern above.",
+      citations: [
+        {
+          id: "cite-10",
+          text: "PLACEHOLDER · reference typed by the advocate, not in the corpus",
+          status: "blocked",
+          corpusRef: null,
+          withdrawn: null,
+        },
+      ],
+      disposition: "pending",
+      overrideNote: null,
+      resolvedAt: null,
+      changeRequest: null,
     },
   ],
   executionSteps: [],

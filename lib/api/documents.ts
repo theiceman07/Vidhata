@@ -1,12 +1,15 @@
 import type {
   Clause,
   ContractDocument,
+  DocumentVersion,
   ExecutionStep,
   Finding,
   ReviewTier,
+  VersionCreatedBy,
 } from "@/lib/types";
 import { PIPELINE_DURATION_MS, clauseNumberFromReference } from "@/lib/types";
 import { mockDocuments } from "@/lib/mock/documents.mock";
+import { mockVersions } from "@/lib/mock/versions.mock";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { assignReviewTier } from "@/lib/triage";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
@@ -110,6 +113,31 @@ function buildExecutionSteps(doc: ContractDocument): ExecutionStep[] {
 // for the duration of the tab. Resets on reload — there is no backend yet.
 let store: ContractDocument[] = structuredClone(mockDocuments);
 
+// Snapshots of drafts as they were handed on. They are written at hand-off
+// points only (see DocumentVersion), never on every edit, and kept apart from
+// the documents so list and queue reads stay light. Documents seeded before
+// snapshots existed have none.
+const versionStore: DocumentVersion[] = structuredClone(mockVersions);
+
+function recordVersion(doc: ContractDocument, createdBy: VersionCreatedBy): void {
+  if (versionStore.some((v) => v.documentId === doc.id && v.number === doc.version)) {
+    return;
+  }
+  const now = new Date().toISOString();
+  versionStore.push({
+    documentId: doc.id,
+    number: doc.version,
+    createdAt: now,
+    createdBy,
+    // Mock: the real pipeline runs every layer again here and re-checks every
+    // citation against the corpus. This stamps the run and carries the
+    // citation states over; the fixtures show what a real re-check changes.
+    pipelineRunAt: now,
+    clauses: structuredClone(doc.clauses),
+    findings: structuredClone(doc.findings),
+  });
+}
+
 // QA 4.5: analysis used to complete via a setTimeout owned by the document
 // detail page component, cleared on unmount — a document left "analysing"
 // stayed that way forever if the user navigated away before the timer
@@ -148,6 +176,9 @@ function reconcileAnalysis(doc: ContractDocument): void {
     clause.findingIds.push(f.findingId);
     return true;
   });
+
+  // The first pass is handed to the advocate queue: that is a hand-off.
+  recordVersion(doc, "first_pass");
 }
 
 function reconcileAll(): void {
@@ -183,6 +214,25 @@ export async function getDocument(
   if (!doc) return null;
   reconcileAnalysis(doc);
   return structuredClone(doc);
+}
+
+/**
+ * The drafts of one document as they were handed on, oldest first. This is a
+ * detail-page read: the head is the working copy and may be ahead of the
+ * last snapshot.
+ */
+export async function getDocumentVersions(
+  id: string,
+): Promise<DocumentVersion[]> {
+  await randomDelay();
+  if (shouldSimulateFailure()) {
+    throw new MockApiError("Could not load the version history.");
+  }
+  return structuredClone(
+    versionStore
+      .filter((v) => v.documentId === id)
+      .sort((a, b) => a.number - b.number),
+  );
 }
 
 export interface IntakeInput {
@@ -324,6 +374,7 @@ export async function createDraftDocument(
     keyTerms: input.keyTerms.trim() ? input.keyTerms.trim() : null,
     createdAt: new Date().toISOString(),
     version: 1,
+    revisionCount: 0,
     claimedAt: null,
     settledAt: null,
     analysisCompletesAt: null,
@@ -403,6 +454,9 @@ export async function requestChange(
     response: null,
     respondedAt: null,
   };
+  // Sending it back is what the cycle count counts, so a second request in
+  // the same round does not add another.
+  if (doc.status !== "revision") doc.revisionCount += 1;
   doc.status = "revision";
   return structuredClone(doc);
 }
@@ -435,6 +489,9 @@ export async function respondToChanges(
   if (!stillWaiting) {
     doc.status = doc.advocate ? "under_review" : "pending_review";
     doc.version += 1;
+    // The client's answers complete a round and the next draft goes back to
+    // the advocate: that is a hand-off.
+    recordVersion(doc, "client_response");
   }
   return structuredClone(doc);
 }

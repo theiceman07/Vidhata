@@ -336,7 +336,7 @@ export const vendorClauses: Clause[] = [
     number: "3.2",
     heading: "Inspection and rejection",
     body: "The Buyer shall inspect the goods within seven (7) days of delivery and may reject any goods that do not conform to the specification. Rejected goods shall be replaced by the Supplier at its own cost within fourteen (14) days.",
-    findingIds: [],
+    findingIds: ["find-8"],
     revisedAt: null,
   },
   {
@@ -352,7 +352,7 @@ export const vendorClauses: Clause[] = [
     number: "5.3",
     heading: "Payment",
     body: "The Supplier shall invoice the Buyer on delivery of each consignment. Payment shall be made within ninety (90) days of delivery.",
-    findingIds: ["find-4"],
+    findingIds: ["find-4", "find-9"],
     revisedAt: null,
   },
   {
@@ -361,14 +361,15 @@ export const vendorClauses: Clause[] = [
     heading: "Warranty",
     body: "The Supplier warrants that the goods will conform to the specification, will be free from defects in materials and workmanship, and will be fit for the purpose made known to the Supplier, for a period of twelve (12) months from delivery.",
     findingIds: [],
-    revisedAt: null,
+    // The advocate's wording in draft 3. Draft 2 stopped at "workmanship".
+    revisedAt: "2026-09-16T07:30:00.000Z",
   },
   {
     id: "cl-ven-8",
     number: "7.1",
     heading: "Term",
     body: "This Agreement commences on the Effective Date and continues for twelve (12) months. It renews automatically for successive twelve month periods unless either party gives sixty (60) days written notice of non-renewal.",
-    findingIds: [],
+    findingIds: ["find-10"],
     revisedAt: null,
   },
   {

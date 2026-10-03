@@ -140,8 +140,19 @@ Four systems, each with its own state. Never fold them into one label.
   are exclusive, and only the holder sees decision controls.
 - What stands between a document and sign-off comes from
   signOffBlockers(). Do not recompute it in a component.
-- The client sees no draft body before sign-off, only status and the
-  passages behind requests addressed to them.
+- The client sees no draft body before sign-off. Before it they get the
+  status, the passages behind requests addressed to them, a version list
+  with counts, and a diff limited to those passages. An advocate-added
+  finding reaches them only through a request addressed to them. After
+  sign-off they see the full version history and diff, read-only, with the
+  advocate's dispositions.
+- Versions: a snapshot (DocumentVersion) is written at hand-off points only,
+  when a draft is produced and handed on. ContractDocument is the working
+  copy and may be ahead of the latest snapshot, so diffs (lib/diff.ts)
+  compare snapshots, never the head. The advocate's re-review is the one
+  exception: it shows the head against the latest snapshot.
+- Finding.source says who raised a finding ("pipeline" or "advocate"). Never
+  infer it from the rule id.
 
 ## Design
 - Fill the screen. Pages use the full width they are given, not a narrow

@@ -479,6 +479,7 @@ function AddFindingDialog({
               if (!clause) return;
               onAdd({
                 findingId: `manual-${Date.now()}`,
+                source: "advocate",
                 layer: 6,
                 severity,
                 clauseReference: `Clause ${clause.number}`,

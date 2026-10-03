@@ -9,6 +9,7 @@ export type DocumentStatus =
 
 export type ReviewTier = "standard" | "enhanced" | "senior";
 export type Severity = "high" | "medium" | "low";
+export type FindingSource = "pipeline" | "advocate";
 export type PipelineLayer = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 export interface Citation {
@@ -67,6 +68,12 @@ export function clauseNumberFromReference(reference: string): string {
 
 export interface Finding {
   findingId: string;
+  /**
+   * Who raised it. "advocate" is a finding the first pass missed, added in
+   * review. The addition and override metrics read this, so it is a field
+   * and never inferred from the rule id.
+   */
+  source: FindingSource;
   layer: PipelineLayer;
   severity: Severity;
   clauseReference: string; // "Clause 7.2"
@@ -126,6 +133,12 @@ export interface ContractDocument {
    * responses to requested changes produces the next.
    */
   version: number;
+  /**
+   * How many times the advocate has sent the document back for changes. It
+   * rises when a document first enters "revision", not on every request in
+   * the same round, so it is the number a cycle limit is checked against.
+   */
+  revisionCount: number;
   /** When the advocate claimed it. Null while unclaimed. */
   claimedAt: string | null;
   settledAt: string | null;
@@ -142,6 +155,41 @@ export interface ContractDocument {
   clauses: Clause[];
   findings: Finding[];
   executionSteps: ExecutionStep[];
+}
+
+export type VersionCreatedBy =
+  | "first_pass"
+  | "client_response"
+  | "advocate_revision";
+
+/**
+ * A draft as it stood when it was handed on.
+ *
+ * Snapshots are written at hand-off points only: the first pass finishes,
+ * the client's answers complete a round, or the advocate sends a revision
+ * back. They are immutable. ContractDocument is the working copy and moves
+ * on between hand-offs (findings are added, dispositions are recorded), so
+ * the head and the latest snapshot can disagree. Diffs therefore compare
+ * snapshots, never the head, except the advocate's re-review, which shows
+ * the head against the latest snapshot.
+ *
+ * Backend note: like clauses, snapshots are a detail-page concern. List and
+ * queue endpoints must not return them.
+ */
+export interface DocumentVersion {
+  documentId: string;
+  /** The draft number, as "Draft 2" is shown. */
+  number: number;
+  createdAt: string;
+  createdBy: VersionCreatedBy;
+  /**
+   * When the full pipeline last ran for this draft. It runs again on every
+   * revision, so a citation state here is what that run found, never a copy
+   * of the one before.
+   */
+  pipelineRunAt: string;
+  clauses: Clause[];
+  findings: Finding[];
 }
 
 export const PIPELINE_DURATION_MS = 28000; // 7 layers × 4s each
