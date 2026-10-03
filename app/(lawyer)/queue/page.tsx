@@ -621,7 +621,9 @@ function UpNext({
               </div>
               <p className="mt-2 line-clamp-2 text-meta text-ink">{finding.description}</p>
               <p className="mt-2 truncate text-label text-muted-fg">
-                {PIPELINE_LAYERS[finding.layer].name}
+                {finding.source === "advocate"
+                  ? "Added by advocate"
+                  : PIPELINE_LAYERS[finding.layer].name}
               </p>
             </li>
           ))}

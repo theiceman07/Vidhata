@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { blockingCitations, findingState } from "@/lib/findings";
 import type { Finding } from "@/lib/types";
+import { AddedByLabel } from "./added-by-label";
 import { FindingRule } from "./finding-rule";
 import { SeverityMark } from "./severity";
 import { StateLabel } from "./state-label";
@@ -59,6 +60,7 @@ export function FindingBar({
         {!settled && <SeverityMark severity={finding.severity} />}
         <StateLabel state={state} />
         {blocked && <StateLabel state="citation_blocked" />}
+        {finding.source === "advocate" && <AddedByLabel />}
       </span>
 
       <span

@@ -98,6 +98,12 @@ describe("client screens", () => {
     expect(clientFiles.length).toBeGreaterThan(5);
   });
 
+  it("never import what only an advocate may use: the add-finding dialog, the citation check", () => {
+    const advocateOnly = /add-finding-dialog|api\/citations/;
+    const offenders = clientFiles.filter((file) => advocateOnly.test(readFileSync(file, "utf8")));
+    expect(offenders.map((f) => path.relative(root, f))).toEqual([]);
+  });
+
   it("never read doc.findings directly", () => {
     const offenders = clientFiles.filter((file) => /\.findings\b/.test(readFileSync(file, "utf8")));
     expect(offenders.map((f) => path.relative(root, f))).toEqual([]);

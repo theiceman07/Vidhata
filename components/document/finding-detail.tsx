@@ -14,6 +14,7 @@ import {
 import { buildAuditTrail } from "@/lib/audit";
 import type { ContractDocument, Finding } from "@/lib/types";
 import { PIPELINE_LAYERS, clauseNumberFromReference } from "@/lib/types";
+import { AddedByLabel } from "./added-by-label";
 import { StateLabel } from "./state-label";
 import { SeverityMark } from "./severity";
 import { CitationBlock } from "./citation-block";
@@ -152,6 +153,7 @@ export function FindingDetail({
             <SeverityMark severity={finding.severity} />
             <StateLabel state={state} />
             {blocked && <StateLabel state="citation_blocked" />}
+            {finding.source === "advocate" && <AddedByLabel />}
           </div>
           <p className="mt-3 text-body text-ink">{finding.description}</p>
         </header>
@@ -241,11 +243,18 @@ export function FindingDetail({
 
         {role === "advocate" && (
           <Section title="Raised by">
-            <p className="font-mono text-label text-muted-fg">
-              {finding.ruleApplied}
-              <span className="mx-1.5 text-line">·</span>
-              Layer {finding.layer} · {PIPELINE_LAYERS[finding.layer].name}
-            </p>
+            {finding.source === "advocate" ? (
+              // No pipeline rule or layer is behind it, so none is named.
+              <p className="text-meta text-ink">
+                Added by the advocate in review. No pipeline rule is behind it.
+              </p>
+            ) : (
+              <p className="font-mono text-label text-muted-fg">
+                {finding.ruleApplied}
+                <span className="mx-1.5 text-line">·</span>
+                Layer {finding.layer} · {PIPELINE_LAYERS[finding.layer].name}
+              </p>
+            )}
           </Section>
         )}
 

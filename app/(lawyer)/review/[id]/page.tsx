@@ -8,26 +8,9 @@ import { ErrorState } from "@/components/shared/error-state";
 import { DocumentWorkspace } from "@/components/document/workspace";
 import { ReviewAgent } from "@/components/document/review-agent";
 import type { PaletteCommand } from "@/components/shared/command-palette";
+import { AddFindingDialog } from "@/components/domain/add-finding-dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   addFinding,
   claimDocument,
@@ -40,14 +23,7 @@ import { getAdvocateProfile } from "@/lib/api/advocate";
 import { addNote, deleteNote, listNotes, updateNote } from "@/lib/api/notes";
 import { findingNumbers, signOffBlockers } from "@/lib/findings";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
-import type {
-  AdvocateNote,
-  Clause,
-  ContractDocument,
-  Finding,
-  MarginNotes,
-  Severity,
-} from "@/lib/types";
+import type { AdvocateNote, ContractDocument, MarginNotes } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -348,6 +324,8 @@ export default function ReviewPage() {
         ) : canAdjudicate ? (
           <>
             <AddFindingDialog
+              documentId={doc.id}
+              advocateId={CURRENT_ADVOCATE.id}
               clauses={doc.clauses}
               open={dialogOpen}
               onOpenChange={setDialogOpen}
@@ -380,128 +358,5 @@ export default function ReviewPage() {
       onWithdrawSource={handleWithdraw}
       busy={busy}
     />
-  );
-}
-
-/**
- * A finding the first pass missed. It is raised against a clause of this
- * document and enters the record open, like any other finding: raising a
- * concern and deciding it are two different acts, and both are recorded.
- */
-function AddFindingDialog({
-  clauses,
-  open,
-  onOpenChange,
-  onAdd,
-}: {
-  clauses: Clause[];
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onAdd: (finding: Finding) => void;
-}) {
-  const [clauseId, setClauseId] = useState("");
-  const [description, setDescription] = useState("");
-  const [severity, setSeverity] = useState<Severity>("medium");
-
-  const clause = clauses.find((c) => c.id === clauseId);
-  const canSubmit = Boolean(clause) && description.trim().length > 0;
-
-  function reset() {
-    setClauseId("");
-    setDescription("");
-    setSeverity("medium");
-  }
-
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        onOpenChange(next);
-        if (!next) reset();
-      }}
-    >
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          <Icon name="add" size={18} />
-          Add finding
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add a finding the first pass missed</DialogTitle>
-          <DialogDescription>
-            It enters the record open. It has no statutory source, so settling
-            it will need your note.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div>
-            <Label htmlFor="finding-clause">Clause</Label>
-            <Select value={clauseId} onValueChange={setClauseId}>
-              <SelectTrigger id="finding-clause">
-                <SelectValue placeholder="Choose a clause" />
-              </SelectTrigger>
-              <SelectContent>
-                {clauses.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.number} · {c.heading}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="severity">Severity</Label>
-            <Select value={severity} onValueChange={(v) => setSeverity(v as Severity)}>
-              <SelectTrigger id="severity">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="finding-description">The concern</Label>
-            <Textarea
-              id="finding-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="What did the first pass miss?"
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button
-            disabled={!canSubmit}
-            onClick={() => {
-              if (!clause) return;
-              onAdd({
-                findingId: `manual-${Date.now()}`,
-                source: "advocate",
-                layer: 6,
-                severity,
-                clauseReference: `Clause ${clause.number}`,
-                // The passage is the clause's opening paragraph: the
-                // advocate chose the clause, not a span within it.
-                clauseText: clause.body.split("\n\n")[0],
-                description: description.trim(),
-                ruleApplied: "MANUAL-ADVOCATE-ADDED",
-                remedySuggested: "Advocate judgment · see the concern above.",
-                citations: [],
-                disposition: "pending",
-                overrideNote: null,
-                resolvedAt: null,
-                changeRequest: null,
-              });
-            }}
-          >
-            Add finding
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
