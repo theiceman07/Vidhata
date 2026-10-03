@@ -199,32 +199,36 @@ export const PIPELINE_LAYERS: Record<
   { name: string; description: string }
 > = {
   0: {
-    name: "Intake normalisation",
+    name: "Intake and normalisation",
     description: "Structures the deal facts into a drafting brief.",
   },
   1: {
-    name: "Clause drafting",
-    description: "Assembles clauses from the curated corpus.",
+    name: "Completeness",
+    description: "Checks the draft has every clause its contract type needs.",
   },
   2: {
-    name: "Statutory screen",
-    description: "Checks the draft against Indian Contract Act constraints.",
+    name: "Statutory compliance",
+    description:
+      "Checks the draft against Indian Contract Act s.27 and s.74, MSMED payment terms and stamping.",
   },
   3: {
-    name: "MSMED compliance",
-    description: "Checks payment terms against the MSMED Act.",
+    name: "Cross-clause consistency",
+    description:
+      "Reads one clause against another, such as an uncapped indemnity against the liability cap, or a governing law that does not fit the seat.",
   },
   4: {
-    name: "Jurisdiction check",
-    description: "Confirms governing law and forum clauses are enforceable.",
+    name: "Risk asymmetry",
+    description:
+      "Finds where the draft puts a risk on one party and says nothing about it.",
   },
   5: {
     name: "Citation gate",
     description: "Verifying every citation against the corpus.",
   },
   6: {
-    name: "Advocate handoff",
-    description: "Packages findings for adjudication.",
+    name: "Risk triage",
+    description:
+      "Scores the document's value and risk to assign its review tier, then packages the findings for the advocate.",
   },
 };
 

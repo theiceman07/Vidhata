@@ -72,7 +72,7 @@ const WARRANTY_BEFORE_REVISION =
 const courtMismatch: Finding = {
   findingId: "find-7",
   source: "pipeline",
-  layer: 4,
+  layer: 3,
   severity: "medium",
   clauseReference: "Clause 8.1",
   clauseText:

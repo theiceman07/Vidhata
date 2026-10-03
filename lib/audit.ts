@@ -1,4 +1,4 @@
-import type { ContractDocument } from "@/lib/types";
+import { clauseNumberFromReference, type ContractDocument } from "@/lib/types";
 import {
   clientVisibleFindings,
   findingNumbers,
@@ -28,6 +28,12 @@ export interface AuditEntry {
   ref: string | null;
   /** Decisions are drawn differently from events. */
   kind: "event" | "decision";
+  /**
+   * The number of the clause whose wording the action changed ("6.1"), set
+   * only for a revision. It lets the client's trail say that a draft was
+   * revised without saying where.
+   */
+  clause?: string;
 }
 
 export function buildAuditTrail(doc: ContractDocument): AuditEntry[] {
@@ -134,6 +140,7 @@ export function buildAuditTrail(doc: ContractDocument): AuditEntry[] {
         findingId: null,
         ref: `Clause ${clause.number}`,
         kind: "decision",
+        clause: clause.number,
       });
     });
 
@@ -181,8 +188,11 @@ export function buildAuditTrail(doc: ContractDocument): AuditEntry[] {
  *
  * Before sign-off the client sees status and the passages behind requests
  * addressed to them, nothing else, so entries about a finding are kept
- * only when the finding carries a request to the client. After sign-off
- * the whole record is theirs.
+ * only when the finding carries a request to the client. A revision of the
+ * wording is reported as "Advocate revised the draft" with no clause, unless
+ * the clause is one a request to the client is about: saying where the draft
+ * changed is saying what it contains. After sign-off the whole record is
+ * theirs.
  */
 export function clientAuditTrail(doc: ContractDocument): AuditEntry[] {
   // Built from the client's own view of the document, so finding numbers
@@ -194,5 +204,17 @@ export function clientAuditTrail(doc: ContractDocument): AuditEntry[] {
   const addressed = new Set(
     view.findings.filter((f) => f.changeRequest).map((f) => f.findingId),
   );
-  return all.filter((entry) => !entry.findingId || addressed.has(entry.findingId));
+  const addressedClauses = new Set(
+    view.findings
+      .filter((f) => f.changeRequest)
+      .map((f) => clauseNumberFromReference(f.clauseReference)),
+  );
+
+  return all
+    .filter((entry) => !entry.findingId || addressed.has(entry.findingId))
+    .map((entry) =>
+      entry.clause && !addressedClauses.has(entry.clause)
+        ? { ...entry, action: "Advocate revised the draft", ref: null, clause: undefined }
+        : entry,
+    );
 }

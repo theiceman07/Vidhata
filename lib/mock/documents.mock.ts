@@ -137,7 +137,7 @@ const pendingReviewMsa: ContractDocument = {
     {
       findingId: "find-2",
       source: "pipeline",
-      layer: 3,
+      layer: 2,
       severity: "medium",
       clauseReference: "Clause 4.1",
       clauseText:
@@ -164,7 +164,7 @@ const pendingReviewMsa: ContractDocument = {
     {
       findingId: "find-3",
       source: "pipeline",
-      layer: 4,
+      layer: 3,
       severity: "low",
       clauseReference: "Clause 11.4",
       clauseText:
@@ -255,7 +255,7 @@ const revisionVendor: ContractDocument = {
     {
       findingId: "find-4",
       source: "pipeline",
-      layer: 3,
+      layer: 2,
       severity: "medium",
       clauseReference: "Clause 5.3",
       clauseText: "Payment shall be made within ninety (90) days of delivery.",
@@ -293,7 +293,7 @@ const revisionVendor: ContractDocument = {
       // carries the advocate's note.
       findingId: "find-8",
       source: "pipeline",
-      layer: 3,
+      layer: 4,
       severity: "low",
       clauseReference: "Clause 3.2",
       clauseText:
