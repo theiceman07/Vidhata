@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useParams } from "next/navigation";
 import { Icon } from "@/components/shared/icon";
 import { PageHeader } from "@/components/shared/page-header";
 import { ErrorState } from "@/components/shared/error-state";
@@ -21,7 +22,8 @@ import { cn } from "@/lib/utils";
 
 type LoadState = "loading" | "error" | "loaded";
 
-export default function ChatPage({ params }: { params: { id: string } }) {
+export default function ChatPage() {
+  const params = useParams<{ id: string }>();
   const [doc, setDoc] = useState<ContractDocument | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { Icon } from "@/components/shared/icon";
 import { ErrorState } from "@/components/shared/error-state";
@@ -121,7 +122,8 @@ function RecordList({ doc }: { doc: ContractDocument }) {
   );
 }
 
-export default function SignOffPage({ params }: { params: { id: string } }) {
+export default function SignOffPage() {
+  const params = useParams<{ id: string }>();
   const [doc, setDoc] = useState<ContractDocument | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");

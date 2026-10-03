@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { BackButton } from "@/components/shared/back-button";
 import { format, formatDistanceToNowStrict } from "date-fns";
@@ -42,7 +43,10 @@ type LoadState = "loading" | "error" | "loaded";
  * holds it, but not the draft. When the advocate needs something, exactly
  * what, on which clause. Once signed off, the settled document itself.
  */
-export default function DocumentPage({ params }: { params: { id: string } }) {
+export default function DocumentPage() {
+  // Read from the router, not a prop: in Next 15 the page's params prop is a
+  // Promise, and this is a client component.
+  const params = useParams<{ id: string }>();
   const [doc, setDoc] = useState<ContractDocument | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");

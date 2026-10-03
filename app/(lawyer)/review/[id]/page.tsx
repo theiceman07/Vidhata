@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Icon } from "@/components/shared/icon";
 import { ErrorState } from "@/components/shared/error-state";
@@ -51,7 +51,8 @@ import type {
 
 type LoadState = "loading" | "error" | "loaded";
 
-export default function ReviewPage({ params }: { params: { id: string } }) {
+export default function ReviewPage() {
+  const params = useParams<{ id: string }>();
   const router = useRouter();
   const initialFindingId = useSearchParams().get("finding");
   const [doc, setDoc] = useState<ContractDocument | null>(null);
