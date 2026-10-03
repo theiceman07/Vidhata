@@ -26,6 +26,7 @@ import { addNote, deleteNote, listNotes, updateNote } from "@/lib/api/notes";
 import { findingNumbers, signOffBlockers } from "@/lib/findings";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import { reviewScope } from "@/lib/reviewScope";
+import { revisionCycle } from "@/lib/revisions";
 import type {
   AdvocateNote,
   ContractDocument,
@@ -337,6 +338,7 @@ export default function ReviewPage() {
       initialFindingId={initialFindingId}
       notes={marginNotes}
       scope={scope}
+      revisions={revisionCycle(doc)}
       companion={({ goToClause, openFinding }) => (
         <ReviewAgent
           doc={doc}

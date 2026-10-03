@@ -56,6 +56,28 @@ describe("the claim", () => {
   });
 });
 
+describe("the revision limit in the trail", () => {
+  const logged = "Revision limit reached · case logged for corpus review";
+  const atLimit: ContractDocument = { ...vendor, corpusReviewLoggedAt: "2026-09-17T08:00:00.000Z" };
+
+  it("is in the advocate's record, as the log's own entry", () => {
+    const entry = buildAuditTrail(atLimit).find((e) => e.action === logged)!;
+    expect(entry.actor).toBe("Corpus review log");
+    expect(entry.at).toBe("2026-09-17T08:00:00.000Z");
+  });
+
+  it("is never in the client's, before sign-off or after it", () => {
+    expect(clientAuditTrail(atLimit).some((e) => e.action === logged)).toBe(false);
+    expect(
+      clientAuditTrail({ ...atLimit, status: "settled" }).some((e) => e.action === logged),
+    ).toBe(false);
+  });
+
+  it("is not there when the limit was not reached", () => {
+    expect(buildAuditTrail(vendor).some((e) => e.action === logged)).toBe(false);
+  });
+});
+
 describe("the activity trail after sign-off", () => {
   it("is the full record, clause references included", () => {
     const settled: ContractDocument = { ...vendor, status: "settled" };

@@ -83,6 +83,7 @@ export function FindingDetail({
   onReopen,
   onRequestChange,
   onWithdrawSource,
+  requestBlockedReason = null,
   busy = false,
 }: {
   doc: ContractDocument;
@@ -97,6 +98,12 @@ export function FindingDetail({
   onReopen: () => void;
   onRequestChange: (request: string) => void;
   onWithdrawSource: (citationId: string, note: string) => void;
+  /**
+   * Why no revision request can be made, once the limit is reached. The
+   * request buttons are not offered, and this is said in their place.
+   * Settling and sign-off are unaffected.
+   */
+  requestBlockedReason?: string | null;
   busy?: boolean;
 }) {
   const reduced = useReducedMotion();
@@ -186,7 +193,7 @@ export function FindingDetail({
                         >
                           Withdraw source
                         </Button>
-                        {!request && (
+                        {!request && !requestBlockedReason && (
                           <Button
                             size="sm"
                             variant="ghost"
@@ -347,7 +354,9 @@ export function FindingDetail({
                 Settling is unavailable while the source is blocked.
               </p>
               <p className="text-meta text-muted-fg">
-                Withdraw the source above, or ask the client to resolve the clause.
+                {requestBlockedReason
+                  ? "Withdraw the source above."
+                  : "Withdraw the source above, or ask the client to resolve the clause."}
               </p>
             </div>
           ) : (
@@ -378,7 +387,7 @@ export function FindingDetail({
                 >
                   Settle with note
                 </Button>
-                {!request && (
+                {!request && !requestBlockedReason && (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -389,6 +398,9 @@ export function FindingDetail({
                   </Button>
                 )}
               </div>
+              {!request && requestBlockedReason && (
+                <p className="text-label text-muted-fg">{requestBlockedReason}</p>
+              )}
             </div>
           )}
         </footer>

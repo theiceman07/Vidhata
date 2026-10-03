@@ -1,7 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { lookupCitation } from "../citations";
+import { MAX_REVISION_CYCLES } from "../config/revisions";
+import { revisionCycle } from "../revisions";
 import { addDeclaredConflict, removeDeclaredConflict } from "./advocate";
-import { claimDocument, getDocument, getDocumentVersions } from "./documents";
+import {
+  claimDocument,
+  getDocument,
+  getDocumentVersions,
+  requestChange,
+  respondToChanges,
+  updateFinding,
+} from "./documents";
 
 // The corpus without the MSMED s.15 entry. The fixture's finding cites it as
 // verified, so if the first-pass snapshot comes out blocked, the gate really
@@ -71,6 +80,73 @@ describe("claiming a document", () => {
     const refused = expect(other).rejects.toThrow(/already claimed/);
     await vi.runAllTimersAsync();
     await refused;
+  });
+});
+
+describe("the revision limit", () => {
+  const id = "doc-msa-pending";
+
+  async function ask(findingId: string) {
+    return settle(requestChange(id, findingId, "Please confirm.", advocate.name));
+  }
+
+  async function answerEverything() {
+    const doc = await settle(getDocument(id));
+    const responses = Object.fromEntries(
+      doc!.findings
+        .filter((f) => f.changeRequest && !f.changeRequest.response)
+        .map((f) => [f.findingId, "Confirmed."]),
+    );
+    return settle(respondToChanges(id, responses));
+  }
+
+  it("lets the configured number of rounds be sent, logs the case on the last, then refuses another", async () => {
+    const claimed = await settle(claimDocument(id, advocate, declaration));
+    const [a, b, c] = claimed.findings.map((f) => f.findingId);
+    expect(claimed.revisionCount).toBe(0);
+
+    // Rounds 1 and 2.
+    let doc = await ask(a);
+    expect([doc.revisionCount, doc.status, doc.corpusReviewLoggedAt]).toEqual([1, "revision", undefined]);
+    await answerEverything();
+    doc = await ask(b);
+    expect(doc.revisionCount).toBe(2);
+    expect(doc.corpusReviewLoggedAt).toBeUndefined();
+    await answerEverything();
+
+    // Round 3 uses the last one, and logs the case.
+    doc = await ask(c);
+    expect(doc.revisionCount).toBe(MAX_REVISION_CYCLES);
+    expect(doc.corpusReviewLoggedAt).toBeDefined();
+    const loggedAt = doc.corpusReviewLoggedAt;
+
+    // A second request in the round already open is not a new round.
+    doc = await ask(a);
+    expect(doc.revisionCount).toBe(MAX_REVISION_CYCLES);
+    expect(doc.corpusReviewLoggedAt).toBe(loggedAt);
+    await answerEverything();
+
+    // A fourth round is refused, with the reason, and nothing changes.
+    const refused = expect(requestChange(id, b, "Once more.", advocate.name)).rejects.toThrow(
+      /used all 3 revision rounds.*logged for corpus review/,
+    );
+    await vi.runAllTimersAsync();
+    await refused;
+    const after = await settle(getDocument(id));
+    expect(after?.revisionCount).toBe(MAX_REVISION_CYCLES);
+    expect(after?.status).toBe("under_review");
+  });
+
+  it("still lets the advocate settle a finding at the limit", async () => {
+    const doc = await settle(getDocument(id));
+    expect(revisionCycle(doc!).canRequest).toBe(false);
+    const target = doc!.findings.find((f) => f.citations.every((c) => c.status !== "blocked"))!;
+    const settled = await settle(
+      updateFinding(id, target.findingId, { disposition: "overridden", overrideNote: "Decided." }),
+    );
+    expect(settled.findings.find((f) => f.findingId === target.findingId)?.disposition).toBe(
+      "overridden",
+    );
   });
 });
 

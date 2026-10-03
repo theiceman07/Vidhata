@@ -25,6 +25,12 @@ import {
 } from "@/lib/findings";
 import { buildAuditTrail } from "@/lib/audit";
 import type { ReviewScope } from "@/lib/reviewScope";
+import {
+  revisionBlockedReason,
+  revisionCounter,
+  revisionNotice,
+  type RevisionCycle,
+} from "@/lib/revisions";
 import type { ContractDocument, MarginNotes } from "@/lib/types";
 import { ReviewScopePanel } from "@/components/domain/review-scope-panel";
 import { ReviewScopeProvider } from "./review-scope-context";
@@ -68,6 +74,7 @@ export function DocumentWorkspace({
   onWithdrawSource,
   notes,
   scope,
+  revisions,
   busy = false,
 }: {
   doc: ContractDocument;
@@ -106,6 +113,8 @@ export function DocumentWorkspace({
    * only on the advocate's side, whatever is passed; null on a first review.
    */
   scope?: ReviewScope | null;
+  /** Where the document stands against the revision limit. Advocate only. */
+  revisions?: RevisionCycle;
   busy?: boolean;
 }) {
   const reduced = useReducedMotion();
@@ -128,6 +137,12 @@ export function DocumentWorkspace({
   // advocate has a scope, and the full set is one switch away.
   const activeScope = role === "advocate" ? (scope ?? null) : null;
   const scoped = activeScope !== null && !showAll;
+
+  // The revision limit is the advocate's to see; the client is not told how
+  // many rounds the advocate has left.
+  const cycle = role === "advocate" ? (revisions ?? null) : null;
+  const counter = cycle ? revisionCounter(cycle) : null;
+  const notice = cycle ? revisionNotice(cycle) : null;
 
   // What the panes show. The counts below it are over the whole document
   // (what sign-off checks); every finding needing a decision is in scope, so
@@ -410,6 +425,12 @@ export function DocumentWorkspace({
               <span>{doc.counterpartyName}</span>
               <span aria-hidden className="h-1 w-1 rounded-full bg-line" />
               <span>Draft {doc.version}</span>
+              {counter && (
+                <>
+                  <span aria-hidden className="h-1 w-1 rounded-full bg-line" />
+                  <span>{counter}</span>
+                </>
+              )}
               <span aria-hidden className="h-1 w-1 rounded-full bg-line" />
               <span>
                 {doc.tier ? (
@@ -511,6 +532,16 @@ export function DocumentWorkspace({
             )}
           </div>
         </div>
+
+        {notice && (
+          <div
+            role="status"
+            className="flex items-start gap-2 border-t border-line bg-parchment px-5 py-3 text-meta text-ink md:px-8"
+          >
+            <Icon name="info" size={18} />
+            <span className="max-w-measure">{notice}</span>
+          </div>
+        )}
 
         {activeScope && (
           <ReviewScopePanel
@@ -651,6 +682,7 @@ export function DocumentWorkspace({
                 onWithdrawSource={(citationId, note) =>
                   onWithdrawSource?.(selectedFinding.findingId, citationId, note)
                 }
+                requestBlockedReason={cycle ? revisionBlockedReason(cycle) : null}
                 busy={busy}
               />
             ) : (

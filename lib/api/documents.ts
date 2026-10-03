@@ -13,6 +13,7 @@ import { mockVersions } from "@/lib/mock/versions.mock";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { recheckFindings } from "@/lib/citations";
 import { declaredConflictWith } from "@/lib/conflicts";
+import { revisionBlockedReason, revisionCycle } from "@/lib/revisions";
 import { assignReviewTier } from "@/lib/triage";
 import { declaredConflictNames } from "./advocate";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
@@ -486,9 +487,15 @@ export async function requestChange(
     throw new MockApiError("Could not send this request.");
   }
   const { doc, finding } = findFinding(docId, findingId);
+  // The limit holds whatever the screen offered (FR-20). It stops a round
+  // being started past it; it never stops sign-off.
+  const blocked = revisionBlockedReason(revisionCycle(doc));
+  if (blocked) throw new MockApiError(blocked);
+
+  const now = new Date().toISOString();
   finding.changeRequest = {
     request,
-    requestedAt: new Date().toISOString(),
+    requestedAt: now,
     requestedBy: advocateName,
     response: null,
     respondedAt: null,
@@ -497,6 +504,10 @@ export async function requestChange(
   // the same round does not add another.
   if (doc.status !== "revision") doc.revisionCount += 1;
   doc.status = "revision";
+  // The round that uses the last of them logs the case, once.
+  if (revisionCycle(doc).reached && !doc.corpusReviewLoggedAt) {
+    doc.corpusReviewLoggedAt = now;
+  }
   return structuredClone(doc);
 }
 

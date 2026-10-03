@@ -147,6 +147,13 @@ export interface ContractDocument {
    * claim without one is not a claim the product can make.
    */
   conflictDeclaredAt?: string | null;
+  /**
+   * When the revision limit was reached and the case was logged for corpus
+   * review (FR-20). Set once, when the last round is sent; null or absent
+   * until then. Whether a limit has been reached is read from revisionCount
+   * (lib/revisions.ts), and this is the record that it was logged.
+   */
+  corpusReviewLoggedAt?: string | null;
   settledAt: string | null;
   // ISO timestamp the in-flight analysis resolves at, or null when not
   // analysing. Durable across navigation (QA 4.5) — lib/api/documents.ts

@@ -34,6 +34,8 @@ export interface AuditEntry {
    * revised without saying where.
    */
   clause?: string;
+  /** An entry about the advocate's own working, which the client's trail leaves out. */
+  advocateOnly?: boolean;
 }
 
 export function buildAuditTrail(doc: ContractDocument): AuditEntry[] {
@@ -86,6 +88,18 @@ export function buildAuditTrail(doc: ContractDocument): AuditEntry[] {
       findingId: null,
       ref: null,
       kind: "decision",
+    });
+  }
+
+  if (doc.corpusReviewLoggedAt) {
+    entries.push({
+      at: doc.corpusReviewLoggedAt,
+      actor: "Corpus review log",
+      action: "Revision limit reached · case logged for corpus review",
+      findingId: null,
+      ref: null,
+      kind: "event",
+      advocateOnly: true,
     });
   }
 
@@ -209,7 +223,9 @@ export function clientAuditTrail(doc: ContractDocument): AuditEntry[] {
   // Built from the client's own view of the document, so finding numbers
   // cannot skip over one the client has not been told about.
   const view: ContractDocument = { ...doc, findings: clientVisibleFindings(doc) };
-  const all = buildAuditTrail(view);
+  // The corpus-review log is the advocate's working record, so it is never
+  // the client's, signed off or not.
+  const all = buildAuditTrail(view).filter((entry) => !entry.advocateOnly);
   if (doc.status === "settled" || doc.status === "executed") return all;
 
   const addressed = new Set(
