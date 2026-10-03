@@ -198,15 +198,18 @@ export function clientVersionDiff(
   const toDoc = asDoc(doc, to);
   const diff = diffVersions(from, to);
 
-  // Only findings the client may know about, in either draft, and numbered
-  // the way their own list numbers them.
+  // Only findings the client may know about, in either draft. A finding in
+  // the later draft is numbered the way their own list numbers it. One only
+  // in the earlier draft goes after those, because numbering each draft on
+  // its own gives two different findings the same number.
   const fromVisible = clientVisibleFindings(fromDoc, options);
   const toVisible = clientVisibleFindings(toDoc, options);
   const visibleIds = new Set([...fromVisible, ...toVisible].map((f) => f.findingId));
-  const numbers = {
-    ...findingNumbers({ ...fromDoc, findings: fromVisible }),
-    ...findingNumbers({ ...toDoc, findings: toVisible }),
-  };
+  const numbers = findingNumbers({ ...toDoc, findings: toVisible });
+  let last = toVisible.length;
+  for (const f of fromVisible) {
+    if (!(f.findingId in numbers)) numbers[f.findingId] = String(++last).padStart(2, "0");
+  }
   const visibleChanges = diff.findings.filter((c) => visibleIds.has(c.findingId));
 
   // The clauses a request to the client is about.

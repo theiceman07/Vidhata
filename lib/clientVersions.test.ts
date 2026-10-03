@@ -244,6 +244,33 @@ describe("after sign-off", () => {
   });
 });
 
+describe("numbering findings across two drafts", () => {
+  const rereview = mockDocuments.find((d) => d.id === "doc-employment-rereview")!;
+  const versions = mockVersions.filter((v) => v.documentId === rereview.id);
+
+  it("never gives two different findings the same number", () => {
+    // Finding 2 is in draft 2 only and finding 3 is in both. Numbered draft by
+    // draft, both came out as "02".
+    const rows = diffOf(rereview, versions, 2, 3).findingRows;
+    expect(rows.map((r) => r.clauseReference)).toEqual(["Clause 3.1", "Clause 4.1"]);
+    const numbers = rows.map((r) => r.number);
+    expect(new Set(numbers).size).toBe(numbers.length);
+  });
+
+  it("numbers what is in the later draft as the client's own list does, and the rest after it", () => {
+    const rows = diffOf(rereview, versions, 2, 3).findingRows;
+    // The one still open keeps the number it has on the document page.
+    expect(rows[0]).toEqual(expect.objectContaining({ number: "02", change: "Still open" }));
+    // The one no longer raised comes after every number in the later draft.
+    expect(rows[1]).toEqual(
+      expect.objectContaining({
+        number: "05",
+        change: "No longer raised after your change to this clause",
+      }),
+    );
+  });
+});
+
 describe("the words a client reads", () => {
   it("says why a finding is no longer raised without an internal term", () => {
     expect(plainChange("resolved", "clause_changed", "client_response")).toBe(
