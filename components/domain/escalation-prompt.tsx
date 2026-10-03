@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { CONSULTATION, PRICING_IS_INDICATIVE } from "@/lib/config/pricing";
 
 interface EscalationPromptProps {
   advocateName: string;
@@ -23,6 +24,10 @@ export function EscalationPrompt({
         <Button size="sm" className="mt-3" onClick={onRequestConsultation}>
           Request a consultation with {advocateName}
         </Button>
+        <p className="mt-2 text-label text-muted-fg">
+          {CONSULTATION.label} · {CONSULTATION.price}
+          {PRICING_IS_INDICATIVE && " (indicative)"}
+        </p>
       </div>
     </div>
   );

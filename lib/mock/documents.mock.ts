@@ -192,7 +192,7 @@ const analysingEmployment: ContractDocument = {
   title: "Employment Agreement · Senior Engineer",
   type: "employment",
   status: "analysing",
-  tier: "standard",
+  tier: null,
   orgId: "org-trivandrum-cloud-labs",
   clientName: "Trivandrum Cloud Labs Pvt Ltd",
   counterpartyName: "Individual · Meera Nair",

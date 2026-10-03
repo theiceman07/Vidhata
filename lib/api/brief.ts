@@ -1,4 +1,4 @@
-import type { ContractDocument, ReviewTier } from "@/lib/types";
+import type { ContractDocument } from "@/lib/types";
 import { CONTRACT_TYPES, INDIAN_STATES } from "@/lib/mock/intake-options.mock";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { IntakeInput } from "./documents";
@@ -10,9 +10,9 @@ import { randomDelay } from "./delay";
  * The client describes the deal in a sentence. The real agent reads that
  * into the facts intake needs; until it lands, this mock reads only what
  * the brief plainly states and assumes nothing else. A fact the brief does
- * not state is reported missing, never guessed: the tier in particular is
- * the client's choice (QA 3.2), and the state of execution decides stamp
- * duty. The one default is governing law, the laws of India unless the
+ * not state is reported missing, never guessed: the state of execution
+ * decides stamp duty, so it above all. The review tier is not read at all;
+ * screening assigns it after the first pass. The one default is governing law, the laws of India unless the
  * brief names another, because Vidhata settles Indian contracts; it is
  * shown in intake and on the document.
  */
@@ -26,7 +26,6 @@ export interface BriefReading {
 /** What a draft cannot be started without. */
 export const DRAFT_NEEDS: (keyof IntakeInput)[] = [
   "type",
-  "tier",
   "counterpartyName",
   "transactionValue",
   "durationMonths",
@@ -38,12 +37,6 @@ const TYPE_PATTERNS: [ContractDocument["type"], RegExp][] = [
   ["msa", /\bmsa\b|master services|services agreement|consult(?:ing|ancy)/i],
   ["employment", /employ|\bhir(?:e|ing)\b|offer letter|appointment letter/i],
   ["vendor", /vendor|supplier|supply|purchase|procure/i],
-];
-
-const TIER_PATTERNS: [ReviewTier, RegExp][] = [
-  ["senior", /senior review|senior advocate|senior tier/i],
-  ["enhanced", /enhanced/i],
-  ["standard", /standard review|standard tier/i],
 ];
 
 // Cities people name in place of the state they sit in. Geography only.
@@ -125,8 +118,6 @@ export async function readBrief(brief: string): Promise<BriefReading> {
 
   const type = TYPE_PATTERNS.find(([, re]) => re.test(text))?.[0];
   if (type) found.type = type;
-  const tier = TIER_PATTERNS.find(([, re]) => re.test(text))?.[0];
-  if (tier) found.tier = tier;
   const counterparty = readCounterparty(text);
   if (counterparty) found.counterpartyName = counterparty;
   const value = readValue(text);
@@ -154,7 +145,6 @@ export function intakeFromReading(reading: BriefReading): IntakeInput | null {
   return {
     title: f.title ?? "Untitled",
     type: f.type!,
-    tier: f.tier!,
     clientName: f.clientName ?? MOCK_CLIENT_ORG.name,
     counterpartyName: f.counterpartyName!,
     stateOfExecution: f.stateOfExecution!,

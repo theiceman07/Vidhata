@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { listDocuments, claimDocument, getQueuePriority } from "@/lib/api/documents";
 import { getAdvocateProfile } from "@/lib/api/advocate";
+import { tierLabel } from "@/lib/config/pricing";
 import {
   blockedCitationCount,
   severityCounts,
@@ -557,7 +558,7 @@ function UpNext({
   const shown = pending.slice(0, 3);
   const why =
     doc.status === "pending_review"
-      ? `Unclaimed · ${doc.tier} tier`
+      ? `Unclaimed · ${tierLabel(doc.tier).toLowerCase()}`
       : clientAnswered(doc)
         ? "The client has answered"
         : "Claimed by you";
@@ -922,15 +923,15 @@ function QueueRow({ doc, action }: { doc: ContractDocument; action: React.ReactN
           {doc.clientName}
           <span className="lg:hidden">
             <span className="mx-1.5 text-muted-fg/50">·</span>
-            <span className="capitalize">{doc.tier}</span>
+            {tierLabel(doc.tier)}
             <span className="mx-1.5 text-muted-fg/50">·</span>
             waiting {days} {days === 1 ? "day" : "days"}
           </span>
         </p>
       </div>
 
-      <div role="cell" className="hidden text-meta capitalize text-ink lg:block">
-        {doc.tier}
+      <div role="cell" className="hidden text-meta text-ink lg:block">
+        {tierLabel(doc.tier)}
       </div>
 
       <div role="cell" className="col-span-2 flex items-center gap-3 lg:col-span-1">

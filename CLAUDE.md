@@ -88,7 +88,9 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
   portal it drafts: readBrief() (lib/api/brief.ts) reads what the brief
   states, a complete brief is drafted at once, and an incomplete one opens
   intake pre-filled at the first missing fact. Nothing unstated is
-  guessed, the tier above all. The nav holds Pricing and Sign in only, floats with no strip behind it,
+  guessed, the state of execution above all. The client never picks a
+  tier: screening assigns it after the first pass (lib/triage.ts), and
+  every price lives in lib/config/pricing.ts. The nav holds Pricing and Sign in only, floats with no strip behind it,
   and changes tone with scroll (mark dark bands data-nav-tone="dark").
 - No visible scrollbars anywhere (globals.css).
 - Portals: the rail tucks away like Arc's sidebar. At rest it is a sliver

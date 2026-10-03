@@ -49,7 +49,9 @@ export default function SettingsPage() {
             {MOCK_CLIENT_ORG.id}
           </span>
         </Row>
-        <Row label="Review tier">Chosen per document when you start one.</Row>
+        <Row label="Review tier">
+          Assigned to each document after screening, from its value and risk.
+        </Row>
         <Row label="Billing">
           Not enabled in this preview. No payment is taken.
         </Row>

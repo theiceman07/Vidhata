@@ -25,6 +25,7 @@ import { StateLabel } from "@/components/document/state-label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { getDocument, respondToChanges, startAnalysis } from "@/lib/api/documents";
+import { tierLabel } from "@/lib/config/pricing";
 import type { ContractDocument } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
@@ -155,7 +156,7 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
         </div>
         <dl className="grid grid-cols-[auto_auto] gap-x-4 gap-y-1 text-meta sm:pt-9 sm:text-right">
           <dt className="text-muted-fg">Review</dt>
-          <dd className="capitalize text-ink">{doc.tier}</dd>
+          <dd className="text-ink">{tierLabel(doc.tier)}</dd>
           <dt className="text-muted-fg">Submitted</dt>
           <dd className="text-ink">{format(new Date(doc.createdAt), "d MMM yyyy")}</dd>
         </dl>

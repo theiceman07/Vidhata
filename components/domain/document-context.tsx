@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { Icon } from "@/components/shared/icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listDocuments } from "@/lib/api/documents";
+import { tierLabel } from "@/lib/config/pricing";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { groupOf, yourMove } from "@/lib/moves";
 import type { ContractDocument } from "@/lib/types";
@@ -59,7 +60,7 @@ export function DealOnFile({ doc, className }: { doc: ContractDocument; classNam
   if (doc.transactionValue > 0) rows.push(["Value", rupees.format(doc.transactionValue)]);
   rows.push(["Term", `${doc.durationMonths} months`]);
   if (doc.counterpartyIsMsme) rows.push(["Counterparty", "Registered MSME"]);
-  rows.push(["Review", <span key="tier" className="capitalize">{doc.tier}</span>]);
+  rows.push(["Review", tierLabel(doc.tier)]);
 
   return (
     <ContextPanel title="The deal on file" className={className}>

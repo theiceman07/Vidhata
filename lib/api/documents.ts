@@ -8,6 +8,7 @@ import type {
 import { PIPELINE_DURATION_MS, clauseNumberFromReference } from "@/lib/types";
 import { mockDocuments } from "@/lib/mock/documents.mock";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
+import { assignReviewTier } from "@/lib/triage";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 
 // QA 7.3: tier ordering used to sort the advocate queue, so the pricing
@@ -19,8 +20,10 @@ const TIER_PRIORITY: Record<ReviewTier, number> = {
   standard: 2,
 };
 
+// A document with no tier has not been screened, so it is not in the queue
+// yet; it sorts last rather than ahead of work that is.
 export function getQueuePriority(doc: ContractDocument): number {
-  return TIER_PRIORITY[doc.tier];
+  return doc.tier ? TIER_PRIORITY[doc.tier] : Object.keys(TIER_PRIORITY).length;
 }
 
 // Illustrative flat stamp duty figures for the demo pipeline's output —
@@ -119,12 +122,13 @@ function reconcileAnalysis(doc: ContractDocument): void {
 
   doc.status = "pending_review";
   doc.analysisCompletesAt = null;
+  // Screening assigns the review tier from the deal facts; the client does
+  // not choose it.
+  doc.tier = assignReviewTier(doc);
   // Demo-only: the pipeline has no real drafting/screening logic to run,
   // so a freshly analysed document is seeded with the same representative
   // finding set used in the pending_review fixture (high non-compete,
-  // medium MSMED, low blocked-citation) rather than staying empty. The
-  // tier chosen at intake is preserved — it used to be force-upgraded to
-  // "enhanced" here regardless of what the client selected (QA 3.2).
+  // medium MSMED, low blocked-citation) rather than staying empty.
   doc.findings = structuredClone(
     mockDocuments.find((d) => d.id === "doc-msa-pending")?.findings ?? [],
   ).map((f, i) => ({ ...f, findingId: `${doc.id}-finding-${i}` }));
@@ -184,7 +188,6 @@ export async function getDocument(
 export interface IntakeInput {
   title: string;
   type: ContractDocument["type"];
-  tier: ReviewTier;
   clientName: string;
   counterpartyName: string;
   stateOfExecution: string;
@@ -305,7 +308,7 @@ export async function createDraftDocument(
     title: input.title,
     type: input.type,
     status: "draft",
-    tier: input.tier,
+    tier: null,
     // The mock layer only ever authenticates one client identity, so every
     // document a client creates belongs to that identity's org regardless
     // of the "your company name" text entered in the wizard (that field is

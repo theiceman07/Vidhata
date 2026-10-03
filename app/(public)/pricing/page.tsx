@@ -25,7 +25,7 @@ export default function PricingPage() {
             One fixed price per document.
           </h1>
           <p className="mx-auto mt-6 max-w-xl text-lead text-muted-fg">
-            Priced by review tier. No hourly billing.
+            Priced by review tier, assigned after screening. No hourly billing.
           </p>
         </section>
 

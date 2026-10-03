@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useReducedMotion } from "framer-motion";
+import { TIER_PENDING_LABEL } from "@/lib/config/pricing";
 import { cn } from "@/lib/utils";
 import { Icon, type IconName } from "@/components/shared/icon";
 import {
@@ -328,7 +329,15 @@ export function DocumentWorkspace({
               <span aria-hidden className="h-1 w-1 rounded-full bg-line" />
               <span>Draft {doc.version}</span>
               <span aria-hidden className="h-1 w-1 rounded-full bg-line" />
-              <span><span className="capitalize">{doc.tier}</span> tier</span>
+              <span>
+                {doc.tier ? (
+                  <>
+                    <span className="capitalize">{doc.tier}</span> tier
+                  </>
+                ) : (
+                  `Tier ${TIER_PENDING_LABEL.toLowerCase()}`
+                )}
+              </span>
             </p>
           </div>
 

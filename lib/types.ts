@@ -102,7 +102,11 @@ export interface ContractDocument {
   title: string;
   type: "nda" | "vendor" | "msa" | "employment";
   status: DocumentStatus;
-  tier: ReviewTier;
+  /**
+   * Assigned by screening (lib/triage.ts) once the first pass has run, not
+   * chosen by the client. Null until then.
+   */
+  tier: ReviewTier | null;
   // Mock-layer tenant scoping key (QA 3.5). Set from the session's org at
   // creation time; the client dashboard filters on it. Presentation-only,
   // like everything else in lib/session — a real backend must re-derive
