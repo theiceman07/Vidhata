@@ -11,6 +11,7 @@ import { PIPELINE_DURATION_MS, clauseNumberFromReference } from "@/lib/types";
 import { mockDocuments } from "@/lib/mock/documents.mock";
 import { mockVersions } from "@/lib/mock/versions.mock";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
+import { recheckFindings } from "@/lib/citations";
 import { assignReviewTier } from "@/lib/triage";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 
@@ -123,19 +124,20 @@ function recordVersion(doc: ContractDocument, createdBy: VersionCreatedBy): void
   if (versionStore.some((v) => v.documentId === doc.id && v.number === doc.version)) {
     return;
   }
+  // The citation gate runs again on every draft: each citation on the record
+  // is resolved against the corpus afresh, on the working copy and in the
+  // snapshot alike, so the two agree at the moment of hand-off. A blocked
+  // citation becomes verified only by matching the corpus, and a verified
+  // one that no longer matches becomes blocked. The other layers do not run
+  // here: this mock has no drafting or screening logic of its own.
+  doc.findings = recheckFindings(doc.findings);
+
   const now = new Date().toISOString();
   versionStore.push({
     documentId: doc.id,
     number: doc.version,
     createdAt: now,
     createdBy,
-    // NOT LIVE: the citation gate does not run here. The real pipeline runs
-    // every layer again on each draft and resolves every citation against the
-    // corpus, so a blocked citation can become verified. This only stamps
-    // pipelineRunAt and copies the citation states over, so a state in a
-    // snapshot written here was not freshly checked. The fixtures show what a
-    // real re-check changes. The corpus lookup in D3 (lib/api/citations.ts)
-    // is what this should call.
     pipelineRunAt: now,
     clauses: structuredClone(doc.clauses),
     findings: structuredClone(doc.findings),
