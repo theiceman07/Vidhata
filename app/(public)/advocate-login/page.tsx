@@ -81,15 +81,9 @@ export default function LawyerLoginPage() {
       footer={
         <>
           Not on the panel yet?{" "}
-            <button
-            type="button"
-            onClick={() =>
-              toast.info("Invite requests aren't available in this preview.")
-            }
-            className="text-accent hover:underline"
-          >
-            Request an invite
-          </button>
+          <Link href="/advocate-invite" className="text-accent hover:underline">
+            Request an invitation
+          </Link>
         </>
       }
     >

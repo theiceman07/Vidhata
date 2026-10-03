@@ -22,6 +22,7 @@ const GROUPS = [
     links: [
       { href: "/#advocates", label: "Empanelment" },
       { href: "/advocate-login", label: "Advocate login" },
+      { href: "/advocate-invite", label: "Request an invitation" },
     ],
   },
   {
