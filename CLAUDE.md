@@ -156,6 +156,16 @@ Four systems, each with its own state. Never fold them into one label.
   change this to "the latest snapshot".
 - Finding.source says who raised a finding ("pipeline" or "advocate"). Never
   infer it from the rule id.
+- Claiming: an advocate declares no conflict with either party before every
+  claim (ClaimDialog, from the queue and the review page; claimDocument
+  refuses without it and records conflictDeclaredAt). A name on their own
+  declared conflicts that matches a party stops the claim. The verb stays
+  "Claim", never "Assigned to you".
+- Revisions: the limit is one value, lib/config/revisions.ts, read through
+  revisionCycle() (lib/revisions.ts). At it the case is logged for corpus
+  review (advocate trail only, never the client's), no new round can be
+  requested (the API refuses too), and asking for more in a round already
+  open is still allowed. It never blocks settling or sign-off.
 
 ## Design
 - Fill the screen. Pages use the full width they are given, not a narrow
