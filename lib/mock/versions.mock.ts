@@ -1,5 +1,5 @@
 import type { Clause, DocumentVersion, Finding } from "@/lib/types";
-import { vendorClauses } from "./clauses.mock";
+import { ndaClauses, vendorClauses } from "./clauses.mock";
 import { getMockDocumentById } from "./documents.mock";
 
 /**
@@ -165,4 +165,73 @@ const draft3: DocumentVersion = {
   findings: structuredClone(head.findings),
 };
 
-export const mockVersions: DocumentVersion[] = [draft1, draft2, draft3];
+/**
+ * The history behind doc-nda-settled, a document the advocate has signed
+ * off, so the client may read all of it.
+ *
+ *   Draft 1 · first pass · 2 Aug
+ *     Clause 4.1 gave the term as thirty six months, and the first pass
+ *     flagged that it did not match the 24 months on the deal file.
+ *   Draft 2 · advocate's revision · 4 Aug (the head, as signed off)
+ *     The advocate corrected Clause 4.1 and settled that finding, and added
+ *     a finding of their own on Clause 6.1, which they then overrode.
+ */
+const NDA_ID = "doc-nda-settled";
+
+const ndaHead = getMockDocumentById(NDA_ID);
+if (!ndaHead) {
+  throw new Error(`Fixture ${NDA_ID} is missing, so its history has no head.`);
+}
+
+const ndaTerm = ndaClauses.find((c) => c.id === "cl-nda-6")?.body ?? "";
+if (!ndaTerm.includes("twenty four (24)")) {
+  throw new Error("The NDA term clause has drifted from what its history rewords.");
+}
+const NDA_TERM_DRAFT_1 = ndaTerm.replace("twenty four (24)", "thirty six (36)");
+
+const termMismatchDraft1: Finding = (() => {
+  const finding = structuredClone(
+    ndaHead.findings.find((f) => f.findingId === "find-n1"),
+  );
+  if (!finding) throw new Error("Finding find-n1 is missing from the NDA head.");
+  // As the first pass raised it: quoting the wording it was raised against,
+  // and not yet decided.
+  finding.clauseText = NDA_TERM_DRAFT_1;
+  finding.disposition = "pending";
+  finding.overrideNote = null;
+  finding.resolvedAt = null;
+  return finding;
+})();
+
+const ndaDraft1: DocumentVersion = {
+  documentId: NDA_ID,
+  number: 1,
+  createdAt: "2026-08-02T09:40:00.000Z",
+  createdBy: "first_pass",
+  pipelineRunAt: "2026-08-02T09:39:00.000Z",
+  clauses: ndaClauses.map((c) => ({
+    ...c,
+    findingIds: c.id === "cl-nda-6" ? ["find-n1"] : [],
+    revisedAt: null,
+    body: c.id === "cl-nda-6" ? NDA_TERM_DRAFT_1 : c.body,
+  })),
+  findings: [termMismatchDraft1],
+};
+
+const ndaDraft2: DocumentVersion = {
+  documentId: NDA_ID,
+  number: 2,
+  createdAt: "2026-08-04T12:30:00.000Z",
+  createdBy: "advocate_revision",
+  pipelineRunAt: "2026-08-04T12:11:00.000Z",
+  clauses: structuredClone(ndaHead.clauses),
+  findings: structuredClone(ndaHead.findings),
+};
+
+export const mockVersions: DocumentVersion[] = [
+  draft1,
+  draft2,
+  draft3,
+  ndaDraft1,
+  ndaDraft2,
+];

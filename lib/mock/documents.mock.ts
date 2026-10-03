@@ -23,14 +23,58 @@ const settledNda: ContractDocument = {
   governingLaw: "Laws of India",
   keyTerms: "Mutual confidentiality; 3-year survival on trade secrets.",
   createdAt: "2026-08-02T09:12:00.000Z",
-  version: 1,
+  // Draft 2. Draft 1 and the advocate's revision are in
+  // lib/mock/versions.mock.ts. The advocate corrected the term without
+  // sending it back to the client, so revisionCount stays 0.
+  version: 2,
   revisionCount: 0,
   claimedAt: "2026-08-04T10:05:00.000Z",
   settledAt: "2026-08-05T14:40:00.000Z",
   analysisCompletesAt: null,
   advocate: { id: "adv-1", name: "Rhea Kapoor", bar: "D/1842/2016" },
   clauses: ndaClauses,
-  findings: [],
+  findings: [
+    {
+      // Raised by the first pass against draft 1, which gave the term as
+      // thirty six months. Settled once the advocate corrected the clause.
+      findingId: "find-n1",
+      source: "pipeline",
+      layer: 3,
+      severity: "low",
+      clauseReference: "Clause 4.1",
+      clauseText:
+        "This Agreement commences on the date of last signature and continues for twenty four (24) months, unless terminated earlier by either party on thirty (30) days written notice.",
+      description: "The term in this clause does not match the 24 months on the deal file.",
+      ruleApplied: "TERM-VS-DEAL-ON-FILE-V1",
+      remedySuggested: "State the term the deal file gives: 24 months.",
+      citations: [],
+      disposition: "confirmed",
+      overrideNote:
+        "Confirmed. The term is corrected to 24 months to match the deal on file.",
+      resolvedAt: "2026-08-04T12:10:00.000Z",
+      changeRequest: null,
+    },
+    {
+      // Added by the advocate in review, and decided in the same sitting.
+      findingId: "find-n2",
+      source: "advocate",
+      layer: 6,
+      severity: "low",
+      clauseReference: "Clause 6.1",
+      clauseText:
+        "On written request, the receiving party shall return or destroy all materials containing Confidential Information and shall confirm in writing that it has done so, save for one copy which may be retained solely for the purpose of demonstrating compliance with this Agreement.",
+      description:
+        "The retained copy is for showing compliance only. The clause does not say who may open it or for how long it may be kept.",
+      ruleApplied: "MANUAL-ADVOCATE-ADDED",
+      remedySuggested: "Advocate judgment · see the concern above.",
+      citations: [],
+      disposition: "overridden",
+      overrideNote:
+        "Overridden. The clause stands as drafted; the advocate judged the retained copy acceptable here.",
+      resolvedAt: "2026-08-04T12:25:00.000Z",
+      changeRequest: null,
+    },
+  ],
   executionSteps: [
     {
       kind: "stamping",

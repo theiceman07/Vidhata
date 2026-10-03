@@ -1,3 +1,4 @@
+import { SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF } from "@/lib/config/visibility";
 import type {
   Citation,
   ContractDocument,
@@ -57,8 +58,14 @@ export function findingsWithClient(doc: ContractDocument): Finding[] {
  * not know about. The advocate portal reads doc.findings and keeps the full
  * picture.
  */
-export function clientVisibleFindings(doc: ContractDocument): Finding[] {
-  if (doc.status === "settled" || doc.status === "executed") return doc.findings;
+export function clientVisibleFindings(
+  doc: ContractDocument,
+  options: { advocateAddedAfterSignOff?: boolean } = {},
+): Finding[] {
+  const signedOff = doc.status === "settled" || doc.status === "executed";
+  const advocateAddedAfterSignOff =
+    options.advocateAddedAfterSignOff ?? SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF;
+  if (signedOff && advocateAddedAfterSignOff) return doc.findings;
   return doc.findings.filter((f) => f.source === "pipeline" || f.changeRequest !== null);
 }
 

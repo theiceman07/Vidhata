@@ -55,8 +55,9 @@ export const ndaClauses: Clause[] = [
     number: "4.1",
     heading: "Term",
     body: "This Agreement commences on the date of last signature and continues for twenty four (24) months, unless terminated earlier by either party on thirty (30) days written notice.",
-    findingIds: [],
-    revisedAt: null,
+    findingIds: ["find-n1"],
+    // The advocate's correction in draft 2. Draft 1 said thirty six (36).
+    revisedAt: "2026-08-04T12:10:00.000Z",
   },
   {
     id: "cl-nda-7",
@@ -79,7 +80,7 @@ export const ndaClauses: Clause[] = [
     number: "6.1",
     heading: "Return of materials",
     body: "On written request, the receiving party shall return or destroy all materials containing Confidential Information and shall confirm in writing that it has done so, save for one copy which may be retained solely for the purpose of demonstrating compliance with this Agreement.",
-    findingIds: [],
+    findingIds: ["find-n2"],
     revisedAt: null,
   },
   {

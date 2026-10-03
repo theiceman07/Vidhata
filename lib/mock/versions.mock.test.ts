@@ -45,14 +45,38 @@ describe("the vendor agreement's history", () => {
   });
 
   it("numbers the drafts in order, and the head is the latest draft", () => {
-    expect(mockVersions.map((v) => v.number)).toEqual([1, 2, 3]);
-    expect(mockVersions.map((v) => v.createdBy)).toEqual([
+    const history = mockVersions.filter((v) => v.documentId === "doc-vendor-revision");
+    expect(history.map((v) => v.number)).toEqual([1, 2, 3]);
+    expect(history.map((v) => v.createdBy)).toEqual([
       "first_pass",
       "client_response",
       "advocate_revision",
     ]);
     expect(vendor.version).toBe(draft3.number);
     expect(vendor.revisionCount).toBe(2);
+  });
+});
+
+describe("the settled NDA's history", () => {
+  const nda = mockDocuments.find((d) => d.id === "doc-nda-settled")!;
+  const [first, second] = mockVersions.filter((v) => v.documentId === "doc-nda-settled");
+
+  it("has two drafts, and the head is the second", () => {
+    expect([first.number, second.number]).toEqual([1, 2]);
+    expect([first.createdBy, second.createdBy]).toEqual(["first_pass", "advocate_revision"]);
+    expect(nda.version).toBe(second.number);
+    expect(nda.status).toBe("settled");
+  });
+
+  it("shows a changed clause, a settled finding and an advocate-added one", () => {
+    const diff = diffVersions(first, second);
+    expect(changed(diff)).toEqual(["4.1 changed"]);
+    expect(findingsOf(diff)).toEqual(["find-n1 resolved (settled)", "find-n2 new"]);
+  });
+
+  it("gives every finding in the settled head a disposition", () => {
+    expect(nda.findings.map((f) => f.disposition)).toEqual(["confirmed", "overridden"]);
+    expect(nda.findings.map((f) => f.source)).toEqual(["pipeline", "advocate"]);
   });
 });
 
