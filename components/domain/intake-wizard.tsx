@@ -20,7 +20,8 @@ import {
 import { createDraftDocument } from "@/lib/api/documents";
 import { DRAFT_NEEDS, readBrief } from "@/lib/api/brief";
 import { BRIEF_KEY } from "@/components/marketing/deal-prompt";
-import { CONTRACT_TYPES, INDIAN_STATES } from "@/lib/mock/intake-options.mock";
+import { ContractTypePicker } from "@/components/domain/contract-type-picker";
+import { INDIAN_STATES } from "@/lib/mock/intake-options.mock";
 import { cn } from "@/lib/utils";
 
 const intakeSchema = z.object({
@@ -43,13 +44,8 @@ const intakeSchema = z.object({
 type IntakeFormValues = z.infer<typeof intakeSchema>;
 
 const STEP_FIELDS: (keyof IntakeFormValues)[][] = [
-  [
-    "title",
-    "type",
-    "clientName",
-    "counterpartyName",
-    "counterpartyIsMsme",
-  ],
+  ["type"],
+  ["title", "clientName", "counterpartyName", "counterpartyIsMsme"],
   [
     "transactionValue",
     "durationMonths",
@@ -59,7 +55,7 @@ const STEP_FIELDS: (keyof IntakeFormValues)[][] = [
   ["keyTerms"],
 ];
 
-const STEP_LABELS = ["Deal basics", "Transaction details", "Key terms"];
+const STEP_LABELS = ["Contract type", "Deal basics", "Transaction details", "Key terms"];
 
 export function IntakeWizard() {
   const router = useRouter();
@@ -80,7 +76,8 @@ export function IntakeWizard() {
     resolver: zodResolver(intakeSchema),
     defaultValues: {
       title: "",
-      type: "nda",
+      // No default type: the client chooses it, and a brief that states it
+      // fills it in. Nothing unstated is guessed.
       clientName: "",
       counterpartyName: "",
       counterpartyIsMsme: false,
@@ -190,7 +187,15 @@ export function IntakeWizard() {
   }
 
   return (
-    <div className="grid max-w-5xl gap-x-16 gap-y-8 md:grid-cols-[minmax(0,14rem)_minmax(0,32rem)]">
+    <div
+      className={cn(
+        "grid max-w-5xl gap-x-16 gap-y-8",
+        // The picker lists the whole catalogue, so its step gets more room.
+        step === 0
+          ? "md:grid-cols-[minmax(0,14rem)_minmax(0,44rem)]"
+          : "md:grid-cols-[minmax(0,14rem)_minmax(0,32rem)]",
+      )}
+    >
       {/* The steps are a schedule down the margin, not a row of numbered
           discs: the same notation the rest of the product uses to say
           where you are. */}
@@ -233,6 +238,14 @@ export function IntakeWizard() {
           </p>
         )}
         {step === 0 && (
+          <ContractTypePicker
+            value={values.type}
+            onChange={(type) => setValue("type", type, { shouldValidate: true })}
+            error={errors.type?.message}
+          />
+        )}
+
+        {step === 1 && (
           <>
             <div>
               <Label htmlFor="title">Deal name</Label>
@@ -246,26 +259,6 @@ export function IntakeWizard() {
                   {errors.title.message}
                 </p>
               )}
-            </div>
-            <div>
-              <Label htmlFor="type">Contract type</Label>
-              <Select
-                value={values.type}
-                onValueChange={(v) =>
-                  setValue("type", v as IntakeFormValues["type"])
-                }
-              >
-                <SelectTrigger id="type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CONTRACT_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>
-                      {t.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
             <div>
               <Label htmlFor="clientName">Your company name</Label>
@@ -307,7 +300,7 @@ export function IntakeWizard() {
           </>
         )}
 
-        {step === 1 && (
+        {step === 2 && (
           <>
             <div>
               <Label htmlFor="transactionValue">
@@ -376,7 +369,7 @@ export function IntakeWizard() {
           </>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <div>
             <Label htmlFor="keyTerms">Key terms (optional)</Label>
             <Textarea
