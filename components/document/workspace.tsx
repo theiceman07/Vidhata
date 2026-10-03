@@ -23,7 +23,10 @@ import {
   type Blocker,
 } from "@/lib/findings";
 import { buildAuditTrail } from "@/lib/audit";
+import type { ReviewScope } from "@/lib/reviewScope";
 import type { ContractDocument, MarginNotes } from "@/lib/types";
+import { ReviewScopePanel } from "@/components/domain/review-scope-panel";
+import { ReviewScopeProvider } from "./review-scope-context";
 import { StateLabel } from "./state-label";
 import { SeverityCounts } from "./severity";
 import { ClauseIndex } from "./clause-index";
@@ -63,6 +66,7 @@ export function DocumentWorkspace({
   onRequestChange,
   onWithdrawSource,
   notes,
+  scope,
   busy = false,
 }: {
   doc: ContractDocument;
@@ -96,6 +100,11 @@ export function DocumentWorkspace({
   onWithdrawSource?: (findingId: string, citationId: string, note: string) => void | Promise<void>;
   /** The advocate's own margin notes. Never passed on the client's side. */
   notes?: MarginNotes;
+  /**
+   * What the last round changed, for an advocate re-reviewing a draft. Read
+   * only on the advocate's side, whatever is passed; null on a first review.
+   */
+  scope?: ReviewScope | null;
   busy?: boolean;
 }) {
   const reduced = useReducedMotion();
@@ -108,16 +117,38 @@ export function DocumentWorkspace({
   const [activityOpen, setActivityOpen] = useState(false);
   const [indexOpen, setIndexOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   // Display ordinals, fixed by the order the pipeline raised the
   // findings, so "finding 04" means one thing across every pane.
   const findingNumbers = useMemo(() => numberFindings(doc), [doc]);
 
+  // The re-review is scoped to what the last round changed. Only an
+  // advocate has a scope, and the full set is one switch away.
+  const activeScope = role === "advocate" ? (scope ?? null) : null;
+  const scoped = activeScope !== null && !showAll;
+
+  // What the panes show. The counts below it are over the whole document
+  // (what sign-off checks); every finding needing a decision is in scope, so
+  // the two never disagree. Numbers, detail and the trail keep using `doc`.
+  const view = useMemo<ContractDocument>(() => {
+    if (!activeScope || showAll) return doc;
+    const keep = new Set(activeScope.inScope);
+    return {
+      ...doc,
+      findings: doc.findings.filter((f) => keep.has(f.findingId)),
+      clauses: doc.clauses.map((c) => ({
+        ...c,
+        findingIds: c.findingIds.filter((id) => keep.has(id)),
+      })),
+    };
+  }, [doc, activeScope, showAll]);
+
   const selectedFinding =
     doc.findings.find((f) => f.findingId === selectedFindingId) ?? null;
   const unsettled = unsettledFindings(doc);
   const withClient = findingsWithClient(doc).length;
-  const blockedFindings = doc.findings.filter(
+  const blockedFindings = view.findings.filter(
     (f) => blockingCitations(f).length > 0,
   );
   const panel = selectedFinding ? "finding" : activityOpen ? "activity" : null;
@@ -148,9 +179,31 @@ export function DocumentWorkspace({
   // always describe the same place.
   const selectFinding = useCallback(
     (findingId: string) => {
+      // A link to a finding the scoped view hides (the agent's, a sign-off
+      // blocker, a URL) shows everything rather than going nowhere.
+      if (activeScope?.tags[findingId] === "carried_forward") setShowAll(true);
       setSelectedFindingId(findingId);
       const clause = doc.clauses.find((c) => c.findingIds.includes(findingId));
       if (clause) scrollToClause(clause.id, !panelOpenRef.current);
+    },
+    [doc.clauses, scrollToClause, activeScope],
+  );
+
+  const changeShowAll = useCallback(
+    (next: boolean) => {
+      setShowAll(next);
+      // Narrowing again puts down a finding the scoped view does not hold.
+      if (!next && selectedFindingId && activeScope?.tags[selectedFindingId] === "carried_forward") {
+        setSelectedFindingId(null);
+      }
+    },
+    [activeScope, selectedFindingId],
+  );
+
+  const goToClauseNumber = useCallback(
+    (clauseNumber: string) => {
+      const clause = doc.clauses.find((c) => c.number === clauseNumber);
+      if (clause) scrollToClause(clause.id);
     },
     [doc.clauses, scrollToClause],
   );
@@ -168,8 +221,8 @@ export function DocumentWorkspace({
 
   const stepFinding = useCallback(
     (direction: 1 | -1) => {
-      if (doc.findings.length === 0) return;
-      const ids = doc.findings.map((f) => f.findingId);
+      if (view.findings.length === 0) return;
+      const ids = view.findings.map((f) => f.findingId);
       if (!selectedFindingId) {
         selectFinding(direction === 1 ? ids[0] : ids[ids.length - 1]);
         return;
@@ -177,7 +230,7 @@ export function DocumentWorkspace({
       const at = ids.indexOf(selectedFindingId);
       selectFinding(ids[(at + direction + ids.length) % ids.length]);
     },
-    [doc.findings, selectedFindingId, selectFinding],
+    [view.findings, selectedFindingId, selectFinding],
   );
 
   const closePanel = useCallback(() => {
@@ -224,7 +277,7 @@ export function DocumentWorkspace({
       }
 
       const key = e.key.toLowerCase();
-      if (doc.findings.length > 0 && (key === "j" || key === "k")) {
+      if (view.findings.length > 0 && (key === "j" || key === "k")) {
         e.preventDefault();
         stepFinding(key === "j" ? 1 : -1);
         return;
@@ -242,7 +295,7 @@ export function DocumentWorkspace({
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [doc.findings.length, panel, closePanel, stepFinding, canAdjudicate, selectedFinding, onSettle]);
+  }, [view.findings.length, panel, closePanel, stepFinding, canAdjudicate, selectedFinding, onSettle]);
 
   const paletteCommands = useMemo<PaletteCommand[]>(() => {
     const clauseCommands: PaletteCommand[] = doc.clauses.map((clause) => ({
@@ -253,7 +306,7 @@ export function DocumentWorkspace({
       searchText: clause.body,
       onSelect: () => scrollToClause(clause.id),
     }));
-    const findingCommands: PaletteCommand[] = doc.findings.map((f) => ({
+    const findingCommands: PaletteCommand[] = view.findings.map((f) => ({
       id: `finding-${f.findingId}`,
       group: "Findings",
       label: `Finding ${findingNumbers[f.findingId]} · ${f.clauseReference} · ${f.description}`,
@@ -267,7 +320,7 @@ export function DocumentWorkspace({
       onSelect: () => selectFinding(f.findingId),
     }));
     const documentCommands: PaletteCommand[] = [
-      ...(doc.findings.length > 0
+      ...(view.findings.length > 0
         ? [
             {
               id: "next-finding",
@@ -297,15 +350,38 @@ export function DocumentWorkspace({
           setActivityOpen(true);
         },
       },
+      ...(activeScope
+        ? [
+            {
+              id: "show-all-findings",
+              group: "Document",
+              label: showAll ? "Show this round's findings" : "Show all findings",
+              icon: "visibility" as IconName,
+              onSelect: () => changeShowAll(!showAll),
+            },
+          ]
+        : []),
     ];
     return [...(commands ?? []), ...documentCommands, ...findingCommands, ...clauseCommands];
-  }, [doc, findingNumbers, commands, scrollToClause, selectFinding, stepFinding]);
+  }, [
+    doc.clauses,
+    view.findings,
+    findingNumbers,
+    commands,
+    activeScope,
+    showAll,
+    changeShowAll,
+    scrollToClause,
+    selectFinding,
+    stepFinding,
+  ]);
 
   useRegisterCommands("workspace", paletteCommands);
 
   const counts = severityCounts(unsettled);
 
   return (
+    <ReviewScopeProvider value={activeScope}>
     <div className="flex h-full min-h-0 flex-col">
       <header className="border-b border-line bg-paper">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4 md:px-8">
@@ -366,11 +442,13 @@ export function DocumentWorkspace({
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line bg-paper px-5 py-3 md:px-8">
           <span className="flex items-center gap-3">
             <span className="text-meta text-muted-fg">
-              {doc.findings.length === 0
-                ? "No findings raised"
+              {view.findings.length === 0
+                ? scoped
+                  ? "No findings in this round"
+                  : "No findings raised"
                 : unsettled.length === 0
-                  ? `All ${doc.findings.length} findings settled`
-                  : `${unsettled.length} of ${doc.findings.length} findings undecided`}
+                  ? `All ${view.findings.length} findings ${scoped ? "in this round " : ""}settled`
+                  : `${unsettled.length} of ${view.findings.length} findings ${scoped ? "in this round " : ""}undecided`}
             </span>
             {unsettled.length > 0 && <SeverityCounts counts={counts} />}
           </span>
@@ -427,6 +505,18 @@ export function DocumentWorkspace({
             )}
           </div>
         </div>
+
+        {activeScope && (
+          <ReviewScopePanel
+            scope={activeScope}
+            findings={doc.findings}
+            findingNumbers={findingNumbers}
+            showAll={showAll}
+            onShowAllChange={changeShowAll}
+            onGoToClause={goToClauseNumber}
+            onOpenFinding={selectFinding}
+          />
+        )}
       </header>
 
       <div className="lg:hidden">
@@ -459,8 +549,8 @@ export function DocumentWorkspace({
           )}
         >
           <ClauseIndex
-            clauses={doc.clauses}
-            findings={doc.findings}
+            clauses={view.clauses}
+            findings={view.findings}
             findingNumbers={findingNumbers}
             activeClauseId={activeClauseId}
             selectedFindingId={selectedFindingId}
@@ -479,7 +569,7 @@ export function DocumentWorkspace({
         {/* Centre · the contract. */}
         <main className="min-w-0 bg-paper lg:overflow-y-auto">
           <DocumentSurface
-            doc={doc}
+            doc={view}
             findingNumbers={findingNumbers}
             selectedFindingId={selectedFindingId}
             hoveredFindingId={hoveredFindingId}
@@ -502,10 +592,7 @@ export function DocumentWorkspace({
             )}
           >
             {companion({
-              goToClause: (n) => {
-                const clause = doc.clauses.find((c) => c.number === n);
-                if (clause) scrollToClause(clause.id);
-              },
+              goToClause: goToClauseNumber,
               openFinding: selectFinding,
             })}
           </aside>
@@ -528,8 +615,12 @@ export function DocumentWorkspace({
                   <PaneButton icon="keyboard_arrow_up" label="Previous finding" onClick={() => stepFinding(-1)} />
                   <PaneButton icon="keyboard_arrow_down" label="Next finding" onClick={() => stepFinding(1)} />
                   <span className="ml-1 font-mono text-label text-muted-fg">
-                    {findingNumbers[selectedFinding.findingId]} of{" "}
-                    {String(doc.findings.length).padStart(2, "0")}
+                    {scoped
+                      ? String(
+                          view.findings.findIndex((f) => f.findingId === selectedFinding.findingId) + 1,
+                        ).padStart(2, "0")
+                      : findingNumbers[selectedFinding.findingId]}{" "}
+                    of {String(view.findings.length).padStart(2, "0")}
                   </span>
                 </div>
               ) : (
@@ -569,6 +660,7 @@ export function DocumentWorkspace({
         )}
       </div>
     </div>
+    </ReviewScopeProvider>
   );
 }
 

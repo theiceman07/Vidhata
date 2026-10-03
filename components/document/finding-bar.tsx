@@ -5,6 +5,8 @@ import { blockingCitations, findingState } from "@/lib/findings";
 import type { Finding } from "@/lib/types";
 import { AddedByLabel } from "./added-by-label";
 import { FindingRule } from "./finding-rule";
+import { useReviewScope } from "./review-scope-context";
+import { ScopeTagLabel } from "./scope-tag-label";
 import { SeverityMark } from "./severity";
 import { StateLabel } from "./state-label";
 
@@ -37,6 +39,7 @@ export function FindingBar({
   const state = findingState(finding);
   const settled = state === "settled";
   const blocked = blockingCitations(finding).length > 0;
+  const tag = useReviewScope()?.tags[finding.findingId];
 
   return (
     <button
@@ -61,6 +64,7 @@ export function FindingBar({
         <StateLabel state={state} />
         {blocked && <StateLabel state="citation_blocked" />}
         {finding.source === "advocate" && <AddedByLabel />}
+        {tag && <ScopeTagLabel tag={tag} />}
       </span>
 
       <span

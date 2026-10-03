@@ -15,6 +15,7 @@ import {
   addFinding,
   claimDocument,
   getDocument,
+  getDocumentVersions,
   requestChange,
   updateFinding,
   withdrawCitation,
@@ -23,7 +24,13 @@ import { getAdvocateProfile } from "@/lib/api/advocate";
 import { addNote, deleteNote, listNotes, updateNote } from "@/lib/api/notes";
 import { findingNumbers, signOffBlockers } from "@/lib/findings";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
-import type { AdvocateNote, ContractDocument, MarginNotes } from "@/lib/types";
+import { reviewScope } from "@/lib/reviewScope";
+import type {
+  AdvocateNote,
+  ContractDocument,
+  DocumentVersion,
+  MarginNotes,
+} from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -39,19 +46,22 @@ export default function ReviewPage() {
   const [claiming, setClaiming] = useState(false);
   const [available, setAvailable] = useState(true);
   const [notes, setNotes] = useState<AdvocateNote[]>([]);
+  const [versions, setVersions] = useState<DocumentVersion[]>([]);
 
   const load = useCallback(async () => {
     setState("loading");
     try {
-      const [result, profile, ownNotes] = await Promise.all([
+      const [result, profile, ownNotes, drafts] = await Promise.all([
         getDocument(params.id),
         getAdvocateProfile(),
         listNotes(params.id, CURRENT_ADVOCATE.id),
+        getDocumentVersions(params.id),
       ]);
       if (!result) throw new Error("Document not found.");
       setDoc(result);
       setAvailable(profile.available);
       setNotes(ownNotes);
+      setVersions(drafts);
       setState("loaded");
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Could not load this document.");
@@ -220,6 +230,13 @@ export default function ReviewPage() {
     [doc],
   );
 
+  // A re-review is scoped to what the last round changed. A first review has
+  // no earlier draft, and a signed-off document has nothing left to decide.
+  const scope = useMemo(() => {
+    if (!doc || doc.status === "settled" || doc.status === "executed") return null;
+    return reviewScope(doc, versions);
+  }, [doc, versions]);
+
   const commands = useMemo<PaletteCommand[]>(() => {
     if (!doc) return [];
     const list: PaletteCommand[] = [];
@@ -308,6 +325,7 @@ export default function ReviewPage() {
       commands={commands}
       initialFindingId={initialFindingId}
       notes={marginNotes}
+      scope={scope}
       companion={({ goToClause, openFinding }) => (
         <ReviewAgent
           doc={doc}

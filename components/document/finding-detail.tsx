@@ -15,6 +15,9 @@ import { buildAuditTrail } from "@/lib/audit";
 import type { ContractDocument, Finding } from "@/lib/types";
 import { PIPELINE_LAYERS, clauseNumberFromReference } from "@/lib/types";
 import { AddedByLabel } from "./added-by-label";
+import { useReviewScope } from "./review-scope-context";
+import { ScopeTagLabel } from "./scope-tag-label";
+import { scopeNote } from "@/lib/reviewScope";
 import { StateLabel } from "./state-label";
 import { SeverityMark } from "./severity";
 import { CitationBlock } from "./citation-block";
@@ -110,6 +113,7 @@ export function FindingDetail({
   const state = findingState(finding);
   const settled = state === "settled";
   const blocked = blockingCitations(finding).length > 0;
+  const tag = useReviewScope()?.tags[finding.findingId];
   const needsNote = settleNeedsNote(finding);
   const clauseNumber = clauseNumberFromReference(finding.clauseReference);
   const clause = doc.clauses.find((c) => c.number === clauseNumber);
@@ -154,7 +158,11 @@ export function FindingDetail({
             <StateLabel state={state} />
             {blocked && <StateLabel state="citation_blocked" />}
             {finding.source === "advocate" && <AddedByLabel />}
+            {tag && <ScopeTagLabel tag={tag} />}
           </div>
+          {tag && (
+            <p className="mt-2 text-meta text-muted-fg">{scopeNote(tag, settled)}</p>
+          )}
           <p className="mt-3 text-body text-ink">{finding.description}</p>
         </header>
 

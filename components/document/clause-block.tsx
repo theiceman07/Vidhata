@@ -3,9 +3,11 @@
 import { cn } from "@/lib/utils";
 import { findingState } from "@/lib/findings";
 import type { Clause, Finding, MarginNotes } from "@/lib/types";
+import { Icon } from "@/components/shared/icon";
 import { FindingBar } from "./finding-bar";
 import { AddMarginNote, MarginNote } from "./margin-note";
 import { MarginMark } from "./margin-mark";
+import { useReviewScope } from "./review-scope-context";
 
 /**
  * How a quoted span reads, by the state of the finding that quotes it.
@@ -118,6 +120,8 @@ export function ClauseBlock({
 }) {
   const paragraphs = clause.body.split("\n\n");
   const revised = clause.revisedAt !== null;
+  const scope = useReviewScope();
+  const changed = scope?.changedClauses.find((c) => c.number === clause.number);
   const holdsSelection = findings.some((f) => f.findingId === selectedFindingId);
   const emphasised = hoveredFindingId ?? selectedFindingId;
 
@@ -152,6 +156,12 @@ export function ClauseBlock({
               <span className="inline-flex items-center gap-1 text-label text-accent">
                 <MarginMark kind="human" />
                 Revised by advocate
+              </span>
+            )}
+            {scope && changed && (
+              <span className="inline-flex items-center gap-1 text-label text-muted-fg">
+                <Icon name={changed.kind === "added" ? "add" : "edit"} size={16} />
+                {changed.kind === "added" ? "Added" : "Changed"} since {scope.baselineLabel}
               </span>
             )}
           </div>
