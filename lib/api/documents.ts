@@ -129,9 +129,13 @@ function recordVersion(doc: ContractDocument, createdBy: VersionCreatedBy): void
     number: doc.version,
     createdAt: now,
     createdBy,
-    // Mock: the real pipeline runs every layer again here and re-checks every
-    // citation against the corpus. This stamps the run and carries the
-    // citation states over; the fixtures show what a real re-check changes.
+    // NOT LIVE: the citation gate does not run here. The real pipeline runs
+    // every layer again on each draft and resolves every citation against the
+    // corpus, so a blocked citation can become verified. This only stamps
+    // pipelineRunAt and copies the citation states over, so a state in a
+    // snapshot written here was not freshly checked. The fixtures show what a
+    // real re-check changes. The corpus lookup in D3 (lib/api/citations.ts)
+    // is what this should call.
     pipelineRunAt: now,
     clauses: structuredClone(doc.clauses),
     findings: structuredClone(doc.findings),
