@@ -56,8 +56,10 @@ export function CoveragePanel({
       <p className="mt-6 text-label text-muted-fg">The same for every document</p>
       <div className="mt-3 grid gap-6 lg:grid-cols-3">
         <CoverageList title="Checks run · Layer 2" items={COVERAGE.statutory} />
+        {/* Non-breaking spaces keep "Layers 3 and 4" together, so the heading
+            wraps before it rather than leaving the 4 on a line of its own. */}
         <CoverageList
-          title="Cross-clause checks · Layers 3 and 4"
+          title={"Cross-clause checks · Layers 3 and 4"}
           items={COVERAGE.crossClause}
         />
         <CoverageList title="Out of scope" items={COVERAGE.outOfScope} />

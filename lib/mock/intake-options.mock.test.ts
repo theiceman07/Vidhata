@@ -13,6 +13,30 @@ describe("the contract catalogue", () => {
     ).toEqual([4, 4, 4, 4, 3]);
   });
 
+  it("names every type as the source list does, in order", () => {
+    expect(CONTRACT_CATALOGUE.map((e) => e.label)).toEqual([
+      "Vendor / Supplier Agreement",
+      "Service Level Agreement (SLA)",
+      "Master Services Agreement (MSA)",
+      "Distributor / Dealership Agreement",
+      "Non-Disclosure Agreement (NDA)",
+      "Co-Founder / Founders' Agreement",
+      "Partnership Deed",
+      "Joint Venture Agreement (JVA)",
+      "Employment Contract / Appointment Letter",
+      "Independent Consultant / Freelancer Agreement",
+      "Non-Compete & Non-Solicitation Agreement",
+      "Employee Stock Option Plan (ESOP) Agreement",
+      "Shareholders' Agreement (SHA)",
+      "Term Sheet / Investment Agreement",
+      "Loan / Debt Agreement",
+      "Inter-creditor / Hypothecation Agreement",
+      "Commercial Lease / Rental Agreement",
+      "Leave and License Agreement",
+      "Equipment Lease Agreement",
+    ]);
+  });
+
   it("gives every type its own id", () => {
     const ids = CONTRACT_CATALOGUE.map((e) => e.id);
     expect(new Set(ids).size).toBe(ids.length);

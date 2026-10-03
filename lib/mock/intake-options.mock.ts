@@ -9,8 +9,9 @@ import type { ContractDocument } from "@/lib/types";
  * document is called (`draftLabel`). A type that is not available is shown,
  * disabled, as "Coming soon".
  *
- * The names are the catalogue's own. Check them against the source before
- * this ships.
+ * The names are the source list's own. Its group boundaries were read from
+ * the order of the entries (4, 4, 4, 4, 3 under the five headings), not from
+ * an explicit marker, so confirm them against the original document.
  */
 export type ContractGroupId =
   | "commercial"
@@ -34,7 +35,7 @@ export const CONTRACT_GROUPS: ContractGroup[] = [
 
 interface ContractTypeBase {
   id: string;
-  /** As the catalogue names it. */
+  /** As the source list names it. */
   label: string;
   group: ContractGroupId;
 }
@@ -51,16 +52,21 @@ export const CONTRACT_CATALOGUE: ContractTypeOption[] = [
   // Commercial and sales
   {
     id: "vendor",
-    label: "Vendor/Supplier",
+    label: "Vendor / Supplier Agreement",
     group: "commercial",
     available: true,
     draftType: "vendor",
     draftLabel: "Vendor agreement",
   },
-  { id: "sla", label: "SLA", group: "commercial", available: false },
+  {
+    id: "sla",
+    label: "Service Level Agreement (SLA)",
+    group: "commercial",
+    available: false,
+  },
   {
     id: "msa",
-    label: "MSA",
+    label: "Master Services Agreement (MSA)",
     group: "commercial",
     available: true,
     draftType: "msa",
@@ -68,7 +74,7 @@ export const CONTRACT_CATALOGUE: ContractTypeOption[] = [
   },
   {
     id: "distributor",
-    label: "Distributor/Dealership",
+    label: "Distributor / Dealership Agreement",
     group: "commercial",
     available: false,
   },
@@ -76,7 +82,7 @@ export const CONTRACT_CATALOGUE: ContractTypeOption[] = [
   // Corporate and confidentiality
   {
     id: "nda",
-    label: "NDA",
+    label: "Non-Disclosure Agreement (NDA)",
     group: "corporate",
     available: true,
     draftType: "nda",
@@ -84,14 +90,14 @@ export const CONTRACT_CATALOGUE: ContractTypeOption[] = [
   },
   {
     id: "cofounder",
-    label: "Co-Founder/Founders' Agreement",
+    label: "Co-Founder / Founders' Agreement",
     group: "corporate",
     available: false,
   },
   { id: "partnership", label: "Partnership Deed", group: "corporate", available: false },
   {
     id: "joint-venture",
-    label: "Joint Venture Agreement",
+    label: "Joint Venture Agreement (JVA)",
     group: "corporate",
     available: false,
   },
@@ -99,7 +105,7 @@ export const CONTRACT_CATALOGUE: ContractTypeOption[] = [
   // HR and employment
   {
     id: "employment",
-    label: "Employment Contract/Appointment Letter",
+    label: "Employment Contract / Appointment Letter",
     group: "hr",
     available: true,
     draftType: "employment",
@@ -107,35 +113,45 @@ export const CONTRACT_CATALOGUE: ContractTypeOption[] = [
   },
   {
     id: "consultant",
-    label: "Independent Consultant/Freelancer",
+    label: "Independent Consultant / Freelancer Agreement",
     group: "hr",
     available: false,
   },
   {
     id: "non-compete",
-    label: "Non-Compete & Non-Solicitation",
+    label: "Non-Compete & Non-Solicitation Agreement",
     group: "hr",
     available: false,
   },
-  { id: "esop", label: "ESOP Agreement", group: "hr", available: false },
+  {
+    id: "esop",
+    label: "Employee Stock Option Plan (ESOP) Agreement",
+    group: "hr",
+    available: false,
+  },
 
   // Financial and investment
   {
     id: "shareholders",
-    label: "Shareholders' Agreement",
+    label: "Shareholders' Agreement (SHA)",
     group: "financial",
     available: false,
   },
   {
     id: "term-sheet",
-    label: "Term Sheet/Investment Agreement",
+    label: "Term Sheet / Investment Agreement",
     group: "financial",
     available: false,
   },
-  { id: "loan", label: "Loan/Debt Agreement", group: "financial", available: false },
+  {
+    id: "loan",
+    label: "Loan / Debt Agreement",
+    group: "financial",
+    available: false,
+  },
   {
     id: "hypothecation",
-    label: "Inter-creditor/Hypothecation",
+    label: "Inter-creditor / Hypothecation Agreement",
     group: "financial",
     available: false,
   },
@@ -143,12 +159,22 @@ export const CONTRACT_CATALOGUE: ContractTypeOption[] = [
   // Real estate and leases
   {
     id: "commercial-lease",
-    label: "Commercial Lease/Rental",
+    label: "Commercial Lease / Rental Agreement",
     group: "real_estate",
     available: false,
   },
-  { id: "leave-licence", label: "Leave and License", group: "real_estate", available: false },
-  { id: "equipment-lease", label: "Equipment Lease", group: "real_estate", available: false },
+  {
+    id: "leave-licence",
+    label: "Leave and License Agreement",
+    group: "real_estate",
+    available: false,
+  },
+  {
+    id: "equipment-lease",
+    label: "Equipment Lease Agreement",
+    group: "real_estate",
+    available: false,
+  },
 ];
 
 /**
