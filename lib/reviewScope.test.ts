@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { signOffBlockers } from "./findings";
 import { mockDocuments } from "./mock/documents.mock";
+import { CURRENT_ADVOCATE } from "./mock/advocate.mock";
 import { mockVersions } from "./mock/versions.mock";
-import { noLongerRaisedLabel, reviewScope, scopeNote, scopeTagLabel } from "./reviewScope";
+import {
+  noLongerRaisedLabel,
+  reviewScope,
+  scopeNote,
+  scopeShowing,
+  scopeTagLabel,
+} from "./reviewScope";
 import type { Clause, ContractDocument, DocumentVersion, Finding } from "./types";
 
 const vendor = mockDocuments.find((d) => d.id === "doc-vendor-revision")!;
@@ -60,6 +67,74 @@ describe("the scope of the settled NDA", () => {
     expect(scope.changedClauses.map((c) => `${c.number} ${c.kind}`)).toEqual(["4.1 changed"]);
     expect(scope.tags).toEqual({ "find-n1": "resolved_settled", "find-n2": "new" });
     expect(scope.needsDecision).toEqual([]);
+  });
+});
+
+describe("the re-review the current advocate holds", () => {
+  const rereview = mockDocuments.find((d) => d.id === "doc-employment-rereview")!;
+  const versions = mockVersions.filter((v) => v.documentId === rereview.id);
+  const scope = reviewScope(rereview, versions)!;
+
+  it("is held by the current advocate, so every decision control is theirs", () => {
+    expect(rereview.advocate?.id).toBe(CURRENT_ADVOCATE.id);
+    expect(rereview.status).toBe("under_review");
+  });
+
+  it("is round 2, against draft 2, with the reworded clause changed", () => {
+    expect([scope.round, scope.baselineLabel, scope.headLabel]).toEqual([2, "Draft 2", "Draft 3"]);
+    expect(scope.changedClauses.map((c) => `${c.number} ${c.kind}`)).toEqual(["4.1 changed"]);
+  });
+
+  it("has one finding of each kind", () => {
+    expect(scope.tags).toEqual({
+      "find-e1": "carried_forward",
+      "find-e3": "carried_over",
+      "find-e4": "new",
+      "find-e5": "resolved_settled",
+    });
+    expect(scope.noLongerRaised).toEqual([
+      expect.objectContaining({ findingId: "find-e2", reason: "clause_changed" }),
+    ]);
+    expect(noLongerRaisedLabel(scope.noLongerRaised[0].reason)).toBe("Resolved: clause changed");
+  });
+
+  it("asks for a fresh decision on the two open findings, and not on the one carried forward", () => {
+    expect(scope.needsDecision).toEqual(["find-e3", "find-e4"]);
+    expect(scope.carriedForward).toEqual(["find-e1"]);
+    expect(scope.inScope).toEqual(["find-e3", "find-e4", "find-e5"]);
+    expect(scope.needsDecision).toEqual(blockerIds(rereview));
+  });
+
+  it("says how many of the document's findings the view holds", () => {
+    // Four findings on the document, one of them decided in an earlier round.
+    expect(rereview.findings).toHaveLength(4);
+    expect(scopeShowing(scope, rereview.findings.length, false)).toBe(
+      "Showing 3 of 4 findings. Hidden: 1 decided in an earlier round, with its disposition carried forward.",
+    );
+    expect(scopeShowing(scope, rereview.findings.length, true)).toMatch(/^Showing all 4 findings\./);
+    const none = reviewScope(vendor, vendorVersions)!;
+    expect(scopeShowing(none, vendor.findings.length, false)).toBe(
+      "Showing all 4 findings: none was decided in an earlier round.",
+    );
+  });
+
+  it("is ahead of its own snapshot, which is why the draft before is the baseline", () => {
+    const own = versions.find((v) => v.number === rereview.version)!;
+    const decidedSince = (f: { findingId: string; disposition: string }) =>
+      f.findingId === "find-e5" && f.disposition !== "pending";
+    expect(rereview.findings.some(decidedSince)).toBe(true);
+    expect(own.findings.some(decidedSince)).toBe(false);
+  });
+
+  it("quotes only words its clauses hold, in every draft", () => {
+    for (const side of [rereview, ...versions]) {
+      for (const f of side.findings) {
+        const number = f.clauseReference.replace("Clause ", "");
+        const clause = side.clauses.find((c) => c.number === number)!;
+        expect(clause.body, f.findingId).toContain(f.clauseText);
+        expect(clause.findingIds).toContain(f.findingId);
+      }
+    }
   });
 });
 

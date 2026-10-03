@@ -17,7 +17,9 @@ import type {
  *
  * Callers compare snapshots, never the head, because the head keeps moving
  * between hand-offs. The one exception is the advocate's re-review, which
- * passes the head through headAsSide() against the latest snapshot.
+ * passes the head through headAsSide() against the draft before the current
+ * one (lib/reviewScope.ts), not the latest snapshot, which equals the head
+ * at hand-off.
  */
 
 /** One side of a comparison: a snapshot, or the head for re-review only. */

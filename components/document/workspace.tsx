@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useReducedMotion } from "framer-motion";
+import { toast } from "sonner";
 import { TIER_PENDING_LABEL } from "@/lib/config/pricing";
 import { cn } from "@/lib/utils";
 import { Icon, type IconName } from "@/components/shared/icon";
@@ -181,12 +182,17 @@ export function DocumentWorkspace({
     (findingId: string) => {
       // A link to a finding the scoped view hides (the agent's, a sign-off
       // blocker, a URL) shows everything rather than going nowhere.
-      if (activeScope?.tags[findingId] === "carried_forward") setShowAll(true);
+      if (activeScope?.tags[findingId] === "carried_forward" && !showAll) {
+        setShowAll(true);
+        // A tick later, so it also lands when the page itself opens on this
+        // finding, before the toaster has mounted.
+        window.setTimeout(() => toast("Showing all findings to open this one"), 0);
+      }
       setSelectedFindingId(findingId);
       const clause = doc.clauses.find((c) => c.findingIds.includes(findingId));
       if (clause) scrollToClause(clause.id, !panelOpenRef.current);
     },
-    [doc.clauses, scrollToClause, activeScope],
+    [doc.clauses, scrollToClause, activeScope, showAll],
   );
 
   const changeShowAll = useCallback(

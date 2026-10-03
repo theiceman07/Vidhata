@@ -150,7 +150,10 @@ Four systems, each with its own state. Never fold them into one label.
   when a draft is produced and handed on. ContractDocument is the working
   copy and may be ahead of the latest snapshot, so diffs (lib/diff.ts)
   compare snapshots, never the head. The advocate's re-review is the one
-  exception: it shows the head against the latest snapshot.
+  exception (lib/reviewScope.ts): it shows the head against the draft
+  before the current one. Not the latest snapshot: that is written at
+  hand-off and equals the head, so the comparison would show nothing. Do not
+  change this to "the latest snapshot".
 - Finding.source says who raised a finding ("pipeline" or "advocate"). Never
   infer it from the rule id.
 

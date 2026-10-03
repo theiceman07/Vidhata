@@ -382,3 +382,33 @@ export const vendorClauses: Clause[] = [
     revisedAt: null,
   },
 ];
+
+// The employment clauses as doc-employment-rereview holds them at its head.
+// The client's answer to the advocate's request reworded Clause 4.1, and four
+// clauses carry findings. The history behind it (versions.mock.ts) starts
+// from employmentClauses as first drafted.
+export const EMPLOYMENT_PLACE_OF_WORK_FIRST_DRAFTED =
+  "The Employee may be required to work from other locations, or remotely, as the Company reasonably directs.";
+export const EMPLOYMENT_PLACE_OF_WORK_REWORDED =
+  "The Employee may be required to work from other locations, or remotely, as the Company reasonably directs on at least fourteen (14) days written notice.";
+
+const rereviewFindingClauses: Record<string, string[]> = {
+  "cl-emp-2": ["find-e1"],
+  "cl-emp-4": ["find-e3"],
+  "cl-emp-6": ["find-e4"],
+  "cl-emp-9": ["find-e5"],
+};
+
+export const employmentRereviewClauses: Clause[] = employmentClauses.map((c) => {
+  if (c.id === "cl-emp-6" && !c.body.includes(EMPLOYMENT_PLACE_OF_WORK_FIRST_DRAFTED)) {
+    throw new Error("The place-of-work clause has drifted from what the re-review fixture rewords.");
+  }
+  return {
+    ...c,
+    body:
+      c.id === "cl-emp-6"
+        ? c.body.replace(EMPLOYMENT_PLACE_OF_WORK_FIRST_DRAFTED, EMPLOYMENT_PLACE_OF_WORK_REWORDED)
+        : c.body,
+    findingIds: rereviewFindingClauses[c.id] ?? [],
+  };
+});

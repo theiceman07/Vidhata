@@ -18,7 +18,7 @@ independent of it.
 | Question | Decision |
 |---|---|
 | Version model | Separate immutable snapshots (`DocumentVersion`). `ContractDocument` stays as it is and is the live head. List and queue endpoints stay light. |
-| Snapshot drift | Snapshots are written at hand-off points only: a draft is produced and handed on (first pass done, client round answered, advocate sends a revision back). The head is the working copy and may move ahead of the latest snapshot. Diffs compare snapshots, never the head. The one exception is D5, which shows the head against the latest snapshot. |
+| Snapshot drift | Snapshots are written at hand-off points only: a draft is produced and handed on (first pass done, client round answered, advocate sends a revision back). The head is the working copy and may move ahead of the latest snapshot. Diffs compare snapshots, never the head. The one exception is D5 (`lib/reviewScope.ts`), which shows the head against the draft before the current one. Not the latest snapshot: that equals the head at hand-off, so the comparison would show nothing. Decided during D5 and agreed; do not revert it to match older wording. |
 | Created-by | `first_pass`, `client_response`, `advocate_revision`. |
 | Clause diff | `added`, `removed`, `changed`, `unchanged`, identified by clause number, with both texts. |
 | Finding diff | `new`, `unresolved` (carried over), `resolved`. D5's three states map as: changed = clause `changed`, newly flagged = finding `new`, unresolved = finding `unresolved`. Defined once in `lib/diff.ts`. |

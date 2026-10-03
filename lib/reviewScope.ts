@@ -130,6 +130,18 @@ export function reviewScope(
   };
 }
 
+/**
+ * What the view holds, said as a sentence. `total` is every finding on the
+ * document, so the scoped view shows the total less what carries forward.
+ */
+export function scopeShowing(scope: ReviewScope, total: number, showAll: boolean): string {
+  const findings = (n: number) => `${n} ${n === 1 ? "finding" : "findings"}`;
+  const hidden = scope.carriedForward.length;
+  if (showAll) return `Showing all ${findings(total)}. Each is marked with what it is this round.`;
+  if (hidden === 0) return `Showing all ${findings(total)}: none was decided in an earlier round.`;
+  return `Showing ${total - hidden} of ${findings(total)}. Hidden: ${hidden} decided in an earlier round, with ${hidden === 1 ? "its disposition" : "their dispositions"} carried forward.`;
+}
+
 /** What a tag is called on a finding. */
 export function scopeTagLabel(tag: ScopeTag): string {
   switch (tag) {

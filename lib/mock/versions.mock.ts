@@ -1,5 +1,10 @@
 import type { Clause, DocumentVersion, Finding } from "@/lib/types";
-import { ndaClauses, vendorClauses } from "./clauses.mock";
+import {
+  employmentClauses,
+  EMPLOYMENT_PLACE_OF_WORK_FIRST_DRAFTED,
+  ndaClauses,
+  vendorClauses,
+} from "./clauses.mock";
 import { getMockDocumentById } from "./documents.mock";
 
 /**
@@ -228,10 +233,150 @@ const ndaDraft2: DocumentVersion = {
   findings: structuredClone(ndaHead.findings),
 };
 
+/**
+ * The history behind doc-employment-rereview, which the current advocate
+ * holds and whose live head is draft 3 (round 2).
+ *
+ *   Draft 1 · first pass · 22 Sep
+ *     Findings 1, 2, 3 and 5, none decided.
+ *   Draft 2 · advocate's revision · 24 Sep
+ *     The advocate decided finding 1 and sent the document back, with a
+ *     request on finding 2 (can the Employee be moved to another city, and
+ *     on what notice) and one on finding 3 (what the cost to company is made
+ *     up of). The wording is unchanged: a send-back is a hand-off.
+ *   Draft 3 · client's answers · 30 Sep (the head, as it was handed on)
+ *     The client answered by rewording Clause 4.1, so finding 2 is gone, and
+ *     the re-run raised finding 4 on the new wording. Finding 3 is answered
+ *     and still open. Finding 5 was undecided here; the advocate has decided
+ *     it since, which is how the head is ahead of this snapshot.
+ */
+const REREVIEW_ID = "doc-employment-rereview";
+
+const rereviewHead = getMockDocumentById(REREVIEW_ID);
+if (!rereviewHead) {
+  throw new Error(`Fixture ${REREVIEW_ID} is missing, so its history has no head.`);
+}
+
+function rereviewFinding(findingId: string): Finding {
+  const finding = rereviewHead!.findings.find((f) => f.findingId === findingId);
+  if (!finding) throw new Error(`Finding ${findingId} is missing from the head.`);
+  return structuredClone(finding);
+}
+
+const undecided = (finding: Finding): Finding => ({
+  ...finding,
+  disposition: "pending",
+  overrideNote: null,
+  resolvedAt: null,
+});
+
+const unanswered = (finding: Finding): Finding => ({ ...finding, changeRequest: null });
+
+// The employment clauses as first drafted, with the findings raised against
+// them.
+function rereviewFirstDraftClauses(findingClauses: Record<string, string[]>): Clause[] {
+  return employmentClauses.map((c) => ({
+    ...c,
+    findingIds: findingClauses[c.id] ?? [],
+    revisedAt: null,
+  }));
+}
+
+// Raised against the wording the client later changed, so the new draft does
+// not raise it again.
+const remoteWorkDraft: Finding = {
+  findingId: "find-e2",
+  source: "pipeline",
+  layer: 3,
+  severity: "low",
+  clauseReference: "Clause 4.1",
+  clauseText: EMPLOYMENT_PLACE_OF_WORK_FIRST_DRAFTED,
+  description:
+    "The Employee can be directed to work elsewhere, or remotely, with no notice period stated.",
+  ruleApplied: "WORK-LOCATION-NOTICE-V1",
+  remedySuggested: "State how much notice the Employee is given before a change of place of work.",
+  citations: [],
+  disposition: "pending",
+  overrideNote: null,
+  resolvedAt: null,
+  changeRequest: null,
+};
+
+const rereviewRequest = (finding: Finding, request: string): Finding => ({
+  ...finding,
+  changeRequest: {
+    request,
+    requestedAt: "2026-09-24T09:25:00.000Z",
+    requestedBy: rereviewHead!.advocate?.name ?? "",
+    response: null,
+    respondedAt: null,
+  },
+});
+
+const rereviewDraft1: DocumentVersion = {
+  documentId: REREVIEW_ID,
+  number: 1,
+  createdAt: "2026-09-22T10:05:00.000Z",
+  createdBy: "first_pass",
+  pipelineRunAt: "2026-09-22T10:04:00.000Z",
+  clauses: rereviewFirstDraftClauses({
+    "cl-emp-2": ["find-e1"],
+    "cl-emp-4": ["find-e3"],
+    "cl-emp-6": ["find-e2"],
+    "cl-emp-9": ["find-e5"],
+  }),
+  findings: [
+    undecided(rereviewFinding("find-e1")),
+    remoteWorkDraft,
+    unanswered(rereviewFinding("find-e3")),
+    undecided(rereviewFinding("find-e5")),
+  ],
+};
+
+const rereviewDraft2: DocumentVersion = {
+  documentId: REREVIEW_ID,
+  number: 2,
+  createdAt: "2026-09-24T09:30:00.000Z",
+  createdBy: "advocate_revision",
+  pipelineRunAt: "2026-09-24T09:29:00.000Z",
+  clauses: rereviewDraft1.clauses.map((c) => ({ ...c })),
+  findings: [
+    rereviewFinding("find-e1"),
+    rereviewRequest(
+      remoteWorkDraft,
+      "Please confirm whether the Employee may be asked to work from another city, and how much notice they would be given.",
+    ),
+    rereviewRequest(
+      unanswered(rereviewFinding("find-e3")),
+      "Please tell me what the annual cost to company of Rs 24,00,000 is made up of: fixed pay, variable pay and any benefits, and when each is paid. I will have Clause 3.1 say so.",
+    ),
+    undecided(rereviewFinding("find-e5")),
+  ],
+};
+
+const rereviewDraft3: DocumentVersion = {
+  documentId: REREVIEW_ID,
+  number: 3,
+  createdAt: "2026-09-30T08:35:00.000Z",
+  createdBy: "client_response",
+  pipelineRunAt: "2026-09-30T08:34:00.000Z",
+  clauses: structuredClone(rereviewHead.clauses),
+  // The head as it came back: finding 5 was not yet decided.
+  findings: [
+    rereviewFinding("find-e1"),
+    rereviewFinding("find-e3"),
+    rereviewFinding("find-e4"),
+    undecided(rereviewFinding("find-e5")),
+  ],
+};
+
 export const mockVersions: DocumentVersion[] = [
   draft1,
   draft2,
   draft3,
   ndaDraft1,
   ndaDraft2,
+  rereviewDraft1,
+  rereviewDraft2,
+  rereviewDraft3,
 ];

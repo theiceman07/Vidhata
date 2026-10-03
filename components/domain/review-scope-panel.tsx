@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { Icon } from "@/components/shared/icon";
 import { Switch } from "@/components/ui/switch";
-import { noLongerRaisedLabel, scopeTagLabel, type ReviewScope } from "@/lib/reviewScope";
+import {
+  noLongerRaisedLabel,
+  scopeShowing,
+  scopeTagLabel,
+  type ReviewScope,
+} from "@/lib/reviewScope";
 import type { Finding } from "@/lib/types";
 
 /**
@@ -71,7 +76,7 @@ export function ReviewScopePanel({
           <p className="mt-0.5 text-meta text-ink">
             {plural(scope.needsDecision.length, "finding needs", "findings need")} a fresh decision
             {hidden > 0 &&
-              ` · ${hidden} decided in an earlier round carry${hidden === 1 ? "es" : ""} forward`}
+              ` · ${hidden} decided in an earlier round ${hidden === 1 ? "carries" : "carry"} forward`}
           </p>
         </div>
 
@@ -97,11 +102,7 @@ export function ReviewScopePanel({
       </div>
 
       <p className="mt-2 max-w-measure text-label text-muted-fg" aria-live="polite">
-        {showAll
-          ? `Showing all ${plural(total, "finding", "findings")}. Each is marked with what it is this round.`
-          : hidden > 0
-            ? `Showing ${total} of ${total + hidden} findings. The ${hidden} hidden were decided in an earlier round, and their dispositions carry forward.`
-            : `Showing all ${plural(total, "finding", "findings")}: none was decided in an earlier round.`}
+        {scopeShowing(scope, total, showAll)}
       </p>
 
       {open && (

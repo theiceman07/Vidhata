@@ -170,8 +170,10 @@ export type VersionCreatedBy =
  * back. They are immutable. ContractDocument is the working copy and moves
  * on between hand-offs (findings are added, dispositions are recorded), so
  * the head and the latest snapshot can disagree. Diffs therefore compare
- * snapshots, never the head, except the advocate's re-review, which shows
- * the head against the latest snapshot.
+ * snapshots, never the head, except the advocate's re-review
+ * (lib/reviewScope.ts), which shows the head against the draft before the
+ * current one. A draft's own snapshot equals the head at hand-off, so
+ * comparing against the latest would show nothing.
  *
  * Backend note: like clauses, snapshots are a detail-page concern. List and
  * queue endpoints must not return them.

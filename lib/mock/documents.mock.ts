@@ -4,8 +4,11 @@ import {
   ndaClauses,
   msaClauses,
   employmentClauses,
+  employmentRereviewClauses,
   vendorClauses,
+  EMPLOYMENT_PLACE_OF_WORK_REWORDED,
 } from "@/lib/mock/clauses.mock";
+import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 
 const settledNda: ContractDocument = {
   id: "doc-nda-settled",
@@ -418,11 +421,134 @@ const revisionVendor: ContractDocument = {
   executionSteps: [],
 };
 
+// Claimed by the current advocate, with drafts behind it, so a re-review can
+// be worked through end to end. Round 2: the advocate sent it back once, the
+// client answered, and draft 3 is what came back. The history is in
+// lib/mock/versions.mock.ts.
+//
+//   find-e1  decided in round 1, before the last hand-off: carries forward
+//   find-e3  open, and the client has answered the request: carried over
+//   find-e4  raised on the clause the client reworded: new this round
+//   find-e5  open at the last hand-off, decided since: resolved, settled
+//   find-e2  not here: its clause changed, so the new draft no longer raises it
+//
+// Fixture prose is about contract facts and names no statute.
+const rereviewEmployment: ContractDocument = {
+  id: "doc-employment-rereview",
+  title: "Employment Agreement · Senior Engineer",
+  type: "employment",
+  status: "under_review",
+  tier: "standard",
+  orgId: MOCK_CLIENT_ORG.id,
+  clientName: "Anaya Textiles Pvt Ltd",
+  counterpartyName: "Individual · Rohan Iyer",
+  stateOfExecution: "Karnataka",
+  transactionValue: 2400000,
+  counterpartyIsMsme: false,
+  durationMonths: 0,
+  governingLaw: "Laws of India",
+  keyTerms: "Senior Engineer; six month probation; ninety days notice after it.",
+  createdAt: "2026-09-22T09:50:00.000Z",
+  version: 3,
+  // Sent back once, after draft 1.
+  revisionCount: 1,
+  claimedAt: "2026-09-23T06:10:00.000Z",
+  settledAt: null,
+  analysisCompletesAt: null,
+  advocate: CURRENT_ADVOCATE,
+  clauses: employmentRereviewClauses,
+  findings: [
+    {
+      findingId: "find-e1",
+      source: "pipeline",
+      layer: 3,
+      severity: "low",
+      clauseReference: "Clause 1.2",
+      clauseText:
+        "The Company may extend the probationary period once, by up to three (3) months, on written notice.",
+      description:
+        "The probation can be extended once, but the clause does not say who gives the notice or how long before the six months end it must be given.",
+      ruleApplied: "PROBATION-EXTENSION-CLARITY-V1",
+      remedySuggested: "State who gives the notice, and that it is given before the probation ends.",
+      citations: [],
+      disposition: "confirmed",
+      overrideNote:
+        "Confirmed. No source applies, so this rests on judgment: the concern stands and the notice is to come from the Head of Engineering before the end of month six.",
+      resolvedAt: "2026-09-24T09:10:00.000Z",
+      changeRequest: null,
+    },
+    {
+      findingId: "find-e3",
+      source: "pipeline",
+      layer: 3,
+      severity: "medium",
+      clauseReference: "Clause 3.1",
+      clauseText:
+        "The Company shall pay the Employee an annual cost to company of Rs 24,00,000, payable monthly in arrears and subject to deduction of tax at source and statutory contributions.",
+      description:
+        "The clause gives one figure as the annual cost to company without saying what it is made up of, and Clause 3.2 leaves any increase to the Company.",
+      ruleApplied: "REMUNERATION-COMPONENTS-V1",
+      remedySuggested: "State the fixed and variable parts of the figure, and when each is paid.",
+      citations: [],
+      disposition: "pending",
+      overrideNote: null,
+      resolvedAt: null,
+      changeRequest: {
+        request:
+          "Please tell me what the annual cost to company of Rs 24,00,000 is made up of: fixed pay, variable pay and any benefits, and when each is paid. I will have Clause 3.1 say so.",
+        requestedAt: "2026-09-24T09:25:00.000Z",
+        requestedBy: CURRENT_ADVOCATE.name,
+        response:
+          "Rs 20,00,000 is fixed, paid monthly. Rs 4,00,000 is variable, paid quarterly. There are no other benefits counted in the figure.",
+        respondedAt: "2026-09-30T08:30:00.000Z",
+      },
+    },
+    {
+      findingId: "find-e4",
+      source: "pipeline",
+      layer: 3,
+      severity: "medium",
+      clauseReference: "Clause 4.1",
+      clauseText: EMPLOYMENT_PLACE_OF_WORK_REWORDED,
+      description:
+        "The Employee can now be directed to work elsewhere on fourteen days notice, but Clause 1.2 gives fifteen days notice to end the employment in probation. A move could be required on less notice than it takes to leave.",
+      ruleApplied: "NOTICE-PERIOD-CONSISTENCY-V1",
+      remedySuggested: "Align the two notice periods, or say why they differ.",
+      citations: [],
+      disposition: "pending",
+      overrideNote: null,
+      resolvedAt: null,
+      changeRequest: null,
+    },
+    {
+      findingId: "find-e5",
+      source: "pipeline",
+      layer: 4,
+      severity: "low",
+      clauseReference: "Clause 7.1",
+      clauseText:
+        "After the probationary period, either party may terminate the employment on ninety (90) days written notice.",
+      description:
+        "Both parties have ninety days notice, but the clause says nothing about pay in place of notice if either party ends the employment sooner.",
+      ruleApplied: "LIABILITY-ASYMMETRY-V1",
+      remedySuggested: "State whether notice may be waived or paid for.",
+      citations: [],
+      disposition: "overridden",
+      overrideNote:
+        "Overridden. The clause stands as drafted; the advocate judged the silence acceptable for a senior engineer.",
+      resolvedAt: "2026-10-01T11:00:00.000Z",
+      changeRequest: null,
+    },
+  ],
+  executionSteps: [],
+};
+
 export const mockDocuments: ContractDocument[] = [
   settledNda,
   pendingReviewMsa,
   analysingEmployment,
   revisionVendor,
+  rereviewEmployment,
 ];
 
 export function getMockDocumentById(id: string): ContractDocument | undefined {

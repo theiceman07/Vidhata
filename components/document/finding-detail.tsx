@@ -160,7 +160,9 @@ export function FindingDetail({
             {finding.source === "advocate" && <AddedByLabel />}
             {tag && <ScopeTagLabel tag={tag} />}
           </div>
-          {tag && (
+          {/* Said only where there is a decision to make. What was decided
+              before, or decided this round, has its tag and nothing more. */}
+          {tag && !settled && (
             <p className="mt-2 text-meta text-muted-fg">{scopeNote(tag, settled)}</p>
           )}
           <p className="mt-3 text-body text-ink">{finding.description}</p>
