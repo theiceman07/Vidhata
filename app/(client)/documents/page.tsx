@@ -10,6 +10,7 @@ import { DealPrompt } from "@/components/marketing/deal-prompt";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listDocuments } from "@/lib/api/documents";
+import { clientVisibleFindings, firstPassFindings } from "@/lib/findings";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { groupOf, yourMove, type Move, type MoveGroup } from "@/lib/moves";
 import type { ContractDocument } from "@/lib/types";
@@ -36,7 +37,7 @@ function greeting(): string {
 
 /** When the document entered the stage it is in. */
 function since(doc: ContractDocument): string | null {
-  const requests = doc.findings
+  const requests = clientVisibleFindings(doc)
     .map((f) => f.changeRequest?.requestedAt)
     .filter((d): d is string => Boolean(d))
     .sort();
@@ -221,7 +222,9 @@ function EmptyGroup({
  */
 function YourRecord({ docs }: { docs: ContractDocument[] }) {
   const screened = docs.filter((d) => d.status !== "draft" && d.status !== "analysing");
-  const findings = screened.reduce((n, d) => n + d.findings.length, 0);
+  // What the first passes raised. Findings an advocate added are not counted:
+  // before sign-off they reach the client only through a request.
+  const findings = screened.reduce((n, d) => n + firstPassFindings(d).length, 0);
   const signedOff = docs.filter((d) => d.status === "settled" || d.status === "executed");
   const steps = docs.flatMap((d) => d.executionSteps.filter((s) => s.applicable));
   const stepsDone = steps.filter((s) => s.complete).length;

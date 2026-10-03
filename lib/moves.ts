@@ -1,3 +1,4 @@
+import { clientVisibleFindings } from "@/lib/findings";
 import type { ContractDocument } from "@/lib/types";
 
 /**
@@ -9,7 +10,7 @@ import type { ContractDocument } from "@/lib/types";
  */
 
 export function openRequests(doc: ContractDocument) {
-  return doc.findings.filter(
+  return clientVisibleFindings(doc).filter(
     (f) => f.disposition === "pending" && f.changeRequest && !f.changeRequest.response,
   );
 }

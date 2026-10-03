@@ -7,6 +7,7 @@ import { Icon } from "@/components/shared/icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listDocuments } from "@/lib/api/documents";
 import { tierLabel } from "@/lib/config/pricing";
+import { clientVisibleFindings } from "@/lib/findings";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { groupOf, yourMove } from "@/lib/moves";
 import type { ContractDocument } from "@/lib/types";
@@ -158,7 +159,9 @@ function stationsFor(doc: ContractDocument): Station[] {
   };
 
   if (doc.status === "revision") {
-    const n = doc.findings.filter((f) => f.changeRequest && !f.changeRequest.response).length;
+    const n = clientVisibleFindings(doc).filter(
+      (f) => f.changeRequest && !f.changeRequest.response,
+    ).length;
     return [
       {
         title: "You answer",

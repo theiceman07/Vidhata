@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/shared/icon";
+import { firstPassFindings } from "@/lib/findings";
 import type { ContractDocument } from "@/lib/types";
 
 /**
@@ -33,7 +34,7 @@ export function lifecycle(doc: ContractDocument): Stage[] {
   const s = doc.status;
   const applicable = doc.executionSteps.filter((step) => step.applicable);
   const done = applicable.filter((step) => step.complete).length;
-  const findings = doc.findings.length;
+  const findings = firstPassFindings(doc).length;
 
   const screened: Stage = {
     key: "screened",

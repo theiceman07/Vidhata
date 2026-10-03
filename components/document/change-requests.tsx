@@ -4,6 +4,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { clientVisibleFindings } from "@/lib/findings";
 import type { ContractDocument } from "@/lib/types";
 import { clauseNumberFromReference } from "@/lib/types";
 
@@ -31,7 +32,7 @@ export function ChangeRequests({
   onSubmit: (responses: Record<string, string>) => void;
   submitting: boolean;
 }) {
-  const requested = doc.findings.filter(
+  const requested = clientVisibleFindings(doc).filter(
     (f) => f.disposition === "pending" && f.changeRequest,
   );
   const open = requested.filter((f) => !f.changeRequest?.response);

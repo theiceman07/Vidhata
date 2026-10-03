@@ -47,6 +47,31 @@ export function findingsWithClient(doc: ContractDocument): Finding[] {
 }
 
 /**
+ * What a client may be told of a document's findings.
+ *
+ * Before sign-off the client sees status and the passages behind requests
+ * addressed to them, so a finding the advocate added reaches them only
+ * through a request addressed to them. After sign-off the whole record is
+ * theirs, read-only. Every client screen reads findings through this, never
+ * from doc.findings, so a screen cannot count or list a finding it should
+ * not know about. The advocate portal reads doc.findings and keeps the full
+ * picture.
+ */
+export function clientVisibleFindings(doc: ContractDocument): Finding[] {
+  if (doc.status === "settled" || doc.status === "executed") return doc.findings;
+  return doc.findings.filter((f) => f.source === "pipeline" || f.changeRequest !== null);
+}
+
+/**
+ * What the first pass raised. Findings an advocate added are not part of it,
+ * so "the first pass raised N" counts only these, for the client and the
+ * advocate alike.
+ */
+export function firstPassFindings(doc: ContractDocument): Finding[] {
+  return doc.findings.filter((f) => f.source === "pipeline");
+}
+
+/**
  * Citation lifecycle: verified or blocked. Never "probably fine".
  *
  * A blocked citation that an advocate has withdrawn no longer blocks the

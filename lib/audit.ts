@@ -1,5 +1,10 @@
 import type { ContractDocument } from "@/lib/types";
-import { findingNumbers, findingState } from "@/lib/findings";
+import {
+  clientVisibleFindings,
+  findingNumbers,
+  findingState,
+  firstPassFindings,
+} from "@/lib/findings";
 
 /**
  * The audit trail.
@@ -41,13 +46,15 @@ export function buildAuditTrail(doc: ContractDocument): AuditEntry[] {
   ];
 
   if (doc.status !== "draft" && doc.status !== "analysing") {
+    // The first pass's own count: findings an advocate added are not its work.
+    const raised = firstPassFindings(doc).length;
     entries.push({
       at: doc.createdAt,
       actor: "AI first pass",
       action:
-        doc.findings.length === 0
+        raised === 0
           ? "Screening completed · no findings raised"
-          : `Screening completed · ${doc.findings.length} ${doc.findings.length === 1 ? "finding" : "findings"} raised`,
+          : `Screening completed · ${raised} ${raised === 1 ? "finding" : "findings"} raised`,
       findingId: null,
       ref: null,
       kind: "event",
@@ -178,11 +185,14 @@ export function buildAuditTrail(doc: ContractDocument): AuditEntry[] {
  * the whole record is theirs.
  */
 export function clientAuditTrail(doc: ContractDocument): AuditEntry[] {
-  const all = buildAuditTrail(doc);
+  // Built from the client's own view of the document, so finding numbers
+  // cannot skip over one the client has not been told about.
+  const view: ContractDocument = { ...doc, findings: clientVisibleFindings(doc) };
+  const all = buildAuditTrail(view);
   if (doc.status === "settled" || doc.status === "executed") return all;
 
   const addressed = new Set(
-    doc.findings.filter((f) => f.changeRequest).map((f) => f.findingId),
+    view.findings.filter((f) => f.changeRequest).map((f) => f.findingId),
   );
   return all.filter((entry) => !entry.findingId || addressed.has(entry.findingId));
 }

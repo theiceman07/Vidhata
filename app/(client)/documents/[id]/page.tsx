@@ -26,6 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { getDocument, respondToChanges, startAnalysis } from "@/lib/api/documents";
 import { tierLabel } from "@/lib/config/pricing";
+import { clientVisibleFindings } from "@/lib/findings";
 import type { ContractDocument } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
@@ -220,7 +221,7 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
  * becomes once they are answered.
  */
 function MoveSummary({ doc }: { doc: ContractDocument }) {
-  const open = doc.findings.filter(
+  const open = clientVisibleFindings(doc).filter(
     (f) => f.disposition === "pending" && f.changeRequest && !f.changeRequest.response,
   );
   const asked = open
@@ -286,7 +287,7 @@ function Frame({ children }: { children: React.ReactNode }) {
 
 /** Pending or under review: where it is, and why the draft is not shown. */
 function WithAdvocate({ doc }: { doc: ContractDocument }) {
-  const answered = doc.findings.filter((f) => f.changeRequest?.response);
+  const answered = clientVisibleFindings(doc).filter((f) => f.changeRequest?.response);
 
   return (
     <div className="max-w-3xl space-y-8">

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDocument } from "@/lib/api/documents";
+import { clientVisibleFindings } from "@/lib/findings";
 import {
   buildInitialMessages,
   getMockReply,
@@ -134,12 +135,12 @@ export default function ChatPage({ params }: { params: { id: string } }) {
               Clauses
             </p>
             <ul className="space-y-1">
-              {doc.findings.length === 0 && (
+              {clientVisibleFindings(doc).length === 0 && (
                 <li className="text-small text-muted-fg">
                   No flagged clauses on this document.
                 </li>
               )}
-              {doc.findings.map((f) => (
+              {clientVisibleFindings(doc).map((f) => (
                 <li
                   key={f.findingId}
                   id={`sidebar-${f.clauseReference.replace(/\s+/g, "-")}`}
