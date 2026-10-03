@@ -89,6 +89,7 @@ describe("client screens", () => {
       "components/domain/document-context.tsx",
       "components/document/change-requests.tsx",
       "components/document/provenance.tsx",
+      "components/domain/version-history.tsx",
       "lib/moves.ts",
       "lib/mock/chat.mock.ts",
     ].map((f) => path.join(root, f)),
@@ -101,6 +102,14 @@ describe("client screens", () => {
   it("never import what only an advocate may use: the add-finding dialog, the citation check", () => {
     const advocateOnly = /add-finding-dialog|api\/citations/;
     const offenders = clientFiles.filter((file) => advocateOnly.test(readFileSync(file, "utf8")));
+    expect(offenders.map((f) => path.relative(root, f))).toEqual([]);
+  });
+
+  it("never use the raw diff: what changed reaches them only through clientVersions", () => {
+    // diffVersions knows nothing of what a client may see. lib/clientVersions
+    // wraps it with that rule, and is the one way a client screen gets a diff.
+    const rawDiff = /@\/lib\/diff|from "\.\.?\/.*diff"|diffVersions/;
+    const offenders = clientFiles.filter((file) => rawDiff.test(readFileSync(file, "utf8")));
     expect(offenders.map((f) => path.relative(root, f))).toEqual([]);
   });
 

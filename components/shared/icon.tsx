@@ -21,6 +21,7 @@ export const ICON_NAMES = [
   "chevron_right",
   "close",
   "description",
+  "edit",
   "error",
   "expand_less",
   "expand_more",

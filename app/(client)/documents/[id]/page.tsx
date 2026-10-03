@@ -174,6 +174,13 @@ export default function DocumentPage() {
               {doc.counterpartyName}
               <span className="mx-1.5 text-muted-fg/50">·</span>
               Draft {doc.version}
+              <span className="mx-1.5 text-muted-fg/50">·</span>
+              <Link
+                href={`/documents/${doc.id}/history`}
+                className="text-ink underline-offset-2 hover:underline"
+              >
+                Version history
+              </Link>
             </p>
           </div>
         </div>
@@ -357,6 +364,12 @@ function SettledDocument({ doc }: { doc: ContractDocument }) {
             className="text-label text-ink underline-offset-2 hover:underline"
           >
             Execution checklist · {done} of {steps.length}
+          </Link>
+          <Link
+            href={`/documents/${doc.id}/history`}
+            className="text-label text-ink underline-offset-2 hover:underline"
+          >
+            Version history
           </Link>
         </>
       }

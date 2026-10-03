@@ -124,7 +124,7 @@ describe("before sign-off", () => {
   });
 
   it("shows a row only for the finding a request is about, in plain words", () => {
-    expect(diff().findings).toEqual([
+    expect(diff().findingRows).toEqual([
       {
         number: "01",
         clauseReference: "Clause 5.3",
@@ -165,10 +165,10 @@ describe("before sign-off", () => {
     );
 
     const d = diffOf(addressed, versions, 2, 3);
-    expect(d.findings.map((r) => r.clauseReference)).toEqual(["Clause 5.3", "Clause 5.3"]);
+    expect(d.findingRows.map((r) => r.clauseReference)).toEqual(["Clause 5.3", "Clause 5.3"]);
     expect(d.findingCounts.new).toBe(1);
     // Still not said to be the advocate's: that is for after sign-off.
-    expect(d.findings.every((r) => !r.advocateAdded)).toBe(true);
+    expect(d.findingRows.every((r) => !r.advocateAdded)).toBe(true);
   });
 
   it("counts what changed between the first two drafts without naming it", () => {
@@ -206,7 +206,7 @@ describe("after sign-off", () => {
   });
 
   it("shows every finding with the advocate's disposition", () => {
-    expect(diff().findings).toEqual([
+    expect(diff().findingRows).toEqual([
       expect.objectContaining({
         number: "01",
         kind: "resolved",
@@ -222,12 +222,12 @@ describe("after sign-off", () => {
         advocateAdded: true,
       }),
     ]);
-    expect(diff().findings[0].description).toContain("24 months");
+    expect(diff().findingRows[0].description).toContain("24 months");
   });
 
   it("narrows to what the client was addressed on when the switch is off", () => {
     const d = diffOf(nda, ndaVersions, 1, 2, { advocateAddedAfterSignOff: false });
-    expect(d.findings.map((r) => r.number)).toEqual(["01"]);
+    expect(d.findingRows.map((r) => r.number)).toEqual(["01"]);
     expect(d.findingCounts).toEqual({ new: 0, stillOpen: 0, resolved: 1 });
     expect(JSON.stringify(d)).not.toContain("retained copy");
   });
@@ -236,7 +236,7 @@ describe("after sign-off", () => {
     const settled: ContractDocument = { ...vendor, status: "settled" };
     const d = diffOf(settled, vendorVersions, 1, 2);
     expect(d.clauses).toHaveLength(9);
-    expect(d.findings.map((r) => r.change)).toEqual([
+    expect(d.findingRows.map((r) => r.change)).toEqual([
       "Still open",
       "New in this draft",
       "No longer raised after your change to this clause",
@@ -259,9 +259,9 @@ describe("the words a client reads", () => {
 
   it("puts no internal term in anything a row says", () => {
     const rows = [
-      ...diffOf(vendor, vendorVersions, 1, 2).findings,
-      ...diffOf({ ...vendor, status: "settled" }, vendorVersions, 1, 2).findings,
-      ...diffOf(nda, ndaVersions, 1, 2).findings,
+      ...diffOf(vendor, vendorVersions, 1, 2).findingRows,
+      ...diffOf({ ...vendor, status: "settled" }, vendorVersions, 1, 2).findingRows,
+      ...diffOf(nda, ndaVersions, 1, 2).findingRows,
     ];
     for (const row of rows) {
       const said = [row.change, row.description ?? ""].join(" ");

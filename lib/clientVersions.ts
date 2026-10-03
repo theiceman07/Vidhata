@@ -154,8 +154,12 @@ export interface ClientVersionDiff {
   clauses: ClientClauseRow[];
   /** Clauses not shown, only counted. Always zero after sign-off. */
   otherClauses: Record<ClauseChangeKind, number>;
-  /** Findings shown as rows. */
-  findings: ClientFindingRow[];
+  /**
+   * Findings shown as rows. Named for what they are, not "findings": client
+   * code must never read a document's own findings, and a guard test fails
+   * on any `.findings` in a client file.
+   */
+  findingRows: ClientFindingRow[];
   /** Over every finding the client may know about, shown or not. */
   findingCounts: { new: number; stillOpen: number; resolved: number };
 }
@@ -263,7 +267,7 @@ export function clientVersionDiff(
       signedOff,
       clauses,
       otherClauses,
-      findings: rows,
+      findingRows: rows,
       findingCounts,
     },
   };
