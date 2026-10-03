@@ -9,6 +9,7 @@ import { DocumentWorkspace } from "@/components/document/workspace";
 import { ReviewAgent } from "@/components/document/review-agent";
 import type { PaletteCommand } from "@/components/shared/command-palette";
 import { AddFindingDialog } from "@/components/domain/add-finding-dialog";
+import { ClaimDialog } from "@/components/domain/claim-dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -44,6 +45,8 @@ export default function ReviewPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [claiming, setClaiming] = useState(false);
+  const [claimOpen, setClaimOpen] = useState(false);
+  const [declaredConflicts, setDeclaredConflicts] = useState<string[]>([]);
   const [available, setAvailable] = useState(true);
   const [notes, setNotes] = useState<AdvocateNote[]>([]);
   const [versions, setVersions] = useState<DocumentVersion[]>([]);
@@ -60,6 +63,7 @@ export default function ReviewPage() {
       if (!result) throw new Error("Document not found.");
       setDoc(result);
       setAvailable(profile.available);
+      setDeclaredConflicts(profile.declaredConflicts);
       setNotes(ownNotes);
       setVersions(drafts);
       setState("loaded");
@@ -211,12 +215,18 @@ export default function ReviewPage() {
     [doc, run],
   );
 
-  const handleClaim = useCallback(async () => {
+  // Every Claim on this page asks for the conflict declaration first.
+  const handleClaim = useCallback(() => setClaimOpen(true), []);
+
+  const confirmClaim = useCallback(async () => {
     if (!doc) return;
     setClaiming(true);
     try {
-      const updated = await claimDocument(doc.id, CURRENT_ADVOCATE);
+      const updated = await claimDocument(doc.id, CURRENT_ADVOCATE, {
+        noConflictWithEitherParty: true,
+      });
       setDoc(updated);
+      setClaimOpen(false);
       toast.success("Claimed. The document is yours to review.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not claim this document.");
@@ -296,6 +306,7 @@ export default function ReviewPage() {
       : `Held by ${doc.advocate?.name}`;
 
   return (
+    <>
     <DocumentWorkspace
       doc={doc}
       role="advocate"
@@ -376,5 +387,14 @@ export default function ReviewPage() {
       onWithdrawSource={handleWithdraw}
       busy={busy}
     />
+    <ClaimDialog
+      doc={doc}
+      declaredConflicts={declaredConflicts}
+      open={claimOpen}
+      onOpenChange={setClaimOpen}
+      onConfirm={confirmClaim}
+      claiming={claiming}
+    />
+    </>
   );
 }

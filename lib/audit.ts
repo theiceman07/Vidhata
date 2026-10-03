@@ -78,6 +78,17 @@ export function buildAuditTrail(doc: ContractDocument): AuditEntry[] {
     });
   }
 
+  if (doc.conflictDeclaredAt && doc.advocate) {
+    entries.push({
+      at: doc.conflictDeclaredAt,
+      actor: advocate,
+      action: "Declared no conflict of interest with either party",
+      findingId: null,
+      ref: null,
+      kind: "decision",
+    });
+  }
+
   doc.findings.forEach((finding) => {
     const n = numbers[finding.findingId];
     const ref = `Finding ${n} · ${finding.clauseReference}`;

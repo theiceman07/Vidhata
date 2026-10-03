@@ -6,6 +6,8 @@ import Link from "next/link";
 import { differenceInCalendarDays, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/shared/icon";
+import { toast } from "sonner";
+import { ClaimDialog } from "@/components/domain/claim-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { StateLabel } from "@/components/document/state-label";
@@ -89,6 +91,8 @@ export default function QueuePage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [available, setAvailable] = useState(true);
+  const [claimTarget, setClaimTarget] = useState<ContractDocument | null>(null);
+  const [declaredConflicts, setDeclaredConflicts] = useState<string[]>([]);
   const [filter, setFilter] = useState<Filter>("open");
   const [sort, setSort] = useState<Sort>("priority");
   const [query, setQuery] = useState("");
@@ -103,6 +107,7 @@ export default function QueuePage() {
       const [result, profile] = await Promise.all([listDocuments(), getAdvocateProfile()]);
       setDocs(result);
       setAvailable(profile.available);
+      setDeclaredConflicts(profile.declaredConflicts);
       setState("loaded");
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Could not load the queue.");
@@ -165,14 +170,24 @@ export default function QueuePage() {
     });
   }, [buckets, filter, query, sort]);
 
-  async function claim(id: string) {
+  // Claim asks for the conflict declaration first, here as on the review page.
+  function claim(id: string) {
+    setClaimTarget(docs.find((d) => d.id === id) ?? null);
+  }
+
+  async function confirmClaim() {
+    if (!claimTarget) return;
+    const id = claimTarget.id;
     setClaimingId(id);
     try {
-      await claimDocument(id, CURRENT_ADVOCATE);
+      await claimDocument(id, CURRENT_ADVOCATE, { noConflictWithEitherParty: true });
+      setClaimTarget(null);
       router.push(`/review/${id}`);
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Could not claim this document.");
-      setState("error");
+      // A refused claim is said as a message; the queue itself is fine and
+      // is not replaced by an error screen.
+      setClaimTarget(null);
+      toast.error(err instanceof Error ? err.message : "Could not claim this document.");
     } finally {
       setClaimingId(null);
     }
@@ -462,6 +477,17 @@ export default function QueuePage() {
         <TierMix docs={buckets.open} />
         <SignedOffByYou docs={buckets.settled} onShow={() => show("settled")} />
       </div>
+
+      <ClaimDialog
+        doc={claimTarget}
+        declaredConflicts={declaredConflicts}
+        open={claimTarget !== null}
+        onOpenChange={(next) => {
+          if (!next) setClaimTarget(null);
+        }}
+        onConfirm={confirmClaim}
+        claiming={claimingId !== null}
+      />
     </div>
   );
 }

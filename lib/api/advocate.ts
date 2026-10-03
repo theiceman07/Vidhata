@@ -11,6 +11,15 @@ export interface AdvocateProfile {
   declaredConflicts: string[];
 }
 
+/**
+ * The names the advocate has declared a conflict with, read where a claim is
+ * checked. It is not a screen's to read: the claim rule lives in
+ * lib/api/documents.ts and a screen only mirrors it.
+ */
+export function declaredConflictNames(): string[] {
+  return [...profile.declaredConflicts];
+}
+
 export async function getAdvocateProfile(): Promise<AdvocateProfile> {
   await randomDelay(150, 300);
   return structuredClone(profile);

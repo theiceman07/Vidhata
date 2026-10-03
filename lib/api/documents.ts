@@ -12,7 +12,9 @@ import { mockDocuments } from "@/lib/mock/documents.mock";
 import { mockVersions } from "@/lib/mock/versions.mock";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { recheckFindings } from "@/lib/citations";
+import { declaredConflictWith } from "@/lib/conflicts";
 import { assignReviewTier } from "@/lib/triage";
+import { declaredConflictNames } from "./advocate";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 
 // QA 7.3: tier ordering used to sort the advocate queue, so the pricing
@@ -406,9 +408,18 @@ export async function startAnalysis(id: string): Promise<ContractDocument> {
   return structuredClone(doc);
 }
 
+/**
+ * What an advocate affirms when they claim: no conflict of interest with
+ * either party. A claim is refused without it, whatever the screen did.
+ */
+export interface ConflictDeclaration {
+  noConflictWithEitherParty: true;
+}
+
 export async function claimDocument(
   id: string,
   advocate: { id: string; name: string; bar: string },
+  declaration: ConflictDeclaration,
 ): Promise<ContractDocument> {
   await randomDelay();
   if (shouldSimulateFailure()) {
@@ -423,9 +434,31 @@ export async function claimDocument(
       `${doc.advocate.name} has already claimed this document.`,
     );
   }
+  // Already theirs: nothing to claim, and nothing to reset.
+  if (doc.advocate?.id === advocate.id) return structuredClone(doc);
+
+  if (!declaration?.noConflictWithEitherParty) {
+    throw new MockApiError(
+      "Declare that you have no conflict of interest with either party before you claim.",
+    );
+  }
+  // A name the advocate has declared a conflict with is one they cannot
+  // then declare clear of. The declaration is theirs to correct on their
+  // profile, not to override here.
+  const conflict = declaredConflictWith(
+    [doc.clientName, doc.counterpartyName],
+    declaredConflictNames(),
+  );
+  if (conflict) {
+    throw new MockApiError(
+      `Your profile lists ${conflict.declared} as a declared conflict, which matches ${conflict.party}. You cannot claim this document.`,
+    );
+  }
+  const now = new Date().toISOString();
   doc.status = "under_review";
   doc.advocate = advocate;
-  doc.claimedAt = new Date().toISOString();
+  doc.claimedAt = now;
+  doc.conflictDeclaredAt = now;
   return structuredClone(doc);
 }
 

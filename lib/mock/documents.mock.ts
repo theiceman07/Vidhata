@@ -32,6 +32,7 @@ const settledNda: ContractDocument = {
   version: 2,
   revisionCount: 0,
   claimedAt: "2026-08-04T10:05:00.000Z",
+  conflictDeclaredAt: "2026-08-04T10:05:00.000Z",
   settledAt: "2026-08-05T14:40:00.000Z",
   analysisCompletesAt: null,
   advocate: { id: "adv-1", name: "Rhea Kapoor", bar: "D/1842/2016" },
@@ -294,6 +295,7 @@ const revisionVendor: ContractDocument = {
   // The advocate has sent it back twice: after draft 1, and after draft 2.
   revisionCount: 2,
   claimedAt: "2026-09-09T05:45:00.000Z",
+  conflictDeclaredAt: "2026-09-09T05:45:00.000Z",
   settledAt: null,
   analysisCompletesAt: null,
   advocate: { id: "adv-2", name: "Farhan Sheikh", bar: "TN/0932/2019" },
@@ -453,6 +455,7 @@ const rereviewEmployment: ContractDocument = {
   // Sent back once, after draft 1.
   revisionCount: 1,
   claimedAt: "2026-09-23T06:10:00.000Z",
+  conflictDeclaredAt: "2026-09-23T06:10:00.000Z",
   settledAt: null,
   analysisCompletesAt: null,
   advocate: CURRENT_ADVOCATE,

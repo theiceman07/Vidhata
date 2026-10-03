@@ -141,6 +141,12 @@ export interface ContractDocument {
   revisionCount: number;
   /** When the advocate claimed it. Null while unclaimed. */
   claimedAt: string | null;
+  /**
+   * When the advocate declared they have no conflict with either party. It
+   * is made at the moment of claiming and recorded with the claim, so a
+   * claim without one is not a claim the product can make.
+   */
+  conflictDeclaredAt?: string | null;
   settledAt: string | null;
   // ISO timestamp the in-flight analysis resolves at, or null when not
   // analysing. Durable across navigation (QA 4.5) — lib/api/documents.ts

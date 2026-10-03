@@ -39,6 +39,23 @@ describe("the activity trail before sign-off", () => {
   });
 });
 
+describe("the claim", () => {
+  const declared = "Declared no conflict of interest with either party";
+
+  it("records the conflict declaration beside the claim, as a decision", () => {
+    const trail = buildAuditTrail(vendor);
+    const claim = trail.find((e) => e.action === "Claimed for review")!;
+    const entry = trail.find((e) => e.action === declared)!;
+    expect(entry.at).toBe(claim.at);
+    expect(entry.kind).toBe("decision");
+  });
+
+  it("says nothing of it for a document claimed without one", () => {
+    const old: ContractDocument = { ...vendor, conflictDeclaredAt: undefined };
+    expect(buildAuditTrail(old).some((e) => e.action === declared)).toBe(false);
+  });
+});
+
 describe("the activity trail after sign-off", () => {
   it("is the full record, clause references included", () => {
     const settled: ContractDocument = { ...vendor, status: "settled" };

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { lookupCitation } from "../citations";
-import { getDocument, getDocumentVersions } from "./documents";
+import { addDeclaredConflict, removeDeclaredConflict } from "./advocate";
+import { claimDocument, getDocument, getDocumentVersions } from "./documents";
 
 // The corpus without the MSMED s.15 entry. The fixture's finding cites it as
 // verified, so if the first-pass snapshot comes out blocked, the gate really
@@ -24,6 +25,54 @@ async function settle<T>(promise: Promise<T>): Promise<T> {
   await vi.runAllTimersAsync();
   return promise;
 }
+
+const advocate = { id: "adv-test", name: "Test Advocate", bar: "XX/0001/2020" };
+const declaration = { noConflictWithEitherParty: true } as const;
+
+describe("claiming a document", () => {
+  it("is refused without the conflict declaration, whatever the screen did", async () => {
+    const claim = claimDocument(
+      "doc-msa-pending",
+      advocate,
+      {} as unknown as typeof declaration,
+    );
+    const refused = expect(claim).rejects.toThrow(/no conflict of interest/);
+    await vi.runAllTimersAsync();
+    await refused;
+    const doc = await settle(getDocument("doc-msa-pending"));
+    expect(doc?.advocate).toBeNull();
+    expect(doc?.conflictDeclaredAt ?? null).toBeNull();
+  });
+
+  it("is refused when a name the advocate declared a conflict with is a party", async () => {
+    await settle(addDeclaredConflict("Sundargarh Logistics"));
+    const claim = claimDocument("doc-msa-pending", advocate, declaration);
+    const refused = expect(claim).rejects.toThrow(/declared conflict.*Sundargarh Logistics Pvt Ltd/);
+    await vi.runAllTimersAsync();
+    await refused;
+    expect((await settle(getDocument("doc-msa-pending")))?.advocate).toBeNull();
+    await settle(removeDeclaredConflict("Sundargarh Logistics"));
+  });
+
+  it("records the declaration with the claim", async () => {
+    const doc = await settle(claimDocument("doc-msa-pending", advocate, declaration));
+    expect(doc.status).toBe("under_review");
+    expect(doc.advocate?.id).toBe(advocate.id);
+    expect(doc.conflictDeclaredAt).toBe(doc.claimedAt);
+    expect(doc.conflictDeclaredAt).not.toBeNull();
+  });
+
+  it("leaves a document alone that is already theirs, and refuses it to anyone else", async () => {
+    const before = await settle(getDocument("doc-msa-pending"));
+    const again = await settle(claimDocument("doc-msa-pending", advocate, declaration));
+    expect(again.claimedAt).toBe(before?.claimedAt);
+
+    const other = claimDocument("doc-msa-pending", { ...advocate, id: "adv-other" }, declaration);
+    const refused = expect(other).rejects.toThrow(/already claimed/);
+    await vi.runAllTimersAsync();
+    await refused;
+  });
+});
 
 describe("the snapshot written when the first pass finishes", () => {
   it("is written once, as the first pass", async () => {
