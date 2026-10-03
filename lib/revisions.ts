@@ -36,9 +36,14 @@ export function revisionCycle(
   };
 }
 
-/** "Revision 2 of 3", or null before the first send-back. */
+/**
+ * "Revision 2 of 3", or null before the first send-back. At the limit with a
+ * round still open it says so, because that is why a request still works.
+ */
 export function revisionCounter(cycle: RevisionCycle): string | null {
-  return cycle.count > 0 ? `Revision ${cycle.count} of ${cycle.max}` : null;
+  if (cycle.count === 0) return null;
+  const counter = `Revision ${cycle.count} of ${cycle.max}`;
+  return cycle.reached && cycle.roundOpen ? `${counter} (this round is open)` : counter;
 }
 
 /**

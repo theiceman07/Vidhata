@@ -52,6 +52,9 @@ describe("where a document stands against it", () => {
   it("can still ask for more in a round already open, because that starts no new round", () => {
     const cycle = revisionCycle({ status: "revision", revisionCount: MAX_REVISION_CYCLES });
     expect(cycle).toMatchObject({ roundOpen: true, reached: true, canRequest: true });
+    expect(revisionCounter(cycle)).toBe(
+      `Revision ${MAX_REVISION_CYCLES} of ${MAX_REVISION_CYCLES} (this round is open)`,
+    );
     expect(revisionNotice(cycle)).toMatch(/last round.*with the client.*logged for corpus review/);
     expect(revisionBlockedReason(cycle)).toBeNull();
   });

@@ -10,6 +10,7 @@ import { tierLabel } from "@/lib/config/pricing";
 import { clientVisibleFindings } from "@/lib/findings";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { groupOf, yourMove } from "@/lib/moves";
+import { termLabel } from "@/lib/term";
 import type { ContractDocument } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -59,7 +60,7 @@ export function DealOnFile({ doc, className }: { doc: ContractDocument; classNam
     ["Governing law", doc.governingLaw],
   ];
   if (doc.transactionValue > 0) rows.push(["Value", rupees.format(doc.transactionValue)]);
-  rows.push(["Term", `${doc.durationMonths} months`]);
+  rows.push(["Term", termLabel(doc.durationMonths)]);
   if (doc.counterpartyIsMsme) rows.push(["Counterparty", "Registered MSME"]);
   rows.push(["Review", tierLabel(doc.tier)]);
 

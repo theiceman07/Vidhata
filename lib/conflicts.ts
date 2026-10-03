@@ -8,6 +8,11 @@
  * and "Kav" matches nothing. Company suffixes and the "Individual" label are
  * not part of a name. When in doubt the advocate is stopped and told which
  * name matched, so they can decide and correct their profile.
+ *
+ * A stand-in. The conflict checks the requirements call for (SRD 4.2) are at
+ * the level of parties and matters, which needs real party and matter data
+ * this preview does not have. This compares names the advocate typed, and
+ * nothing here should be mistaken for that check.
  */
 
 const NOISE = new Set([
