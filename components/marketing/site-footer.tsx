@@ -15,6 +15,8 @@ const GROUPS = [
       { href: "/#how", label: "How it works" },
       { href: "/#india", label: "India checks" },
       { href: "/pricing", label: "Pricing" },
+      { href: "/contracts", label: "Agreements" },
+      { href: "/sample", label: "Sample document" },
     ],
   },
   {
@@ -22,12 +24,15 @@ const GROUPS = [
     links: [
       { href: "/#advocates", label: "Empanelment" },
       { href: "/advocate-login", label: "Advocate login" },
+      { href: "/advocate-invite", label: "Request an invitation" },
     ],
   },
   {
     label: "Company",
     links: [
       { href: "/contact", label: "Contact" },
+      { href: "/scope", label: "Scope and limits" },
+      { href: "/security", label: "Security and data" },
       { href: "/terms", label: "Terms of service" },
       { href: "/privacy", label: "Privacy policy" },
     ],
@@ -44,7 +49,7 @@ export function SiteFooter() {
     <footer className="px-3 pb-3 sm:px-4 sm:pb-4">
       <div
         data-nav-tone="dark"
-        className="tile-grain overflow-hidden rounded-modal bg-ink text-paper"
+        className="tile-grain tile-grain-ink overflow-hidden rounded-modal bg-ink text-paper"
       >
         <div className="mx-auto w-full max-w-6xl px-6 pt-16 md:pt-20">
           <div className="grid gap-x-16 gap-y-12 lg:grid-cols-[minmax(0,1fr)_auto]">

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { Icon } from "@/components/shared/icon";
 import { ErrorState } from "@/components/shared/error-state";
@@ -12,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { getDocument, signOffDocument } from "@/lib/api/documents";
+import { getDocumentForReview, signOffDocument } from "@/lib/api/documents";
 import { signOffBlockers } from "@/lib/findings";
 import { buildAuditTrail } from "@/lib/audit";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
@@ -41,8 +42,14 @@ const CONFIRMATIONS = [
       "Every finding settled against the first pass is supported by a reason recorded on the finding.",
   },
   {
-    id: "rule-37",
-    label: "This sign-off complies with Bar Council of India Rule 37.",
+    // Generic until counsel confirms. This line used to cite a Bar Council of
+    // India rule by number: the team assumed it, nobody has checked what that
+    // rule says or that a sign-off amounts to a legal opinion under it, and an
+    // advocate should not attest to a rule number nobody has verified. The
+    // original wording and the question are on the counsel list in
+    // docs/superpowers/plans/2026-10-03-money-and-privacy.md.
+    id: "responsibility",
+    label: "I sign this off under my own professional responsibility as an advocate.",
   },
   {
     id: "audit",
@@ -121,7 +128,8 @@ function RecordList({ doc }: { doc: ContractDocument }) {
   );
 }
 
-export default function SignOffPage({ params }: { params: { id: string } }) {
+export default function SignOffPage() {
+  const params = useParams<{ id: string }>();
   const [doc, setDoc] = useState<ContractDocument | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -131,7 +139,7 @@ export default function SignOffPage({ params }: { params: { id: string } }) {
   const load = useCallback(async () => {
     setState("loading");
     try {
-      const result = await getDocument(params.id);
+      const result = await getDocumentForReview(params.id);
       if (!result) throw new Error("Document not found.");
       setDoc(result);
       setState("loaded");
@@ -227,7 +235,7 @@ export default function SignOffPage({ params }: { params: { id: string } }) {
     if (!doc) return;
     setSubmitting(true);
     try {
-      setDoc(await signOffDocument(doc.id));
+      setDoc(await signOffDocument(doc.id, CURRENT_ADVOCATE.id));
       toast.success("Signed off. The client can now read the settled document.");
     } catch (err) {
       toast.error(

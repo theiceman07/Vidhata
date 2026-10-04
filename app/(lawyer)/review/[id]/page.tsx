@@ -1,37 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Icon } from "@/components/shared/icon";
 import { ErrorState } from "@/components/shared/error-state";
 import { DocumentWorkspace } from "@/components/document/workspace";
 import { ReviewAgent } from "@/components/document/review-agent";
 import type { PaletteCommand } from "@/components/shared/command-palette";
+import { AddFindingDialog } from "@/components/domain/add-finding-dialog";
+import { ClaimDialog } from "@/components/domain/claim-dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   addFinding,
   claimDocument,
-  getDocument,
+  getDocumentForReview,
+  getDocumentVersions,
   requestChange,
   updateFinding,
   withdrawCitation,
@@ -40,18 +25,19 @@ import { getAdvocateProfile } from "@/lib/api/advocate";
 import { addNote, deleteNote, listNotes, updateNote } from "@/lib/api/notes";
 import { findingNumbers, signOffBlockers } from "@/lib/findings";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
+import { reviewScope } from "@/lib/reviewScope";
+import { revisionCycle } from "@/lib/revisions";
 import type {
   AdvocateNote,
-  Clause,
   ContractDocument,
-  Finding,
+  DocumentVersion,
   MarginNotes,
-  Severity,
 } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
 
-export default function ReviewPage({ params }: { params: { id: string } }) {
+export default function ReviewPage() {
+  const params = useParams<{ id: string }>();
   const router = useRouter();
   const initialFindingId = useSearchParams().get("finding");
   const [doc, setDoc] = useState<ContractDocument | null>(null);
@@ -60,21 +46,27 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [claiming, setClaiming] = useState(false);
+  const [claimOpen, setClaimOpen] = useState(false);
+  const [declaredConflicts, setDeclaredConflicts] = useState<string[]>([]);
   const [available, setAvailable] = useState(true);
   const [notes, setNotes] = useState<AdvocateNote[]>([]);
+  const [versions, setVersions] = useState<DocumentVersion[]>([]);
 
   const load = useCallback(async () => {
     setState("loading");
     try {
-      const [result, profile, ownNotes] = await Promise.all([
-        getDocument(params.id),
+      const [result, profile, ownNotes, drafts] = await Promise.all([
+        getDocumentForReview(params.id),
         getAdvocateProfile(),
         listNotes(params.id, CURRENT_ADVOCATE.id),
+        getDocumentVersions(params.id),
       ]);
       if (!result) throw new Error("Document not found.");
       setDoc(result);
       setAvailable(profile.available);
+      setDeclaredConflicts(profile.declaredConflicts);
       setNotes(ownNotes);
+      setVersions(drafts);
       setState("loaded");
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Could not load this document.");
@@ -165,10 +157,15 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
       if (!doc) return;
       const updated = await run(
         () =>
-          updateFinding(doc.id, findingId, {
-            disposition: note ? "overridden" : "confirmed",
-            overrideNote: note,
-          }),
+          updateFinding(
+            doc.id,
+            findingId,
+            {
+              disposition: note ? "overridden" : "confirmed",
+              overrideNote: note,
+            },
+            CURRENT_ADVOCATE.id,
+          ),
         "Could not settle this finding.",
       );
       if (!updated) return;
@@ -177,10 +174,12 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
         action: {
           label: "Undo",
           onClick: async () => {
-            const reverted = await updateFinding(doc.id, findingId, {
-              disposition: "pending",
-              overrideNote: null,
-            });
+            const reverted = await updateFinding(
+              doc.id,
+              findingId,
+              { disposition: "pending", overrideNote: null },
+              CURRENT_ADVOCATE.id,
+            );
             setDoc(reverted);
           },
         },
@@ -193,7 +192,13 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
     async (findingId: string) => {
       if (!doc) return;
       await run(
-        () => updateFinding(doc.id, findingId, { disposition: "pending", overrideNote: null }),
+        () =>
+          updateFinding(
+            doc.id,
+            findingId,
+            { disposition: "pending", overrideNote: null },
+            CURRENT_ADVOCATE.id,
+          ),
         "Could not reopen this finding.",
       );
     },
@@ -204,7 +209,7 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
     async (findingId: string, request: string) => {
       if (!doc) return;
       const updated = await run(
-        () => requestChange(doc.id, findingId, request, CURRENT_ADVOCATE.name),
+        () => requestChange(doc.id, findingId, request, CURRENT_ADVOCATE),
         "Could not send this request.",
       );
       if (updated) toast.success("Request sent to the client");
@@ -216,7 +221,7 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
     async (findingId: string, citationId: string, note: string) => {
       if (!doc) return;
       const updated = await run(
-        () => withdrawCitation(doc.id, findingId, citationId, note, CURRENT_ADVOCATE.name),
+        () => withdrawCitation(doc.id, findingId, citationId, note, CURRENT_ADVOCATE),
         "Could not withdraw this source.",
       );
       if (updated) toast.success("Source withdrawn. The finding now rests on your note.");
@@ -224,12 +229,18 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
     [doc, run],
   );
 
-  const handleClaim = useCallback(async () => {
+  // Every Claim on this page asks for the conflict declaration first.
+  const handleClaim = useCallback(() => setClaimOpen(true), []);
+
+  const confirmClaim = useCallback(async () => {
     if (!doc) return;
     setClaiming(true);
     try {
-      const updated = await claimDocument(doc.id, CURRENT_ADVOCATE);
+      const updated = await claimDocument(doc.id, CURRENT_ADVOCATE, {
+        noConflictWithEitherParty: true,
+      });
       setDoc(updated);
+      setClaimOpen(false);
       toast.success("Claimed. The document is yours to review.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not claim this document.");
@@ -242,6 +253,13 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
     () => (doc ? signOffBlockers(doc, CURRENT_ADVOCATE.id) : []),
     [doc],
   );
+
+  // A re-review is scoped to what the last round changed. A first review has
+  // no earlier draft, and a signed-off document has nothing left to decide.
+  const scope = useMemo(() => {
+    if (!doc || doc.status === "settled" || doc.status === "executed") return null;
+    return reviewScope(doc, versions);
+  }, [doc, versions]);
 
   const commands = useMemo<PaletteCommand[]>(() => {
     if (!doc) return [];
@@ -302,6 +320,7 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
       : `Held by ${doc.advocate?.name}`;
 
   return (
+    <>
     <DocumentWorkspace
       doc={doc}
       role="advocate"
@@ -331,6 +350,8 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
       commands={commands}
       initialFindingId={initialFindingId}
       notes={marginNotes}
+      scope={scope}
+      revisions={revisionCycle(doc)}
       companion={({ goToClause, openFinding }) => (
         <ReviewAgent
           doc={doc}
@@ -347,12 +368,14 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
         ) : canAdjudicate ? (
           <>
             <AddFindingDialog
+              documentId={doc.id}
+              advocateId={CURRENT_ADVOCATE.id}
               clauses={doc.clauses}
               open={dialogOpen}
               onOpenChange={setDialogOpen}
               onAdd={async (finding) => {
                 const updated = await run(
-                  () => addFinding(doc.id, finding),
+                  () => addFinding(doc.id, finding, CURRENT_ADVOCATE.id),
                   "Could not add this finding.",
                 );
                 if (updated) setDialogOpen(false);
@@ -379,127 +402,14 @@ export default function ReviewPage({ params }: { params: { id: string } }) {
       onWithdrawSource={handleWithdraw}
       busy={busy}
     />
-  );
-}
-
-/**
- * A finding the first pass missed. It is raised against a clause of this
- * document and enters the record open, like any other finding: raising a
- * concern and deciding it are two different acts, and both are recorded.
- */
-function AddFindingDialog({
-  clauses,
-  open,
-  onOpenChange,
-  onAdd,
-}: {
-  clauses: Clause[];
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onAdd: (finding: Finding) => void;
-}) {
-  const [clauseId, setClauseId] = useState("");
-  const [description, setDescription] = useState("");
-  const [severity, setSeverity] = useState<Severity>("medium");
-
-  const clause = clauses.find((c) => c.id === clauseId);
-  const canSubmit = Boolean(clause) && description.trim().length > 0;
-
-  function reset() {
-    setClauseId("");
-    setDescription("");
-    setSeverity("medium");
-  }
-
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        onOpenChange(next);
-        if (!next) reset();
-      }}
-    >
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          <Icon name="add" size={18} />
-          Add finding
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add a finding the first pass missed</DialogTitle>
-          <DialogDescription>
-            It enters the record open. It has no statutory source, so settling
-            it will need your note.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div>
-            <Label htmlFor="finding-clause">Clause</Label>
-            <Select value={clauseId} onValueChange={setClauseId}>
-              <SelectTrigger id="finding-clause">
-                <SelectValue placeholder="Choose a clause" />
-              </SelectTrigger>
-              <SelectContent>
-                {clauses.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.number} · {c.heading}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="severity">Severity</Label>
-            <Select value={severity} onValueChange={(v) => setSeverity(v as Severity)}>
-              <SelectTrigger id="severity">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="finding-description">The concern</Label>
-            <Textarea
-              id="finding-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="What did the first pass miss?"
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button
-            disabled={!canSubmit}
-            onClick={() => {
-              if (!clause) return;
-              onAdd({
-                findingId: `manual-${Date.now()}`,
-                layer: 6,
-                severity,
-                clauseReference: `Clause ${clause.number}`,
-                // The passage is the clause's opening paragraph: the
-                // advocate chose the clause, not a span within it.
-                clauseText: clause.body.split("\n\n")[0],
-                description: description.trim(),
-                ruleApplied: "MANUAL-ADVOCATE-ADDED",
-                remedySuggested: "Advocate judgment · see the concern above.",
-                citations: [],
-                disposition: "pending",
-                overrideNote: null,
-                resolvedAt: null,
-                changeRequest: null,
-              });
-            }}
-          >
-            Add finding
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ClaimDialog
+      doc={doc}
+      declaredConflicts={declaredConflicts}
+      open={claimOpen}
+      onOpenChange={setClaimOpen}
+      onConfirm={confirmClaim}
+      claiming={claiming}
+    />
+    </>
   );
 }

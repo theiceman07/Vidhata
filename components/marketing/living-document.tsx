@@ -63,9 +63,9 @@ function Neighbour({
   className?: string;
 }) {
   return (
-    <div aria-hidden className={cn("max-w-measure select-none opacity-40", className)}>
+    <div aria-hidden className={cn("max-w-measure select-none opacity-60", className)}>
       <p className="font-display text-meta text-ink">
-        <span className="mr-2 font-mono text-label text-muted-fg">{clause.number}</span>
+        <span className="mr-2 font-mono text-label text-ink">{clause.number}</span>
         {clause.heading}
       </p>
       <p className="mt-1 line-clamp-2 font-clause text-meta text-ink">{clause.body}</p>

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/session";
 import { BrandLogo } from "@/components/shared/brand-logo";
+import { PreviewBanner } from "@/components/shared/preview-banner";
 import { Icon, type IconName } from "@/components/shared/icon";
 import {
   PaletteProvider,
@@ -119,7 +120,13 @@ function ShellBody({
   useRegisterCommands("shell", navCommands);
 
   function isActive(href: string) {
-    return pathname === href || pathname.startsWith(`${href}/`);
+    const matches = (h: string) => pathname === h || pathname.startsWith(`${h}/`);
+    if (!matches(href)) return false;
+    // The most specific link wins, so a section and one of its own pages are
+    // not both lit (Settings and Privacy, on /settings/privacy).
+    return !sections.some((s) =>
+      s.links.some((l) => l.href.length > href.length && matches(l.href)),
+    );
   }
 
   function handleSignOut() {
@@ -151,7 +158,9 @@ function ShellBody({
         />
 
         {/* Mobile · the same pill, lying flat */}
-        <header className="sticky top-0 z-30 px-3 pt-3 md:hidden">
+        {/* Opaque behind the pill, so a page scrolling beneath it passes under
+            the bar and is not seen at its sides. */}
+        <header className="sticky top-0 z-30 bg-paper px-3 pb-2 pt-3 md:hidden">
           <div className="flex h-14 items-center justify-between rounded-full bg-ink pl-6 pr-2 text-paper">
             <Link href={homeHref} className="text-paper">
               <BrandLogo size="md" />
@@ -164,16 +173,21 @@ function ShellBody({
           </div>
         </header>
 
-        <main
-          className={cn(
-            "min-w-0 flex-1",
-            fullBleed
-              ? "md:h-screen md:overflow-y-auto lg:overflow-hidden"
-              : "px-4 py-6 pb-24 md:h-screen md:overflow-y-auto md:px-8 md:py-8",
-          )}
-        >
-          {children}
-        </main>
+        {/* The page and the preview banner share one column, so the banner
+            takes its own row and the page scrolls beneath it. */}
+        <div className="flex min-w-0 flex-1 flex-col md:h-screen">
+          <PreviewBanner />
+          <main
+            className={cn(
+              "min-h-0 min-w-0 flex-1",
+              fullBleed
+                ? "md:overflow-y-auto lg:overflow-hidden"
+                : "px-4 py-6 pb-24 md:overflow-y-auto md:px-8 md:py-8",
+            )}
+          >
+            {children}
+          </main>
+        </div>
 
         {/* The workspace owns the bottom of a small screen for its finding
             sheet, so the tab bar stands down there. */}

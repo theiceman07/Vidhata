@@ -6,6 +6,8 @@ import Link from "next/link";
 import { differenceInCalendarDays, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/shared/icon";
+import { toast } from "sonner";
+import { ClaimDialog } from "@/components/domain/claim-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { StateLabel } from "@/components/document/state-label";
@@ -21,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { listDocuments, claimDocument, getQueuePriority } from "@/lib/api/documents";
 import { getAdvocateProfile } from "@/lib/api/advocate";
+import { tierLabel } from "@/lib/config/pricing";
 import {
   blockedCitationCount,
   severityCounts,
@@ -88,6 +91,8 @@ export default function QueuePage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [available, setAvailable] = useState(true);
+  const [claimTarget, setClaimTarget] = useState<ContractDocument | null>(null);
+  const [declaredConflicts, setDeclaredConflicts] = useState<string[]>([]);
   const [filter, setFilter] = useState<Filter>("open");
   const [sort, setSort] = useState<Sort>("priority");
   const [query, setQuery] = useState("");
@@ -102,6 +107,7 @@ export default function QueuePage() {
       const [result, profile] = await Promise.all([listDocuments(), getAdvocateProfile()]);
       setDocs(result);
       setAvailable(profile.available);
+      setDeclaredConflicts(profile.declaredConflicts);
       setState("loaded");
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Could not load the queue.");
@@ -164,14 +170,24 @@ export default function QueuePage() {
     });
   }, [buckets, filter, query, sort]);
 
-  async function claim(id: string) {
+  // Claim asks for the conflict declaration first, here as on the review page.
+  function claim(id: string) {
+    setClaimTarget(docs.find((d) => d.id === id) ?? null);
+  }
+
+  async function confirmClaim() {
+    if (!claimTarget) return;
+    const id = claimTarget.id;
     setClaimingId(id);
     try {
-      await claimDocument(id, CURRENT_ADVOCATE);
+      await claimDocument(id, CURRENT_ADVOCATE, { noConflictWithEitherParty: true });
+      setClaimTarget(null);
       router.push(`/review/${id}`);
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Could not claim this document.");
-      setState("error");
+      // A refused claim is said as a message; the queue itself is fine and
+      // is not replaced by an error screen.
+      setClaimTarget(null);
+      toast.error(err instanceof Error ? err.message : "Could not claim this document.");
     } finally {
       setClaimingId(null);
     }
@@ -394,6 +410,7 @@ export default function QueuePage() {
             />
             <input
               type="search"
+              aria-label="Search the queue"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by document or party"
@@ -461,6 +478,17 @@ export default function QueuePage() {
         <TierMix docs={buckets.open} />
         <SignedOffByYou docs={buckets.settled} onShow={() => show("settled")} />
       </div>
+
+      <ClaimDialog
+        doc={claimTarget}
+        declaredConflicts={declaredConflicts}
+        open={claimTarget !== null}
+        onOpenChange={(next) => {
+          if (!next) setClaimTarget(null);
+        }}
+        onConfirm={confirmClaim}
+        claiming={claimingId !== null}
+      />
     </div>
   );
 }
@@ -557,7 +585,7 @@ function UpNext({
   const shown = pending.slice(0, 3);
   const why =
     doc.status === "pending_review"
-      ? `Unclaimed · ${doc.tier} tier`
+      ? `Unclaimed · ${tierLabel(doc.tier).toLowerCase()}`
       : clientAnswered(doc)
         ? "The client has answered"
         : "Claimed by you";
@@ -620,7 +648,9 @@ function UpNext({
               </div>
               <p className="mt-2 line-clamp-2 text-meta text-ink">{finding.description}</p>
               <p className="mt-2 truncate text-label text-muted-fg">
-                {PIPELINE_LAYERS[finding.layer].name}
+                {finding.source === "advocate"
+                  ? "Added by advocate"
+                  : PIPELINE_LAYERS[finding.layer].name}
               </p>
             </li>
           ))}
@@ -922,15 +952,15 @@ function QueueRow({ doc, action }: { doc: ContractDocument; action: React.ReactN
           {doc.clientName}
           <span className="lg:hidden">
             <span className="mx-1.5 text-muted-fg/50">·</span>
-            <span className="capitalize">{doc.tier}</span>
+            {tierLabel(doc.tier)}
             <span className="mx-1.5 text-muted-fg/50">·</span>
             waiting {days} {days === 1 ? "day" : "days"}
           </span>
         </p>
       </div>
 
-      <div role="cell" className="hidden text-meta capitalize text-ink lg:block">
-        {doc.tier}
+      <div role="cell" className="hidden text-meta text-ink lg:block">
+        {tierLabel(doc.tier)}
       </div>
 
       <div role="cell" className="col-span-2 flex items-center gap-3 lg:col-span-1">

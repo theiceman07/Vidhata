@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Icon } from "@/components/shared/icon";
+import { CONSULTATION, PRICE_BASIS } from "@/lib/config/pricing";
 import { cn } from "@/lib/utils";
 import { getMockReply } from "@/lib/mock/chat.mock";
 import type { ChatMessage, ContractDocument } from "@/lib/types";
@@ -93,6 +95,18 @@ export function DocumentAgent({
                     That asks what you should do, not what the document says.
                     {" "}{advocate} settled this document and can advise you.
                   </p>
+                  <Link
+                    href={`/documents/${doc.id}/consultation`}
+                    className="mt-3 inline-flex items-center gap-1 rounded-full bg-ink px-4 py-2 text-meta font-medium text-paper transition-colors hover:bg-ink/85"
+                  >
+                    Request a consultation with {advocate}
+                    <Icon name="arrow_forward" size={16} />
+                  </Link>
+                  <p className="mt-2 text-label text-muted-fg">
+                    {CONSULTATION.price} {PRICE_BASIS}, payable only if {advocate} accepts. A
+                    request is free, and the fee is separate from the platform&apos;s fixed
+                    document fee.
+                  </p>
                 </li>
               ) : (
                 <li key={m.id} className="text-body leading-relaxed text-ink">
@@ -126,11 +140,9 @@ export function DocumentAgent({
           className="prompt-ring pointer-events-none absolute -inset-[2px] rounded-[22px] opacity-0 transition-opacity duration-500 group-focus-within:opacity-100"
         />
         <div className="relative rounded-card border border-ink/15 bg-paper p-2 pl-4 transition-colors group-focus-within:border-transparent">
-          <label htmlFor="agent-input" className="sr-only">
-            Ask about this document
-          </label>
           <textarea
             id="agent-input"
+            aria-label="Ask about this document"
             rows={2}
             value={input}
             onChange={(e) => setInput(e.target.value)}

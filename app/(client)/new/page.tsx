@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icon } from "@/components/shared/icon";
+import { DraftPaths } from "@/components/domain/draft-paths";
 import { IntakeWizard } from "@/components/domain/intake-wizard";
 
 export default function NewDealPage() {
@@ -19,8 +20,10 @@ export default function NewDealPage() {
         advocate.
       </p>
 
-      <div className="mt-decision">
-        <IntakeWizard />
+      <div className="mt-8">
+        <DraftPaths>
+          <IntakeWizard />
+        </DraftPaths>
       </div>
     </div>
   );

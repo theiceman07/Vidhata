@@ -1,14 +1,25 @@
 import type {
   Clause,
   ContractDocument,
+  DocumentVersion,
   ExecutionStep,
   Finding,
   ReviewTier,
+  VersionCreatedBy,
 } from "@/lib/types";
 import { PIPELINE_DURATION_MS, clauseNumberFromReference } from "@/lib/types";
 import { mockDocuments } from "@/lib/mock/documents.mock";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
+import { recheckCitation, recheckFindings } from "@/lib/citations";
+import { declaredConflictWith } from "@/lib/conflicts";
+import { blockingCitations, settleNeedsNote } from "@/lib/findings";
+import { esignatureStep } from "@/lib/config/esign";
+import { TIER_PRICING } from "@/lib/config/pricing";
+import { revisionBlockedReason, revisionCycle } from "@/lib/revisions";
+import { assignReviewTier } from "@/lib/triage";
+import { declaredConflictNames } from "./advocate";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
+import { register, restored } from "./state";
 
 // QA 7.3: tier ordering used to sort the advocate queue, so the pricing
 // page's "Priority turnaround" claim (Enhanced/Senior tiers) is backed by
@@ -19,42 +30,45 @@ const TIER_PRIORITY: Record<ReviewTier, number> = {
   standard: 2,
 };
 
-export function getQueuePriority(doc: ContractDocument): number {
-  return TIER_PRIORITY[doc.tier];
+/**
+ * Whether a document has been released to the advocate side: screened and
+ * paid for. Everything an advocate can read (the queue, a link to a review,
+ * a claim) goes through this, so an unpaid or unscreened document is not
+ * there for them, and is no part of any count built from the queue.
+ */
+export function isReleased(doc: Pick<ContractDocument, "status">): boolean {
+  return (
+    doc.status !== "draft" &&
+    doc.status !== "analysing" &&
+    doc.status !== "awaiting_payment"
+  );
 }
 
-// Illustrative flat stamp duty figures for the demo pipeline's output —
-// not legal advice, mirrors the pattern already used in the settled NDA
-// fixture (lib/mock/documents.mock.ts).
-const STAMP_DUTY_BY_STATE: Record<string, string> = {
-  Delhi: "Rs 100",
-  Maharashtra: "Rs 500",
-  Karnataka: "Rs 200",
-  "Tamil Nadu": "Rs 100",
-  Telangana: "Rs 100",
-  Gujarat: "Rs 300",
-  "West Bengal": "Rs 150",
-  Haryana: "Rs 200",
-  "Uttar Pradesh": "Rs 100",
-  Kerala: "Rs 200",
-};
+// A document with no tier has not been screened, so it is not in the queue
+// yet; it sorts last rather than ahead of work that is.
+export function getQueuePriority(doc: ContractDocument): number {
+  return doc.tier ? TIER_PRIORITY[doc.tier] : Object.keys(TIER_PRIORITY).length;
+}
 
+// The checklist of a generated document carries no figure and no rule. Stamp
+// duty varies by state and instrument, and registration turns on rules that
+// have not been built from an audited schedule, so neither is stated here: the
+// advocate confirms both. The e-signature step is the same for a generated
+// document and a fixture, and it is built in one place (lib/config/esign.ts).
+// A figure appears only on a fixture an advocate has confirmed.
 function buildExecutionSteps(doc: ContractDocument): ExecutionStep[] {
-  const stampDuty = STAMP_DUTY_BY_STATE[doc.stateOfExecution] ?? "Rs 100";
-  const requiresRegistration =
-    doc.type === "msa" && doc.transactionValue > 1000000;
-
   return [
     {
       kind: "stamping",
       applicable: true,
-      headline: `Stamp duty: ${stampDuty} (${doc.stateOfExecution})`,
-      detail: `Flat-rate stamp duty for a ${doc.type.toUpperCase()} executed in ${doc.stateOfExecution}.`,
-      reason: `Documents of this kind executed in ${doc.stateOfExecution} attract a flat stamp duty.`,
+      headline: "Stamp duty: confirmed by your advocate",
+      detail:
+        "Stamp duty depends on the state of execution and the instrument. Your advocate confirms the amount before you sign.",
+      reason: `Stamp duty depends on the state of execution (${doc.stateOfExecution}) and the instrument.`,
       instructions: [
-        "Purchase e-stamp paper via SHCIL or an authorised vendor.",
-        "Print the settled document on the stamp paper.",
-        "Have both signatories sign on the last page.",
+        "Your advocate confirms the amount before you sign.",
+        "Pay it as your advocate confirms, and attach the certificate here as proof.",
+        "Have both signatories sign the settled document.",
       ],
       complete: false,
       completedAt: null,
@@ -63,49 +77,59 @@ function buildExecutionSteps(doc: ContractDocument): ExecutionStep[] {
     },
     {
       kind: "registration",
-      applicable: requiresRegistration,
-      headline: requiresRegistration
-        ? "Registration: required"
-        : "Registration: not required",
-      detail: requiresRegistration
-        ? "File the document with the local Sub-Registrar."
-        : "No registration filing needed.",
-      reason: requiresRegistration
-        ? "High-value MSAs are compulsorily registrable under Section 17 of the Registration Act, 1908."
-        : "This document type is not compulsorily registrable under Section 17 of the Registration Act, 1908.",
-      instructions: requiresRegistration
-        ? [
-            "Book an appointment with the Sub-Registrar's office.",
-            "Carry two witnesses and original identity proof.",
-          ]
-        : [],
-      complete: false,
-      completedAt: null,
-      completedBy: null,
-      evidence: null,
-    },
-    {
-      kind: "esignature",
       applicable: true,
-      headline: "e-signature: valid under the IT Act",
-      detail: `Aadhaar-based e-sign satisfies Section 5 of the IT Act, 2000, for a document governed by ${doc.governingLaw}.`,
-      reason:
-        "This document type is not among the classes excluded from electronic execution.",
+      headline: "Registration: confirmed by your advocate",
+      detail: "Your advocate confirms whether registration applies.",
+      reason: "Whether registration applies is confirmed by your advocate.",
       instructions: [
-        "Both signatories complete Aadhaar e-sign via the settlement portal.",
-        "Download the signed PDF with the embedded audit trail.",
+        "Your advocate confirms whether registration applies.",
+        "If it does, complete it as your advocate directs and attach the receipt here.",
+        "Mark this step complete when your advocate has confirmed it and, if it applies, it is done.",
       ],
       complete: false,
       completedAt: null,
       completedBy: null,
       evidence: null,
     },
+    esignatureStep(doc.type),
   ];
 }
 
 // In-memory mutable store so adjudication/claim/sign-off actions persist
 // for the duration of the tab. Resets on reload — there is no backend yet.
-let store: ContractDocument[] = structuredClone(mockDocuments);
+let store: ContractDocument[] = restored("documents");
+register("documents", () => store);
+
+// Snapshots of drafts as they were handed on. They are written at hand-off
+// points only (see DocumentVersion), never on every edit, and kept apart from
+// the documents so list and queue reads stay light. Documents seeded before
+// snapshots existed have none.
+const versionStore: DocumentVersion[] = restored("versions");
+register("versions", () => versionStore);
+
+function recordVersion(doc: ContractDocument, createdBy: VersionCreatedBy): void {
+  if (versionStore.some((v) => v.documentId === doc.id && v.number === doc.version)) {
+    return;
+  }
+  // The citation gate runs again on every draft: each citation on the record
+  // is resolved against the corpus afresh, on the working copy and in the
+  // snapshot alike, so the two agree at the moment of hand-off. A blocked
+  // citation becomes verified only by matching the corpus, and a verified
+  // one that no longer matches becomes blocked. The other layers do not run
+  // here: this mock has no drafting or screening logic of its own.
+  doc.findings = recheckFindings(doc.findings);
+
+  const now = new Date().toISOString();
+  versionStore.push({
+    documentId: doc.id,
+    number: doc.version,
+    createdAt: now,
+    createdBy,
+    pipelineRunAt: now,
+    clauses: structuredClone(doc.clauses),
+    findings: structuredClone(doc.findings),
+  });
+}
 
 // QA 4.5: analysis used to complete via a setTimeout owned by the document
 // detail page component, cleared on unmount — a document left "analysing"
@@ -117,14 +141,17 @@ function reconcileAnalysis(doc: ContractDocument): void {
   if (doc.status !== "analysing" || !doc.analysisCompletesAt) return;
   if (Date.now() < new Date(doc.analysisCompletesAt).getTime()) return;
 
-  doc.status = "pending_review";
+  // Screening is done and the tier is known, so the client now pays the fixed
+  // fee. Only a paid document is released to the advocate queue.
+  doc.status = "awaiting_payment";
   doc.analysisCompletesAt = null;
+  // Screening assigns the review tier from the deal facts; the client does
+  // not choose it.
+  doc.tier = assignReviewTier(doc);
   // Demo-only: the pipeline has no real drafting/screening logic to run,
   // so a freshly analysed document is seeded with the same representative
   // finding set used in the pending_review fixture (high non-compete,
-  // medium MSMED, low blocked-citation) rather than staying empty. The
-  // tier chosen at intake is preserved — it used to be force-upgraded to
-  // "enhanced" here regardless of what the client selected (QA 3.2).
+  // medium MSMED, low blocked-citation) rather than staying empty.
   doc.findings = structuredClone(
     mockDocuments.find((d) => d.id === "doc-msa-pending")?.findings ?? [],
   ).map((f, i) => ({ ...f, findingId: `${doc.id}-finding-${i}` }));
@@ -144,6 +171,9 @@ function reconcileAnalysis(doc: ContractDocument): void {
     clause.findingIds.push(f.findingId);
     return true;
   });
+
+  // The first pass is handed to the advocate queue: that is a hand-off.
+  recordVersion(doc, "first_pass");
 }
 
 function reconcileAll(): void {
@@ -152,9 +182,12 @@ function reconcileAll(): void {
 
 /**
  * @param orgId When provided, scopes the result to that org only (QA 3.5 —
- *   every client used to see every tenant's documents on one dashboard).
+ *   every client used to see every tenant's documents on one dashboard), and
+ *   returns every document the client has, whatever its state.
  *   Omitted for the advocate queue, which is intentionally cross-org: an
- *   advocate must see documents from every client company.
+ *   advocate must see documents from every client company, and only the ones
+ *   released to the queue. A document still awaiting payment is not in any
+ *   advocate-facing read, so it is in no count or metric built from one.
  */
 export async function listDocuments(
   orgId?: string,
@@ -164,7 +197,9 @@ export async function listDocuments(
     throw new MockApiError("Could not load your documents.");
   }
   reconcileAll();
-  const scoped = orgId ? store.filter((d) => d.orgId === orgId) : store;
+  const scoped = orgId
+    ? store.filter((d) => d.orgId === orgId)
+    : store.filter(isReleased);
   return structuredClone(scoped);
 }
 
@@ -181,10 +216,46 @@ export async function getDocument(
   return structuredClone(doc);
 }
 
+/**
+ * A document as an advocate may read it. One that is missing and one that has
+ * not been released to the queue both come back as null, so an advocate who
+ * follows a link to an unpaid document cannot tell it exists.
+ */
+export async function getDocumentForReview(
+  id: string,
+): Promise<ContractDocument | null> {
+  await randomDelay();
+  if (shouldSimulateFailure()) {
+    throw new MockApiError("Could not load this document.");
+  }
+  const doc = store.find((d) => d.id === id);
+  if (!doc) return null;
+  reconcileAnalysis(doc);
+  return isReleased(doc) ? structuredClone(doc) : null;
+}
+
+/**
+ * The drafts of one document as they were handed on, oldest first. This is a
+ * detail-page read: the head is the working copy and may be ahead of the
+ * last snapshot.
+ */
+export async function getDocumentVersions(
+  id: string,
+): Promise<DocumentVersion[]> {
+  await randomDelay();
+  if (shouldSimulateFailure()) {
+    throw new MockApiError("Could not load the version history.");
+  }
+  return structuredClone(
+    versionStore
+      .filter((v) => v.documentId === id)
+      .sort((a, b) => a.number - b.number),
+  );
+}
+
 export interface IntakeInput {
   title: string;
   type: ContractDocument["type"];
-  tier: ReviewTier;
   clientName: string;
   counterpartyName: string;
   stateOfExecution: string;
@@ -305,7 +376,7 @@ export async function createDraftDocument(
     title: input.title,
     type: input.type,
     status: "draft",
-    tier: input.tier,
+    tier: null,
     // The mock layer only ever authenticates one client identity, so every
     // document a client creates belongs to that identity's org regardless
     // of the "your company name" text entered in the wizard (that field is
@@ -321,6 +392,7 @@ export async function createDraftDocument(
     keyTerms: input.keyTerms.trim() ? input.keyTerms.trim() : null,
     createdAt: new Date().toISOString(),
     version: 1,
+    revisionCount: 0,
     claimedAt: null,
     settledAt: null,
     analysisCompletesAt: null,
@@ -346,9 +418,46 @@ export async function startAnalysis(id: string): Promise<ContractDocument> {
   return structuredClone(doc);
 }
 
+/**
+ * The client pays the fixed fee, and the document is released to the advocate
+ * queue. The fee is one flat amount for the tier screening assigned, before
+ * GST, and it covers every revision round.
+ *
+ * Paying twice is not possible: a document that has been paid for comes back
+ * as it is, so a double click makes one payment. A failure leaves the
+ * document awaiting payment, nothing recorded, and the client can try again.
+ */
+export async function payFee(id: string): Promise<ContractDocument> {
+  await randomDelay(400, 800);
+  const doc = store.find((d) => d.id === id);
+  if (!doc) throw new MockApiError("Document not found.");
+  if (doc.payment) return structuredClone(doc);
+  if (doc.status !== "awaiting_payment" || !doc.tier) {
+    throw new MockApiError("This document is not awaiting payment.");
+  }
+  if (shouldSimulateFailure()) {
+    throw new MockApiError("The payment did not go through. Nothing was charged. Try again.");
+  }
+  doc.payment = {
+    amount: TIER_PRICING[doc.tier].amount,
+    paidAt: new Date().toISOString(),
+  };
+  doc.status = "pending_review";
+  return structuredClone(doc);
+}
+
+/**
+ * What an advocate affirms when they claim: no conflict of interest with
+ * either party. A claim is refused without it, whatever the screen did.
+ */
+export interface ConflictDeclaration {
+  noConflictWithEitherParty: true;
+}
+
 export async function claimDocument(
   id: string,
   advocate: { id: string; name: string; bar: string },
+  declaration: ConflictDeclaration,
 ): Promise<ContractDocument> {
   await randomDelay();
   if (shouldSimulateFailure()) {
@@ -363,15 +472,60 @@ export async function claimDocument(
       `${doc.advocate.name} has already claimed this document.`,
     );
   }
+  // Already theirs: nothing to claim, and nothing to reset.
+  if (doc.advocate?.id === advocate.id) return structuredClone(doc);
+
+  // Only a released document can be claimed. An unpaid one is refused as if
+  // it were not there, so a claim cannot show that it exists.
+  if (!isReleased(doc)) throw new MockApiError("Document not found.");
+
+  if (!declaration?.noConflictWithEitherParty) {
+    throw new MockApiError(
+      "Declare that you have no conflict of interest with either party before you claim.",
+    );
+  }
+  // A name the advocate has declared a conflict with is one they cannot
+  // then declare clear of. The declaration is theirs to correct on their
+  // profile, not to override here.
+  const conflict = declaredConflictWith(
+    [doc.clientName, doc.counterpartyName],
+    declaredConflictNames(),
+  );
+  if (conflict) {
+    throw new MockApiError(
+      `Your profile lists ${conflict.declared} as a declared conflict, which matches ${conflict.party}. You cannot claim this document.`,
+    );
+  }
+  const now = new Date().toISOString();
   doc.status = "under_review";
   doc.advocate = advocate;
-  doc.claimedAt = new Date().toISOString();
+  doc.claimedAt = now;
+  doc.conflictDeclaredAt = now;
   return structuredClone(doc);
 }
 
-function findFinding(docId: string, findingId: string) {
+/**
+ * The one gate every advocate write goes through.
+ *
+ * An unreleased document is refused exactly as a missing one is, so a write
+ * cannot show that it exists. Then the caller must be the advocate who holds
+ * the claim: the screen shows decision controls only to the holder, and that
+ * is not a guard, so it is held here as well.
+ */
+function heldDocument(docId: string, advocateId: string): ContractDocument {
   const doc = store.find((d) => d.id === docId);
-  if (!doc) throw new MockApiError("Document not found.");
+  if (!doc || !isReleased(doc)) throw new MockApiError("Document not found.");
+  if (!doc.advocate) {
+    throw new MockApiError("Claim this document before you decide anything on it.");
+  }
+  if (doc.advocate.id !== advocateId) {
+    throw new MockApiError(`${doc.advocate.name} holds this document.`);
+  }
+  return doc;
+}
+
+function findFinding(docId: string, findingId: string, advocateId: string) {
+  const doc = heldDocument(docId, advocateId);
   const finding = doc.findings.find((f) => f.findingId === findingId);
   if (!finding) throw new MockApiError("Finding not found.");
   return { doc, finding };
@@ -386,21 +540,44 @@ export async function requestChange(
   docId: string,
   findingId: string,
   request: string,
-  advocateName: string,
+  advocate: { id: string; name: string },
 ): Promise<ContractDocument> {
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not send this request.");
   }
-  const { doc, finding } = findFinding(docId, findingId);
+  const { doc, finding } = findFinding(docId, findingId, advocate.id);
+  // The limit holds whatever the screen offered (FR-20). It stops a round
+  // being started past it; it never stops sign-off.
+  const blocked = revisionBlockedReason(revisionCycle(doc));
+  if (blocked) throw new MockApiError(blocked);
+
+  const now = new Date().toISOString();
   finding.changeRequest = {
     request,
-    requestedAt: new Date().toISOString(),
-    requestedBy: advocateName,
+    requestedAt: now,
+    requestedBy: advocate.name,
     response: null,
     respondedAt: null,
   };
+  // Sending it back is what the cycle count counts, so a second request in
+  // the same round does not add another.
+  const startsRound = doc.status !== "revision";
+  if (startsRound) doc.revisionCount += 1;
   doc.status = "revision";
+  // The round that uses the last of them logs the case, once.
+  if (revisionCycle(doc).reached && !doc.corpusReviewLoggedAt) {
+    doc.corpusReviewLoggedAt = now;
+  }
+  // Sending a draft back is a hand-off, so it is a snapshot: the draft as the
+  // advocate handed it on, with every decision made so far and the request.
+  // Without it a finding decided before the send-back is in no snapshot, and
+  // the next review could not tell it from one decided since. A second
+  // request in the same round is not another hand-off.
+  if (startsRound) {
+    doc.version += 1;
+    recordVersion(doc, "advocate_revision");
+  }
   return structuredClone(doc);
 }
 
@@ -432,6 +609,9 @@ export async function respondToChanges(
   if (!stillWaiting) {
     doc.status = doc.advocate ? "under_review" : "pending_review";
     doc.version += 1;
+    // The client's answers complete a round and the next draft goes back to
+    // the advocate: that is a hand-off.
+    recordVersion(doc, "client_response");
   }
   return structuredClone(doc);
 }
@@ -446,22 +626,26 @@ export async function withdrawCitation(
   findingId: string,
   citationId: string,
   note: string,
-  advocateName: string,
+  advocate: { id: string; name: string },
 ): Promise<ContractDocument> {
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not withdraw this source.");
   }
-  const { doc, finding } = findFinding(docId, findingId);
+  const { doc, finding } = findFinding(docId, findingId, advocate.id);
   const citation = finding.citations.find((c) => c.id === citationId);
   if (!citation) throw new MockApiError("Citation not found.");
   if (citation.status !== "blocked") {
     throw new MockApiError("Only a blocked source can be withdrawn.");
   }
+  // A withdrawal is a decision about the finding, and it is on the record with
+  // its reasoning. Without the reasoning there is nothing to record.
+  const reasoning = note.trim();
+  if (!reasoning) throw new MockApiError("Record why the finding stands without this source.");
   citation.withdrawn = {
-    note,
+    note: reasoning,
     at: new Date().toISOString(),
-    by: advocateName,
+    by: advocate.name,
   };
   return structuredClone(doc);
 }
@@ -470,22 +654,31 @@ export async function updateFinding(
   docId: string,
   findingId: string,
   patch: Pick<Finding, "disposition" | "overrideNote">,
+  advocateId: string,
 ): Promise<ContractDocument> {
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not save this finding.");
   }
-  const { doc, finding } = findFinding(docId, findingId);
-  if (
-    patch.disposition !== "pending" &&
-    finding.citations.some((c) => c.status === "blocked" && !c.withdrawn)
-  ) {
-    throw new MockApiError(
-      "This finding's source is blocked. Withdraw it or resolve it before settling.",
-    );
+  const { doc, finding } = findFinding(docId, findingId, advocateId);
+  const note = patch.overrideNote?.trim() || null;
+  if (patch.disposition !== "pending") {
+    if (blockingCitations(finding).length > 0) {
+      throw new MockApiError(
+        "This finding's source is blocked. Withdraw it or resolve it before settling.",
+      );
+    }
+    // A finding without a verified source is an opinion. An advocate's judgment
+    // is the product, so it can be settled, but only with the reasoning written
+    // down.
+    if (settleNeedsNote(finding) && !note) {
+      throw new MockApiError(
+        "No verified source remains, so settling needs your reasoning on the record.",
+      );
+    }
   }
   finding.disposition = patch.disposition;
-  finding.overrideNote = patch.overrideNote;
+  finding.overrideNote = patch.disposition === "pending" ? null : note;
   finding.resolvedAt =
     patch.disposition === "pending" ? null : new Date().toISOString();
   return structuredClone(doc);
@@ -494,24 +687,41 @@ export async function updateFinding(
 export async function addFinding(
   docId: string,
   finding: Finding,
+  advocateId: string,
 ): Promise<ContractDocument> {
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not add this finding.");
   }
-  const doc = store.find((d) => d.id === docId);
-  if (!doc) throw new MockApiError("Document not found.");
-  doc.findings = [...doc.findings, finding];
+  const doc = heldDocument(docId, advocateId);
+  if (doc.findings.some((f) => f.findingId === finding.findingId)) {
+    throw new MockApiError("This finding is already on the record.");
+  }
+
+  // What the caller says about a citation's standing, or about the finding's
+  // own, is not taken. The corpus decides each citation's status, a withdrawal
+  // is the advocate's decision on a finding that is already on the record, and
+  // a finding added in review enters it open and marked as added by an advocate.
+  const entered: Finding = {
+    ...finding,
+    source: "advocate",
+    disposition: "pending",
+    overrideNote: null,
+    resolvedAt: null,
+    changeRequest: null,
+    citations: finding.citations.map((c) => recheckCitation({ ...c, withdrawn: null })),
+  };
+  doc.findings = [...doc.findings, entered];
 
   // Attach it to the clause it names, so an advocate-added finding is a
   // margin note like any other rather than floating free of the document.
   // If the reference names no clause in this contract the finding still
   // stands; the workspace lists it separately instead of losing it.
   const clause = doc.clauses.find(
-    (c) => c.number === clauseNumberFromReference(finding.clauseReference),
+    (c) => c.number === clauseNumberFromReference(entered.clauseReference),
   );
-  if (clause && !clause.findingIds.includes(finding.findingId)) {
-    clause.findingIds.push(finding.findingId);
+  if (clause && !clause.findingIds.includes(entered.findingId)) {
+    clause.findingIds.push(entered.findingId);
   }
 
   return structuredClone(doc);
@@ -519,27 +729,27 @@ export async function addFinding(
 
 export async function signOffDocument(
   docId: string,
+  advocateId: string,
 ): Promise<ContractDocument> {
   await randomDelay();
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not complete sign-off.");
   }
-  const doc = store.find((d) => d.id === docId);
-  if (!doc) throw new MockApiError("Document not found.");
-  if (!doc.advocate) {
-    throw new MockApiError("A document must be claimed before it is signed off.");
-  }
+  const doc = heldDocument(docId, advocateId);
+  // Signed off once. A second press changes nothing, and the date stays.
+  if (doc.status === "settled" || doc.status === "executed") return structuredClone(doc);
+
+  // The gate runs once more on every citation on the record, so what is signed
+  // off is what the corpus says now, not what it said when each was last
+  // looked at. A withdrawal is the advocate's decision and survives it.
+  doc.findings = recheckFindings(doc.findings);
   if (doc.findings.some((f) => f.disposition === "pending")) {
     throw new MockApiError("Every finding must be settled before sign-off.");
   }
   // A citation is either verified or blocked, never "probably fine". The
   // sign-off screen disables its control over this too, but the rule
   // belongs here as well: a UI-only guard is not a guard.
-  if (
-    doc.findings.some((f) =>
-      f.citations.some((c) => c.status === "blocked" && !c.withdrawn),
-    )
-  ) {
+  if (doc.findings.some((f) => blockingCitations(f).length > 0)) {
     throw new MockApiError(
       "A citation on this document is blocked. Resolve the source before sign-off.",
     );
@@ -577,8 +787,10 @@ export async function toggleExecutionStep(
   const applicable = doc.executionSteps.filter((s) => s.applicable);
   if (doc.status === "settled" && applicable.every((s) => s.complete)) {
     doc.status = "executed";
+    doc.executedAt = new Date().toISOString();
   } else if (doc.status === "executed" && !applicable.every((s) => s.complete)) {
     doc.status = "settled";
+    doc.executedAt = null;
   }
   return structuredClone(doc);
 }

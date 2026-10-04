@@ -14,7 +14,8 @@ export const metadata: Metadata = {
 // defect) or inventing legal text.
 export default function TermsPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <>
+    <main className="mx-auto w-full max-w-3xl px-4 py-10">
       <PageHeader title="Terms of Service" backHref="/" backLabel="Home" />
       <div className="rounded-card border border-caution/30 bg-caution/10 p-6 text-body text-ink">
         <p className="font-medium">Terms of Service · pending publication.</p>
@@ -23,13 +24,14 @@ export default function TermsPage() {
           being drafted by qualified counsel and will be published here
           before general availability. If you need terms information now,
           contact us via the{" "}
-          <a href="/contact" className="text-accent hover:underline">
+          <a href="/contact" className="text-accent underline underline-offset-2 hover:no-underline">
             contact page
           </a>
           .
         </p>
       </div>
-      <SiteFooter />
-    </div>
+    </main>
+    <SiteFooter />
+    </>
   );
 }

@@ -1,3 +1,4 @@
+import { SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF } from "@/lib/config/visibility";
 import type {
   Citation,
   ContractDocument,
@@ -44,6 +45,37 @@ export function openFindingCount(doc: ContractDocument): number {
 
 export function findingsWithClient(doc: ContractDocument): Finding[] {
   return doc.findings.filter((f) => findingState(f) === "with_client");
+}
+
+/**
+ * What a client may be told of a document's findings.
+ *
+ * Before sign-off the client sees status and the passages behind requests
+ * addressed to them, so a finding the advocate added reaches them only
+ * through a request addressed to them. After sign-off the whole record is
+ * theirs, read-only. Every client screen reads findings through this, never
+ * from doc.findings, so a screen cannot count or list a finding it should
+ * not know about. The advocate portal reads doc.findings and keeps the full
+ * picture.
+ */
+export function clientVisibleFindings(
+  doc: ContractDocument,
+  options: { advocateAddedAfterSignOff?: boolean } = {},
+): Finding[] {
+  const signedOff = doc.status === "settled" || doc.status === "executed";
+  const advocateAddedAfterSignOff =
+    options.advocateAddedAfterSignOff ?? SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF;
+  if (signedOff && advocateAddedAfterSignOff) return doc.findings;
+  return doc.findings.filter((f) => f.source === "pipeline" || f.changeRequest !== null);
+}
+
+/**
+ * What the first pass raised. Findings an advocate added are not part of it,
+ * so "the first pass raised N" counts only these, for the client and the
+ * advocate alike.
+ */
+export function firstPassFindings(doc: ContractDocument): Finding[] {
+  return doc.findings.filter((f) => f.source === "pipeline");
 }
 
 /**

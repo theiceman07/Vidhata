@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,19 +20,20 @@ import {
 import { createDraftDocument } from "@/lib/api/documents";
 import { DRAFT_NEEDS, readBrief } from "@/lib/api/brief";
 import { BRIEF_KEY } from "@/components/marketing/deal-prompt";
-import { CONTRACT_TYPES, INDIAN_STATES } from "@/lib/mock/intake-options.mock";
+import { ContractTypePicker } from "@/components/domain/contract-type-picker";
+import {
+  PRICE_BASIS,
+  PRICING_IS_INDICATIVE,
+  rupees,
+  tierRange,
+} from "@/lib/config/pricing";
+import { INDIAN_STATES } from "@/lib/mock/intake-options.mock";
 import { cn } from "@/lib/utils";
 
 const intakeSchema = z.object({
   title: z.string().min(3, "Give this deal a short name."),
   type: z.enum(["nda", "vendor", "msa", "employment"], {
     required_error: "Choose a contract type.",
-  }),
-  // QA 3.2: the wizard never asked for a tier — every deal was silently
-  // created as "standard" then force-upgraded to "enhanced" once analysis
-  // finished, so "Senior review" (advertised on /pricing) was unreachable.
-  tier: z.enum(["standard", "enhanced", "senior"], {
-    required_error: "Choose a review tier.",
   }),
   clientName: z.string().min(2, "Enter your company name."),
   counterpartyName: z.string().min(2, "Enter the counterparty's name."),
@@ -49,14 +50,8 @@ const intakeSchema = z.object({
 type IntakeFormValues = z.infer<typeof intakeSchema>;
 
 const STEP_FIELDS: (keyof IntakeFormValues)[][] = [
-  [
-    "title",
-    "type",
-    "tier",
-    "clientName",
-    "counterpartyName",
-    "counterpartyIsMsme",
-  ],
+  ["type"],
+  ["title", "clientName", "counterpartyName", "counterpartyIsMsme"],
   [
     "transactionValue",
     "durationMonths",
@@ -66,13 +61,7 @@ const STEP_FIELDS: (keyof IntakeFormValues)[][] = [
   ["keyTerms"],
 ];
 
-const STEP_LABELS = ["Deal basics", "Transaction details", "Key terms"];
-
-const TIER_OPTIONS: { value: IntakeFormValues["tier"]; label: string; price: string }[] = [
-  { value: "standard", label: "Standard", price: "₹4,999" },
-  { value: "enhanced", label: "Enhanced", price: "₹12,999" },
-  { value: "senior", label: "Senior review", price: "₹24,999" },
-];
+const STEP_LABELS = ["Contract type", "Deal basics", "Transaction details", "Key terms"];
 
 export function IntakeWizard() {
   const router = useRouter();
@@ -81,6 +70,11 @@ export function IntakeWizard() {
   const [submitError, setSubmitError] = useState("");
   // How far the brief got: facts a draft needs that it stated, and not.
   const [fromBrief, setFromBrief] = useState<{ found: number; missing: number } | null>(null);
+  // Set the moment the person does anything: picks a type, types, moves a step.
+  // The brief is read after a wait, and when the reading lands it must not undo
+  // what they have already done (it used to put them back on step one and
+  // overwrite what they had typed).
+  const touched = useRef(false);
 
   const {
     register,
@@ -88,20 +82,25 @@ export function IntakeWizard() {
     trigger,
     watch,
     setValue,
+    getValues,
     formState: { errors },
   } = useForm<IntakeFormValues>({
     resolver: zodResolver(intakeSchema),
     defaultValues: {
       title: "",
-      type: "nda",
-      tier: "standard",
+      // No default type: the client chooses it, and a brief that states it
+      // fills it in. Nothing unstated is guessed.
       clientName: "",
       counterpartyName: "",
       counterpartyIsMsme: false,
       transactionValue: 0,
       durationMonths: 12,
       stateOfExecution: "",
-      governingLaw: "",
+      // The one default: Vidhata settles Indian contracts, so unless a brief
+      // names another law this is the law, shown in the field and on the
+      // document. It used to be empty with the words only as a placeholder, so
+      // the field looked filled in and Continue refused it.
+      governingLaw: "Laws of India",
       keyTerms: "",
     },
   });
@@ -129,9 +128,16 @@ export function IntakeWizard() {
       } catch {
         // Nothing to clear.
       }
+      // A reading that lands after the person has begun only fills what they
+      // have not: it never overwrites a choice or a value, and never moves them.
+      const current = getValues();
+      const empty = (v: unknown) => v === undefined || v === "";
       for (const [key, value] of Object.entries(found)) {
-        if (value !== undefined) setValue(key as keyof IntakeFormValues, value as never);
+        if (value === undefined) continue;
+        if (touched.current && !empty(current[key as keyof IntakeFormValues])) continue;
+        setValue(key as keyof IntakeFormValues, value as never);
       }
+      if (touched.current) return;
       const first = STEP_FIELDS.findIndex((fields) =>
         fields.some((f) => missing.includes(f as (typeof missing)[number])),
       );
@@ -141,16 +147,18 @@ export function IntakeWizard() {
     return () => {
       cancelled = true;
     };
-  }, [setValue]);
+  }, [setValue, getValues]);
 
   const values = watch();
 
   async function goNext() {
+    touched.current = true;
     const valid = await trigger(STEP_FIELDS[step]);
     if (valid) setStep((s) => Math.min(s + 1, STEP_LABELS.length - 1));
   }
 
   function goBack() {
+    touched.current = true;
     setStep((s) => Math.max(s - 1, 0));
   }
 
@@ -161,7 +169,6 @@ export function IntakeWizard() {
       const doc = await createDraftDocument({
         title: data.title,
         type: data.type,
-        tier: data.tier,
         clientName: data.clientName,
         counterpartyName: data.counterpartyName,
         stateOfExecution: data.stateOfExecution,
@@ -180,12 +187,46 @@ export function IntakeWizard() {
     }
   });
 
+  const isLastStep = step === STEP_LABELS.length - 1;
+
+  // The draft is created only from the last step. A submit that arrives
+  // earlier (requestSubmit, a browser quirk) reads as Continue: it validates
+  // the step's own fields and moves on, never creates a document.
+  function onFormSubmit(e: React.FormEvent<HTMLFormElement>) {
+    if (!isLastStep) {
+      e.preventDefault();
+      void goNext();
+      return;
+    }
+    void onSubmit(e);
+  }
+
+  // Steps before the last have no submit button, so browsers do nothing on
+  // Enter. People expect it to mean Continue. A textarea keeps Enter for new
+  // lines, and a select or checkbox is not an input, so both are left alone.
+  function onFormKeyDown(e: React.KeyboardEvent<HTMLFormElement>) {
+    if (e.key !== "Enter" || isLastStep) return;
+    if (!(e.target instanceof HTMLInputElement)) return;
+    e.preventDefault();
+    void goNext();
+  }
+
   return (
-    <div className="grid max-w-5xl gap-x-16 gap-y-8 md:grid-cols-[minmax(0,14rem)_minmax(0,32rem)]">
+    <div
+      className={cn(
+        "grid max-w-5xl gap-y-8 xl:gap-x-16",
+        // The picker lists the whole catalogue, so its step gets more room.
+        step === 0
+          ? "xl:grid-cols-[minmax(0,14rem)_minmax(0,44rem)]"
+          : "xl:grid-cols-[minmax(0,14rem)_minmax(0,32rem)]",
+      )}
+    >
       {/* The steps are a schedule down the margin, not a row of numbered
           discs: the same notation the rest of the product uses to say
           where you are. */}
-      <ol className="space-y-3 md:sticky md:top-10 md:self-start">
+      {/* Below a wide screen the steps lie in a row above the form, so the form
+          keeps the width the page has. */}
+      <ol className="flex flex-wrap gap-x-6 gap-y-2 xl:block xl:space-y-3 xl:sticky xl:top-10 xl:self-start">
         {STEP_LABELS.map((label, i) => (
           <li
             key={label}
@@ -214,7 +255,14 @@ export function IntakeWizard() {
         ))}
       </ol>
 
-      <form onSubmit={onSubmit} className="space-y-5">
+      <form
+        onSubmit={onFormSubmit}
+        onKeyDown={onFormKeyDown}
+        onChange={() => {
+          touched.current = true;
+        }}
+        className="space-y-5"
+      >
         {fromBrief && (
           <p className="rounded-control bg-parchment px-4 py-3 text-meta text-ink">
             Your brief gave {fromBrief.found} of the {DRAFT_NEEDS.length} details a draft needs.
@@ -224,6 +272,17 @@ export function IntakeWizard() {
           </p>
         )}
         {step === 0 && (
+          <ContractTypePicker
+            value={values.type}
+            onChange={(type) => {
+              touched.current = true;
+              setValue("type", type, { shouldValidate: true });
+            }}
+            error={errors.type?.message}
+          />
+        )}
+
+        {step === 1 && (
           <>
             <div>
               <Label htmlFor="title">Deal name</Label>
@@ -237,26 +296,6 @@ export function IntakeWizard() {
                   {errors.title.message}
                 </p>
               )}
-            </div>
-            <div>
-              <Label htmlFor="type">Contract type</Label>
-              <Select
-                value={values.type}
-                onValueChange={(v) =>
-                  setValue("type", v as IntakeFormValues["type"])
-                }
-              >
-                <SelectTrigger id="type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CONTRACT_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>
-                      {t.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
             <div>
               <Label htmlFor="clientName">Your company name</Label>
@@ -288,35 +327,17 @@ export function IntakeWizard() {
                 The counterparty is a registered MSME
               </Label>
             </div>
-            <div>
-              <Label htmlFor="tier">Review tier</Label>
-              <Select
-                value={values.tier}
-                onValueChange={(v) =>
-                  setValue("tier", v as IntakeFormValues["tier"])
-                }
-              >
-                <SelectTrigger id="tier">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TIER_OPTIONS.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>
-                      {t.label} · {t.price}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {/* QA 3.2: billing is not enabled in this preview — no
-                  payment is taken for any tier. */}
-              <p className="mt-1 text-small text-muted-fg">
-                Billing is not enabled in this preview. No payment is taken.
-              </p>
-            </div>
+            {/* The tier is not asked for: screening assigns it from the deal
+                facts once the first pass has run. */}
+            <p className="text-small text-muted-fg">
+              Your review tier is assigned after screening, from the value and
+              risk of the deal. Billing is not enabled in this preview. No
+              payment is taken.
+            </p>
           </>
         )}
 
-        {step === 1 && (
+        {step === 2 && (
           <>
             <div>
               <Label htmlFor="transactionValue">
@@ -385,7 +406,7 @@ export function IntakeWizard() {
           </>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <div>
             <Label htmlFor="keyTerms">Key terms (optional)</Label>
             <Textarea
@@ -394,6 +415,13 @@ export function IntakeWizard() {
               placeholder="Anything specific the draft should account for?"
               rows={6}
             />
+            <p className="mt-5 max-w-measure rounded-card bg-parchment p-4 text-meta text-ink">
+              One fixed fee per document, set by the review tier screening assigns after the
+              first pass: from {rupees(tierRange().low)} to {rupees(tierRange().high)}{" "}
+              {PRICE_BASIS}
+              {PRICING_IS_INDICATIVE && " (indicative)"}. You pay once the document is screened,
+              and nothing reaches an advocate before then.
+            </p>
           </div>
         )}
 
@@ -410,12 +438,16 @@ export function IntakeWizard() {
           >
             Back
           </Button>
-          {step < STEP_LABELS.length - 1 ? (
-            <Button type="button" onClick={goNext}>
+          {/* Different keys, so the Continue button is never the same DOM
+              node as the submit button: validation resolves inside the
+              click, and a button that turns into type="submit" mid-click
+              submits the form. */}
+          {!isLastStep ? (
+            <Button key="continue" type="button" onClick={goNext}>
               Continue
             </Button>
           ) : (
-            <Button type="submit" disabled={submitting}>
+            <Button key="submit" type="submit" disabled={submitting}>
               {submitting ? "Drafting…" : "Draft the document"}
             </Button>
           )}

@@ -66,8 +66,7 @@ export default function ClientLoginPage() {
         intro="For founders and teams whose contracts Vidhata drafts."
       >
         <p className="text-body text-ink">
-          Sign-in is not yet available. Vidhata does not have a production
-          identity provider connected in this environment.
+          Accounts aren&apos;t open yet. Vidhata is in preview.
         </p>
         <Button asChild className="mt-6 w-full">
           <Link href="/">Go to home</Link>
@@ -89,7 +88,7 @@ export default function ClientLoginPage() {
             onClick={() =>
               toast.info("Sign-up isn't available in this preview.")
             }
-            className="text-accent hover:underline"
+            className="text-accent underline underline-offset-2 hover:no-underline"
           >
             Create an account
           </button>
@@ -117,7 +116,7 @@ export default function ClientLoginPage() {
               onClick={() =>
                 toast.info("Password reset isn't available in this preview.")
               }
-              className="text-meta text-muted-fg transition-colors hover:text-ink"
+              className="inline-flex min-h-6 items-center text-meta text-muted-fg transition-colors hover:text-ink"
             >
               Forgot password?
             </button>

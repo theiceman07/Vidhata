@@ -4,6 +4,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { clientVisibleFindings } from "@/lib/findings";
 import type { ContractDocument } from "@/lib/types";
 import { clauseNumberFromReference } from "@/lib/types";
 
@@ -31,7 +32,7 @@ export function ChangeRequests({
   onSubmit: (responses: Record<string, string>) => void;
   submitting: boolean;
 }) {
-  const requested = doc.findings.filter(
+  const requested = clientVisibleFindings(doc).filter(
     (f) => f.disposition === "pending" && f.changeRequest,
   );
   const open = requested.filter((f) => !f.changeRequest?.response);
@@ -60,9 +61,9 @@ export function ChangeRequests({
                   <span className="mx-1.5 text-muted-fg/50">·</span>
                   <span className="font-mono">Clause {number}</span>
                 </p>
-                <h3 className="mt-0.5 font-display text-h3 text-ink">
+                <h2 className="mt-0.5 font-display text-h3 text-ink">
                   {clause?.heading ?? finding.clauseReference}
-                </h3>
+                </h2>
 
                 <blockquote className="mt-4 rounded-control bg-paper px-5 py-4 font-clause text-body text-ink">
                   {finding.clauseText}

@@ -55,8 +55,9 @@ export const ndaClauses: Clause[] = [
     number: "4.1",
     heading: "Term",
     body: "This Agreement commences on the date of last signature and continues for twenty four (24) months, unless terminated earlier by either party on thirty (30) days written notice.",
-    findingIds: [],
-    revisedAt: null,
+    findingIds: ["find-n1"],
+    // The advocate's correction in draft 2. Draft 1 said thirty six (36).
+    revisedAt: "2026-08-04T12:10:00.000Z",
   },
   {
     id: "cl-nda-7",
@@ -79,7 +80,7 @@ export const ndaClauses: Clause[] = [
     number: "6.1",
     heading: "Return of materials",
     body: "On written request, the receiving party shall return or destroy all materials containing Confidential Information and shall confirm in writing that it has done so, save for one copy which may be retained solely for the purpose of demonstrating compliance with this Agreement.",
-    findingIds: [],
+    findingIds: ["find-n2"],
     revisedAt: null,
   },
   {
@@ -336,7 +337,7 @@ export const vendorClauses: Clause[] = [
     number: "3.2",
     heading: "Inspection and rejection",
     body: "The Buyer shall inspect the goods within seven (7) days of delivery and may reject any goods that do not conform to the specification. Rejected goods shall be replaced by the Supplier at its own cost within fourteen (14) days.",
-    findingIds: [],
+    findingIds: ["find-8"],
     revisedAt: null,
   },
   {
@@ -352,7 +353,7 @@ export const vendorClauses: Clause[] = [
     number: "5.3",
     heading: "Payment",
     body: "The Supplier shall invoice the Buyer on delivery of each consignment. Payment shall be made within ninety (90) days of delivery.",
-    findingIds: ["find-4"],
+    findingIds: ["find-4", "find-9"],
     revisedAt: null,
   },
   {
@@ -361,14 +362,15 @@ export const vendorClauses: Clause[] = [
     heading: "Warranty",
     body: "The Supplier warrants that the goods will conform to the specification, will be free from defects in materials and workmanship, and will be fit for the purpose made known to the Supplier, for a period of twelve (12) months from delivery.",
     findingIds: [],
-    revisedAt: null,
+    // The advocate's wording in draft 3. Draft 2 stopped at "workmanship".
+    revisedAt: "2026-09-16T07:30:00.000Z",
   },
   {
     id: "cl-ven-8",
     number: "7.1",
     heading: "Term",
     body: "This Agreement commences on the Effective Date and continues for twelve (12) months. It renews automatically for successive twelve month periods unless either party gives sixty (60) days written notice of non-renewal.",
-    findingIds: [],
+    findingIds: ["find-10"],
     revisedAt: null,
   },
   {
@@ -380,3 +382,33 @@ export const vendorClauses: Clause[] = [
     revisedAt: null,
   },
 ];
+
+// The employment clauses as doc-employment-rereview holds them at its head.
+// The client's answer to the advocate's request reworded Clause 4.1, and four
+// clauses carry findings. The history behind it (versions.mock.ts) starts
+// from employmentClauses as first drafted.
+export const EMPLOYMENT_PLACE_OF_WORK_FIRST_DRAFTED =
+  "The Employee may be required to work from other locations, or remotely, as the Company reasonably directs.";
+export const EMPLOYMENT_PLACE_OF_WORK_REWORDED =
+  "The Employee may be required to work from other locations, or remotely, as the Company reasonably directs on at least fourteen (14) days written notice.";
+
+const rereviewFindingClauses: Record<string, string[]> = {
+  "cl-emp-2": ["find-e1"],
+  "cl-emp-4": ["find-e3"],
+  "cl-emp-6": ["find-e4"],
+  "cl-emp-9": ["find-e5"],
+};
+
+export const employmentRereviewClauses: Clause[] = employmentClauses.map((c) => {
+  if (c.id === "cl-emp-6" && !c.body.includes(EMPLOYMENT_PLACE_OF_WORK_FIRST_DRAFTED)) {
+    throw new Error("The place-of-work clause has drifted from what the re-review fixture rewords.");
+  }
+  return {
+    ...c,
+    body:
+      c.id === "cl-emp-6"
+        ? c.body.replace(EMPLOYMENT_PLACE_OF_WORK_FIRST_DRAFTED, EMPLOYMENT_PLACE_OF_WORK_REWORDED)
+        : c.body,
+    findingIds: rereviewFindingClauses[c.id] ?? [],
+  };
+});

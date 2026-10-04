@@ -1,43 +1,13 @@
 import Link from "next/link";
 import { Icon } from "@/components/shared/icon";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import type { ReviewTier } from "@/lib/types";
-
-interface Tier {
-  tier: ReviewTier;
-  label: string;
-  price: string;
-  description: string;
-  /** What this tier adds to the review every tier gets. */
-  adds: string[];
-  featured?: boolean;
-}
-
-const TIERS: Tier[] = [
-  {
-    tier: "standard",
-    label: "Standard",
-    price: "₹4,999",
-    description: "NDAs and low-value vendor agreements.",
-    adds: [],
-  },
-  {
-    tier: "enhanced",
-    label: "Enhanced",
-    price: "₹12,999",
-    description: "MSAs and mid-value deals with an MSME counterparty.",
-    adds: ["Priority turnaround"],
-    featured: true,
-  },
-  {
-    tier: "senior",
-    label: "Senior review",
-    price: "₹24,999",
-    description: "High-value or employment agreements needing senior sign-off.",
-    adds: ["Priority turnaround", "Senior advocate review"],
-  },
-];
+import {
+  CONSULTATION,
+  PRICE_BASIS,
+  PRICING_IS_INDICATIVE,
+  TIER_ORDER,
+  TIER_PRICING,
+} from "@/lib/config/pricing";
 
 /** The same in every tier, so it is said once rather than ticked three times. */
 const EVERY_TIER = [
@@ -50,60 +20,55 @@ const EVERY_TIER = [
 /**
  * Three tiers, compared on what differs.
  *
- * A matrix of identical ticks makes the reader do the subtraction. Here
- * what every tier includes is stated once, and each tier lists only what
- * it adds. The middle tier is marked by weight, not by a tinted panel:
- * the accent belongs to decisions, not to a sales emphasis.
+ * The client does not pick a tier: screening assigns it after the first
+ * pass, from the value and risk of the deal. So the cards describe what each
+ * tier is for rather than offering a choice, and there is one way in. A
+ * matrix of identical ticks makes the reader do the subtraction, so what
+ * every tier includes is stated once and each tier lists only what it adds.
  */
 export function PricingTable() {
   return (
     <div>
+      <p className="mx-auto mb-8 max-w-xl text-center text-body text-muted-fg">
+        Your document is assigned a tier after screening, based on its value
+        and risk. You don&apos;t have to guess which one you need.
+      </p>
+
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-        {TIERS.map((t) => (
-          <div
-            key={t.tier}
-            className={cn(
-              "flex flex-col rounded-card bg-paper p-8 md:p-10",
-              t.featured && "ring-2 ring-ink",
-            )}
-          >
-            <div className="flex min-h-8 items-center justify-between gap-2">
-              <h3 className="text-lead font-medium text-ink">{t.label}</h3>
-              {t.featured && (
-                <span className="rounded-full bg-ink px-3 py-1 text-meta font-medium text-paper">Suits most MSAs</span>
-              )}
-            </div>
-            <p className="mt-6 font-display text-[clamp(40px,4vw,56px)] font-medium leading-none tracking-[-0.02em] text-ink">{t.price}</p>
-            <p className="mt-3 text-body text-muted-fg">{t.description}</p>
-
-            <div className="mt-6 flex-1 border-t border-line pt-5 text-body">
-              {t.adds.length === 0 ? (
-                <p className="text-muted-fg">The full review every tier includes.</p>
-              ) : (
-                <>
-                  <p className="text-muted-fg">The full review, and:</p>
-                  <ul className="mt-1.5 space-y-1.5">
-                    {t.adds.map((a) => (
-                      <li key={a} className="flex items-center gap-2 text-ink">
-                        <Icon name="check" size={16} className="text-verified" />
-                        {a}
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </div>
-
-            <Button
-              asChild
-              size="lg"
-              className="mt-8 w-full"
-              variant={t.featured ? "default" : "outline"}
+        {TIER_ORDER.map((tier) => {
+          const t = TIER_PRICING[tier];
+          return (
+            <div
+              key={tier}
+              className="flex flex-col rounded-card bg-paper p-8 md:p-10"
             >
-              <Link href="/new">Choose {t.label}</Link>
-            </Button>
-          </div>
-        ))}
+              <h2 className="text-lead font-medium text-ink">{t.label}</h2>
+              <p className="mt-6 font-display text-[clamp(40px,4vw,56px)] font-medium leading-none tracking-[-0.02em] text-ink">
+                {t.price}
+              </p>
+              <p className="mt-1 text-meta text-muted-fg">{PRICE_BASIS}</p>
+              <p className="mt-3 text-body text-muted-fg">{t.description}</p>
+
+              <div className="mt-6 flex-1 border-t border-line pt-5 text-body">
+                {t.adds.length === 0 ? (
+                  <p className="text-muted-fg">The full review every tier includes.</p>
+                ) : (
+                  <>
+                    <p className="text-muted-fg">The full review, and:</p>
+                    <ul className="mt-1.5 space-y-1.5">
+                      {t.adds.map((a) => (
+                        <li key={a} className="flex items-center gap-2 text-ink">
+                          <Icon name="check" size={16} className="text-verified" />
+                          {a}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="mt-5 rounded-card bg-paper p-8 md:p-10">
@@ -118,10 +83,32 @@ export function PricingTable() {
         </ul>
       </div>
 
-      {/* The wizard has a tier step, but there is no checkout anywhere in
-          the product, so say so once instead of implying a purchase. */}
+      <div className="mt-5 flex flex-col gap-3 rounded-card bg-paper p-8 sm:flex-row sm:items-center sm:justify-between md:p-10">
+        <div>
+          <p className="font-display text-h2 text-ink">{CONSULTATION.label}</p>
+          <p className="mt-2 max-w-measure text-body text-muted-fg">
+            Separate from the review. A conversation with the advocate who
+            settled your document, about what it means for you. A request is
+            free, and the fee is payable only if the advocate accepts.
+          </p>
+        </div>
+        <div className="sm:text-right">
+          <p className="font-display text-h2 text-ink">{CONSULTATION.price}</p>
+          <p className="text-meta text-muted-fg">{PRICE_BASIS}</p>
+        </div>
+      </div>
+
+      <div className="mt-8 flex justify-center">
+        <Button asChild size="lg">
+          <Link href="/new">Start a document</Link>
+        </Button>
+      </div>
+
+      {/* There is no checkout anywhere in the product, so say so once
+          instead of implying a purchase. */}
       <p className="mt-6 text-center text-meta text-muted-fg">
-        Billing is not enabled in this preview. No payment is taken.
+        {PRICING_IS_INDICATIVE && "Indicative pricing. "}
+        All figures are {PRICE_BASIS}. Preview: no payment is taken.
       </p>
     </div>
   );

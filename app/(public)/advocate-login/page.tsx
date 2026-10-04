@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useSession } from "@/lib/session";
 import { MOCK_PREVIEW_CREDENTIALS } from "@/lib/mock/auth.mock";
+import { EXPIRED_INVITE_TOKEN, VALID_INVITE_TOKEN } from "@/lib/mock/invites.mock";
 
 const PREVIEW_MODE = process.env.NEXT_PUBLIC_VIDHATA_PREVIEW_MODE === "1";
 const MAX_ATTEMPTS = 5;
@@ -63,8 +64,7 @@ export default function LawyerLoginPage() {
         intro="For empanelled advocates only."
       >
         <p className="text-body text-ink">
-          Sign-in is not yet available. Vidhata does not have a production
-          identity provider connected in this environment.
+          Accounts aren&apos;t open yet. Vidhata is in preview.
         </p>
         <Button asChild className="mt-6 w-full">
           <Link href="/">Go to home</Link>
@@ -81,15 +81,9 @@ export default function LawyerLoginPage() {
       footer={
         <>
           Not on the panel yet?{" "}
-            <button
-            type="button"
-            onClick={() =>
-              toast.info("Invite requests aren't available in this preview.")
-            }
-            className="text-accent hover:underline"
-          >
-            Request an invite
-          </button>
+          <Link href="/advocate-invite" className="text-accent underline underline-offset-2 hover:no-underline">
+            Request an invitation
+          </Link>
         </>
       }
     >
@@ -113,7 +107,7 @@ export default function LawyerLoginPage() {
               onClick={() =>
                 toast.info("Password reset isn't available in this preview.")
               }
-              className="text-meta text-muted-fg transition-colors hover:text-ink"
+              className="inline-flex min-h-6 items-center text-meta text-muted-fg transition-colors hover:text-ink"
             >
               Forgot password?
             </button>
@@ -155,6 +149,24 @@ export default function LawyerLoginPage() {
         <Button type="button" variant="outline" size="lg" className="w-full" onClick={signIn}>
           Use the preview workspace
         </Button>
+
+        <p className="text-center text-meta text-muted-fg">
+          Preview: open a sample invitation,{" "}
+          <Link
+            href={`/advocate-onboarding/${VALID_INVITE_TOKEN}`}
+            className="text-accent underline underline-offset-2 hover:no-underline"
+          >
+            a valid one
+          </Link>{" "}
+          or{" "}
+          <Link
+            href={`/advocate-onboarding/${EXPIRED_INVITE_TOKEN}`}
+            className="text-accent underline underline-offset-2 hover:no-underline"
+          >
+            an expired one
+          </Link>
+          .
+        </p>
       </form>
     </AuthScreen>
   );

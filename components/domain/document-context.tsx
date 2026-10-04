@@ -6,8 +6,11 @@ import { format } from "date-fns";
 import { Icon } from "@/components/shared/icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listDocuments } from "@/lib/api/documents";
+import { tierLabel } from "@/lib/config/pricing";
+import { clientVisibleFindings } from "@/lib/findings";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { groupOf, yourMove } from "@/lib/moves";
+import { termLabel } from "@/lib/term";
 import type { ContractDocument } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -57,9 +60,9 @@ export function DealOnFile({ doc, className }: { doc: ContractDocument; classNam
     ["Governing law", doc.governingLaw],
   ];
   if (doc.transactionValue > 0) rows.push(["Value", rupees.format(doc.transactionValue)]);
-  rows.push(["Term", `${doc.durationMonths} months`]);
+  rows.push(["Term", termLabel(doc.durationMonths)]);
   if (doc.counterpartyIsMsme) rows.push(["Counterparty", "Registered MSME"]);
-  rows.push(["Review", <span key="tier" className="capitalize">{doc.tier}</span>]);
+  rows.push(["Review", tierLabel(doc.tier)]);
 
   return (
     <ContextPanel title="The deal on file" className={className}>
@@ -157,7 +160,9 @@ function stationsFor(doc: ContractDocument): Station[] {
   };
 
   if (doc.status === "revision") {
-    const n = doc.findings.filter((f) => f.changeRequest && !f.changeRequest.response).length;
+    const n = clientVisibleFindings(doc).filter(
+      (f) => f.changeRequest && !f.changeRequest.response,
+    ).length;
     return [
       {
         title: "You answer",
@@ -167,6 +172,23 @@ function stationsFor(doc: ContractDocument): Station[] {
       {
         title: `${advocate} settles each finding`,
         body: `Your answer is weighed against the finding it concerns, and the document becomes Draft ${doc.version + 1}.`,
+        current: false,
+      },
+      signOff,
+      checklist,
+    ];
+  }
+
+  if (doc.status === "awaiting_payment") {
+    return [
+      {
+        title: "You pay the fee",
+        body: "One fixed fee for the tier screening assigned. Nothing reaches an advocate until it is paid.",
+        current: true,
+      },
+      {
+        title: "An advocate claims it",
+        body: "Once paid it is in the queue. The advocate who claims it holds it alone until sign-off.",
         current: false,
       },
       signOff,

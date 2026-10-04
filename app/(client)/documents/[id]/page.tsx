@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { BackButton } from "@/components/shared/back-button";
 import { format, formatDistanceToNowStrict } from "date-fns";
@@ -13,6 +14,9 @@ import {
   OnYourDesk,
   WhatHappensNext,
 } from "@/components/domain/document-context";
+import { CoveragePanel } from "@/components/domain/coverage-panel";
+import { DraftBanner } from "@/components/domain/draft-banner";
+import { PaymentPanel } from "@/components/domain/payment-panel";
 import { clientAuditTrail } from "@/lib/audit";
 import { ErrorState } from "@/components/shared/error-state";
 import { Icon } from "@/components/shared/icon";
@@ -25,6 +29,8 @@ import { StateLabel } from "@/components/document/state-label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { getDocument, respondToChanges, startAnalysis } from "@/lib/api/documents";
+import { tierLabel } from "@/lib/config/pricing";
+import { clientVisibleFindings } from "@/lib/findings";
 import type { ContractDocument } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
@@ -38,12 +44,14 @@ type LoadState = "loading" | "error" | "loaded";
  * holds it, but not the draft. When the advocate needs something, exactly
  * what, on which clause. Once signed off, the settled document itself.
  */
-export default function DocumentPage({ params }: { params: { id: string } }) {
+export default function DocumentPage() {
+  // Read from the router, not a prop: in Next 15 the page's params prop is a
+  // Promise, and this is a client component.
+  const params = useParams<{ id: string }>();
   const [doc, setDoc] = useState<ContractDocument | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const kickedOffForStatus = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     setState("loading");
@@ -64,28 +72,45 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
     load();
   }, [load]);
 
-  useEffect(() => {
-    if (!doc || kickedOffForStatus.current === doc.status) return;
+  const failWith = useCallback((err: unknown) => {
+    setErrorMessage(
+      err instanceof Error ? err.message : "Could not load this document.",
+    );
+    setState("error");
+  }, []);
 
-    if (doc.status === "draft") {
-      kickedOffForStatus.current = "draft";
-      startAnalysis(doc.id).then(setDoc);
+  // Keyed on the document's id and status, not the document itself: every
+  // poll returns a fresh object, and keying on that tore the interval down
+  // after its first tick. The interval now lives until the status leaves
+  // "analysing", the load state leaves "loaded" (an error), or the page
+  // unmounts.
+  const docId = doc?.id;
+  const docStatus = doc?.status;
+  useEffect(() => {
+    if (!docId || state !== "loaded") return;
+
+    if (docStatus === "draft") {
+      startAnalysis(docId).then(setDoc).catch(failWith);
       return;
     }
 
     // Analysis completion is tracked in the data layer against a stored
     // analysisCompletesAt, so it resolves whether or not this page stays
     // mounted. Polling here only picks up that change.
-    if (doc.status === "analysing") {
-      kickedOffForStatus.current = "analysing";
+    if (docStatus === "analysing") {
       const interval = setInterval(() => {
-        getDocument(doc.id).then((result) => {
-          if (result) setDoc(result);
-        });
+        getDocument(docId)
+          .then((result) => {
+            if (result) setDoc(result);
+          })
+          .catch((err) => {
+            clearInterval(interval);
+            failWith(err);
+          });
       }, 2000);
       return () => clearInterval(interval);
     }
-  }, [doc]);
+  }, [docId, docStatus, state, failWith]);
 
   async function handleRespond(responses: Record<string, string>) {
     if (!doc) return;
@@ -135,6 +160,40 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
     return <SettledDocument doc={doc} />;
   }
 
+  // Screened and tiered, not yet paid. Only the tier, the fee and the deal
+  // facts behind it are shown: nothing from the review, because a client
+  // reads no finding before sign-off.
+  if (doc.status === "awaiting_payment") {
+    return (
+      <Frame>
+        <header className="flex min-w-0 items-start gap-4">
+          <BackButton fallbackHref="/documents" label="Back" />
+          <div className="min-w-0">
+            <StateLabel state={doc.status} />
+            <h1 className="mt-2 font-display text-h1 text-ink">{doc.title}</h1>
+            <p className="mt-1 text-meta text-muted-fg">{doc.counterpartyName}</p>
+          </div>
+        </header>
+
+        <div className="mt-10 grid gap-x-8 gap-y-8 lg:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem]">
+          <PaymentPanel
+            doc={doc}
+            onPaid={(paid) => {
+              setDoc(paid);
+              toast.success("Fee paid. Your document is in the advocate queue.");
+            }}
+          />
+          <aside className="min-w-0 space-y-4">
+            <WhatHappensNext doc={doc} />
+            <ContextPanel title="Where it is">
+              <Provenance doc={doc} />
+            </ContextPanel>
+          </aside>
+        </div>
+      </Frame>
+    );
+  }
+
   return (
     <Frame>
       {/* Full width: who and what on the left, the terms of the review
@@ -150,16 +209,26 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
               {doc.counterpartyName}
               <span className="mx-1.5 text-muted-fg/50">·</span>
               Draft {doc.version}
+              <span className="mx-1.5 text-muted-fg/50">·</span>
+              <Link
+                href={`/documents/${doc.id}/history`}
+                className="text-ink underline underline-offset-2 hover:no-underline"
+              >
+                Version history
+              </Link>
             </p>
           </div>
         </div>
         <dl className="grid grid-cols-[auto_auto] gap-x-4 gap-y-1 text-meta sm:pt-9 sm:text-right">
           <dt className="text-muted-fg">Review</dt>
-          <dd className="capitalize text-ink">{doc.tier}</dd>
+          <dd className="text-ink">{tierLabel(doc.tier)}</dd>
           <dt className="text-muted-fg">Submitted</dt>
           <dd className="text-ink">{format(new Date(doc.createdAt), "d MMM yyyy")}</dd>
         </dl>
       </header>
+
+      {/* Everything on this view is before sign-off, so say so up front. */}
+      <DraftBanner className="mt-6" />
 
       {/* The move in hand and everything that explains it on the left;
           the record the document carries on the right. */}
@@ -180,6 +249,8 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
             <WhatHappensNext doc={doc} />
             <DealOnFile doc={doc} />
           </div>
+
+          <CoveragePanel doc={doc} className="mt-4" />
         </div>
 
         <aside className="min-w-0 space-y-4">
@@ -203,7 +274,7 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
  * becomes once they are answered.
  */
 function MoveSummary({ doc }: { doc: ContractDocument }) {
-  const open = doc.findings.filter(
+  const open = clientVisibleFindings(doc).filter(
     (f) => f.disposition === "pending" && f.changeRequest && !f.changeRequest.response,
   );
   const asked = open
@@ -269,7 +340,7 @@ function Frame({ children }: { children: React.ReactNode }) {
 
 /** Pending or under review: where it is, and why the draft is not shown. */
 function WithAdvocate({ doc }: { doc: ContractDocument }) {
-  const answered = doc.findings.filter((f) => f.changeRequest?.response);
+  const answered = clientVisibleFindings(doc).filter((f) => f.changeRequest?.response);
 
   return (
     <div className="max-w-3xl space-y-8">
@@ -324,11 +395,37 @@ function SettledDocument({ doc }: { doc: ContractDocument }) {
             </span>
           )}
           <Link
+            href={`/documents/${doc.id}/delivery`}
+            className="text-label text-ink underline-offset-2 hover:underline"
+          >
+            Delivery
+          </Link>
+          <Link
             href={`/documents/${doc.id}/checklist`}
             className="text-label text-ink underline-offset-2 hover:underline"
           >
             Execution checklist · {done} of {steps.length}
           </Link>
+          <Link
+            href={`/documents/${doc.id}/summary`}
+            className="text-label text-ink underline-offset-2 hover:underline"
+          >
+            Summary
+          </Link>
+          <Link
+            href={`/documents/${doc.id}/history`}
+            className="text-label text-ink underline-offset-2 hover:underline"
+          >
+            Version history
+          </Link>
+          {doc.advocate && (
+            <Link
+              href={`/documents/${doc.id}/consultation`}
+              className="text-label text-ink underline-offset-2 hover:underline"
+            >
+              Consultation
+            </Link>
+          )}
         </>
       }
       companion={({ goToClause }) => <DocumentAgent doc={doc} onCite={goToClause} />}
@@ -336,7 +433,7 @@ function SettledDocument({ doc }: { doc: ContractDocument }) {
         <>
           <Button variant="outline" onClick={() => window.print()}>
             <Icon name="print" size={18} />
-            Save as PDF
+            Print this page (browser)
           </Button>
         </>
       }

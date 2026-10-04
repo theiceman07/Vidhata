@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/shared/icon";
+import { firstPassFindings } from "@/lib/findings";
 import type { ContractDocument } from "@/lib/types";
 
 /**
@@ -33,7 +34,7 @@ export function lifecycle(doc: ContractDocument): Stage[] {
   const s = doc.status;
   const applicable = doc.executionSteps.filter((step) => step.applicable);
   const done = applicable.filter((step) => step.complete).length;
-  const findings = doc.findings.length;
+  const findings = firstPassFindings(doc).length;
 
   const screened: Stage = {
     key: "screened",
@@ -44,7 +45,9 @@ export function lifecycle(doc: ContractDocument): Stage[] {
         ? "Not submitted"
         : s === "analysing"
           ? "First pass running"
-          : `First pass · ${findings} ${findings === 1 ? "finding" : "findings"} raised`,
+          : s === "awaiting_payment"
+            ? "Screened · the fee is not yet paid"
+            : `First pass · ${findings} ${findings === 1 ? "finding" : "findings"} raised`,
   };
 
   const review: Stage = {
@@ -95,6 +98,8 @@ export function stageCaption(doc: ContractDocument): string {
       return "Not submitted";
     case "analysing":
       return "First pass running";
+    case "awaiting_payment":
+      return "Awaiting payment";
     case "pending_review":
       return "In the advocate queue";
     case "under_review":

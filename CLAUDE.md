@@ -19,7 +19,8 @@ off. The client gets the settled document plus an execution checklist
   fixtures in lib/mock. If a fixture is missing, ask.
 
 ## Conventions
-- Next.js 14 App Router, TypeScript strict, Tailwind, shadcn/ui.
+- Next.js 15 App Router (params and searchParams are promises in server
+  components), TypeScript strict, Tailwind, shadcn/ui.
 - Server Components by default. "use client" only for interactivity.
 - Domain components live in components/domain and are the only place
   Vidhata vocabulary appears in JSX.
@@ -84,13 +85,45 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
 - Marketing pages: sections that need to stand apart are full-width
   tinted bands (parchment, pale accent, ink) with a fine grain
   (.tile-grain). No gradients. "Draft a document" is the DealPrompt box
-  in the hero and at the end; the brief survives sign-in. Inside the
+  in the hero and at the end; the brief survives sign-in. Where the preview
+  workspace is off (the public site, NEXT_PUBLIC_VIDHATA_PREVIEW_MODE unset)
+  there is no sign-in to send anyone to, so PublicEntry shows "See a sample
+  document" (/sample) and a quieter link to /contracts in both places, and
+  the sign-in and onboarding pages say "Accounts aren't open yet. Vidhata is
+  in preview." with a way home. Inside the
   portal it drafts: readBrief() (lib/api/brief.ts) reads what the brief
   states, a complete brief is drafted at once, and an incomplete one opens
   intake pre-filled at the first missing fact. Nothing unstated is
-  guessed, the tier above all. The nav holds Pricing and Sign in only, floats with no strip behind it,
+  guessed, the state of execution above all. The client never picks a
+  tier: screening assigns it after the first pass (lib/triage.ts), and
+  every price lives in lib/config/pricing.ts. The nav holds Pricing and Sign in only, floats with no strip behind it,
   and changes tone with scroll (mark dark bands data-nav-tone="dark").
+- An ink band takes `tile-grain tile-grain-ink`: dark noise cannot show on ink
+  (measured), so ink uses light noise.
 - No visible scrollbars anywhere (globals.css).
+- Preview chrome: every signed-in page carries PreviewBanner ("Preview. Sample
+  data, kept in this browser tab only. Nothing is sent.", in the shell, not
+  dismissible, with "Reset demo data"), so UI copy must not say something was
+  sent. The mock stores are written to sessionStorage (lib/api/state.ts,
+  versioned by a fingerprint of the fixtures) so a refresh keeps the demo and
+  the tab ends it. A new store registers there; change a stored shape and bump
+  SCHEMA_VERSION. It holds the consultation text, which is fine for a mock and
+  a thing a real client must never store. Both portals open through
+  PortalGate (components/shared/portal-gate.tsx): an ended session (a working
+  day, lib/session-expiry.ts) and a wrong-portal account each get one screen
+  before any page mounts, the same for an address that exists and one that does
+  not. global-error.tsx has its own html and body. The consent banner declines
+  by default and lib/config/consent.ts must be revised when any analytics or
+  other tool is added.
+- Metrics (/metrics, advocate portal only, lib/api/metrics.ts): every figure
+  has a real source (Finding.disposition and Finding.source, the citation
+  attempt log) or says "No data source yet" (the triage override rate and the
+  corpus-currency lag). Never a number with nothing behind it, and a rate with
+  nothing to divide is "None yet", not 0%. It counts released documents only
+  and reads nothing about money or a consultation.
+- Below lg the review workspace is not height-bound: it stacks, and the clauses
+  and findings dropdown opens above the contract. The client portal works at
+  768px.
 - Portals: the rail tucks away like Arc's sidebar. At rest it is a sliver
   of the ink capsule at the left edge; pointing at it or tabbing into it
   opens it in full (the Vidhata wordmark, search, sections, identity) and
@@ -138,8 +171,97 @@ Four systems, each with its own state. Never fold them into one label.
   are exclusive, and only the holder sees decision controls.
 - What stands between a document and sign-off comes from
   signOffBlockers(). Do not recompute it in a component.
-- The client sees no draft body before sign-off, only status and the
-  passages behind requests addressed to them.
+- The client sees no draft body before sign-off. Before it they get the
+  status, the passages behind requests addressed to them, a version list
+  with counts, and a diff limited to those passages. An advocate-added
+  finding reaches them only through a request addressed to them. After
+  sign-off they see the full version history and diff, read-only, with the
+  advocate's dispositions.
+- Versions: a snapshot (DocumentVersion) is written at hand-off points only,
+  when a draft is produced and handed on. ContractDocument is the working
+  copy and may be ahead of the latest snapshot, so diffs (lib/diff.ts)
+  compare snapshots, never the head. The advocate's re-review is the one
+  exception (lib/reviewScope.ts): it shows the head against the draft
+  before the current one. Not the latest snapshot: that is written at
+  hand-off and equals the head, so the comparison would show nothing. Do not
+  change this to "the latest snapshot".
+- Rounds and drafts: a round is two hand-offs, each a snapshot: the advocate
+  sends it back (requestChange writes an advocate_revision, carrying every
+  decision so far and the request) and the client answers (respondToChanges
+  writes a client_response). So a document sent back N times has 1 + 2N
+  drafts, one fewer while a round is open. "Round N" is revisionCount + 1,
+  never counted from drafts, and a test holds every fixture to the rule.
+- Finding.source says who raised a finding ("pipeline" or "advocate"). Never
+  infer it from the rule id.
+- Claiming: an advocate declares no conflict with either party before every
+  claim (ClaimDialog, from the queue and the review page; claimDocument
+  refuses without it and records conflictDeclaredAt). A name on their own
+  declared conflicts that matches a party stops the claim. The verb stays
+  "Claim", never "Assigned to you".
+- Onboarding: empanelment is by invitation, so an advocate joins through an
+  invitation link (/advocate-onboarding/[token]; lib/api/onboarding.ts):
+  password (a stand-in, never stored), confirm Bar details, declare conflicts.
+  The declared conflicts are written into the one list the claim check reads
+  (recordOnboarding in lib/api/advocate.ts). It ends at the queue and assigns
+  nothing: advocates claim. Nothing about an advocate is public, ranked,
+  rated or searchable by a client, and the page states no terms of
+  empanelment (they are for counsel to confirm).
+- Consultations (lib/api/consultations.ts): a client asks the advocate who
+  settled a document, read from the document, never chosen. Requesting is
+  free. States: requested, accepted, declined, answered. Accepting sets one
+  flat fee, "before GST", separate from the document fee and never a share of
+  it; declining is free and never chargeable. Money moves only when the client
+  pays an accepted request ("Pay (preview)", idempotent, a failure leaves it
+  accepted and unpaid). The advocate answers once it is paid, and the client
+  reads the answer only then. An advocate sees only requests on documents they
+  settled; another's request and a made-up id are the same not-found. They
+  see whether it is paid, never the fee, the time or any payment detail. The
+  question (and the answer) appear only inside the request: not in a list, a
+  tab title, a tooltip, the audit trail, a notification, billing or a metric.
+  The client's own export carries them, deliberately. Who issues the
+  consultation invoice is for counsel to confirm and is marked so.
+- Delivery (lib/api/delivery.ts, lib/api/summaries.ts): after sign-off only,
+  and held in the API, not the page. A document that is not signed off, or
+  has no advocate and date on record, gets "not available" and nothing else:
+  no title, no content. The summary is a reading of the settled clauses, shown
+  only for the draft it was written from, and explains the document, never the
+  reader's situation (fixtures stand in for generation; a test holds every
+  line to the clauses it cites). Delivery is one view: the recorded sign-off,
+  the summary, links to the checklist, history and consultation. PDF and Word
+  are disabled controls with "Downloads aren't enabled in this preview"; no
+  file is built. No draft banner or coverage panel on a settled document.
+- E-signature (lib/config/esign.ts): the step says whether the type can be
+  signed electronically, from the Problem Statement's excluded classes (wills,
+  trusts, negotiable instruments, non-regulated powers of attorney), always
+  marked as needing legal confirmation. It names no provider or portal.
+  "Sign electronically (preview)" takes no signature; the client confirms that
+  both have signed. The last applicable step confirmed makes the document
+  executed (executedAt, which the trail records and which clears if a step is
+  taken back). A generated checklist states no stamp-duty amount and no
+  registration rule: "Stamp duty depends on the state of execution and the
+  instrument. Your advocate confirms the amount before you sign." and "Your
+  advocate confirms whether registration applies." A figure appears only on a
+  fixture, labelled a sample entry. Do not add a rate table or a threshold
+  until the state schedule is audited (counsel list); a test fails on any
+  rupee figure in a generated checklist.
+- Revisions: the limit is one value, lib/config/revisions.ts, read through
+  revisionCycle() (lib/revisions.ts). At it the case is logged for corpus
+  review (advocate trail only, never the client's), no new round can be
+  requested (the API refuses too), and asking for more in a round already
+  open is still allowed. It never blocks settling or sign-off.
+- Payment: screening ends in awaiting_payment, and the client pays one flat
+  fee for the tier screening assigned. Only a paid document is released
+  (isReleased, lib/api/documents.ts): the advocate reads (the queue, a link to
+  /review/[id], claim) refuse an unpaid one exactly as they refuse a missing
+  id, so an advocate cannot tell it exists, and it is in no advocate-facing
+  count or metric. Fees are numbers in lib/config/pricing.ts, quoted "before
+  GST", covering every revision round. Never a percentage, share or any figure
+  that reads as part of legal fees (BCI fee-sharing rules, Architecture §8).
+  The payment step is a plainly fake "Pay (preview)": no card, UPI or bank
+  inputs, not even disabled. Pay is idempotent, and a failure leaves the
+  document awaiting payment with a retry. The client sees, before paying, only
+  the tier, the fee and the deal facts behind the tier, never a reason drawn
+  from findings.
 
 ## Design
 - Fill the screen. Pages use the full width they are given, not a narrow

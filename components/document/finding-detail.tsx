@@ -14,6 +14,10 @@ import {
 import { buildAuditTrail } from "@/lib/audit";
 import type { ContractDocument, Finding } from "@/lib/types";
 import { PIPELINE_LAYERS, clauseNumberFromReference } from "@/lib/types";
+import { AddedByLabel } from "./added-by-label";
+import { useReviewScope } from "./review-scope-context";
+import { ScopeTagLabel } from "./scope-tag-label";
+import { scopeNote } from "@/lib/reviewScope";
 import { StateLabel } from "./state-label";
 import { SeverityMark } from "./severity";
 import { CitationBlock } from "./citation-block";
@@ -79,6 +83,7 @@ export function FindingDetail({
   onReopen,
   onRequestChange,
   onWithdrawSource,
+  requestBlockedReason = null,
   busy = false,
 }: {
   doc: ContractDocument;
@@ -93,6 +98,12 @@ export function FindingDetail({
   onReopen: () => void;
   onRequestChange: (request: string) => void;
   onWithdrawSource: (citationId: string, note: string) => void;
+  /**
+   * Why no revision request can be made, once the limit is reached. The
+   * request buttons are not offered, and this is said in their place.
+   * Settling and sign-off are unaffected.
+   */
+  requestBlockedReason?: string | null;
   busy?: boolean;
 }) {
   const reduced = useReducedMotion();
@@ -109,11 +120,15 @@ export function FindingDetail({
   const state = findingState(finding);
   const settled = state === "settled";
   const blocked = blockingCitations(finding).length > 0;
+  const tag = useReviewScope()?.tags[finding.findingId];
   const needsNote = settleNeedsNote(finding);
   const clauseNumber = clauseNumberFromReference(finding.clauseReference);
   const clause = doc.clauses.find((c) => c.number === clauseNumber);
   const history = buildAuditTrail(doc).filter((e) => e.findingId === finding.findingId);
   const request = finding.changeRequest;
+  // Each decision names the finding it is about, so a screen reader hears
+  // which one a control acts on, not just the verb.
+  const which = `finding ${number}, clause ${clauseNumber}`;
 
   function open(next: Draft, initial = "") {
     setDraft(next);
@@ -152,7 +167,14 @@ export function FindingDetail({
             <SeverityMark severity={finding.severity} />
             <StateLabel state={state} />
             {blocked && <StateLabel state="citation_blocked" />}
+            {finding.source === "advocate" && <AddedByLabel />}
+            {tag && <ScopeTagLabel tag={tag} />}
           </div>
+          {/* Said only where there is a decision to make. What was decided
+              before, or decided this round, has its tag and nothing more. */}
+          {tag && !settled && (
+            <p className="mt-2 text-meta text-muted-fg">{scopeNote(tag, settled)}</p>
+          )}
           <p className="mt-3 text-body text-ink">{finding.description}</p>
         </header>
 
@@ -170,15 +192,17 @@ export function FindingDetail({
                           size="sm"
                           variant="outline"
                           disabled={busy}
+                          aria-label={`Withdraw source for ${which}`}
                           onClick={() => open({ kind: "withdraw", citationId: citation.id })}
                         >
                           Withdraw source
                         </Button>
-                        {!request && (
+                        {!request && !requestBlockedReason && (
                           <Button
                             size="sm"
                             variant="ghost"
                             disabled={busy}
+                            aria-label={`Ask the client instead, for ${which}`}
                             onClick={() => open({ kind: "request" }, finding.remedySuggested)}
                           >
                             Ask the client instead
@@ -241,11 +265,18 @@ export function FindingDetail({
 
         {role === "advocate" && (
           <Section title="Raised by">
-            <p className="font-mono text-label text-muted-fg">
-              {finding.ruleApplied}
-              <span className="mx-1.5 text-line">·</span>
-              Layer {finding.layer} · {PIPELINE_LAYERS[finding.layer].name}
-            </p>
+            {finding.source === "advocate" ? (
+              // No pipeline rule or layer is behind it, so none is named.
+              <p className="text-meta text-ink">
+                Added by the advocate in review. No pipeline rule is behind it.
+              </p>
+            ) : (
+              <p className="font-mono text-label text-muted-fg">
+                {finding.ruleApplied}
+                <span className="mx-1.5 text-line">·</span>
+                Layer {finding.layer} · {PIPELINE_LAYERS[finding.layer].name}
+              </p>
+            )}
           </Section>
         )}
 
@@ -286,7 +317,13 @@ export function FindingDetail({
                 {finding.resolvedAt &&
                   ` · ${format(new Date(finding.resolvedAt), "d MMM yyyy, HH:mm")}`}
               </p>
-              <Button size="sm" variant="outline" onClick={onReopen} disabled={busy}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onReopen}
+                disabled={busy}
+                aria-label={`Reopen ${which}`}
+              >
                 Reopen
               </Button>
             </div>
@@ -311,10 +348,21 @@ export function FindingDetail({
                 }}
               />
               <div className="flex items-center gap-2">
-                <Button size="sm" onClick={submit} disabled={busy || !text.trim()}>
+                <Button
+                  size="sm"
+                  onClick={submit}
+                  disabled={busy || !text.trim()}
+                  aria-label={`${DRAFT_COPY[draft.kind].action}, ${which}`}
+                >
                   {DRAFT_COPY[draft.kind].action}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => setDraft(null)} disabled={busy}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setDraft(null)}
+                  disabled={busy}
+                  aria-label={`Cancel, ${which}`}
+                >
                   Cancel
                 </Button>
                 <span className="ml-auto hidden font-mono text-label text-muted-fg sm:inline">
@@ -328,7 +376,9 @@ export function FindingDetail({
                 Settling is unavailable while the source is blocked.
               </p>
               <p className="text-meta text-muted-fg">
-                Withdraw the source above, or ask the client to resolve the clause.
+                {requestBlockedReason
+                  ? "Withdraw the source above."
+                  : "Withdraw the source above, or ask the client to resolve the clause."}
               </p>
             </div>
           ) : (
@@ -346,7 +396,13 @@ export function FindingDetail({
               )}
               <div className="flex flex-wrap gap-2">
                 {!needsNote && (
-                  <Button size="sm" onClick={() => onSettle(null)} disabled={busy}>
+                  <Button
+                    size="sm"
+                    onClick={() => onSettle(null)}
+                    disabled={busy}
+                    aria-label={`Settle ${which}`}
+                    aria-keyshortcuts="C"
+                  >
                     Settle
                     <kbd className="font-mono text-label opacity-70">C</kbd>
                   </Button>
@@ -356,20 +412,25 @@ export function FindingDetail({
                   variant={needsNote ? "default" : "outline"}
                   onClick={() => open({ kind: "note" })}
                   disabled={busy}
+                  aria-label={`Settle with note, ${which}`}
                 >
                   Settle with note
                 </Button>
-                {!request && (
+                {!request && !requestBlockedReason && (
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={() => open({ kind: "request" }, finding.remedySuggested)}
                     disabled={busy}
+                    aria-label={`Request change, ${which}`}
                   >
                     Request change
                   </Button>
                 )}
               </div>
+              {!request && requestBlockedReason && (
+                <p className="text-label text-muted-fg">{requestBlockedReason}</p>
+              )}
             </div>
           )}
         </footer>

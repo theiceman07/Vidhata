@@ -47,7 +47,7 @@ export function Accountability() {
     <section
       id="advocates"
       data-nav-tone="dark"
-      className="w-full scroll-mt-20 bg-ink"
+      className="tile-grain tile-grain-ink w-full scroll-mt-20 bg-ink"
     >
       <div className="mx-auto w-full max-w-6xl px-6 py-24 md:py-32">
       <div className="grid gap-x-16 gap-y-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:items-center">

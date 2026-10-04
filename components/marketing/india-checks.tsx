@@ -17,8 +17,6 @@ const nonCompete = MSA?.findings.find(
 const paymentTerms = MSA?.findings.find(
   (f) => f.clauseReference === "Clause 4.1",
 );
-const stamping = NDA?.executionSteps.find((s) => s.kind === "stamping");
-const registration = NDA?.executionSteps.find((s) => s.kind === "registration");
 const esignature = NDA?.executionSteps.find((s) => s.kind === "esignature");
 
 interface Check {
@@ -53,13 +51,6 @@ const CHECKS: Check[] = [
     fragment: paymentTerms?.clauseText,
   },
   {
-    notation: "Stamp",
-    title: "Stamp duty",
-    description:
-      "State-specific stamp duty is computed so you know what to pay before execution.",
-    fragment: stamping?.headline,
-  },
-  {
     notation: "IT Act",
     title: "e-signature validity",
     description:
@@ -67,11 +58,17 @@ const CHECKS: Check[] = [
     fragment: esignature?.headline,
   },
   {
+    notation: "Stamp",
+    title: "Stamp duty",
+    description:
+      "Stamp duty depends on the state of execution and the instrument. Your advocate confirms the amount before you sign.",
+    fragment: "Stamp duty: confirmed by your advocate",
+  },
+  {
     notation: "Reg. Act",
     title: "Registration",
-    description:
-      "Documents are checked to flag when compulsory registration applies before execution.",
-    fragment: registration?.headline,
+    description: "Your advocate confirms whether registration applies.",
+    fragment: "Registration: confirmed by your advocate",
   },
 ];
 
@@ -82,8 +79,9 @@ export function IndiaChecks() {
       <div className="max-w-2xl">
         <h2 className="font-display text-display text-ink">Built for Indian contracts</h2>
         <p className="mt-6 text-lead text-muted-fg">
-          Six checks a generic drafting tool has no way to run. Each one runs
-          against the statute it names.
+          Four checks a generic drafting tool has no way to run, each against
+          the statute it names. Stamp duty and registration are confirmed by
+          your advocate.
         </p>
       </div>
 
@@ -96,9 +94,10 @@ export function IndiaChecks() {
             <h3 className="mt-6 font-display text-h2 text-ink">{check.title}</h3>
             <p className="mt-3 text-body text-muted-fg">{check.description}</p>
             {check.fragment && (
-              <p className="mt-6 border-t border-line pt-5 font-clause text-meta italic text-ink">
-                {check.fragment}
-              </p>
+              <div className="mt-6 border-t border-line pt-5">
+                <p className="text-label text-muted-fg">Example</p>
+                <p className="mt-1.5 font-clause text-meta italic text-ink">{check.fragment}</p>
+              </div>
             )}
           </li>
         ))}

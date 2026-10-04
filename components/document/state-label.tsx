@@ -45,6 +45,9 @@ const LABEL: Record<LabelState, { text: string; tone: string; solid: string }> =
       tone: "text-info border-info/30",
       solid: "bg-info text-paper border-transparent",
     },
+    // The client's move: the fee is the only thing between a screened
+    // document and the advocate queue.
+    awaiting_payment: { text: "Awaiting payment", ...CAUTION },
     pending_review: { text: "Awaiting advocate", ...CAUTION },
     under_review: { text: "Advocate review", ...CAUTION },
     // An advocate asked the client for something. Whose move it is, not a

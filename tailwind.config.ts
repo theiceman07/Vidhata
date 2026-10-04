@@ -1,4 +1,6 @@
 import type { Config } from "tailwindcss";
+import animate from "tailwindcss-animate";
+import containerQueries from "@tailwindcss/container-queries";
 
 // Brand Board V2.0 · 22 Sep 2026. A document is mostly paper: colour
 // appears where a decision has been made, and nowhere else. One accent
@@ -114,10 +116,10 @@ const config: Config = {
   // Container queries: the document canvas changes width when the finding
   // panel opens, so its internal layout has to answer to the pane it sits
   // in rather than to the viewport.
-  plugins: [
-    require("tailwindcss-animate"),
-    require("@tailwindcss/container-queries"),
-  ],
+  //
+  // Imported, not required: when the dev server reloads this file Node loads
+  // it as an ES module, where `require` does not exist, and the server died.
+  plugins: [animate, containerQueries],
 };
 
 export default config;

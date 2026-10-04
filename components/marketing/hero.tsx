@@ -1,11 +1,12 @@
-import { DealPrompt } from "./deal-prompt";
+import { PublicEntry } from "./public-entry";
 
 /**
  * The hero: one line, and the way in.
  *
  * The primary action is the prompt itself: describe the deal and intake
- * starts from what you wrote. Everything else the page has to say is
- * told as the visitor scrolls.
+ * starts from what you wrote. Where there is no sign-in to send anyone to,
+ * it is a sample document instead (PublicEntry). Everything else the page
+ * has to say is told as the visitor scrolls.
  */
 export function Hero() {
   return (
@@ -17,7 +18,7 @@ export function Hero() {
         <p className="mt-5 max-w-2xl text-balance text-lead text-ink/70">
           Describe the deal. Vidhata drafts it, and a named advocate signs off.
         </p>
-        <DealPrompt className="mt-10" destination="/login" />
+        <PublicEntry className="mt-10" />
       </div>
     </section>
   );

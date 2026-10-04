@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useParams } from "next/navigation";
 import { Icon } from "@/components/shared/icon";
 import { PageHeader } from "@/components/shared/page-header";
 import { ErrorState } from "@/components/shared/error-state";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDocument } from "@/lib/api/documents";
+import { clientVisibleFindings } from "@/lib/findings";
 import {
   buildInitialMessages,
   getMockReply,
@@ -20,7 +22,8 @@ import { cn } from "@/lib/utils";
 
 type LoadState = "loading" | "error" | "loaded";
 
-export default function ChatPage({ params }: { params: { id: string } }) {
+export default function ChatPage() {
+  const params = useParams<{ id: string }>();
   const [doc, setDoc] = useState<ContractDocument | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -134,12 +137,12 @@ export default function ChatPage({ params }: { params: { id: string } }) {
               Clauses
             </p>
             <ul className="space-y-1">
-              {doc.findings.length === 0 && (
+              {clientVisibleFindings(doc).length === 0 && (
                 <li className="text-small text-muted-fg">
                   No flagged clauses on this document.
                 </li>
               )}
-              {doc.findings.map((f) => (
+              {clientVisibleFindings(doc).map((f) => (
                 <li
                   key={f.findingId}
                   id={`sidebar-${f.clauseReference.replace(/\s+/g, "-")}`}
@@ -175,6 +178,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
                 <EscalationPrompt
                   key={m.id}
                   advocateName={doc.advocate?.name ?? "your advocate"}
+                  href={`/documents/${doc.id}/consultation`}
                 />
               ) : (
                 <ChatMessage
@@ -211,7 +215,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about any clause in this document"
-                aria-label="Message"
+                aria-label="Ask about a clause in this document"
               />
               <Button type="submit" size="icon" aria-label="Send">
                 <Icon name="send" size={18} />

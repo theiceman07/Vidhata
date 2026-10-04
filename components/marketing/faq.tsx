@@ -23,11 +23,11 @@ const FAQS = [
       "It's blocked, not guessed at. A blocked citation is shown clearly and routed to your advocate for judgment. It never reaches you disguised as settled.",
   },
   {
-    // The tier is chosen at intake; a mid-review change flow does not exist
-    // yet, so the answer says that plainly.
-    question: "Can I switch tiers after starting a deal?",
+    // Screening assigns the tier; the client does not choose it, so there is
+    // nothing to switch.
+    question: "How is my review tier decided?",
     answer:
-      "The review tier is chosen when you start a deal. Changing tiers mid-review isn't supported yet. Talk to your advocate if a document turns out to need a different level of review.",
+      "You don't choose one. After the first pass, screening reads the type, value and risk of the deal and assigns the tier, so the level of review matches the document. It appears on your document once assigned. If you think it needs a different level of review, talk to your advocate.",
   },
 ];
 

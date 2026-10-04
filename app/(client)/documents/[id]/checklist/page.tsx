@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Icon } from "@/components/shared/icon";
@@ -32,11 +33,8 @@ import type { ContractDocument, ExecutionStep } from "@/lib/types";
 type LoadState = "loading" | "error" | "loaded";
 type Kind = ExecutionStep["kind"];
 
-export default function ChecklistPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function ChecklistPage() {
+  const params = useParams<{ id: string }>();
   const [doc, setDoc] = useState<ContractDocument | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -145,7 +143,7 @@ export default function ChecklistPage({
             </Button>
             <Button size="sm" variant="outline" onClick={() => window.print()}>
               <Icon name="print" size={18} />
-              Print or save as PDF
+              Print this page (browser)
             </Button>
           </div>
         )}

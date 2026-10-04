@@ -1,3 +1,4 @@
+import { clientVisibleFindings } from "@/lib/findings";
 import type { ChatMessage, ContractDocument } from "@/lib/types";
 
 export const SUGGESTED_QUESTIONS = [
@@ -67,7 +68,7 @@ export function getMockReply(
     };
   }
 
-  const finding = doc.findings[0];
+  const finding = clientVisibleFindings(doc)[0];
   if (finding) {
     return {
       text: `${finding.clauseReference} covers this: "${finding.clauseText}" In plain terms: ${finding.description}`,
