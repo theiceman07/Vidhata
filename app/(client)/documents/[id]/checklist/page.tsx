@@ -143,7 +143,7 @@ export default function ChecklistPage() {
             </Button>
             <Button size="sm" variant="outline" onClick={() => window.print()}>
               <Icon name="print" size={18} />
-              Print or save as PDF
+              Print this page (browser)
             </Button>
           </div>
         )}
