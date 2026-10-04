@@ -64,8 +64,7 @@ export default function LawyerLoginPage() {
         intro="For empanelled advocates only."
       >
         <p className="text-body text-ink">
-          Sign-in is not yet available. Vidhata does not have a production
-          identity provider connected in this environment.
+          Accounts aren&apos;t open yet. Vidhata is in preview.
         </p>
         <Button asChild className="mt-6 w-full">
           <Link href="/">Go to home</Link>

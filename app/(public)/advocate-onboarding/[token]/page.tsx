@@ -86,9 +86,12 @@ export default function OnboardingPage() {
     return (
       <AuthScreen portal="advocate" title="Join the panel." intro="By invitation only.">
         <p className="text-body text-ink">
-          Onboarding is not yet available. Vidhata does not have a production identity provider
-          connected in this environment.
+          Accounts aren&apos;t open yet. Vidhata is in preview, so an invitation can&apos;t be
+          accepted here.
         </p>
+        <Button asChild className="mt-6 w-full">
+          <Link href="/">Back to home</Link>
+        </Button>
       </AuthScreen>
     );
   }

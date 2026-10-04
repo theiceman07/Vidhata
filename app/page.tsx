@@ -7,7 +7,7 @@ import { IndiaChecks } from "@/components/marketing/india-checks";
 import { Accountability } from "@/components/marketing/accountability";
 import { Faq } from "@/components/marketing/faq";
 import { SiteFooter } from "@/components/marketing/site-footer";
-import { DealPrompt } from "@/components/marketing/deal-prompt";
+import { PublicEntry } from "@/components/marketing/public-entry";
 
 /**
  * The landing page says one thing on arrival and the rest in order as
@@ -54,7 +54,7 @@ export default function LandingPage() {
               Describe the deal. Vidhata drafts and screens it. An advocate
               settles the findings and signs off.
             </p>
-            <DealPrompt className="mt-12" destination="/login" />
+            <PublicEntry className="mt-12" />
           </div>
         </section>
       </main>

@@ -84,7 +84,12 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
 - Marketing pages: sections that need to stand apart are full-width
   tinted bands (parchment, pale accent, ink) with a fine grain
   (.tile-grain). No gradients. "Draft a document" is the DealPrompt box
-  in the hero and at the end; the brief survives sign-in. Inside the
+  in the hero and at the end; the brief survives sign-in. Where the preview
+  workspace is off (the public site, NEXT_PUBLIC_VIDHATA_PREVIEW_MODE unset)
+  there is no sign-in to send anyone to, so PublicEntry shows "See a sample
+  document" (/sample) and a quieter link to /contracts in both places, and
+  the sign-in and onboarding pages say "Accounts aren't open yet. Vidhata is
+  in preview." with a way home. Inside the
   portal it drafts: readBrief() (lib/api/brief.ts) reads what the brief
   states, a complete brief is drafted at once, and an incomplete one opens
   intake pre-filled at the first missing fact. Nothing unstated is
