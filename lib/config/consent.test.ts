@@ -41,12 +41,18 @@ describe("what the banner says", () => {
     // Adding analytics means adding it here, and this test is the reminder that
     // the banner's wording, the version and counsel's review all follow.
     expect(NON_ESSENTIAL_IN_USE).toEqual([]);
-    expect(consentStatement()).toMatch(/sets no cookies beyond what the site needs/);
+    expect(consentStatement()).toBe(
+      "This site doesn't use cookies beyond what it needs to work. Nothing is tracked.",
+    );
+  });
+
+  it("says nothing of a sign-in, which the public site does not have", () => {
+    expect(consentStatement()).not.toMatch(/sign-in|preview|sidebar|brief/i);
   });
 
   it("names what would run, once something does", () => {
     const line = consentStatement(["usage analytics"]);
     expect(line).toMatch(/usage analytics/);
-    expect(line).not.toMatch(/sets no cookies/);
+    expect(line).not.toMatch(/Nothing is tracked/);
   });
 });

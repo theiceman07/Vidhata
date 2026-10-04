@@ -46,9 +46,15 @@ export function serialiseConsent(choice: ConsentChoice, now: number): string {
   return JSON.stringify({ choice, version: CONSENT_VERSION, at: now } satisfies ConsentRecord);
 }
 
-/** The line the banner opens with. It is derived, so it cannot outlive the truth. */
+/**
+ * The line the banner opens with. It is derived, so it cannot outlive the truth.
+ *
+ * WORDING PENDING COUNSEL REVIEW. It is kept to what is true in every build,
+ * with or without the preview workspace: no cookies beyond what the site needs,
+ * no analytics. It says nothing of sign-in, because the public site has none.
+ */
 export function consentStatement(inUse: readonly string[] = NON_ESSENTIAL_IN_USE): string {
   return inUse.length === 0
-    ? "This preview sets no cookies beyond what the site needs to work, and runs no analytics. It keeps your preview sign-in, where the sidebar sits and a brief you typed, in your browser only."
+    ? "This site doesn't use cookies beyond what it needs to work. Nothing is tracked."
     : `This site would use ${inUse.join(", ")}, which it does not need to work. Decline and it will not run.`;
 }
