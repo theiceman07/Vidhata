@@ -8,6 +8,10 @@ import {
 import { clientVisibleFindings, findingNumbers } from "@/lib/findings";
 import {
   clauseNumberFromReference,
+  type ClientClauseRow,
+  type ClientDiff,
+  type ClientFindingRow,
+  type ClientVersionRow,
   type ContractDocument,
   type DocumentVersion,
   type Finding,
@@ -56,18 +60,6 @@ export const MADE_BY: Record<VersionCreatedBy, string> = {
   client_response: "Your answers",
   advocate_revision: "Advocate's revision",
 };
-
-export interface ClientVersionRow {
-  number: number;
-  /** "Draft 3 (current)" for the latest snapshot, "Draft 2" for the rest. */
-  label: string;
-  current: boolean;
-  createdAt: string;
-  madeBy: string;
-  clauseCount: number;
-  /** Counted through clientVisibleFindings, never from the raw findings. */
-  findingCount: number;
-}
 
 /**
  * The drafts as they were handed on, newest first. "Current" marks the
@@ -138,53 +130,9 @@ export function dispositionText(disposition: Finding["disposition"]): string {
   return "Not yet decided";
 }
 
-export interface ClientClauseRow {
-  number: string;
-  heading: string;
-  kind: ClauseChangeKind;
-  before: string | null;
-  after: string | null;
-}
-
-export interface ClientFindingRow {
-  /** "04", as the client's own list numbers it. */
-  number: string;
-  clauseReference: string;
-  kind: FindingChangeKind;
-  /** Plain wording for the change. */
-  change: string;
-  /** The first pass's own words. After sign-off only. */
-  description: string | null;
-  /**
-   * The advocate's decision, in a word. After sign-off only. The advocate's
-   * own note on it is deliberately not shown to the client. That is a
-   * judgment for now, not a permanent rule: the same notes ground the chat
-   * agent, so revisit whether the client may read them once that is settled.
-   */
-  disposition: Finding["disposition"] | null;
-  /** Said only once the record is the client's to read in full. */
-  advocateAdded: boolean;
-}
-
-export interface ClientVersionDiff {
-  from: number;
-  to: number;
-  fromLabel: string;
-  toLabel: string;
-  signedOff: boolean;
-  /** Clauses shown with their text. */
-  clauses: ClientClauseRow[];
-  /** Clauses not shown, only counted. Always zero after sign-off. */
-  otherClauses: Record<ClauseChangeKind, number>;
-  /**
-   * Findings shown as rows. Named for what they are, not "findings": client
-   * code must never read a document's own findings, and a guard test fails
-   * on any `.findings` in a client file.
-   */
-  findingRows: ClientFindingRow[];
-  /** Over every finding the client may know about, shown or not. */
-  findingCounts: { new: number; stillOpen: number; resolved: number };
-}
+/** The client's diff. The shapes live in lib/types.ts; the old names stay here. */
+export type ClientVersionDiff = ClientDiff;
+export type { ClientClauseRow, ClientFindingRow, ClientVersionRow };
 
 export type ClientVersionDiffResult =
   | { ok: true; diff: ClientVersionDiff }

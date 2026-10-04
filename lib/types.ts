@@ -1,3 +1,6 @@
+import type { AuditEntry } from "@/lib/audit";
+import type { ClauseChangeKind, FindingChangeKind } from "@/lib/diff";
+
 export type DocumentStatus =
   | "draft" // intake done, pipeline not run
   | "analysing" // pipeline running
@@ -139,9 +142,21 @@ export interface Delivery {
   title: string;
   counterparty: string;
   status: "settled" | "executed";
-  signOff: { advocate: string; enrolment: string; at: string };
+  signOff: SignOffRecord;
   summary: SettledSummary | null;
   checklist: { done: number; total: number };
+}
+
+/**
+ * The advocate's recorded sign-off: who, under which Bar enrolment, and when.
+ * It is the only place a client meets the advocate. Before sign-off a client
+ * is never told who holds their document, so no client type carries a name or
+ * an enrolment anywhere else.
+ */
+export interface SignOffRecord {
+  advocate: string;
+  enrolment: string;
+  at: string;
 }
 
 export interface ContractDocument {
@@ -259,6 +274,192 @@ export interface DocumentVersion {
   clauses: Clause[];
   findings: Finding[];
 }
+
+/*
+ * Client-shaped types.
+ *
+ * PROPOSAL, not agreed with the backend team. See
+ * docs/superpowers/plans/2026-10-04-client-shaped-api.md. These are what a
+ * client may be handed, so a client screen cannot be given a field it may not
+ * see: the type it receives does not have the field.
+ *
+ * They are derived with Pick, never Omit, so a field added to an internal type
+ * is private to the client until someone adds it here on purpose. The test in
+ * lib/clientTypes.test.ts holds the restricted keys out of every one.
+ *
+ * Nothing builds these yet. The shapers that do are phase 2, and no screen
+ * reads them until phase 3.
+ */
+
+/** The facts of the deal, as the client stated them. */
+export type ClientDeal = Pick<
+  ContractDocument,
+  | "clientName"
+  | "counterpartyName"
+  | "stateOfExecution"
+  | "transactionValue"
+  | "counterpartyIsMsme"
+  | "durationMonths"
+  | "governingLaw"
+  | "keyTerms"
+>;
+
+/**
+ * A clause as the client reads it. No finding ids and no revision time: a
+ * client reaches a clause's findings through the clause reference.
+ */
+export type ClientClause = Pick<Clause, "number" | "heading" | "body">;
+
+/**
+ * An advocate's request to the client, without the advocate. Before sign-off
+ * the client is told "your advocate", never a name.
+ */
+export type ClientChangeRequest = Pick<
+  ChangeRequest,
+  "request" | "requestedAt" | "response" | "respondedAt"
+>;
+
+/**
+ * A source as the client reads it. Whether it was withdrawn is said; the
+ * advocate's note on the withdrawal is not.
+ */
+export type ClientCitation = Pick<Citation, "id" | "text" | "status" | "corpusRef"> & {
+  withdrawn: boolean;
+};
+
+/** What a client reads of a finding once the record is theirs, after sign-off. */
+export type ClientFindingDetail = Pick<
+  Finding,
+  "severity" | "description" | "remedySuggested" | "disposition"
+> & {
+  citations: ClientCitation[];
+  /**
+   * Present, and true, only for a finding the advocate added, and only while
+   * SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF is on. When the switch is off the field
+   * is absent, so narrowing the setting never changes the type.
+   */
+  advocateAdded?: true;
+};
+
+/**
+ * A finding as the client reads it.
+ *
+ * Before sign-off: the passage and the request addressed to them, nothing more.
+ * A finding with no request addressed to the client is not in the list at all
+ * (an advocate-added finding reaches them only that way). After sign-off
+ * `detail` is set. Never a rule id, a layer, a source, an override note or a
+ * resolution time.
+ */
+export interface ClientFinding extends Pick<Finding, "clauseReference" | "clauseText"> {
+  /**
+   * An opaque handle, so an answer can say which finding it answers. Shown
+   * nowhere: `number` is what a person reads. Open question 5 in the plan.
+   */
+  id: string;
+  /** "04", numbered in the order the pipeline raised them. */
+  number: string;
+  request: ClientChangeRequest | null;
+  detail: ClientFindingDetail | null;
+}
+
+/**
+ * A document as a client reads it.
+ *
+ * The advocate appears only as `signOff`. The fee appears nowhere: the document
+ * describes the contract and its review state, and money belongs to invoices
+ * and to the tier's price (lib/config/pricing.ts), so `paidAt` says that it was
+ * paid and never how much. The list is `findingList`, not `findings`, because
+ * client code must never read a document's own findings.
+ */
+export interface ClientDocument
+  extends Pick<
+    ContractDocument,
+    "id" | "title" | "type" | "status" | "tier" | "version" | "createdAt" | "claimedAt" | "executedAt"
+  > {
+  deal: ClientDeal;
+  /** When the fee was paid. Null until it is. Never the amount. */
+  paidAt: string | null;
+  /** Null until the advocate has signed off. */
+  signOff: SignOffRecord | null;
+  /**
+   * Before sign-off: only the clauses behind requests addressed to the client.
+   * After: every clause, read-only.
+   */
+  clauses: ClientClause[];
+  /** Clauses not shown, only counted. Always zero after sign-off. */
+  otherClauseCount: number;
+  findingList: ClientFinding[];
+  /** After sign-off only. Empty before. */
+  executionSteps: ExecutionStep[];
+}
+
+/** One draft in the client's version list. Counts only; never the draft. */
+export interface ClientVersionRow {
+  number: number;
+  /** "Draft 3 (current)" for the latest snapshot, "Draft 2" for the rest. */
+  label: string;
+  current: boolean;
+  createdAt: string;
+  madeBy: string;
+  clauseCount: number;
+  /** Counted through the client's own findings, never from the raw ones. */
+  findingCount: number;
+}
+
+export type ClientVersionList = ClientVersionRow[];
+
+export interface ClientClauseRow {
+  number: string;
+  heading: string;
+  kind: ClauseChangeKind;
+  before: string | null;
+  after: string | null;
+}
+
+export interface ClientFindingRow {
+  /** "04", as the client's own list numbers it. */
+  number: string;
+  clauseReference: string;
+  kind: FindingChangeKind;
+  /** Plain wording for the change. */
+  change: string;
+  /** The first pass's own words. After sign-off only. */
+  description: string | null;
+  /**
+   * The advocate's decision, in a word. After sign-off only. The advocate's
+   * own note on it is deliberately not shown to the client. That is a
+   * judgment for now, not a permanent rule: the same notes ground the chat
+   * agent, so revisit whether the client may read them once that is settled.
+   */
+  disposition: Finding["disposition"] | null;
+  /** Said only once the record is the client's to read in full, and the switch is on. */
+  advocateAdded: boolean;
+}
+
+/** What changed between two drafts, for the client. */
+export interface ClientDiff {
+  from: number;
+  to: number;
+  fromLabel: string;
+  toLabel: string;
+  signedOff: boolean;
+  /** Clauses shown with their text. */
+  clauses: ClientClauseRow[];
+  /** Clauses not shown, only counted. Always zero after sign-off. */
+  otherClauses: Record<ClauseChangeKind, number>;
+  /** Findings shown as rows. Named for what they are, not "findings". */
+  findingRows: ClientFindingRow[];
+  /** Over every finding the client may know about, shown or not. */
+  findingCounts: { new: number; stillOpen: number; resolved: number };
+}
+
+/**
+ * One line of the client's activity trail. It says that a draft was revised
+ * without saying where, except for a clause a request to them is about. Before
+ * sign-off the advocate is "Advocate", never a name. No entry about the
+ * advocate's own working is in it.
+ */
+export type ClientAuditEntry = Omit<AuditEntry, "advocateOnly">;
 
 /**
  * One fee paid, as billing reads it. It is derived from the payment a
