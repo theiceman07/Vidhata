@@ -1,0 +1,532 @@
+# API contract
+
+What `lib/api/*` promises, and what a real backend must enforce on its own.
+
+The mock layer is the contract. It is a set of async functions over in-memory
+stores, and the rules that matter live in them and in the tests that hold them.
+This document names each rule once, points at the function that shows it and the
+test that holds it, and says plainly where the mock does **not** enforce a rule
+and relies on the screen. Where this document and the code disagree, the code
+and its tests are the record, and this document is wrong and should be fixed.
+
+Written from the repo at the end of the F pass (4 October 2026).
+
+## How to read it
+
+Each rule has three marks:
+
+- **Mock** is the function that carries the rule, as `file` › `function`.
+- **Test** is the test that holds it, as `file` › "describe › it", so it can be
+  searched for. "No test" means exactly that. Paths are relative to `lib/`, and
+  a file under `lib/api/` is written with its `api/` or full path. Three names
+  exist in both places (`citations`, `billing`, `privacy`), so those are always
+  written in full.
+- **Gap** is a rule the mock leaves to the UI. A backend that copies the mock
+  copies the gap. The gaps are collected in Appendix B.
+
+## 0. Conventions every function follows
+
+| Convention | What it means for the backend |
+|---|---|
+| **No identity in the mock.** | No function reads who is calling. `orgId` and `advocateId` are arguments, passed by the screen from a fixture (`MOCK_CLIENT_ORG`, `CURRENT_ADVOCATE`). A real backend derives both from a server-verified session and never takes them from the request. `lib/api/notes.ts` says the same of its own scoping. |
+| **A read that finds nothing returns `null`; a write that cannot proceed throws `MockApiError`** with a sentence a person can read. | Map to a 404 or 4xx with the same copy. The copy is part of the contract where a rule below says "the same response". |
+| **A failure changes nothing.** Every write checks the failure switch before it writes. | Each write is one transaction. A failed call leaves no partial state, and the client can simply try again. Tests: `execution.test.ts` › "changes nothing when it fails, and works again afterwards"; `documents.test.ts` › "is left awaiting payment when the payment fails…"; `lib/api/privacy.test.ts` › "changes nothing when it fails". |
+| **Reads return copies.** | `structuredClone` everywhere. Nothing a caller holds can change the store. Test: `summaries.test.ts` › "hands over a copy, so reading it cannot change the fixture". |
+| **Money is a whole number of rupees, before GST.** | `lib/config/pricing.ts` holds every amount. Never a percentage, share or split of legal fees (BCI fee-sharing rules, Architecture §8). Test: `lib/fees.test.ts` › "never state a fee as a percentage or a share", "are flat whole-rupee amounts…". |
+| **Times are ISO 8601 strings, UTC.** | Every `…At` field. |
+| **Named actors.** | An audit entry names who acted, never "the system" (`lib/audit.ts` › `AuditEntry.actor`). |
+
+State systems stay apart. A document has `status`, a finding has `findingState()`,
+a citation is verified or blocked, and a document is claimed or not. Never fold
+them into one field (`lib/findings.ts`, header comment).
+
+```
+DocumentStatus: draft → analysing → awaiting_payment → pending_review
+                → under_review ⇄ revision → settled → executed
+```
+
+## 1. Release gating
+
+A document reaches an advocate only after it is screened **and paid for**.
+
+**1.1 Released means past payment.** A document is released when its status is
+none of `draft`, `analysing`, `awaiting_payment`.
+Mock: `documents.ts` › `isReleased`.
+Test: `documents.test.ts` › "releasing a document to the advocate queue › knows which states are released".
+
+**1.2 Every advocate read goes through that gate, and an unreleased document is
+exactly a missing one.** The queue (`listDocuments()` with no `orgId`) holds only
+released documents. `getDocumentForReview` returns `null` for an unreleased
+document and for a made-up id, so an advocate following a link cannot tell the
+document exists. It is in no advocate-facing count or metric.
+Mock: `documents.ts` › `listDocuments`, `getDocumentForReview`.
+Test: `documents.test.ts` › "is in the client's own list but in no advocate-facing read", "looks the same to an advocate following a link as a document that does not exist".
+**Gap:** only these two reads apply the gate. See Appendix B, item 1.
+
+**1.3 A document is not claimable until paid, and the refusal is the one for a
+missing id.** `claimDocument` throws "Document not found." for an unreleased
+document.
+Mock: `documents.ts` › `claimDocument`.
+Test: `documents.test.ts` › "cannot be claimed, and the refusal is the one for a document that does not exist".
+
+**1.4 Paying releases it.** `payFee` records one payment at the flat fee for the
+tier screening assigned, and moves the document to `pending_review`. It is
+refused for a document that is not `awaiting_payment` or has no tier. The fee
+covers every revision round.
+Mock: `documents.ts` › `payFee`; fee from `TIER_PRICING` in `lib/config/pricing.ts`.
+Test: `documents.test.ts` › "is paid once, at its tier's flat fee, however many times Pay is pressed", "is released once paid…", "refuses to take a fee for a document that is not awaiting payment"; `lib/fees.test.ts` › "the fixtures' payments › exist for every released document and no other, at the tier's flat fee".
+
+**1.5 A failed payment leaves the document awaiting payment**, nothing recorded.
+Test: `documents.test.ts` › "is left awaiting payment when the payment fails, and the client can try again".
+
+**1.6 The client never picks the tier.** Screening assigns it once the first pass
+has run, from the deal facts. The mock's thresholds (`lib/triage.ts` ›
+`assignReviewTier`: employment, or value ≥ ₹1 crore, is senior; an MSA, an MSME
+counterparty or value ≥ ₹10 lakh is enhanced) are placeholders for the real
+triage. Before paying the client sees only the tier, the fee and the deal facts
+behind the tier, never a reason drawn from findings.
+No test pins the thresholds.
+
+**1.7 No platform money on an advocate screen.** An advocate sees no document
+fee, payment record, invoice or split, and sees whether a consultation is paid,
+never its fee or time.
+Test: `lib/fees.test.ts` › "the advocate's screens › show no document fee, payment record, invoice or split". This test scans the screens' source files. A backend enforces it by not returning those fields to an advocate at all.
+
+**1.8 Claiming.** A claim is exclusive, and the same advocate claiming again
+changes nothing. It is refused unless the advocate declares no conflict with
+either party (`noConflictWithEitherParty`), and the declaration is recorded
+beside the claim (`conflictDeclaredAt`). A name on the advocate's own declared
+conflicts that matches a party stops the claim, and cannot be overridden at claim
+time.
+Mock: `documents.ts` › `claimDocument`; match in `lib/conflicts.ts` › `declaredConflictWith`.
+Test: `documents.test.ts` › "claiming a document › …" (four tests); `lib/conflicts.test.ts`.
+The name match is a stand-in. Real conflict checks need party and matter data (SRD 4.2).
+
+## 2. The sign-off gates
+
+**2.1 Sign-off.** `signOffDocument` requires a claiming advocate, no finding
+still `pending`, and no citation that is blocked and not withdrawn. It sets
+`status = "settled"` and `settledAt`, and builds the execution checklist once.
+Nothing reaches a client without a recorded advocate sign-off, so `settledAt`
+and `advocate` are the record.
+Mock: `documents.ts` › `signOffDocument`; the same blockers, as the screen reads them, in `lib/findings.ts` › `signOffBlockers`.
+Test: `signOffDocument` is exercised only by `checklist.test.ts` (the happy path, through to the checklist). **No test pins the two refusals.** Add them.
+**Gap:** the mock does not check that the caller is the claiming advocate. See Appendix B, item 1.
+
+**2.2 The summary is unavailable until sign-off, and the gate is in the API.**
+`getSettledSummary` returns `{ state: "not_available" }` for any document that is
+not `settled` or `executed`, whatever is stored for it, and the answer carries
+nothing of the content. A signed-off document with no summary for this draft
+returns `{ state: "none" }`. A summary is shown only for the draft it was written
+from (`summary.draft === doc.version`).
+Mock: `summaries.ts` › `getSettledSummary`, `summaryResultFor` (the one place the gate lives).
+Test: `summaries.test.ts` › "is not available before sign-off, and the answer carries nothing of the content", "stays unavailable before sign-off even if a summary is stored for the document", "is not shown against a text that has changed since it was written", "says so when a signed-off document has no summary".
+The mock's summaries are fixtures. A test holds every line to the clauses it cites (`lib/mock/summaries.mock.test.ts`). A generated summary must meet the same bar: it explains the document, never the reader's situation.
+
+**2.3 Delivery is unavailable until sign-off.** `getDelivery` returns
+`{ state: "not_available" }` unless the status is `settled` or `executed` **and**
+an advocate and a `settledAt` are on record. It then returns the sign-off record
+(advocate, Bar enrolment, date), the summary or `null`, and checklist progress,
+all read from the one document so they cannot disagree. No title, no content,
+before that.
+Mock: `delivery.ts` › `getDelivery`.
+Test: `delivery.test.ts` › "is not available before sign-off, and says nothing else", "is not available for a sign-off with no advocate or date on record", "holds even when the document says it is signed off but is not (the status is the gate)", "is still handed over when there is no summary for this draft…".
+
+**2.4 PDF and Word are not built.** The controls are disabled with "Downloads
+aren't enabled in this preview", and no file is created.
+Test: `delivery.test.ts` › "offers downloads that do not work, and builds no file".
+
+**2.5 Executing.** Each step records who marked it and when, and can be taken
+back, which clears both. The last applicable step confirmed makes the document
+`executed` with `executedAt`, once however many times it is confirmed. Taking a
+step back returns it to `settled` and clears `executedAt`. A step that does not
+apply (for example an e-signature step for a class that cannot be signed
+electronically) never holds execution up.
+Mock: `documents.ts` › `toggleExecutionStep`, `attachEvidence`.
+Test: `execution.test.ts` (nine tests), including "is one record however many times the last step is confirmed".
+**Gap:** the mock does not refuse the call on a document that is not signed off. `execution.test.ts` › "does not execute a document that is not signed off" passes only because such a document has no steps yet. Refuse it explicitly.
+
+**2.6 A generated checklist states no figure and no rule.** It says "Stamp duty
+depends on the state of execution and the instrument. Your advocate confirms the
+amount before you sign." and "Your advocate confirms whether registration
+applies." A rupee figure appears only on a fixture, labelled a sample entry. Do
+not add a rate table or a registration threshold until the state schedule is
+audited (counsel list).
+Mock: `documents.ts` › `buildExecutionSteps`; the e-signature step in `lib/config/esign.ts` › `esignatureStep`, from the Problem Statement's excluded classes, always marked as needing legal confirmation, naming no provider.
+Test: `checklist.test.ts` › "states no rupee figure for a … in …" (six documents), "cites no section of any Act", "leaves the amount to the advocate, and never rules registration out"; `lib/config/esign.test.ts`.
+
+## 3. The citation gate
+
+A citation is verified or blocked. Never "probably fine".
+
+**3.1 Exact match only.** `lookupCitation` normalises whitespace and letter case
+and **nothing else**, then looks the text up as a corpus label or a corpus ref. A
+missing comma, a different section or an extra word is a near-miss, and a
+near-miss is blocked. There is no fuzzy matching, and there must never be: a
+citation wrongly marked verified is the one failure the gate exists to prevent.
+Mock: `lib/citations.ts` › `normaliseCitation`, `lookupCitation`.
+Test: `lib/citations.test.ts` › "blocks a near-miss, every one of them", "ignores spacing: padding, runs of spaces, tabs, newlines, non-breaking spaces", "normalises whitespace and case and touches nothing else".
+
+**3.2 Two outcomes, with a reason when blocked.** `verified` carries the corpus's
+own wording and `corpusRef`. `blocked` carries what was typed (tidied) and a
+reason: `empty` or `not_in_corpus`. There is no third state.
+Test: `lib/citations.test.ts` › "blocks empty input", "blocks a ref the corpus does not hold".
+
+**3.3 The gate runs again at every hand-off.** Each citation on the record is
+resolved against the corpus afresh when a snapshot is written, on the working
+copy and in the snapshot alike. A blocked citation becomes verified only by
+matching the corpus, never by being relabelled, and a verified one that no longer
+matches becomes blocked. A withdrawal survives it.
+Mock: `documents.ts` › `recordVersion`; `lib/citations.ts` › `recheckCitation`, `recheckFindings`.
+Test: `lib/citations.test.ts` › "running the gate again on the record › …" (five tests); `documents.test.ts` › "runs the citation gate again, so a citation the corpus no longer holds is blocked", "leaves every citation agreeing with a fresh lookup of its own text".
+**Gap:** the gate is not re-run at sign-off, and a finding added by an advocate is stored with whatever citation status the caller supplied until the next hand-off. See Appendix B, item 2.
+
+**3.4 A blocked citation can be withdrawn, never relabelled.** The advocate
+withdraws it with a note. The citation stays on the record as blocked, with who,
+when and why. Only a blocked citation can be withdrawn. A finding cannot be
+settled, and the document cannot be signed off, while one of its citations is
+blocked and not withdrawn. A finding with no verified source left can be settled
+only with the advocate's reasoning on the record.
+Mock: `documents.ts` › `withdrawCitation`, `updateFinding`, `signOffDocument`; `lib/findings.ts` › `blockingCitations`, `settleNeedsNote`.
+Test: `lib/findings.test.ts` and `lib/citations.test.ts` hold the lookups. **No test pins `withdrawCitation` or the refusal in `updateFinding` directly.**
+**Gap:** the note is required by the screen only; the API accepts an empty one, and `updateFinding` does not require a note where `settleNeedsNote` says it should. Appendix B, items 3 and 4.
+
+**3.5 The attempt log.** Every citation an advocate **types** is recorded: the
+exact input before any tidying, the outcome, the corpus ref or reason, the
+advocate, the document and the time. Picking a citation from the corpus is not an
+attempt, because it is always verified. The pre-gate fabrication rate (FR-14) is
+blocked typed attempts over all typed attempts.
+Mock: `lib/api/citations.ts` › `checkCitation`, `listCitationAttempts`.
+Test: `lib/api/citations.test.ts` (five tests), including "records exactly what was typed, before any tidying".
+Persist it (section 9).
+
+**3.6 The corpus is labels, not statute text.** `lib/mock/corpus.mock.ts` holds a
+reference and a label for each entry, and no body text. Never invent statute text,
+section numbers or case names. A missing fixture is a question for the legal
+owner, not a guess.
+
+## 4. Client visibility, enforced server-side
+
+This is the section the backend most needs to own.
+
+> **In the mock, the API returns everything and the screen narrows it.**
+> `getDocument`, `getDocumentVersions` and `listDocuments(orgId)` hand a client
+> the whole `ContractDocument`: every finding, every disposition, every clause,
+> the advocate-added findings, the rule ids and layers. The rules below are
+> applied afterwards, in the browser, by `lib/findings.ts`,
+> `lib/clientVersions.ts`, `lib/audit.ts` and `lib/privacy.ts`. The tests hold
+> those functions, and one test scans client screens for direct reads. None of
+> that protects data that has already left the server. A real backend applies
+> every rule here **in the response**, so restricted data never reaches a client.
+
+### What a client may receive
+
+**Before sign-off:**
+
+- The document's status and tier, and that the fee has been paid. The audit trail records that it was paid and never the amount.
+- A version list: for each draft its number, who made it ("First pass", "Your answers", "Advocate's revision"), its date, a clause count and a finding count. The finding count covers only findings the client may know about.
+- The **text** of the clauses behind requests addressed to them, and the findings those requests are about.
+- Every other clause **only counted** as changed or unchanged, with no text and no clause number, because saying where a draft changed says what it contains.
+- A diff limited to those passages.
+- A finding an advocate added **only through a request addressed to them**. Never otherwise.
+- An activity trail that says a draft was revised without saying where, except for a clause a request to them is about.
+
+**After sign-off, read-only:**
+
+- Every clause in full, every finding with the advocate's disposition in plain words, and the full version history and diff.
+- Whether findings the advocate added are included is one switch: `lib/config/visibility.ts` › `SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF` (currently `true`). It is a product decision for counsel to confirm. Read it from configuration, never hard-code it.
+
+**Never, at any time:**
+
+- The advocate's private notes (`MarginNote`, section 9).
+- The pipeline's machinery: rule ids and layer numbers, and internal ids. Findings are numbered for display in the order the pipeline raised them.
+- Decisions inside a snapshot before sign-off. A snapshot written at a send-back holds the advocate's decisions so far. The client's view of it reads the same line, counts and rows whatever the advocate decided.
+- The corpus-review log (the revision-limit entry). It is the advocate's working record.
+- Another organisation's documents, invoices or consultations.
+
+Mock (the readers to reproduce on the server): `lib/findings.ts` › `clientVisibleFindings`, `firstPassFindings`; `lib/clientVersions.ts` (every client screen that shows versions goes through it); `lib/audit.ts` › `clientAuditTrail`; `lib/privacy.ts` › `buildDataExport`.
+Test: `lib/findings.test.ts` › "what the client may be told of a document's findings › …"; `clientVersions.test.ts` › "before sign-off › …", "after sign-off › …", "a client's view of snapshots that hold decisions › …"; `lib/audit.test.ts`; `lib/privacy.test.ts` › "the export of a document not yet signed off › …", "never carries the advocate's own notes or the pipeline's machinery".
+
+### What an advocate may receive
+
+- A document only if it is released (section 1), and only the consultations on documents they settled.
+- Whether a consultation is paid, never its fee, its time or any payment detail.
+- No document fee, payment record, invoice or split.
+- Their own notes only.
+
+### The consultation question
+
+A client's question, and the advocate's answer, appear **only inside the request**.
+They appear in no list, page title, tooltip, audit trail, notification, billing
+line or metric. The client's own data export carries them, deliberately. A
+backend must keep them out of logs, analytics and any event stream as well.
+Test: `consultations.test.ts` › "where the question may not go › …" (four tests). They scan the mock's source files; the backend equivalent is a review of every place a request body is written.
+
+## 5. The revision cap, and the round and draft counting rule
+
+**5.1 The cap is one value.** `MAX_REVISION_CYCLES` in `lib/config/revisions.ts`
+(currently 3), read through `revisionCycle()` in `lib/revisions.ts`. A round is
+one send-back, counted when a document first enters `revision`.
+
+**5.2 What the cap stops, and what it never stops.** At the cap, no new round can
+be requested, and the API refuses the request with the reason. Asking for more
+**in a round already open is still allowed**, because it starts no new round. The
+cap **never blocks settling or sign-off**. The round that uses the last one logs
+the case for corpus review, once (`corpusReviewLoggedAt`), in the advocate's
+trail only and never the client's.
+Mock: `documents.ts` › `requestChange`; `lib/revisions.ts` › `revisionCycle`, `revisionBlockedReason`.
+Test: `documents.test.ts` › "the revision limit › lets the configured number of rounds be sent, logs the case on the last, then refuses another", "still lets the advocate settle a finding at the limit"; `lib/revisions.test.ts` (nine tests); `lib/audit.test.ts` › "the revision limit in the trail › …".
+
+**5.3 A round is two hand-offs, each a snapshot.** The advocate sends it back
+(`requestChange` writes an `advocate_revision` snapshot, carrying every decision
+so far and the request) and the client answers (`respondToChanges` writes a
+`client_response` snapshot). So a document sent back N times has **1 + 2N
+drafts**, one fewer while a round is open (the first draft is the first pass).
+"Round N" is `revisionCount + 1`, **never counted from drafts**.
+
+- `requestChange` writes a snapshot only when it **starts** a round (the status was not already `revision`). A second request in the same round is not another hand-off.
+- `respondToChanges` writes a snapshot only when no request is still unanswered.
+
+Test: `lib/mock/versions.mock.test.ts` › "rounds and drafts › agree in every fixture that has been sent back". This test holds every fixture to the rule. A backend integration test should hold every document to it the same way.
+
+**5.4 Snapshots are written at hand-off points only.** First pass finished, send-back, client response. `ContractDocument` is the working copy and may be ahead of the latest snapshot, so diffs compare **snapshots**, never the head. The one exception is the advocate's re-review (`lib/reviewScope.ts`), which compares the head with the draft **before the current one**, not the latest snapshot, because the latest equals the head and the comparison would show nothing.
+Test: `lib/reviewScope.test.ts` (24 tests); `documents.test.ts` › "the snapshot written when the first pass finishes › …".
+
+**Gap:** `respondToChanges` does not check that the caller owns the document or that the document is in `revision`. Appendix B, item 5.
+
+## 6. Idempotency and atomicity
+
+A double click must make one payment, one request, one state change.
+
+| Operation | Rule | Mock | Test |
+|---|---|---|---|
+| Pay the document fee | A document that already has a payment comes back as it is. The check precedes the failure path. | `payFee` | `documents.test.ts` › "is paid once…, however many times Pay is pressed" |
+| Pay a consultation | A paid request comes back as it is. Money moves only here. | `payConsultation` | `consultations.test.ts` › "paying › moves money only here, once, however many times it is pressed" |
+| Request a consultation | The same question for the same document while it is still `requested` returns the one request. A failure creates nothing. | `requestConsultation` | `consultations.test.ts` › "is made once, however many times the button is pressed", "creates nothing when it fails…" |
+| Accept, decline, answer | Repeating changes nothing. | `acceptConsultation`, `declineConsultation`, `answerConsultation` | `consultations.test.ts` › "is one state change however many times it is pressed" (accept and decline), "is sent once, and sending again changes nothing" |
+| Claim | The same advocate claiming again resets nothing. | `claimDocument` | `documents.test.ts` › "leaves a document alone that is already theirs…" |
+| Training opt-in | Setting what it already is logs nothing. | `setTrainingOptIn` | `lib/api/privacy.test.ts` › "logs every change with its time, and a repeat changes nothing" |
+| Deletion request | Asking again keeps the first time. A request, never an erasure. | `requestDeletion` | `lib/api/privacy.test.ts` › "is recorded, and the first time is kept when it is asked again" |
+| Confirm the last execution step | `executedAt` is set once. | `toggleExecutionStep` | `execution.test.ts` › "is one record however many times the last step is confirmed" |
+
+**The mock's idempotency is single-threaded.** `requestConsultation` finds the
+existing request and creates a new one with no `await` between them, so a second
+press that arrives next finds the first. That does not survive a real database.
+Use an idempotency key supplied by the client (the mock's key is the question
+text, which is not a key) and a unique constraint, inside a transaction. The same
+goes for `payFee`, `payConsultation` and the invoice sequence (section 7).
+
+## 7. Immutable invoice numbers
+
+**7.1 What the mock does.** An invoice is not stored. The payment a document or a
+consultation carries is the record, and `invoicesFor` derives the invoice from it.
+Numbers are `VID-<year>-<4 digits>`, in the order paid, restarting each UTC year,
+across both kinds of fee (document and consultation) in one sequence.
+Mock: `lib/billing.ts` › `invoicesFor`; `lib/api/billing.ts` › `listInvoices`, `getInvoice`.
+Test: `lib/billing.test.ts` › "are numbered in the order paid, so a number never changes", "restart their sequence each year", "is invoiced when it is paid, on its own line, numbered with the document fees", "is not invoiced until it is paid, accepted or not".
+
+**7.2 What the backend must do instead.** A derived number is stable only while
+payments arrive in time order and none is ever removed. A late-arriving or
+backdated payment would renumber every invoice after it. The backend allocates
+the number **once, when the payment is made**, stores it immutably against the
+payment, serialises the per-year sequence, and **never recomputes it**.
+
+**7.3 What an invoice says.** What was paid for and when. Never a finding, and
+never a consultation's question or answer. A document fee and a consultation fee
+are separate lines with separate labels. GSTIN is optional, kept as typed and
+trimmed, checked against nothing (there is no register to check it against, and a
+wrong guess would turn a client away). A blank GSTIN is none. A billing name is
+required.
+Test: `lib/billing.test.ts` › "say nothing of what the review found", "carries no question and no answer"; `lib/api/billing.test.ts` › "keep a GSTIN as typed, trimmed, and check it against nothing", "need a name to make invoices out to".
+
+**7.4 Open, for counsel and the accountant:** who issues and who receives a
+consultation invoice (a consultation is the advocate's legal service, and the
+platform's revenue must stay a flat technology fee); the wording of that invoice;
+a proper GST breakup on invoices. The preview issues both from one platform series,
+which is a stand-in, and nothing in the real build should copy it until counsel
+decides.
+
+## 8. The consultation states
+
+```
+requested ──accept──▶ accepted ──(client pays)──▶ accepted + paid ──answer──▶ answered
+    └──decline──▶ declined
+```
+
+`status` is `requested | accepted | declined | answered`. Payment is not a status:
+it is `paidAt` on an `accepted` request.
+
+| Step | Who | Allowed when | Effect | Repeat |
+|---|---|---|---|---|
+| Request | client | the document is `settled` or `executed` and has an advocate | Free. Stored `requested`, no fee, no payment, no answer. The advocate is **read from the document**, never passed in, never chosen. | Same document and question while `requested` returns the same request |
+| Accept | the settling advocate | `requested` | Sets the one flat fee, before GST, from `CONSULTATION.amount` (`lib/config/pricing.ts`). Separate from the document fee, never a share of it. | No change |
+| Decline | the settling advocate | `requested` | Free and never chargeable. Refused once accepted. | No change |
+| Pay | client | `accepted` with a fee | Sets `paidAt`. A failure leaves it accepted and unpaid. Refused for `declined` and for a request nobody accepted. | Returns it as it is |
+| Answer | the settling advocate | `accepted` **and** paid | Sets `answered`, the answer and its time. | No change |
+
+Further rules:
+
+- A question is trimmed, required and at most `MAX_QUESTION_LENGTH` (1500). An answer is trimmed, required and at most `MAX_ANSWER_LENGTH` (4000).
+- **The client reads the answer only once the fee is paid.** `forClient` strips the answer until `paidAt` is set, whatever is stored.
+- **An advocate sees only requests on documents they settled.** Another advocate's request and a made-up id are the same not-found ("Request not found."), on read and on every action.
+- An advocate's list omits the question, the answer and the fee. The question appears only inside the request. The advocate sees `paid` as a boolean, never `fee` or `paidAt`.
+- Who sets the fee, who invoices it and who receives it is for counsel (section 7.4). The mock sets it from platform config on acceptance, which is a stand-in.
+
+Mock: `lib/api/consultations.ts` (all of it).
+Test: `consultations.test.ts` (29 tests), grouped as "requesting a consultation", "the advocate's inbox", "another advocate's request", "accepting", "declining", "paying", "answering", "where the question may not go".
+**Gap:** `requestConsultation`, `payConsultation`, `listConsultations` and `listOrgConsultations` take a document or request id with no organisation check on the client side. Appendix B, item 6.
+
+## 9. What the mock fakes that a backend must persist
+
+Everything below lives in memory or in the browser and **resets on reload**.
+
+| What | Where in the mock | What the backend does |
+|---|---|---|
+| **Documents, snapshots, findings, citations** | `documents.ts` › `store`, `versionStore` (seeded from `lib/mock/*`) | Persist. Snapshots are append-only, written at hand-off points only (section 5.4). |
+| **The citation attempt log (FR-14)** | `lib/api/citations.ts` › `attempts` | Persist each attempt as an event. The pre-gate fabrication rate and the blocked-citation log (E1) read it. |
+| **Consent log** (training opt-in, with the time of each change) | `privacy.ts` › `states` | Persist, and keep it after a deletion request: it is the proof a revocation happened. Training use starts **off**. |
+| **Deletion request** | `privacy.ts` › `requestDeletion` | Persist the request and its first time. What deletion removes and keeps is pending counsel (`lib/config/privacy.ts` › `DELETION_SCOPE`): the sign-off record and audit trail are meant to be immutable (SRD §4.3), and whether a settled document itself is removed is undecided. |
+| **Cookie consent** | `localStorage["vidhata-preview-consent"]` (`lib/config/consent.ts`) | Decline is the default and nothing non-essential runs before "accepted". Store the answer server-side if consent must be provable. The banner and its copy are marked for revision when analytics or any other tool is added. |
+| **Sessions** | `localStorage["vidhata-preview-role"]`, `{ "role", "at" }` (`lib/session.tsx`, `lib/session-expiry.ts`) | **Presentation only, no authority.** The server returns the same shell for every route. The portal gate and the not-authorised and session-ended screens are mirrors of a decision the backend must make on every request from a verified session: a client asking for an advocate resource, or an advocate asking for a client one, gets the same response whether the target exists or not. The preview session lasts `SESSION_LIFETIME_MS` (a working day). |
+| **Advocate margin notes** | `localStorage["vidhata-advocate-notes"]` (`lib/api/notes.ts`) | Persist scoped by the **authenticated** advocate, never by an id the page supplies. Never visible to a client, not findings, no state, no part of sign-off. The planned settlement notes (D6) are a different kind, released only at sign-off. |
+| **Onboarding** | `onboarding.ts`, `advocate.ts` | An invitation is single-use and expires. The password is a stand-in, never stored, so a real identity provider replaces that step. Declared conflicts merge into the one list the claim check reads. Onboarding assigns nothing: advocates claim. Nothing about an advocate is public, ranked, rated or searchable. |
+| **Billing profile** | `billing.ts` › `profiles` | Persist per organisation. |
+| **Corpus-review log** | `corpusReviewLoggedAt` on the document | Persist. Advocate-only. |
+| **Audit trail** | `lib/audit.ts`, derived and not stored | Either derive it as the mock does or store events. Either way every entry names its actor, and the client's trail is the filtered one (section 4). |
+| **Execution evidence** | `attachEvidence` keeps the **file name only** | Real upload and storage. |
+
+**Fixtures that stand in for generation.** None of these is a contract the
+backend inherits; each is a thing to build or replace:
+
+- The pipeline: `startAnalysis` and `reconcileAnalysis` (a timer, then a fixed set of findings copied from the MSA fixture), and clause drafting (`buildClauses`).
+- Summaries (`lib/mock/summaries.mock.ts`), held to the clauses they cite by test.
+- Tier assignment (`lib/triage.ts`, placeholder thresholds).
+- The document agent (`lib/mock/chat.mock.ts`) and the review agent (`lib/mock/review-agent.mock.ts`). The document agent explains the settled text and never advises. The review agent reads the first pass back and never decides.
+- `readBrief` (`lib/api/brief.ts`), which reads what a brief states and guesses nothing, the state of execution above all.
+- The contact form and the advocate invitation request (`contact.ts`, `advocate-invite.ts`) send nothing.
+- The preview banner promises exactly this: "Sample data, nothing is saved or sent."
+
+## 10. Required behaviour that no screen exercises yet
+
+**10.1 Triage override logging (SRD FR-15).** When an advocate overrides routing,
+that is logged: who, when, from which tier to which, and why. No screen lets an
+advocate change a tier today, and none is to be built now. It is required of the
+backend. Until it exists, the triage override rate in the E1 metrics page has
+"No data source yet".
+
+**10.2 Organisations, roles and members.** The preview has one client
+organisation (`MOCK_CLIENT_ORG`) and one advocate (`CURRENT_ADVOCATE`). The C10
+profile and the team members list are mock: invite and remove change an
+in-memory list and nothing else. Real organisation membership, roles, who may
+invite or remove, protection of the last owner, and organisation-level scoping of
+every read and write are **backend work**.
+
+**10.3 Corpus effective dates (E2) and corpus-currency lag.** Deferred. The
+effective-date ranges come from the legal owner, who has not supplied them. When
+they arrive they are added as fixtures. Until then neither the rules list nor the
+currency-lag metric has a source.
+
+**10.4 Stamp duty and registration.** The legal owner builds the state stamp-duty
+schedule and the registration rules from audited schedules. A generated checklist
+states nothing until then (section 2.6).
+
+**10.5 For counsel and the accountant** (also in `docs/superpowers/plans/2026-10-03-money-and-privacy.md`): who issues and receives a consultation invoice, and its wording; a proper GST breakup; the deletion scope and wording; whether a settled document is removed or kept on deletion; the security page and the training opt-in wording; the terms of advocate empanelment, which the onboarding page states none of.
+
+---
+
+## Appendix A: function reference
+
+Every function the screens call. "Refuses" lists what throws; "null" means the
+read returns nothing instead.
+
+### `lib/api/documents.ts`
+
+| Function | Inputs | Returns | Refuses or returns null |
+|---|---|---|---|
+| `isReleased` | `{ status }` | boolean | |
+| `getQueuePriority` | document | number (senior 0, enhanced 1, standard 2, untiered last) | |
+| `listDocuments` | `orgId?` | documents. With `orgId`: that organisation's, any state. Without: released only (the advocate queue). | |
+| `getDocument` | `id` | document or `null` | |
+| `getDocumentForReview` | `id` | document, or `null` if missing **or** unreleased | |
+| `getDocumentVersions` | `id` | snapshots, oldest first | |
+| `createDraftDocument` | `IntakeInput` | the new document, `draft` | |
+| `startAnalysis` | `id` | document, `analysing` (a `draft` only) | "Document not found." |
+| `payFee` | `id` | document, `pending_review`, `payment` set | not found; "not awaiting payment"; the payment failure |
+| `claimDocument` | `id`, advocate, `ConflictDeclaration` | document, `under_review`, `claimedAt`, `conflictDeclaredAt` | already claimed by another; unreleased (as not found); no declaration; declared-conflict match |
+| `requestChange` | `docId`, `findingId`, `request`, `advocateName` | document, `revision` | past the cap; document or finding not found |
+| `respondToChanges` | `docId`, `{ findingId: answer }` | document; back to `under_review` or `pending_review` when nothing is left unanswered | not found |
+| `withdrawCitation` | `docId`, `findingId`, `citationId`, `note`, `advocateName` | document | not found; "Only a blocked source can be withdrawn." |
+| `updateFinding` | `docId`, `findingId`, `{ disposition, overrideNote }` | document | not found; settling while a source is blocked and not withdrawn |
+| `addFinding` | `docId`, `Finding` | document, the finding attached to its clause | not found |
+| `signOffDocument` | `docId` | document, `settled`, `settledAt`, checklist built | not found; no advocate; a finding pending; a citation blocked and not withdrawn |
+| `toggleExecutionStep` | `docId`, `kind`, `complete`, `actorName` | document; `executed` when the last applicable step is done | not found |
+| `attachEvidence` | `docId`, `kind`, `fileName \| null` | document | not found |
+
+### `lib/api/delivery.ts`, `lib/api/summaries.ts`
+
+| Function | Inputs | Returns | Refuses |
+|---|---|---|---|
+| `getDelivery` | `documentId` | `not_available` or `ready` with the delivery | "Document not found." |
+| `getSettledSummary` | `documentId` | `not_available`, `none` or `ready` | "Document not found." |
+| `summaryResultFor` | document in hand | the same three states (the one gate) | |
+
+### `lib/api/consultations.ts`
+
+| Function | Inputs | Returns | Refuses |
+|---|---|---|---|
+| `requestConsultation` | `documentId`, `question` | the request | not found; not signed off; empty or too long |
+| `listConsultations` | `documentId` | the document's requests, newest first (the answer only once paid) | |
+| `listOrgConsultations` | `orgId` | the organisation's requests, for its export and invoices | |
+| `payConsultation` | `id` | the request | not found; declined; not accepted; the payment failure |
+| `listAdvocateConsultations` | `advocateId` | summaries without question, answer or fee | |
+| `getAdvocateConsultation` | `advocateId`, `id` | the request with its question, or `null` | |
+| `acceptConsultation` | `advocateId`, `id` | the request | "Request not found." (also for another advocate's); declined |
+| `declineConsultation` | `advocateId`, `id` | the request | not found; accepted or answered |
+| `answerConsultation` | `advocateId`, `id`, `answer` | the request, `answered` | not found; declined; not accepted; unpaid; empty or too long |
+
+### `lib/api/billing.ts`, `lib/api/privacy.ts`, `lib/api/citations.ts`
+
+| Function | Inputs | Returns | Refuses |
+|---|---|---|---|
+| `listInvoices` | `orgId` | invoices, newest first | "Could not load your invoices." |
+| `getInvoice` | `orgId`, `number` | the invoice or `null` | as above |
+| `getBillingProfile` | `orgId` | name and GSTIN | |
+| `saveBillingProfile` | `orgId`, `{ name, gstin }` | the saved profile | no name |
+| `getPrivacy` | `orgId` | training opt-in, consent log, deletion request | |
+| `setTrainingOptIn` | `orgId`, `granted` | state; logs only a change | |
+| `requestDataExport` | `orgId` | `{ fileName, contents }`, built from what the client may read | |
+| `requestDeletion` | `orgId`, `{ understood: true }` | state; the first time kept | no confirmation |
+| `withdrawDeletion` | `orgId` | state | |
+| `checkCitation` | `documentId`, `advocateId`, `input` | the lookup; records the attempt | |
+| `listCitationAttempts` | none | attempts, oldest first | |
+
+### Advocate and public
+
+| Function | Notes |
+|---|---|
+| `lib/api/advocate.ts` › `getAdvocateProfile`, `setAdvocateAvailability`, `addDeclaredConflict`, `removeDeclaredConflict`, `recordOnboarding`, `declaredConflictNames` | `declaredConflictNames` is the one list the claim check reads. |
+| `lib/api/onboarding.ts` › `getInvite`, `completeOnboarding`, `onboardingProblems` | Single-use, expiring invitations. Minimum password length is a stand-in. |
+| `lib/api/advocate-invite.ts` › `requestAdvocateInvite`, `inviteProblems` | Sends nothing. |
+| `lib/api/notes.ts` › `listNotes`, `addNote`, `updateNote`, `deleteNote` | Per authenticated advocate, never client-visible. |
+| `lib/api/brief.ts` › `readBrief`, `intakeFromReading` | Reads what is stated, guesses nothing. |
+| `lib/api/contact.ts` › `sendContactMessage` | Sends nothing. |
+
+---
+
+## Appendix B: rules the mock leaves to the screen
+
+A backend that copies the mock copies each of these. Each must be enforced
+on the server.
+
+1. **Caller identity and release on every advocate write.** `requestChange`, `updateFinding`, `addFinding`, `withdrawCitation`, `signOffDocument` find a document by id with no `isReleased` check and no check that the caller is the claiming advocate. The screen hides the controls from everyone but the holder, and `signOffDocument`'s own comment says a UI-only guard is not a guard. The backend must refuse every advocate write from anyone but the claimant, and refuse an unreleased document **as not found**.
+2. **Citation status is trusted on write.** `addFinding` stores whatever `status` the caller put on each citation, and `signOffDocument` reads the stored flags. The gate is re-run only at the next hand-off. The backend runs the gate on every citation in a submitted finding, ignores the status the client sent, and re-runs it at sign-off.
+3. **A withdrawal needs a note.** `withdrawCitation` accepts an empty note; only the screen asks for text.
+4. **Settling without a verified source needs a note.** `lib/findings.ts` › `settleNeedsNote` is read by the screen. `updateFinding` does not require the note.
+5. **`respondToChanges` has no owner or state check.** It does not check the caller owns the document, nor that the document is in `revision`.
+6. **Client reads and writes are not scoped to an organisation.** `getDocument`, `getDocumentVersions`, `getDelivery`, `getSettledSummary`, `respondToChanges`, `payFee`, `toggleExecutionStep`, `attachEvidence`, `requestConsultation`, `listConsultations`, `payConsultation` take a bare id. Another organisation's document, invoice or consultation must come back as the same not-found as a missing one.
+7. **Client visibility** (section 4). The mock returns the full record and the browser narrows it.
+8. **Execution on an unsigned document.** `toggleExecutionStep` and `attachEvidence` do not refuse a document that is not `settled` or `executed`.
+9. **Consultation requests are keyed by question text.** Use a client-supplied idempotency key.
+10. **No length cap on change requests, notes or findings.** Consultations have caps; these do not.
+11. **Invoice numbers are derived**, not allocated (section 7).
+12. **The sign-off refusals and the withdraw and settle refusals have no direct test** (sections 2.1 and 3.4). Write them against the backend before relying on it.
