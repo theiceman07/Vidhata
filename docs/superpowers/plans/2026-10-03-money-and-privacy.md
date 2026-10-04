@@ -363,9 +363,11 @@ None of these blocks a demo.
   the handover (contract section 4).
 - Triage override logging (SRD FR-15): required of the backend, no screen to
   build (contract section 10.1).
-- The deployed Preview has no preview mode, so its sign-in says "Sign-in is not
-  yet available" and `?fail=1` does nothing. The variable
-  `NEXT_PUBLIC_VIDHATA_PREVIEW_MODE` is scoped to Production in Vercel. Set it
-  for Preview, and remove it from Production if the public site should not offer
-  the preview workspace or failure injection.
+- **Vercel, checked on the deployed build.** The Preview deployment now has
+  `NEXT_PUBLIC_VIDHATA_PREVIEW_MODE`: its sign-in offers the preview workspace
+  and `?fail=1` injects a failure, and the whole 14-point run passes against it.
+  Production had the variable earlier, so whether the public site still offers
+  the preview workspace and failure injection is for you to confirm in Vercel
+  (remove it there if it should not). Deployment Protection is yours to turn
+  back on once the preview checks are done.
 
