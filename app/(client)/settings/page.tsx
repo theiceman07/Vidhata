@@ -52,6 +52,14 @@ export default function SettingsPage() {
               Invoices and billing details
             </Link>
           </Row>
+          <Row label="Privacy">
+            <Link
+              href="/settings/privacy"
+              className="underline underline-offset-2 hover:text-accent"
+            >
+              Training use, export and deletion
+            </Link>
+          </Row>
         </dl>
       </section>
 

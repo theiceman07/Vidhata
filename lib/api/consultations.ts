@@ -61,6 +61,19 @@ export async function requestConsultation(
   return structuredClone(consultation);
 }
 
+/**
+ * Every request an organisation has made, for its own export. The questions
+ * are the client's own words and their own data, so they go in; they go in
+ * nothing else that others could read.
+ */
+export async function listOrgConsultations(orgId: string): Promise<Consultation[]> {
+  await randomDelay(150, 300);
+  if (shouldSimulateFailure()) {
+    throw new MockApiError("Could not load your consultation requests.");
+  }
+  return structuredClone(store.filter((c) => c.orgId === orgId));
+}
+
 /** A document's consultation requests, newest first. */
 export async function listConsultations(documentId: string): Promise<Consultation[]> {
   await randomDelay(150, 300);

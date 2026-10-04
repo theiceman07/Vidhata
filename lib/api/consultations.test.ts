@@ -98,17 +98,17 @@ describe("requesting a consultation", () => {
 });
 
 // The question is the client's own words and may hold sensitive facts. It goes
-// to the client and the advocate, and nowhere else: not the trail, not a
-// notification, not an export. Files that build those are held to it, and any
-// not built yet are covered the moment they exist.
+// to the client and the advocate, and nowhere that others could read: not the
+// trail, not a notification, not billing. Files that build those are held to
+// it, and any not built yet are covered the moment they exist. The client's
+// own export is the one deliberate exception, because it is their own data,
+// and lib/privacy.test.ts holds that choice.
 describe("where the question may not go", () => {
   const root = path.resolve(__dirname, "..", "..");
   const files = [
     "lib/audit.ts",
     "lib/notifications.ts",
     "lib/api/notifications.ts",
-    "lib/privacy.ts",
-    "lib/api/privacy.ts",
     "lib/billing.ts",
     "lib/api/billing.ts",
   ]

@@ -32,6 +32,7 @@ export const ICON_NAMES = [
   "keyboard_arrow_up",
   "left_panel_close",
   "left_panel_open",
+  "lock",
   "logout",
   "mail",
   "note_add",

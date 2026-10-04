@@ -258,6 +258,74 @@ export interface Consultation {
   requestedAt: string;
 }
 
+/** One change to the client's choice about training use, with when it was made. */
+export interface ConsentEntry {
+  at: string;
+  /** True when training use was turned on, false when it was turned off. */
+  granted: boolean;
+}
+
+/**
+ * An organisation's privacy choices. Training use is off until the client
+ * turns it on, and every change is logged with its time. The log is the proof
+ * that a revocation happened, so it is kept when the rest is deleted.
+ */
+export interface PrivacyState {
+  trainingOptIn: boolean;
+  consentLog: ConsentEntry[];
+  /** When a deletion was requested, or null. A request, never an erasure. */
+  deletionRequestedAt: string | null;
+}
+
+/**
+ * What a client may take with them: only what they may read on screen. A
+ * document not yet signed off carries the passages behind requests addressed
+ * to them and nothing else of the review. A preview file, said so inside it.
+ */
+export interface DataExport {
+  preview: true;
+  generatedAt: string;
+  organisation: { name: string; gstin: string | null };
+  documents: {
+    id: string;
+    title: string;
+    agreement: string;
+    counterparty: string;
+    status: string;
+    createdAt: string;
+    draft: number;
+    signedOff: { advocate: string; enrolment: string; at: string } | null;
+    /** The settled text, only once signed off. */
+    clauses: { number: string; heading: string; body: string }[];
+    /** Before sign-off, only findings with a request addressed to the client. */
+    findings: {
+      number: string;
+      clauseReference: string;
+      passage: string;
+      /** The first pass's own words, and the advocate's disposition: after sign-off only. */
+      description: string | null;
+      disposition: "confirmed" | "overridden" | "pending" | null;
+      request: {
+        request: string;
+        requestedAt: string;
+        response: string | null;
+        respondedAt: string | null;
+      } | null;
+    }[];
+  }[];
+  invoices: Invoice[];
+  /** The client's own questions to the advocate who settled a document. */
+  consultationRequests: {
+    document: string;
+    advocate: string;
+    requestedAt: string;
+    status: "requested";
+    question: string;
+  }[];
+  trainingOptIn: boolean;
+  consentLog: ConsentEntry[];
+}
+
 /** Who an organisation's invoices are made out to. */
 export interface BillingProfile {
   name: string;

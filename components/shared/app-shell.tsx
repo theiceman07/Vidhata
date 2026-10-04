@@ -119,7 +119,13 @@ function ShellBody({
   useRegisterCommands("shell", navCommands);
 
   function isActive(href: string) {
-    return pathname === href || pathname.startsWith(`${href}/`);
+    const matches = (h: string) => pathname === h || pathname.startsWith(`${h}/`);
+    if (!matches(href)) return false;
+    // The most specific link wins, so a section and one of its own pages are
+    // not both lit (Settings and Privacy, on /settings/privacy).
+    return !sections.some((s) =>
+      s.links.some((l) => l.href.length > href.length && matches(l.href)),
+    );
   }
 
   function handleSignOut() {
