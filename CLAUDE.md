@@ -19,7 +19,8 @@ off. The client gets the settled document plus an execution checklist
   fixtures in lib/mock. If a fixture is missing, ask.
 
 ## Conventions
-- Next.js 14 App Router, TypeScript strict, Tailwind, shadcn/ui.
+- Next.js 15 App Router (params and searchParams are promises in server
+  components), TypeScript strict, Tailwind, shadcn/ui.
 - Server Components by default. "use client" only for interactivity.
 - Domain components live in components/domain and are the only place
   Vidhata vocabulary appears in JSX.
