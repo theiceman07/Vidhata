@@ -40,7 +40,17 @@ import {
  * what the drafts said.
  */
 
-type Options = { advocateAddedAfterSignOff?: boolean };
+type Options = {
+  advocateAddedAfterSignOff?: boolean;
+  /**
+   * The number a client reads a finding by. Given, it is used as it is. Not
+   * given, the diff numbers findings by position in the drafts it compares, the
+   * way it always has. The API gives it the stored client number
+   * (lib/api/client/shape-versions.ts), so a finding keeps one number in every
+   * comparison; screens do not use this yet.
+   */
+  numberFor?: (finding: Finding) => string;
+};
 
 const isSignedOff = (doc: ContractDocument) =>
   doc.status === "settled" || doc.status === "executed";
@@ -170,10 +180,17 @@ export function clientVersionDiff(
   const fromVisible = clientVisibleFindings(fromDoc, options);
   const toVisible = clientVisibleFindings(toDoc, options);
   const visibleIds = new Set([...fromVisible, ...toVisible].map((f) => f.findingId));
-  const numbers = findingNumbers({ ...toDoc, findings: toVisible });
-  let last = toVisible.length;
-  for (const f of fromVisible) {
-    if (!(f.findingId in numbers)) numbers[f.findingId] = String(++last).padStart(2, "0");
+  let numbers: Record<string, string>;
+  if (options.numberFor) {
+    // Given: the number is the finding's own, the same in every comparison.
+    numbers = {};
+    for (const f of [...toVisible, ...fromVisible]) numbers[f.findingId] = options.numberFor(f);
+  } else {
+    numbers = findingNumbers({ ...toDoc, findings: toVisible });
+    let last = toVisible.length;
+    for (const f of fromVisible) {
+      if (!(f.findingId in numbers)) numbers[f.findingId] = String(++last).padStart(2, "0");
+    }
   }
   // After sign-off the diff is the record, decisions and all. Before it, the
   // client is told only what is raised in each draft: whether a finding is in
