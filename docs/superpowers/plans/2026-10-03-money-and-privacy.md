@@ -318,17 +318,54 @@ which have their own failure paths and tests.
   consent banner records an answer nothing reads yet, and the real backend must
   authorise every request itself. None of the session code is authority.
 
-### Remaining after the F pass
+## After the F pass (4 Oct, second half)
+
+| What | Commit | What it did |
+|---|---|---|
+| Hardening: the mock is the spec | `d071af8` | Every advocate write takes the caller's id and goes through one gate: an unreleased document is refused as not found, and anyone but the holder of the claim is refused. `addFinding` computes each citation's status from the lookup and ignores the caller's. Sign-off re-runs the citation gate and is idempotent. A withdrawal and a settling without a verified source refuse a blank note in the API. Direct tests for the sign-off, withdraw and settle refusals (`advocate-gates`, `signoff-recheck`). |
+| Sign-off attestation | `1329380` | The third confirmation no longer cites "Bar Council of India Rule 37", a team assumption nobody has checked. It reads "I sign this off under my own professional responsibility as an advocate." The original text and the question are on the counsel list above. |
+| Tab persistence | `b2e241f` | Every mock store is kept in sessionStorage (`lib/api/state.ts`) so a refresh no longer wipes the demo, and it dies with the tab. Versioned by a fingerprint of the fixtures: any mismatch discards everything. A corrupted value falls back to the fixtures. "Reset demo data" is in the preview banner. Tested: round trip, idempotent payments and requests after a restore, mismatch, corruption, reset, `?fail=1` unchanged. The contract notes the consultation text is in it and a real client must never store it. |
+| C2 | `c84a5f3` | "Upload an existing contract", disabled and marked Coming soon, on `/new`. |
+| B5 | `145a372` | `/sample`: public, read-only, from the settled NDA fixture. Where the sample has no source to show, how a verified and a blocked one look is shown from another sample and labelled. |
+| C10 | `65e898c` | Your details and your team in Settings, with a mock invite and remove. The internal organisation id is gone. |
+| E1 | `8d6a27c` | `/metrics`, advocate portal only. Override rate, addition rate, pre-gate fabrication rate and the blocked-citation log, each from its real source. "No data source yet" for the triage override rate and the corpus-currency lag. |
+| Walkthrough findings | `1eca68f`, `7b1faea`, `8d8dc81` | Fixtures for a document awaiting payment and one executed, because the first load had neither. Dashboard titles no longer truncated to "Mutual ND…" at 1280px. The intake wizard no longer undoes the person's first click when the brief's reading lands, and governing law is a real default. |
+| Smaller | `56aa7f4`, `c0727a6`, `f3d1345` | Tailwind plugins imported, not required (the dev server died on a config reload under Node 24). Toasts at the top, clear of the decision buttons. One name for the print control. |
+
+### The 14-point run
+
+All 14 points, plus pay, consultation, delivery, e-sign and executed, pass in a
+real browser on the local build, with in-app navigation only. A full page load
+is needed only at the start and for `?fail=1`, which is a URL parameter by
+design. Point 5 was read from a screenshot, not just matched in text: the
+blocked citation carries red Blocked chips, a red rule, "1 source blocked" in
+the status strip and "No match in the approved corpus" in red.
+
+### Remaining
 
 None of these blocks a demo.
 
-- B5, E1, E2, C2, C10, D9, as numbered in the fix list.
-- C9, the acceptance notification, and D10, the payout statement, both
-  described above.
-- The chat batch, built with the settlement notes (D6): two kinds of advocate
-  note. Private working notes stay as they are (MarginNote). Settlement notes
-  are a deliberate per-clause note marked "share with client", released only at
+- D9, the citation drill-down: a click on a citation badge opens the corpus
+  entry it resolved to, with its pass or fail state.
+- C9, the acceptance notification, and D10, the payout statement, both described
+  above.
+- E2, the rules list with effective-date ranges: deferred until the legal owner
+  supplies the dates, which then go in as fixtures.
+- The chat batch, with the settlement notes (D6): two kinds of advocate note.
+  Private working notes stay as they are (MarginNote). Settlement notes are a
+  deliberate per-clause note marked "share with client", released only at
   sign-off, which the chat agent grounds on and nothing else. An advocate must
   not be able to release one by accident. Building it means updating CLAUDE.md
   to define both kinds and revisiting the rule that the client sees
-  dispositions but not notes.
+  dispositions but not notes. Plan it first.
+- The client-shaped API, planned in
+  `docs/superpowers/plans/2026-10-04-client-shaped-api.md`. The largest gap in
+  the handover (contract section 4).
+- Triage override logging (SRD FR-15): required of the backend, no screen to
+  build (contract section 10.1).
+- The deployed Preview has no preview mode, so its sign-in says "Sign-in is not
+  yet available" and `?fail=1` does nothing. The variable
+  `NEXT_PUBLIC_VIDHATA_PREVIEW_MODE` is scoped to Production in Vercel. Set it
+  for Preview, and remove it from Production if the public site should not offer
+  the preview workspace or failure injection.
+

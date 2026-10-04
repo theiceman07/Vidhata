@@ -1,0 +1,130 @@
+# Plan: client-shaped API
+
+Status: planned, not started. Decided 4 October 2026: the boundary on what a
+client may see belongs in the API and the type system, not in browser
+narrowing. A larger refactor than the rest of the batch, so it is its own pass,
+done before the backend team starts.
+
+## The problem
+
+Today `getDocument`, `getDocumentVersions` and `listDocuments(orgId)` return the
+whole `ContractDocument` to a client: every finding with its rule id, layer and
+disposition, every clause, the advocate-added findings, the advocate's decisions
+inside snapshots. The rules in docs/api-contract.md section 4 are applied after
+that, in the browser, by `lib/findings.ts`, `lib/clientVersions.ts`,
+`lib/audit.ts` and `lib/privacy.ts`. One test (`findings.test.ts`, "client
+screens") scans source files for a direct read of `doc.findings`. None of that
+protects data that has already left the server, and a backend that copied the
+mock would copy the leak.
+
+## What the end state is
+
+A client screen cannot be handed a field it may not see, because the type it
+receives does not have the field.
+
+- Client-facing API functions return **client-shaped types**, built in the API
+  from the rules in section 4, and never the internal `ContractDocument`.
+- The internal functions (the advocate's reads and writes, the mock's own
+  stores) are not importable from client code, and a lint rule says so.
+- The shaping logic lives in one place per concern, in `lib/api`, with the tests
+  it already has, moved with it.
+
+## The audit that sets the shape
+
+Client routes and domain components read these fields off a document today
+(counted over `app/(client)`, `components/domain`, `components/document`):
+
+| Field | Reads | Becomes |
+|---|---|---|
+| `id`, `title`, `type`, `status`, `tier`, `version`, `createdAt`, `claimedAt` | many | `ClientDocument`, unchanged |
+| `clientName`, `counterpartyName`, `stateOfExecution`, `transactionValue`, `counterpartyIsMsme`, `durationMonths`, `governingLaw`, `keyTerms` | 12 | `ClientDocument.deal`, unchanged |
+| `settledAt`, `advocate` | 39 | the sign-off record: name and Bar enrolment **only once signed off**; before it, the name of the advocate a request is from, and nothing else |
+| `payment` | 2 | `{ paidAt }`, never the amount in a screen that has no need of it |
+| `executionSteps` | 8 | after sign-off only; empty before |
+| `clauses` | 15 | **the large change**: before sign-off only the clauses behind requests addressed to the client, each with its text, and a count of the rest; after sign-off all, read-only |
+| `findings` | 7 | **the other large change**: `ClientFinding` (number, clause reference, description, the advocate's disposition after sign-off, its sources after sign-off). No rule id, no layer, no override note, no `source`, no advocate-added finding before sign-off unless a request is addressed to the client about it |
+
+Nothing in the client code reads `ruleApplied`, `layer`, `overrideNote`,
+`resolvedAt`, `changeRequest` internals beyond the request text, or the
+advocate's notes. So the new types lose nothing a screen uses.
+
+## Phases
+
+Each phase leaves `npm run check` green and the walkthrough passing
+(the 14 points plus pay, consultation, delivery, e-sign, executed).
+
+1. **Types, and the field matrix as a test.** Add `ClientDocument`,
+   `ClientClause`, `ClientFinding`, `ClientVersionList`, `ClientDiff`, and
+   `ClientAuditEntry` to `lib/types.ts`, derived with `Pick`/`Omit` where they
+   can be so a new internal field is private by default. A type-level test
+   (`expectTypeOf`) holds that none carries a restricted key.
+2. **Shapers in the API.** Move `clientVisibleFindings`, `clientVersionList`,
+   `clientVersionDiff`, `clientAuditTrail` and the export's shaping from the lib
+   helpers into `lib/api/client/*`, called with the internal record and the
+   caller's organisation. The helper files keep their pure functions and their
+   tests; the API calls them. The advocate-added switch
+   (`lib/config/visibility.ts`) is read here.
+3. **Client functions.** `getClientDocument(orgId, id)`,
+   `listClientDocuments(orgId)`, `getClientVersions`, `getClientDelivery`
+   (already shaped), `getClientTrail`. Each takes the organisation, and a
+   document that is not that organisation's is the same not-found as a missing
+   one (contract Appendix B, item 6). Moving a route over is a small commit
+   each: documents list, document page, history, checklist, delivery, summary,
+   consultation, chat.
+4. **Fence.** Move the internal reads and the advocate writes to
+   `lib/api/internal/` (or `lib/api/advocate/`), and add an ESLint
+   `no-restricted-imports` rule: nothing under `app/(client)`,
+   `components/domain` client components, or `components/marketing` imports
+   them. This replaces the source-scan test with something the compiler and the
+   linter hold. Keep the scan as a second guard until the rule has been in a
+   release.
+5. **Leak test over every state.** For each fixture and each generated
+   document, in each status, before and after sign-off, serialise every
+   client-facing response and assert it contains none of a list of markers:
+   rule ids, layer numbers, `overrideNote`, advocate-note text, a disposition
+   before sign-off, an advocate-added finding no request is about, a decision
+   inside a snapshot, the corpus-review log. Run on the snapshots too. This is
+   the test the backend team re-uses against the real API.
+6. **Retire.** Delete the browser-side narrowing that is now dead, remove the
+   `Gap` notes in the contract, and update CLAUDE.md.
+
+## Risks
+
+- **Size.** Eight client routes and a dozen components change. The phases are
+  small commits, one route at a time, with the old function kept until the last
+  route has moved.
+- **Screens that quietly rely on a field.** The compiler finds them: removing a
+  field from the type is how a leak is found. That is the point of doing it by
+  type.
+- **The workspace is shared.** `DocumentWorkspace` serves both portals and takes
+  a full document. Either it takes a union with a role, or the client gets a
+  thin wrapper. Decide at phase 3; do not widen the client type to fit it.
+- **Persisted tab state** holds the internal record. That is fine: the shaping
+  happens on the way out of the API. A schema bump is only needed if a stored
+  shape changes, and none does.
+- **Performance** is not a concern: shaping is a pass over a few dozen clauses.
+
+## Questions for you
+
+1. **Who is the advocate to a client before sign-off?** Today the name is shown
+   once a document is claimed ("Farhan Sheikh needs your answer"). Should the
+   Bar enrolment stay hidden until sign-off? The plan assumes yes.
+2. **The advocate-added switch** (`SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF`, currently
+   on). It stays a configuration read in the API. Counsel's call.
+3. **The payment amount.** Does a client's document page need it, or only the
+   invoice? The plan drops it from `ClientDocument` and leaves it on the invoice.
+4. **Order against the backend team.** Phases 1 and 2 can start the day the
+   backend team does; 3 and 4 are the part they should see land in the mock
+   first.
+
+## Definition of done
+
+- No client route or component can import an internal API function (lint).
+- Every client-facing response is a client-shaped type, and the type has no
+  restricted key (type test).
+- The leak test passes over every fixture and every status, before and after
+  sign-off, snapshots included.
+- A document that is not the caller's organisation's returns the same not-found
+  as a missing one, on every client function.
+- docs/api-contract.md section 4 describes the API as built, and its Appendix B
+  items 6 and 7 are closed.
