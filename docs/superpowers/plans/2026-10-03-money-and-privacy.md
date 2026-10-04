@@ -207,6 +207,22 @@ After the five commits above (also 4 Oct):
 | D1 advocate onboarding | `cc0c7e1` | Accept an invitation (invalid and expired states), a stand-in password that is never stored, confirm Bar details, declare conflicts into the one list the claim check reads. Ends at the queue and assigns nothing. Nothing public, ranked, rated or searchable. No terms of empanelment stated. |
 | D7 consultation inbox | `a127d31` | The advocate sees only requests on documents they settled; another's request and a made-up id are the same not-found. Accept sets one flat fee before GST, separate from the document fee; decline is free and never chargeable. The client pays an accepted request (idempotent, a failure leaves it accepted and unpaid). The advocate answers after payment and the client reads the answer only then. The advocate sees whether it is paid, never the fee or any payment detail. A paid consultation is its own invoice line, numbered with the document fees. A second settled fixture, `doc-nda-settled-2`, is settled by the preview advocate so the inbox has something of theirs. |
 
+The client delivery screens (also 4 Oct), after an audit of the repo. The
+checklist, its tick-off and the move to `executed` already existed, so C12 was
+the e-signature step itself. C5 and C6 were new.
+
+| What | Commit | What it did |
+|---|---|---|
+| C5 summary | `afa16c3` | A one-page summary of a settled document's key terms, after sign-off only, held in the API (`getSettledSummary`): before sign-off the answer is "not available" and nothing else. Shown only for the draft it was written from. Fixtures stand in for generation from the settled text, and a test holds every line to the clauses it cites (the figures are in them, and what it says is absent is absent from the whole text). Labelled as explaining the document, not the reader's situation. |
+| C6 delivery | `cf088a4` | One view: the recorded sign-off (advocate, Bar enrolment, date), the summary, links to the checklist, history and consultation. Gated in the API on a recorded advocate and date, as payment is. PDF and Word are disabled controls with "Downloads aren't enabled in this preview", and no file is built. No draft banner or coverage panel. Summary and delivery share one gate (`summaryResultFor`). |
+| C12 e-sign | `91e366c` | The e-signature step says whether the type can be signed electronically, from the Problem Statement's four excluded classes, marked as needing legal confirmation. One builder (`lib/config/esign.ts`) for generated documents and fixtures. "Sign electronically (preview)" says no signature is taken and no service is connected, and names no provider. The client confirms that both have signed. The last applicable step confirmed makes the document executed, with `executedAt` recorded in the trail and cleared if a step is taken back. |
+
+Browser pass as the client on the settled NDA: delivery, summary, the checklist
+through to executed (badge, trail, dashboard grouping all read it), and the
+vendor agreement, which is not signed off, shows "Not available yet" on both
+the summary and the delivery with no title or content. `?fail=1` gives the
+error state with a retry on both, and clears.
+
 ### Decisions made while building
 
 - The export includes the client's own consultation questions, deliberately:
@@ -238,3 +254,20 @@ After the five commits above (also 4 Oct):
   off every advocate screen until then.
 - A notification when the advocate accepts a consultation (C9). It may say that
   a request was accepted or answered, never what was asked or answered.
+- **A stamp-duty rate table already exists and needs a decision.**
+  `STAMP_DUTY_BY_STATE` in `lib/api/documents.ts` holds a rate for ten states,
+  with "Rs 100" as the fallback for any other state, and it feeds the checklist
+  of any document signed off in the preview. The marketing page also says stamp
+  duty is "computed" per state. That is the invented-rate failure the docs
+  warn about, and it pre-dates this work, so it is untouched. Options: keep it
+  as a labelled stand-in, or remove it and let generated documents say the
+  amount depends on the state and must be confirmed (which also changes the
+  marketing claim).
+- The registration rule in the same function (MSAs above a fixed value are
+  registrable) is also generated and not from a fixture, and its reason text
+  cites a statute section. Same decision as above.
+- The settled document page keeps its working "Save as PDF" (the browser's
+  print), while the delivery view says PDF downloads are not enabled. Both are
+  true, but a reader could find it inconsistent. Decide whether to keep one.
+- Summaries exist only for the two settled NDAs. A document signed off in the
+  preview (the MSA, the employment agreement) has none and says so.

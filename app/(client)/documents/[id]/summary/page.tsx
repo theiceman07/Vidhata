@@ -71,7 +71,10 @@ export default function SummaryPage() {
       <header className="flex items-start gap-4">
         <BackButton fallbackHref={`/documents/${params.id}`} label="Document" />
         <div className="min-w-0">
-          <p className="truncate text-meta text-muted-fg">{title}</p>
+          {/* Before sign-off the page says only that it is not available. */}
+          {result.state !== "not_available" && (
+            <p className="truncate text-meta text-muted-fg">{title}</p>
+          )}
           <h1 className="mt-1 font-display text-h1 text-ink">Summary</h1>
         </div>
       </header>

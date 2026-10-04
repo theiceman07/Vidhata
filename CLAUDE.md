@@ -189,6 +189,25 @@ Four systems, each with its own state. Never fold them into one label.
   tab title, a tooltip, the audit trail, a notification, billing or a metric.
   The client's own export carries them, deliberately. Who issues the
   consultation invoice is for counsel to confirm and is marked so.
+- Delivery (lib/api/delivery.ts, lib/api/summaries.ts): after sign-off only,
+  and held in the API, not the page. A document that is not signed off, or
+  has no advocate and date on record, gets "not available" and nothing else:
+  no title, no content. The summary is a reading of the settled clauses, shown
+  only for the draft it was written from, and explains the document, never the
+  reader's situation (fixtures stand in for generation; a test holds every
+  line to the clauses it cites). Delivery is one view: the recorded sign-off,
+  the summary, links to the checklist, history and consultation. PDF and Word
+  are disabled controls with "Downloads aren't enabled in this preview"; no
+  file is built. No draft banner or coverage panel on a settled document.
+- E-signature (lib/config/esign.ts): the step says whether the type can be
+  signed electronically, from the Problem Statement's excluded classes (wills,
+  trusts, negotiable instruments, non-regulated powers of attorney), always
+  marked as needing legal confirmation. It names no provider or portal.
+  "Sign electronically (preview)" takes no signature; the client confirms that
+  both have signed. The last applicable step confirmed makes the document
+  executed (executedAt, which the trail records and which clears if a step is
+  taken back). Stamp duty and registration come from fixtures; do not add a
+  rate table.
 - Revisions: the limit is one value, lib/config/revisions.ts, read through
   revisionCycle() (lib/revisions.ts). At it the case is logged for corpus
   review (advocate trail only, never the client's), no new round can be
