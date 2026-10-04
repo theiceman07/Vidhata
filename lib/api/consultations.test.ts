@@ -119,6 +119,18 @@ describe("where the question may not go", () => {
     expect(files.length).toBeGreaterThanOrEqual(3);
   });
 
+  it("keeps the question out of any page title or tooltip", () => {
+    // Shown in the client's own list and nowhere that outlives the screen: a
+    // title appears in tabs and history, a tooltip or label on hover and to
+    // assistive technology in other places.
+    const source = readFileSync(
+      path.join(root, "app", "(client)", "documents", "[id]", "consultation", "page.tsx"),
+      "utf8",
+    );
+    expect(source).not.toMatch(/\b(title|aria-label|aria-description|alt)=\{[^}]*question/i);
+    expect(source).not.toMatch(/document\.title|<title|export const metadata|generateMetadata/);
+  });
+
   it("keeps the question out of the trail, notifications, exports and billing", () => {
     const offenders = files.filter((f) =>
       /api\/consultations|\.question\b|\bquestion:/i.test(readFileSync(f, "utf8")),

@@ -277,6 +277,93 @@ describe("numbering findings across two drafts", () => {
   });
 });
 
+// A send-back snapshot stores the advocate's decisions so far, and so does the
+// head. Before sign-off the client reads none of them: no disposition, no note,
+// no time a decision was made. Every pair of drafts is built, because the
+// client can pick any two.
+describe("a client's view of snapshots that hold decisions", () => {
+  const rereview = mockDocuments.find((d) => d.id === "doc-employment-rereview")!;
+  const rereviewVersions = mockVersions.filter((v) => v.documentId === rereview.id);
+
+  const cases: [string, ContractDocument, typeof vendorVersions][] = [
+    ["the vendor agreement", vendor, vendorVersions],
+    ["the employment agreement", rereview, rereviewVersions],
+  ];
+
+  function everyView(doc: ContractDocument, versions: typeof vendorVersions) {
+    const views: unknown[] = [clientVersionList(doc, versions)];
+    for (const a of versions) {
+      for (const b of versions) {
+        if (a.number >= b.number) continue;
+        views.push(diffOf(doc, versions, a.number, b.number));
+      }
+    }
+    return views;
+  }
+
+  it.each(cases)("shows %s's client no disposition before sign-off", (_name, doc, versions) => {
+    // The decisions are there to be leaked: some snapshot holds a decided finding.
+    const decided = versions.flatMap((v) => v.findings).filter((f) => f.disposition !== "pending");
+    expect(decided.length).toBeGreaterThan(0);
+
+    const text = JSON.stringify(everyView(doc, versions));
+    expect(text).not.toMatch(/"disposition":"(confirmed|overridden)"/);
+    expect(text).not.toMatch(/overrideNote|resolvedAt/);
+    for (const f of decided) {
+      if (f.overrideNote) expect(text).not.toContain(f.overrideNote);
+    }
+    for (const view of everyView(doc, versions)) {
+      for (const row of (view as { findingRows?: { disposition: unknown }[] }).findingRows ?? []) {
+        expect(row.disposition).toBeNull();
+      }
+    }
+  });
+
+  it("holds for the send-back snapshot itself, which the advocate wrote", () => {
+    const sendBack = rereviewVersions.find((v) => v.createdBy === "advocate_revision")!;
+    expect(sendBack.findings.some((f) => f.disposition !== "pending")).toBe(true);
+    const text = JSON.stringify(
+      everyView(rereview, rereviewVersions.filter((v) => v.number <= sendBack.number + 1)),
+    );
+    expect(text).not.toMatch(/Confirmed|Overridden|confirmed|overridden/);
+  });
+
+  it("is the same words before sign-off whatever the advocate decided", () => {
+    // Dispositions change nothing a client reads before sign-off: flipping every
+    // decision in every snapshot leaves the client's view unchanged.
+    const flipped = vendorVersions.map((v) => ({
+      ...v,
+      findings: v.findings.map((f) =>
+        f.disposition === "pending"
+          ? f
+          : { ...f, disposition: f.disposition === "confirmed" ? ("overridden" as const) : ("confirmed" as const), overrideNote: "Different." },
+      ),
+    }));
+    expect(JSON.stringify(everyView(vendor, flipped))).toBe(
+      JSON.stringify(everyView(vendor, vendorVersions)),
+    );
+  });
+});
+
+describe("numbering across every pair of drafts", () => {
+  const rereview = mockDocuments.find((d) => d.id === "doc-employment-rereview")!;
+  const docs: [string, ContractDocument, typeof vendorVersions][] = [
+    ["the vendor agreement", vendor, vendorVersions],
+    ["the employment agreement", rereview, mockVersions.filter((v) => v.documentId === rereview.id)],
+    ["the signed-off NDA", nda, ndaVersions],
+  ];
+
+  it.each(docs)("never gives two findings of %s the same number", (_name, doc, versions) => {
+    for (const a of versions) {
+      for (const b of versions) {
+        if (a.number >= b.number) continue;
+        const numbers = diffOf(doc, versions, a.number, b.number).findingRows.map((r) => r.number);
+        expect(new Set(numbers).size, `${a.number} to ${b.number}`).toBe(numbers.length);
+      }
+    }
+  });
+});
+
 describe("the words a client reads", () => {
   it("says why a finding is no longer raised without an internal term", () => {
     expect(plainChange("resolved", "clause_changed", "client_response")).toBe(
