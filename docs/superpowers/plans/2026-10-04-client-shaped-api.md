@@ -111,14 +111,15 @@ new internal field is private until someone adds it on purpose.
   `otherClauseCount`, `findingList`, `executionSteps`. Named `findingList` so the
   guard that fails on `.findings` in client code keeps working until the fence
   replaces it.
-- `ClientFinding`: `id` (opaque), `number`, `clauseReference`, `clauseText`,
-  `request`, and `detail` (null before sign-off).
+- `ClientFinding`: `number`, `clauseReference`, `clauseText`, `request`, and
+  `detail` (null before sign-off). No id: the number is the only reference.
 - `ClientFindingDetail`: severity, description, remedy, disposition, citations,
   and one optional `advocateAdded?: true`, absent when
   `SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF` is off, so narrowing the setting never
   changes the type.
 - `ClientClause`, `ClientChangeRequest`, `ClientCitation`, `ClientDeal`,
-  `ClientVersionRow` / `ClientVersionList`, `ClientDiff`, `ClientAuditEntry`.
+  `ClientVersionRow` / `ClientVersionList`, `ClientDiff`, `ClientAuditEntry`
+  (which names a finding by `findingNumber`, not by id).
   The version and diff shapes moved here from `lib/clientVersions.ts`, which
   re-exports its old names.
 
@@ -149,7 +150,7 @@ becomes "Your advocate needs your answer", and the client's trail says
 
 ## Questions for you
 
-Answered 4 October 2026 (1 to 4); question 5 is new.
+Questions 1 to 5 answered 4 October 2026. Question 6 is open.
 
 1. **Who is the advocate to a client before sign-off?** Today the name is shown
    once a document is claimed ("Farhan Sheikh needs your answer"). Should the
@@ -167,6 +168,31 @@ Answered 4 October 2026 (1 to 4); question 5 is new.
 4. **Order against the backend team.** Phases 1 and 2 can start the day the
    backend team does; 3 and 4 are the part they should see land in the mock
    first.
+   **Answer: phase 1 now. If the backend team has started, reconcile the type
+   names with them afterwards.**
+5. **A finding's handle.** A client answers a request by naming a finding.
+   **Answer (4 October): key it by the finding's number, as the client already
+   reads it ("Finding 02"). No `id` on `ClientFinding`.** This binds phase 2 and 3:
+   - The number is unique within a document and stable across its drafts. Today
+     `findingNumbers` numbers by position in `doc.findings`, so phase 2 must
+     hold a number to its finding (C4 once gave two findings one number), with
+     a test over every fixture and across snapshots.
+   - The answer API looks the finding up by (document, number) and checks a
+     request was addressed to this client. A finding they were not asked about
+     is the same not-found as one that does not exist, so it can be neither
+     answered nor probed.
+   - Lists key on the number.
+6. **Backend team.** Not answered, and the plan cannot answer it. Message to
+   send: "We've drafted client-facing response types for documents in
+   lib/types.ts (see this plan). Have you started the document endpoints? If so,
+   can you share the response shapes you've assumed? If not, please review the
+   proposal before you start. The rule is that the server must return
+   client-shaped data and never rely on the browser to narrow it. The full rule
+   list is in docs/api-contract.md." Their answers go here: _pending_.
+
+Phase 3 check, from the same decision: after it, no client screen shows an
+advocate's name before sign-off. That includes toasts, notifications (C9) and
+the consultation page header, which reads `doc.advocate` today.
 
 ## Definition of done
 

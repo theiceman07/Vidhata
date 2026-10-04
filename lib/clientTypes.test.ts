@@ -122,10 +122,12 @@ describe("what a client document is, and is not", () => {
     expectTypeOf<ClientDocument["findingList"]>().toEqualTypeOf<ClientFinding[]>();
   });
 
-  it("has no internal finding id, only an opaque handle and a number", () => {
+  it("refers to a finding by its number and by nothing else", () => {
     expectTypeOf<ClientFinding>().not.toHaveProperty("findingId");
-    expectTypeOf<ClientFinding["id"]>().toBeString();
+    expectTypeOf<ClientFinding>().not.toHaveProperty("id");
     expectTypeOf<ClientFinding["number"]>().toBeString();
+    expectTypeOf<ClientAuditEntry>().not.toHaveProperty("findingId");
+    expectTypeOf<ClientAuditEntry["findingNumber"]>().toEqualTypeOf<string | null>();
   });
 
   it("keeps the advocate-added mark optional, so the switch never changes the type", () => {

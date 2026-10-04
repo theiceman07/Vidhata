@@ -352,11 +352,13 @@ export type ClientFindingDetail = Pick<
  */
 export interface ClientFinding extends Pick<Finding, "clauseReference" | "clauseText"> {
   /**
-   * An opaque handle, so an answer can say which finding it answers. Shown
-   * nowhere: `number` is what a person reads. Open question 5 in the plan.
+   * "04". The one reference a client has to a finding: what they read, what
+   * they answer by, and what a list keys on. Unique within a document and
+   * stable across its drafts. There is no second id. The server finds the
+   * finding by (document, number) and checks a request was addressed to this
+   * client, so a finding they were not asked about cannot be answered or
+   * probed (decided 4 October, question 5 in the plan).
    */
-  id: string;
-  /** "04", numbered in the order the pipeline raised them. */
   number: string;
   request: ClientChangeRequest | null;
   detail: ClientFindingDetail | null;
@@ -459,7 +461,10 @@ export interface ClientDiff {
  * sign-off the advocate is "Advocate", never a name. No entry about the
  * advocate's own working is in it.
  */
-export type ClientAuditEntry = Omit<AuditEntry, "advocateOnly">;
+export type ClientAuditEntry = Omit<AuditEntry, "advocateOnly" | "findingId"> & {
+  /** The finding the entry concerned, by its number. Never its id. */
+  findingNumber: string | null;
+};
 
 /**
  * One fee paid, as billing reads it. It is derived from the payment a
