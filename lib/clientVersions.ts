@@ -104,15 +104,32 @@ export function plainChange(
   kind: FindingChangeKind,
   reason: ResolvedReason | null,
   laterMadeBy: VersionCreatedBy,
+  signedOff = true,
 ): string {
   if (kind === "new") return "New in this draft";
-  if (kind === "unresolved") return "Still open";
+  // Before sign-off a client is not told what the advocate has decided, so a
+  // finding is only ever still raised or no longer raised, never "open" or
+  // "settled": either of those says a decision was or was not made.
+  if (kind === "unresolved") return signedOff ? "Still open" : "Still raised";
   if (reason === "clause_changed") {
     return laterMadeBy === "client_response"
       ? "No longer raised after your change to this clause"
       : "No longer raised after the advocate's revision to this clause";
   }
-  return "Settled by the advocate";
+  return signedOff ? "Settled by the advocate" : "No longer raised in this draft";
+}
+
+/**
+ * The line over a comparison: how many findings are new, still there, and
+ * gone. After sign-off it says what the advocate decided. Before it, it says
+ * only what is raised in each draft, in words that read the same whatever the
+ * advocate has decided (a test flips every decision to hold that).
+ */
+export function findingsSummary(diff: ClientVersionDiff): string {
+  const c = diff.findingCounts;
+  return diff.signedOff
+    ? `Findings: ${c.new} new · ${c.stillOpen} still open · ${c.resolved} settled or no longer raised`
+    : `Findings: ${c.new} new · ${c.stillOpen} still raised · ${c.resolved} no longer raised after a clause changed`;
 }
 
 export function dispositionText(disposition: Finding["disposition"]): string {
@@ -210,7 +227,36 @@ export function clientVersionDiff(
   for (const f of fromVisible) {
     if (!(f.findingId in numbers)) numbers[f.findingId] = String(++last).padStart(2, "0");
   }
-  const visibleChanges = diff.findings.filter((c) => visibleIds.has(c.findingId));
+  // After sign-off the diff is the record, decisions and all. Before it, the
+  // client is told only what is raised in each draft: whether a finding is in
+  // both, only the later or only the earlier. The diff leaves out a finding
+  // settled in both drafts and calls one settled since "resolved", and either
+  // would let a count or a row move when the advocate decides something, so
+  // before sign-off it is not read for what changed.
+  const visibleChanges: FindingChange[] = signedOff
+    ? diff.findings.filter((c) => visibleIds.has(c.findingId))
+    : (() => {
+        const before = new Map(fromVisible.map((f) => [f.findingId, f]));
+        const after = new Map(toVisible.map((f) => [f.findingId, f]));
+        const reasons = new Map(diff.findings.map((c) => [c.findingId, c.resolvedReason]));
+        // The later draft's findings in its own order, then those only the
+        // earlier one had.
+        const order = [
+          ...toVisible.map((f) => f.findingId),
+          ...fromVisible.map((f) => f.findingId).filter((id) => !after.has(id)),
+        ];
+        return order.map((id): FindingChange => {
+          const b = before.get(id) ?? null;
+          const a = after.get(id) ?? null;
+          return {
+            findingId: id,
+            before: b,
+            after: a,
+            kind: b && a ? "unresolved" : a ? "new" : "resolved",
+            resolvedReason: !a ? (reasons.get(id) ?? "clause_changed") : null,
+          };
+        });
+      })();
 
   // The clauses a request to the client is about.
   const addressedClauses = new Set<string>();
@@ -246,7 +292,7 @@ export function clientVersionDiff(
       number: numbers[c.findingId] ?? "",
       clauseReference: f.clauseReference,
       kind: c.kind,
-      change: plainChange(c.kind, c.resolvedReason, to.createdBy),
+      change: plainChange(c.kind, c.resolvedReason, to.createdBy, signedOff),
       description: signedOff ? f.description : null,
       disposition: signedOff && c.after ? c.after.disposition : null,
       advocateAdded: signedOff && f.source === "advocate",

@@ -18,6 +18,7 @@ import {
   clientVersionList,
   defaultComparison,
   dispositionText,
+  findingsSummary,
   type ClientClauseRow,
   type ClientFindingRow,
   type ClientVersionDiff,
@@ -202,7 +203,6 @@ function DiffView({ diff }: { diff: ClientVersionDiff }) {
   const quiet = diff.clauses.filter((c) => c.kind === "unchanged" && diff.signedOff);
   const others = diff.otherClauses;
   const otherCount = others.added + others.removed + others.changed + others.unchanged;
-  const { findingCounts: counts } = diff;
 
   return (
     <section aria-labelledby="diff-title" className="space-y-8">
@@ -210,10 +210,7 @@ function DiffView({ diff }: { diff: ClientVersionDiff }) {
         <h2 id="diff-title" className="font-display text-h3 text-ink">
           {diff.fromLabel} to {diff.toLabel}
         </h2>
-        <p className="mt-2 text-meta text-muted-fg">
-          Findings: {counts.new} new · {counts.stillOpen} still open · {counts.resolved} settled or
-          no longer raised
-        </p>
+        <p className="mt-2 text-meta text-muted-fg">{findingsSummary(diff)}</p>
         {!diff.signedOff && (
           <p className="mt-2 max-w-measure text-meta text-muted-fg">
             Until this document is signed off you see the wording of the clauses your advocate has

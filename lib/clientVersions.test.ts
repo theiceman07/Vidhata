@@ -4,6 +4,7 @@ import {
   clientVersionList,
   defaultComparison,
   dispositionText,
+  findingsSummary,
   plainChange,
 } from "./clientVersions";
 import { mockDocuments } from "./mock/documents.mock";
@@ -135,7 +136,7 @@ describe("before sign-off", () => {
         number: "01",
         clauseReference: "Clause 5.3",
         kind: "unresolved",
-        change: "Still open",
+        change: "Still raised",
         description: null,
         disposition: null,
         advocateAdded: false,
@@ -144,8 +145,10 @@ describe("before sign-off", () => {
   });
 
   it("counts only findings the client may know about", () => {
-    // Two of draft 3's findings were added by the advocate and are hidden.
-    expect(diff().findingCounts).toEqual({ new: 0, stillOpen: 1, resolved: 1 });
+    // Two of draft 4's findings were added by the advocate and are hidden. The
+    // two the client knows are both still raised: that one was settled in
+    // between is a decision, and not counted before sign-off.
+    expect(diff().findingCounts).toEqual({ new: 0, stillOpen: 2, resolved: 0 });
   });
 
   it("never mentions a finding the advocate added and did not address to the client", () => {
@@ -266,7 +269,7 @@ describe("numbering findings across two drafts", () => {
   it("numbers what is in the later draft as the client's own list does, and the rest after it", () => {
     const rows = diffOf(rereview, versions, 2, 3).findingRows;
     // The one still open keeps the number it has on the document page.
-    expect(rows[0]).toEqual(expect.objectContaining({ number: "02", change: "Still open" }));
+    expect(rows[0]).toEqual(expect.objectContaining({ number: "02", change: "Still raised" }));
     // The one no longer raised comes after every number in the later draft.
     expect(rows[1]).toEqual(
       expect.objectContaining({
@@ -328,6 +331,34 @@ describe("a client's view of snapshots that hold decisions", () => {
     expect(text).not.toMatch(/Confirmed|Overridden|confirmed|overridden/);
   });
 
+  it("reads the same line, counts and rows before sign-off whatever the advocate decided", () => {
+    // Every decision is turned over in every snapshot and in the head: what was
+    // decided becomes undecided and the other way about. A client told "settled"
+    // or "still open" would learn from the line that a decision was made.
+    const turn = <T extends { disposition: string; overrideNote: string | null; resolvedAt: string | null }>(
+      f: T,
+    ): T =>
+      f.disposition === "pending"
+        ? { ...f, disposition: "confirmed", overrideNote: "Decided.", resolvedAt: "2026-10-01T09:00:00.000Z" }
+        : { ...f, disposition: "pending", overrideNote: null, resolvedAt: null };
+
+    for (const [name, doc, versions] of cases) {
+      const turned = versions.map((v) => ({ ...v, findings: v.findings.map(turn) }));
+      const turnedDoc = { ...doc, findings: doc.findings.map(turn) } as ContractDocument;
+      for (const a of versions) {
+        for (const b of versions) {
+          if (a.number >= b.number) continue;
+          const was = diffOf(doc, versions, a.number, b.number);
+          const now = diffOf(turnedDoc, turned, a.number, b.number);
+          expect(findingsSummary(now), `${name} ${a.number} to ${b.number}`).toBe(findingsSummary(was));
+          expect(now.findingCounts).toEqual(was.findingCounts);
+          expect(now.findingRows).toEqual(was.findingRows);
+          expect(findingsSummary(was)).not.toMatch(/settled|open|decided|confirmed|overridden/i);
+        }
+      }
+    }
+  });
+
   it("is the same words before sign-off whatever the advocate decided", () => {
     // Dispositions change nothing a client reads before sign-off: flipping every
     // decision in every snapshot leaves the client's view unchanged.
@@ -373,6 +404,28 @@ describe("the words a client reads", () => {
       "No longer raised after the advocate's revision to this clause",
     );
     expect(plainChange("resolved", "settled", "advocate_revision")).toBe("Settled by the advocate");
+    expect(plainChange("unresolved", null, "client_response")).toBe("Still open");
+  });
+
+  it("says before sign-off only what is raised, never that anything was settled or open", () => {
+    expect(plainChange("unresolved", null, "client_response", false)).toBe("Still raised");
+    expect(plainChange("resolved", "settled", "advocate_revision", false)).toBe(
+      "No longer raised in this draft",
+    );
+    expect(plainChange("resolved", "clause_changed", "client_response", false)).toBe(
+      "No longer raised after your change to this clause",
+    );
+  });
+
+  it("says what was counted: before sign-off a line without a decision in it, after it the full wording", () => {
+    const pre = diffOf(vendor, vendorVersions, 2, 3);
+    expect(findingsSummary(pre)).toBe(
+      "Findings: 1 new · 1 still raised · 1 no longer raised after a clause changed",
+    );
+    const post = diffOf(nda, ndaVersions, 1, 2);
+    expect(findingsSummary(post)).toBe(
+      "Findings: 1 new · 0 still open · 1 settled or no longer raised",
+    );
     expect(plainChange("unresolved", null, "client_response")).toBe("Still open");
     expect(plainChange("new", null, "first_pass")).toBe("New in this draft");
   });
