@@ -195,17 +195,19 @@ export function IntakeWizard() {
   return (
     <div
       className={cn(
-        "grid max-w-5xl gap-x-16 gap-y-8",
+        "grid max-w-5xl gap-y-8 xl:gap-x-16",
         // The picker lists the whole catalogue, so its step gets more room.
         step === 0
-          ? "md:grid-cols-[minmax(0,14rem)_minmax(0,44rem)]"
-          : "md:grid-cols-[minmax(0,14rem)_minmax(0,32rem)]",
+          ? "xl:grid-cols-[minmax(0,14rem)_minmax(0,44rem)]"
+          : "xl:grid-cols-[minmax(0,14rem)_minmax(0,32rem)]",
       )}
     >
       {/* The steps are a schedule down the margin, not a row of numbered
           discs: the same notation the rest of the product uses to say
           where you are. */}
-      <ol className="space-y-3 md:sticky md:top-10 md:self-start">
+      {/* Below a wide screen the steps lie in a row above the form, so the form
+          keeps the width the page has. */}
+      <ol className="flex flex-wrap gap-x-6 gap-y-2 xl:block xl:space-y-3 xl:sticky xl:top-10 xl:self-start">
         {STEP_LABELS.map((label, i) => (
           <li
             key={label}

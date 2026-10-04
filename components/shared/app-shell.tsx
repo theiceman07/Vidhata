@@ -158,7 +158,9 @@ function ShellBody({
         />
 
         {/* Mobile · the same pill, lying flat */}
-        <header className="sticky top-0 z-30 px-3 pt-3 md:hidden">
+        {/* Opaque behind the pill, so a page scrolling beneath it passes under
+            the bar and is not seen at its sides. */}
+        <header className="sticky top-0 z-30 bg-paper px-3 pb-2 pt-3 md:hidden">
           <div className="flex h-14 items-center justify-between rounded-full bg-ink pl-6 pr-2 text-paper">
             <Link href={homeHref} className="text-paper">
               <BrandLogo size="md" />

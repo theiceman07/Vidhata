@@ -139,7 +139,7 @@ export function DealPrompt({
             }
           }}
           placeholder={placeholder}
-          className="caret-cycle field-bare block w-full resize-none bg-transparent pt-3 text-lead text-ink outline-none placeholder:text-muted-fg"
+          className="caret-cycle field-bare block min-h-[6.25rem] w-full resize-none bg-transparent pt-3 text-lead text-ink outline-none placeholder:text-muted-fg sm:min-h-0"
         />
         <div className="mt-2 flex items-center justify-between gap-3">
           <span className="hidden text-meta text-muted-fg sm:inline">{note}</span>
@@ -148,7 +148,7 @@ export function DealPrompt({
             aria-label="Draft a document"
             aria-busy={drafting}
             className={cn(
-              "ml-auto inline-flex h-12 items-center gap-2 rounded-full px-6 text-body font-medium transition-all duration-300 ease-out",
+              "ml-auto inline-flex h-12 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-6 text-body font-medium transition-all duration-300 ease-out",
               ready
                 ? "scale-100 bg-accent text-accent-fg hover:bg-accent-hover"
                 : "scale-95 bg-ink/[0.06] text-muted-fg",

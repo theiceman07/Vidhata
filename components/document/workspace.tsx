@@ -403,7 +403,10 @@ export function DocumentWorkspace({
 
   return (
     <ReviewScopeProvider value={activeScope}>
-    <div className="flex h-full min-h-0 flex-col">
+    {/* Height-bound only where the three panes scroll for themselves (lg and up).
+        Below that the page stacks and scrolls as one, so the clauses and findings
+        dropdown has room to open. */}
+    <div className="flex min-h-0 flex-col lg:h-full">
       <header className="border-b border-line bg-paper">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4 md:px-8">
           <Link
@@ -570,7 +573,7 @@ export function DocumentWorkspace({
 
       <div
         className={cn(
-          "grid min-h-0 flex-1 transition-[grid-template-columns] duration-200 ease-out motion-reduce:transition-none",
+          "grid transition-[grid-template-columns] duration-200 ease-out motion-reduce:transition-none lg:min-h-0 lg:flex-1",
           panel
             ? "lg:grid-cols-[240px_minmax(0,1fr)_minmax(340px,400px)]"
             : companion

@@ -142,7 +142,7 @@ export function ClauseBlock({
         )}
       />
 
-      <div className="grid gap-x-10 gap-y-4 @3xl:grid-cols-[minmax(0,68ch)_minmax(220px,18rem)]">
+      <div className="grid grid-cols-1 gap-x-10 gap-y-4 @3xl:grid-cols-[minmax(0,68ch)_minmax(220px,18rem)]">
         <div className="min-w-0">
           <div className="flex items-baseline gap-3">
             <span className="font-mono text-label text-muted-fg">{clause.number}</span>
