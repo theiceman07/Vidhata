@@ -16,6 +16,7 @@ const GROUPS = [
       { href: "/#india", label: "India checks" },
       { href: "/pricing", label: "Pricing" },
       { href: "/contracts", label: "Agreements" },
+      { href: "/sample", label: "Sample document" },
     ],
   },
   {

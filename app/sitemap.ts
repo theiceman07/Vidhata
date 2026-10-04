@@ -8,6 +8,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: `${base}/`, lastModified: now, priority: 1 },
     { url: `${base}/pricing`, lastModified: now, priority: 0.8 },
+    { url: `${base}/sample`, lastModified: now, priority: 0.6 },
     { url: `${base}/contracts`, lastModified: now, priority: 0.6 },
     { url: `${base}/scope`, lastModified: now, priority: 0.5 },
     { url: `${base}/security`, lastModified: now, priority: 0.5 },
