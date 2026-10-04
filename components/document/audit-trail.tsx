@@ -1,6 +1,20 @@
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import type { AuditEntry } from "@/lib/audit";
+
+/**
+ * What the trail reads of an entry. The advocate's entries (AuditEntry) name a
+ * finding by its id, a client's (ClientAuditEntry) by its number, and either
+ * satisfies this, so one component draws both portals' records.
+ */
+export interface TrailEntry {
+  at: string;
+  actor: string;
+  action: string;
+  ref: string | null;
+  kind: "event" | "decision";
+  findingId?: string | null;
+  findingNumber?: string | null;
+}
 
 /**
  * The retained record.
@@ -16,9 +30,9 @@ export function AuditTrail({
   title = "Activity",
   className,
 }: {
-  entries: AuditEntry[];
-  /** When set, entries about a finding link to it. */
-  onSelectFinding?: (findingId: string) => void;
+  entries: TrailEntry[];
+  /** When set, entries about a finding link to it, by its id or its number. */
+  onSelectFinding?: (finding: string) => void;
   title?: string | null;
   className?: string;
 }) {
@@ -38,7 +52,8 @@ export function AuditTrail({
 
       <ol className={cn("relative", title && "mt-3")}>
         {newestFirst.map((entry, i) => {
-          const linkable = onSelectFinding && entry.findingId;
+          const findingKey = entry.findingId ?? entry.findingNumber ?? null;
+          const linkable = onSelectFinding && findingKey;
           const body = (
             <>
               <span className="block text-meta text-ink">
@@ -77,7 +92,7 @@ export function AuditTrail({
               {linkable ? (
                 <button
                   type="button"
-                  onClick={() => onSelectFinding(entry.findingId as string)}
+                  onClick={() => onSelectFinding(findingKey as string)}
                   className="block w-full rounded-control text-left transition-colors hover:bg-parchment/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   {body}

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clientAuditTrail } from "@/lib/audit";
+import { shapeClientSummary } from "@/lib/api/client/shape-document";
 import { groupOf } from "@/lib/moves";
 import { stateText } from "@/components/document/state-label";
 import { getDocument, toggleExecutionStep } from "./documents";
@@ -51,7 +52,7 @@ describe("executing a settled document", () => {
     expect(doc.executionSteps.filter((s) => s.applicable && !s.complete).map((s) => s.kind)).toEqual([
       "esignature",
     ]);
-    expect(groupOf(doc)).toBe("you");
+    expect(groupOf(shapeClientSummary(doc))).toBe("you");
     expect(executedEntries(doc)).toEqual([]);
   });
 
@@ -68,7 +69,7 @@ describe("executing a settled document", () => {
     const doc = await read();
     // The badge, the dashboard's grouping and the trail.
     expect(stateText(doc.status)).toBe("Executed");
-    expect(groupOf(doc)).toBe("done");
+    expect(groupOf(shapeClientSummary(doc))).toBe("done");
     const entries = executedEntries(doc);
     expect(entries).toHaveLength(1);
     expect(entries[0]).toMatchObject({ actor: client, at: doc.executedAt });
@@ -86,7 +87,7 @@ describe("executing a settled document", () => {
     const doc = await sign(false);
     expect(doc.status).toBe("settled");
     expect(doc.executedAt).toBeNull();
-    expect(groupOf(doc)).toBe("you");
+    expect(groupOf(shapeClientSummary(doc))).toBe("you");
     expect(stateText(doc.status)).toBe("Settled");
     expect(executedEntries(doc)).toEqual([]);
   });

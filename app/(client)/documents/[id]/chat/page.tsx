@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDocument } from "@/lib/api/documents";
+import { shapeClientDocument } from "@/lib/api/client/shape-document";
 import { clientVisibleFindings } from "@/lib/findings";
 import {
   buildInitialMessages,
@@ -40,7 +41,7 @@ export default function ChatPage() {
       const result = await getDocument(params.id);
       if (!result) throw new Error("Document not found.");
       setDoc(result);
-      setMessages(buildInitialMessages(result));
+      setMessages(buildInitialMessages(shapeClientDocument(result)));
       setState("loaded");
     } catch (err) {
       setErrorMessage(
@@ -67,7 +68,7 @@ export default function ChatPage() {
       citedClauseReference: null,
       isEscalation: false,
     };
-    const reply = getMockReply(text, doc);
+    const reply = getMockReply(text, shapeClientDocument(doc));
     const agentMessage: ChatMessageType = {
       id: `agent-${Date.now()}`,
       role: "agent",

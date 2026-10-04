@@ -2,10 +2,11 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { payFee } from "@/lib/api/documents";
+import { payClientFee } from "@/lib/api/client/documents";
+import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { PRICE_BASIS, TIER_PRICING, rupees } from "@/lib/config/pricing";
 import { CONTRACT_TYPES } from "@/lib/mock/intake-options.mock";
-import type { ContractDocument } from "@/lib/types";
+import type { ClientDocument } from "@/lib/types";
 
 /**
  * The step between a screened document and an advocate: one fixed fee.
@@ -24,8 +25,8 @@ export function PaymentPanel({
   doc,
   onPaid,
 }: {
-  doc: ContractDocument;
-  onPaid: (paid: ContractDocument) => void;
+  doc: Pick<ClientDocument, "id" | "type" | "tier" | "deal">;
+  onPaid: (paid: ClientDocument) => void;
 }) {
   const [paying, setPaying] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
@@ -42,7 +43,7 @@ export function PaymentPanel({
     setPaying(true);
     setFailed(null);
     try {
-      onPaid(await payFee(doc.id));
+      onPaid(await payClientFee(MOCK_CLIENT_ORG.id, doc.id));
     } catch (err) {
       setFailed(err instanceof Error ? err.message : "The payment did not go through. Try again.");
       setPaying(false);
@@ -71,15 +72,15 @@ export function PaymentPanel({
         <dl className="mt-3 grid max-w-md grid-cols-[10rem_minmax(0,1fr)] gap-x-4 gap-y-2.5 text-meta">
           <dt className="text-muted-fg">Agreement</dt>
           <dd className="text-ink">{typeLabel}</dd>
-          {doc.transactionValue > 0 && (
+          {doc.deal.transactionValue > 0 && (
             <>
               <dt className="text-muted-fg">Deal value</dt>
-              <dd className="text-ink">{rupees(doc.transactionValue)}</dd>
+              <dd className="text-ink">{rupees(doc.deal.transactionValue)}</dd>
             </>
           )}
           <dt className="text-muted-fg">Counterparty</dt>
           <dd className="text-ink">
-            {doc.counterpartyIsMsme ? "A registered MSME" : "Not a registered MSME"}
+            {doc.deal.counterpartyIsMsme ? "A registered MSME" : "Not a registered MSME"}
           </dd>
         </dl>
       </div>

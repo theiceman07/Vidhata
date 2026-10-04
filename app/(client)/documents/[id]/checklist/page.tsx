@@ -27,6 +27,7 @@ import {
   toggleExecutionStep,
 } from "@/lib/api/documents";
 import { clientAuditTrail } from "@/lib/audit";
+import { shapeClientDocument } from "@/lib/api/client/shape-document";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { ContractDocument, ExecutionStep } from "@/lib/types";
 
@@ -191,7 +192,8 @@ export default function ChecklistPage() {
             <ContextPanel title="Activity" className="md:col-span-2 xl:col-span-1">
               <AuditTrail entries={clientAuditTrail(doc)} title={null} />
             </ContextPanel>
-            <DealOnFile doc={doc} />
+            {/* Bridge: this page is not migrated yet, so the panel is handed the client shape of the document. */}
+            <DealOnFile doc={shapeClientDocument(doc)} />
             <div className="flex min-w-0 flex-col gap-4">
               <ContextPanel title="The settled document">
                 <p className="text-meta text-ink">

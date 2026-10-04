@@ -55,6 +55,6 @@ const ALL_LAYERS = (Object.keys(PIPELINE_LAYERS) as string[])
  * finished none has; after it, the whole pipeline has, and it runs again on
  * every revision.
  */
-export function layersRun(doc: ContractDocument): PipelineLayer[] {
+export function layersRun(doc: Pick<ContractDocument, "status">): PipelineLayer[] {
   return doc.status === "draft" || doc.status === "analysing" ? [] : ALL_LAYERS;
 }

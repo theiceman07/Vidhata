@@ -5,13 +5,12 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { Icon } from "@/components/shared/icon";
 import { Skeleton } from "@/components/ui/skeleton";
-import { listDocuments } from "@/lib/api/documents";
+import { listClientDocuments } from "@/lib/api/client/documents";
 import { tierLabel } from "@/lib/config/pricing";
-import { clientVisibleFindings } from "@/lib/findings";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { groupOf, yourMove } from "@/lib/moves";
 import { termLabel } from "@/lib/term";
-import type { ContractDocument } from "@/lib/types";
+import type { ClientDocument, ClientDocumentSummary } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /**
@@ -53,15 +52,22 @@ const rupees = new Intl.NumberFormat("en-IN", {
 });
 
 /** The deal as the client stated it at intake. Nothing here is inferred. */
-export function DealOnFile({ doc, className }: { doc: ContractDocument; className?: string }) {
+export function DealOnFile({
+  doc,
+  className,
+}: {
+  doc: Pick<ClientDocument, "deal" | "tier">;
+  className?: string;
+}) {
+  const { deal } = doc;
   const rows: [string, React.ReactNode][] = [
-    ["Parties", `${doc.clientName} · ${doc.counterpartyName}`],
-    ["Executed in", doc.stateOfExecution],
-    ["Governing law", doc.governingLaw],
+    ["Parties", `${deal.clientName} · ${deal.counterpartyName}`],
+    ["Executed in", deal.stateOfExecution],
+    ["Governing law", deal.governingLaw],
   ];
-  if (doc.transactionValue > 0) rows.push(["Value", rupees.format(doc.transactionValue)]);
-  rows.push(["Term", termLabel(doc.durationMonths)]);
-  if (doc.counterpartyIsMsme) rows.push(["Counterparty", "Registered MSME"]);
+  if (deal.transactionValue > 0) rows.push(["Value", rupees.format(deal.transactionValue)]);
+  rows.push(["Term", termLabel(deal.durationMonths)]);
+  if (deal.counterpartyIsMsme) rows.push(["Counterparty", "Registered MSME"]);
   rows.push(["Review", tierLabel(doc.tier)]);
 
   return (
@@ -74,10 +80,10 @@ export function DealOnFile({ doc, className }: { doc: ContractDocument; classNam
           </div>
         ))}
       </dl>
-      {doc.keyTerms && (
+      {deal.keyTerms && (
         <div className="mt-5 rounded-control bg-paper px-4 py-3">
           <p className="text-label text-muted-fg">Key terms, as you stated them</p>
-          <p className="mt-1 text-meta text-ink">{doc.keyTerms}</p>
+          <p className="mt-1 text-meta text-ink">{deal.keyTerms}</p>
         </div>
       )}
     </ContextPanel>
@@ -93,25 +99,38 @@ function initials(name: string): string {
     .join("");
 }
 
-/** The named advocate answerable for this document. */
-export function AdvocatePanel({ doc, className }: { doc: ContractDocument; className?: string }) {
-  const advocate = doc.advocate;
+/**
+ * Who is answerable for this document.
+ *
+ * Named only by the sign-off record. Before it, a client is told that an
+ * advocate holds the document and since when, and that the name and enrolment
+ * number come with the sign-off: who holds a document is not for a client to
+ * know before an advocate has put their name to it.
+ */
+export function AdvocatePanel({
+  doc,
+  className,
+}: {
+  doc: Pick<ClientDocument, "claimedAt" | "signOff">;
+  className?: string;
+}) {
+  const { signOff } = doc;
 
   return (
     <ContextPanel title="Your advocate" className={className}>
-      {advocate ? (
+      {signOff ? (
         <>
           <div className="flex items-center gap-3.5">
             <span
               aria-hidden
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-paper font-display text-[17px] text-ink"
             >
-              {initials(advocate.name)}
+              {initials(signOff.advocate)}
             </span>
             <div className="min-w-0">
-              <p className="truncate text-body font-medium text-ink">{advocate.name}</p>
+              <p className="truncate text-body font-medium text-ink">{signOff.advocate}</p>
               <p className="text-label text-muted-fg">
-                Empanelled advocate · <span className="font-mono">{advocate.bar}</span>
+                Empanelled advocate · <span className="font-mono">{signOff.enrolment}</span>
               </p>
             </div>
           </div>
@@ -122,18 +141,27 @@ export function AdvocatePanel({ doc, className }: { doc: ContractDocument; class
                 <dd className="text-ink">{format(new Date(doc.claimedAt), "d MMM yyyy")}</dd>
               </>
             )}
-            {doc.settledAt && (
-              <>
-                <dt className="text-muted-fg">Signed off</dt>
-                <dd className="text-ink">{format(new Date(doc.settledAt), "d MMM yyyy")}</dd>
-              </>
-            )}
+            <dt className="text-muted-fg">Signed off</dt>
+            <dd className="text-ink">{format(new Date(signOff.at), "d MMM yyyy")}</dd>
           </dl>
+        </>
+      ) : doc.claimedAt ? (
+        <>
+          <p className="text-meta text-ink">
+            An empanelled advocate has claimed this document and holds it alone until sign-off.
+          </p>
+          <dl className="mt-4 grid grid-cols-[7.5rem_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-meta">
+            <dt className="text-muted-fg">Claimed</dt>
+            <dd className="text-ink">{format(new Date(doc.claimedAt), "d MMM yyyy")}</dd>
+          </dl>
+          <p className="mt-4 text-label text-muted-fg">
+            Their name and enrolment number are recorded with the sign-off.
+          </p>
         </>
       ) : (
         <p className="text-meta text-muted-fg">
-          No advocate has claimed this document yet. The first to claim it
-          is named here, with their enrolment number.
+          No advocate has claimed this document yet. The advocate who does holds it alone,
+          and is named with their enrolment number when they sign it off.
         </p>
       )}
     </ContextPanel>
@@ -146,11 +174,10 @@ interface Station {
   current: boolean;
 }
 
-function stationsFor(doc: ContractDocument): Station[] {
-  const advocate = doc.advocate?.name ?? "The advocate";
+function stationsFor(doc: ClientDocument): Station[] {
   const checklist: Station = {
     title: "Execution checklist",
-    body: `Stamping, registration and e-signature for ${doc.stateOfExecution}, set out step by step, with a place to keep the proof.`,
+    body: `Stamping, registration and e-signature for ${doc.deal.stateOfExecution}, set out step by step, with a place to keep the proof.`,
     current: false,
   };
   const signOff: Station = {
@@ -160,17 +187,15 @@ function stationsFor(doc: ContractDocument): Station[] {
   };
 
   if (doc.status === "revision") {
-    const n = clientVisibleFindings(doc).filter(
-      (f) => f.changeRequest && !f.changeRequest.response,
-    ).length;
+    const n = doc.findingList.filter((f) => f.request && !f.request.response).length;
     return [
       {
         title: "You answer",
-        body: `${n} ${n === 1 ? "request" : "requests"} from ${advocate}. Your answers go back together.`,
+        body: `${n} ${n === 1 ? "request" : "requests"} from your advocate. Your answers go back together.`,
         current: true,
       },
       {
-        title: `${advocate} settles each finding`,
+        title: "Your advocate settles each finding",
         body: `Your answer is weighed against the finding it concerns, and the document becomes Draft ${doc.version + 1}.`,
         current: false,
       },
@@ -215,7 +240,7 @@ function stationsFor(doc: ContractDocument): Station[] {
 
   return [
     {
-      title: `${advocate} reviews the findings`,
+      title: "An advocate reviews the findings",
       body: "Each finding from the first pass is settled with its source. If an answer is needed from you, it appears on your documents.",
       current: true,
     },
@@ -225,7 +250,7 @@ function stationsFor(doc: ContractDocument): Station[] {
 }
 
 /** What follows the move in hand, so the client knows when to come back. */
-export function WhatHappensNext({ doc, className }: { doc: ContractDocument; className?: string }) {
+export function WhatHappensNext({ doc, className }: { doc: ClientDocument; className?: string }) {
   const stations = stationsFor(doc);
 
   return (
@@ -278,13 +303,13 @@ type LoadState = "loading" | "error" | "loaded";
  * with the way to the next, so nothing waits for the client to remember.
  */
 export function OnYourDesk({ currentId, className }: { currentId: string; className?: string }) {
-  const [docs, setDocs] = useState<ContractDocument[]>([]);
+  const [docs, setDocs] = useState<ClientDocumentSummary[]>([]);
   const [state, setState] = useState<LoadState>("loading");
 
   const load = useCallback(async () => {
     setState("loading");
     try {
-      setDocs(await listDocuments(MOCK_CLIENT_ORG.id));
+      setDocs(await listClientDocuments(MOCK_CLIENT_ORG.id));
       setState("loaded");
     } catch {
       setState("error");

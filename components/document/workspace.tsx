@@ -39,7 +39,7 @@ import { SeverityCounts } from "./severity";
 import { ClauseIndex } from "./clause-index";
 import { DocumentSurface } from "./document-surface";
 import { FindingDetail } from "./finding-detail";
-import { AuditTrail } from "./audit-trail";
+import { AuditTrail, type TrailEntry } from "./audit-trail";
 import { ReviewShortcuts } from "./review-shortcuts";
 
 /**
@@ -76,6 +76,8 @@ export function DocumentWorkspace({
   scope,
   revisions,
   busy = false,
+  numbering,
+  trail,
 }: {
   doc: ContractDocument;
   role: "client" | "advocate";
@@ -116,6 +118,19 @@ export function DocumentWorkspace({
   /** Where the document stands against the revision limit. Advocate only. */
   revisions?: RevisionCycle;
   busy?: boolean;
+  /**
+   * The number each finding is read by, by the id this workspace holds it under.
+   * Given, it is used as it is. Not given, findings are numbered by their place
+   * in the document. A client's reader gives it, because a client's numbers are
+   * their own and stored.
+   */
+  numbering?: Record<string, string>;
+  /**
+   * The record to show, in place of the one built from the document. A client's
+   * reader gives it, because the full record names the advocate and what they
+   * decided, and a client is shown only what the API hands over.
+   */
+  trail?: TrailEntry[];
 }) {
   const reduced = useReducedMotion();
   const { open: openPalette } = usePalette();
@@ -131,7 +146,7 @@ export function DocumentWorkspace({
 
   // Display ordinals, fixed by the order the pipeline raised the
   // findings, so "finding 04" means one thing across every pane.
-  const findingNumbers = useMemo(() => numberFindings(doc), [doc]);
+  const findingNumbers = useMemo(() => numbering ?? numberFindings(doc), [doc, numbering]);
 
   // The re-review is scoped to what the last round changed. Only an
   // advocate has a scope, and the full set is one switch away.
@@ -687,11 +702,12 @@ export function DocumentWorkspace({
                 }
                 requestBlockedReason={cycle ? revisionBlockedReason(cycle) : null}
                 busy={busy}
+                trail={trail}
               />
             ) : (
               <div className="p-4 lg:p-5">
                 <AuditTrail
-                  entries={buildAuditTrail(doc)}
+                  entries={trail ?? buildAuditTrail(doc)}
                   title={null}
                   onSelectFinding={selectFinding}
                 />

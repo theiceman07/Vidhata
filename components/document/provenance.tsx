@@ -1,21 +1,27 @@
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/shared/icon";
-import { firstPassFindings } from "@/lib/findings";
-import type { ContractDocument } from "@/lib/types";
+import type { ClientDocumentSummary } from "@/lib/types";
 
 /**
  * Where the document is in its life, and who is answerable for each part.
  *
  * Four stages: the first pass screens it, an advocate reviews it, the
- * advocate signs it off, the client executes it. The names hang under
- * the stages where a person took responsibility, because that is the
- * whole claim the product makes: the machine did the first pass, a named
- * advocate decided.
+ * advocate signs it off, the client executes it. The name hangs under the
+ * stage where a person took responsibility, because that is the whole claim
+ * the product makes: the machine did the first pass, a named advocate decided.
+ * The name is the sign-off record's, so it appears when there is one and not
+ * before: until then a client is told "an advocate" and nothing more.
  *
  * Two readings of the same model. The strip is for a row in a list; the
- * full chain is for the document itself.
+ * full chain is for the document itself. Both read what a client is handed
+ * (a ClientDocument or a ClientDocumentSummary satisfies it), never the
+ * internal record.
  */
+export type LifecycleSource = Pick<
+  ClientDocumentSummary,
+  "status" | "createdAt" | "claimedAt" | "signOff" | "findingCount" | "checklist"
+>;
 type StageKey = "screened" | "review" | "signed" | "executed";
 
 interface Stage {
@@ -30,11 +36,10 @@ function day(iso: string | null): string | null {
   return iso ? format(new Date(iso), "d MMM yyyy") : null;
 }
 
-export function lifecycle(doc: ContractDocument): Stage[] {
+export function lifecycle(doc: LifecycleSource): Stage[] {
   const s = doc.status;
-  const applicable = doc.executionSteps.filter((step) => step.applicable);
-  const done = applicable.filter((step) => step.complete).length;
-  const findings = firstPassFindings(doc).length;
+  const { done, total } = doc.checklist;
+  const findings = doc.findingCount;
 
   const screened: Stage = {
     key: "screened",
@@ -61,21 +66,22 @@ export function lifecycle(doc: ContractDocument): Stage[] {
           : s === "settled" || s === "executed"
             ? "done"
             : "ahead",
-    detail: doc.advocate
-      ? [doc.advocate.name, day(doc.claimedAt)].filter(Boolean).join(" · ")
-      : s === "pending_review"
-        ? "In the advocate queue"
-        : null,
+    // Who is the sign-off record's to say. Before it, an advocate has claimed
+    // the document, and that is all a client is told.
+    detail: doc.signOff
+      ? [doc.signOff.advocate, day(doc.claimedAt)].filter(Boolean).join(" · ")
+      : doc.claimedAt
+        ? `An advocate claimed it · ${day(doc.claimedAt)}`
+        : s === "pending_review"
+          ? "In the advocate queue"
+          : null,
   };
 
   const signed: Stage = {
     key: "signed",
     label: "Signed off",
     state: s === "settled" || s === "executed" ? "done" : "ahead",
-    detail:
-      doc.settledAt && doc.advocate
-        ? `${doc.advocate.name} · ${day(doc.settledAt)}`
-        : null,
+    detail: doc.signOff ? `${doc.signOff.advocate} · ${day(doc.signOff.at)}` : null,
   };
 
   const executed: Stage = {
@@ -84,7 +90,7 @@ export function lifecycle(doc: ContractDocument): Stage[] {
     state: s === "executed" ? "done" : s === "settled" ? "current" : "ahead",
     detail:
       s === "settled" || s === "executed"
-        ? `${done} of ${applicable.length} steps complete`
+        ? `${done} of ${total} steps complete`
         : null,
   };
 
@@ -92,7 +98,7 @@ export function lifecycle(doc: ContractDocument): Stage[] {
 }
 
 /** What the document is waiting on, in a few words. */
-export function stageCaption(doc: ContractDocument): string {
+export function stageCaption(doc: LifecycleSource): string {
   switch (doc.status) {
     case "draft":
       return "Not submitted";
@@ -103,14 +109,11 @@ export function stageCaption(doc: ContractDocument): string {
     case "pending_review":
       return "In the advocate queue";
     case "under_review":
-      return doc.advocate ? `With ${doc.advocate.name}` : "With an advocate";
+      return "With an advocate";
     case "revision":
       return "Changes requested";
-    case "settled": {
-      const steps = doc.executionSteps.filter((step) => step.applicable);
-      const done = steps.filter((step) => step.complete).length;
-      return `Signed off · ${done} of ${steps.length} steps done`;
-    }
+    case "settled":
+      return `Signed off · ${doc.checklist.done} of ${doc.checklist.total} steps done`;
     case "executed":
       return "Executed";
   }
@@ -133,7 +136,7 @@ export function LifecycleStrip({
   doc,
   className,
 }: {
-  doc: ContractDocument;
+  doc: LifecycleSource;
   className?: string;
 }) {
   const stages = lifecycle(doc);
@@ -179,10 +182,9 @@ const isDecision = (key: StageKey) => key === "signed" || key === "executed";
  * a date once it has happened, the person answerable while it is
  * happening, and what it waits on while it is still ahead.
  */
-function stageNote(doc: ContractDocument, stage: Stage): string {
+function stageNote(doc: LifecycleSource, stage: Stage): string {
   const short = (iso: string | null) => (iso ? format(new Date(iso), "d MMM") : "");
-  const applicable = doc.executionSteps.filter((step) => step.applicable);
-  const done = applicable.filter((step) => step.complete).length;
+  const { done, total } = doc.checklist;
 
   switch (stage.key) {
     case "screened":
@@ -191,14 +193,14 @@ function stageNote(doc: ContractDocument, stage: Stage): string {
       return short(doc.createdAt);
     case "review":
       if (stage.state === "attention") return "Waiting on you";
-      if (stage.state === "done") return doc.advocate?.name ?? "Complete";
-      if (stage.state === "current") return doc.advocate?.name ?? "In the queue";
+      if (stage.state === "done") return doc.signOff?.advocate ?? "Complete";
+      if (stage.state === "current") return doc.claimedAt ? "With an advocate" : "In the queue";
       return "After screening";
     case "signed":
-      return stage.state === "done" ? short(doc.settledAt) : "After review";
+      return stage.state === "done" ? short(doc.signOff?.at ?? null) : "After review";
     case "executed":
       if (stage.state === "done") return "Complete";
-      if (stage.state === "current") return `${done} of ${applicable.length} steps`;
+      if (stage.state === "current") return `${done} of ${total} steps`;
       return "After sign-off";
   }
 }
@@ -267,7 +269,7 @@ export function LifecycleStepper({
   doc,
   className,
 }: {
-  doc: ContractDocument;
+  doc: LifecycleSource;
   className?: string;
 }) {
   const stages = lifecycle(doc);
@@ -331,7 +333,7 @@ export function Provenance({
   doc,
   className,
 }: {
-  doc: ContractDocument;
+  doc: LifecycleSource;
   className?: string;
 }) {
   const stages = lifecycle(doc);
