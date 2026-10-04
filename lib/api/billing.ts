@@ -22,11 +22,17 @@ function profileOf(orgId: string): BillingProfile {
 export async function listInvoices(orgId: string): Promise<Invoice[]> {
   // Each of these owns its own delay and failure switch, and scopes by org. The
   // consultations are read for what was paid and when, and nothing else.
-  const [docs, consultations] = await Promise.all([
-    listDocuments(orgId),
-    listOrgConsultations(orgId),
-  ]);
-  return invoicesFor(docs, consultations);
+  // A failure in either is said as what the reader asked for: invoices, not the
+  // consultations they are partly read from.
+  try {
+    const [docs, consultations] = await Promise.all([
+      listDocuments(orgId),
+      listOrgConsultations(orgId),
+    ]);
+    return invoicesFor(docs, consultations);
+  } catch {
+    throw new MockApiError("Could not load your invoices.");
+  }
 }
 
 export async function getInvoice(orgId: string, number: string): Promise<Invoice | null> {
