@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { payFee } from "@/lib/api/documents";
 import { PRICE_BASIS, TIER_PRICING, rupees } from "@/lib/config/pricing";
@@ -29,12 +29,16 @@ export function PaymentPanel({
 }) {
   const [paying, setPaying] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
+  // State alone cannot stop two presses in the same instant, because neither
+  // has re-rendered yet. The ref is set at once, so only the first goes out.
+  const inFlight = useRef(false);
 
   const tier = doc.tier ? TIER_PRICING[doc.tier] : null;
   const typeLabel = CONTRACT_TYPES.find((t) => t.value === doc.type)?.label ?? doc.type;
 
   async function pay() {
-    if (paying) return;
+    if (inFlight.current) return;
+    inFlight.current = true;
     setPaying(true);
     setFailed(null);
     try {
@@ -42,6 +46,7 @@ export function PaymentPanel({
     } catch (err) {
       setFailed(err instanceof Error ? err.message : "The payment did not go through. Try again.");
       setPaying(false);
+      inFlight.current = false;
     }
   }
 
