@@ -1,7 +1,7 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Dateline } from "@/components/document/dateline";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/session";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
@@ -11,8 +11,8 @@ import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
  *
  * Deliberately short. Everything the product knows about an
  * organisation is shown as a record rather than as a form full of
- * fields nobody changes, and the one genuinely useful action here is
- * ending the session.
+ * fields nobody changes. Billing has its own page, and the one genuinely
+ * useful action here is ending the session.
  */
 function Row({
   label,
@@ -22,11 +22,9 @@ function Row({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap gap-x-8 gap-y-1 border-b border-line py-4">
-      <dt className="w-40 shrink-0 font-mono text-notation uppercase tracking-notation text-muted-fg">
-        {label}
-      </dt>
-      <dd className="min-w-0 flex-1 text-body text-ink">{children}</dd>
+    <div className="grid gap-x-8 gap-y-1 py-3 sm:grid-cols-[11rem_minmax(0,1fr)]">
+      <dt className="text-label font-medium text-muted-fg">{label}</dt>
+      <dd className="min-w-0 text-body text-ink">{children}</dd>
     </div>
   );
 }
@@ -36,31 +34,29 @@ export default function SettingsPage() {
   const { signOut } = useSession();
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-12">
-      <Dateline segments={["Settings"]} />
-      <h1 className="mt-3 font-display text-h1 text-ink">
-        {MOCK_CLIENT_ORG.name}
-      </h1>
+    <div className="w-full">
+      <h1 className="font-display text-h1 text-ink">Settings</h1>
+      <p className="mt-2 text-body text-muted-fg">{MOCK_CLIENT_ORG.name}</p>
 
-      <dl className="mt-decision border-t border-line">
-        <Row label="Organisation">{MOCK_CLIENT_ORG.name}</Row>
-        <Row label="Documents scoped to">
-          <span className="font-mono text-notation uppercase tracking-notation">
-            {MOCK_CLIENT_ORG.id}
-          </span>
-        </Row>
-        <Row label="Review tier">
-          Assigned to each document after screening, from its value and risk.
-        </Row>
-        <Row label="Billing">
-          Not enabled in this preview. No payment is taken.
-        </Row>
-      </dl>
+      <section className="mt-8 max-w-3xl rounded-card bg-parchment p-6">
+        <dl>
+          <Row label="Organisation">{MOCK_CLIENT_ORG.name}</Row>
+          <Row label="Documents scoped to">
+            <span className="font-mono text-meta">{MOCK_CLIENT_ORG.id}</span>
+          </Row>
+          <Row label="Review tier">
+            Assigned to each document after screening, from its value and risk.
+          </Row>
+          <Row label="Billing">
+            <Link href="/billing" className="underline underline-offset-2 hover:text-accent">
+              Invoices and billing details
+            </Link>
+          </Row>
+        </dl>
+      </section>
 
-      <section className="mt-decision">
-        <h2 className="font-mono text-notation uppercase tracking-notation text-muted-fg">
-          Session
-        </h2>
+      <section className="mt-10 max-w-3xl">
+        <h2 className="text-label font-medium text-muted-fg">Session</h2>
         <p className="mt-3 max-w-prose text-meta text-muted-fg">
           Signing out ends this session on this device. Your documents and
           their audit trails are unaffected.

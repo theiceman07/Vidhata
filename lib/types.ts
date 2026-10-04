@@ -215,6 +215,34 @@ export interface DocumentVersion {
   findings: Finding[];
 }
 
+/**
+ * One fee paid, as billing reads it. It is derived from the payment a
+ * document carries and never stored a second time (lib/billing.ts), so it
+ * cannot drift from the record. Amounts are rupees before GST.
+ *
+ * A document fee and a consultation fee are separate kinds with separate
+ * labels: the platform's revenue is a flat technology fee, and a
+ * consultation is a service by the advocate's own entity.
+ */
+export interface Invoice {
+  /** "VID-2026-0001", numbered in the order paid. */
+  number: string;
+  issuedAt: string;
+  kind: "document_fee" | "consultation_fee";
+  documentId: string;
+  /** What was paid for: the document's title. */
+  description: string;
+  tier: ReviewTier | null;
+  amount: number;
+}
+
+/** Who an organisation's invoices are made out to. */
+export interface BillingProfile {
+  name: string;
+  /** Kept as the client typed it, trimmed. Never checked against a register. */
+  gstin: string | null;
+}
+
 export const PIPELINE_DURATION_MS = 28000; // 7 layers × 4s each
 
 export const PIPELINE_LAYERS: Record<

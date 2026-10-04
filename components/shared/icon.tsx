@@ -37,6 +37,7 @@ export const ICON_NAMES = [
   "note_add",
   "person",
   "print",
+  "receipt_long",
   "remove",
   "search",
   "send",
