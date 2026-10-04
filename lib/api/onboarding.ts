@@ -1,9 +1,11 @@
 import { mockInvitations, type Invitation } from "@/lib/mock/invites.mock";
 import { recordOnboarding, type AdvocateProfile } from "./advocate";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
+import { register, restored } from "./state";
 
-// Which invitations have been used. In-memory, like everything in the preview.
-const used = new Set<string>();
+// Which invitations have been used. Held for this browser tab, like everything in the preview.
+const used = new Set<string>(restored("invitationsUsed"));
+register("invitationsUsed", () => [...used]);
 
 export type InviteLookup =
   | { state: "valid"; invitation: Invitation }

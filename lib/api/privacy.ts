@@ -5,10 +5,12 @@ import { getBillingProfile } from "./billing";
 import { listOrgConsultations } from "./consultations";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { listDocuments } from "./documents";
+import { register, restored } from "./state";
 
 // In-memory, like everything in the preview: it resets on reload. One state
 // per organisation. Training use starts off.
-const states = new Map<string, PrivacyState>();
+const states = new Map<string, PrivacyState>(restored("privacy"));
+register("privacy", () => [...states]);
 
 function stateOf(orgId: string): PrivacyState {
   let state = states.get(orgId);

@@ -381,7 +381,9 @@ Test: `consultations.test.ts` (29 tests), grouped as "requesting a consultation"
 
 ## 9. What the mock fakes that a backend must persist
 
-Everything below lives in memory or in the browser and **resets on reload**.
+Everything below lives in memory or in the browser. It is kept in this tab's
+`sessionStorage` (section 9.1) so a refresh does not wipe a demo, and it **dies with
+the tab**. None of it is a real store.
 
 | What | Where in the mock | What the backend does |
 |---|---|---|
@@ -391,7 +393,7 @@ Everything below lives in memory or in the browser and **resets on reload**.
 | **Deletion request** | `privacy.ts` › `requestDeletion` | Persist the request and its first time. What deletion removes and keeps is pending counsel (`lib/config/privacy.ts` › `DELETION_SCOPE`): the sign-off record and audit trail are meant to be immutable (SRD §4.3), and whether a settled document itself is removed is undecided. |
 | **Cookie consent** | `localStorage["vidhata-preview-consent"]` (`lib/config/consent.ts`) | Decline is the default and nothing non-essential runs before "accepted". Store the answer server-side if consent must be provable. The banner and its copy are marked for revision when analytics or any other tool is added. |
 | **Sessions** | `localStorage["vidhata-preview-role"]`, `{ "role", "at" }` (`lib/session.tsx`, `lib/session-expiry.ts`) | **Presentation only, no authority.** The server returns the same shell for every route. The portal gate and the not-authorised and session-ended screens are mirrors of a decision the backend must make on every request from a verified session: a client asking for an advocate resource, or an advocate asking for a client one, gets the same response whether the target exists or not. The preview session lasts `SESSION_LIFETIME_MS` (a working day). |
-| **Advocate margin notes** | `localStorage["vidhata-advocate-notes"]` (`lib/api/notes.ts`) | Persist scoped by the **authenticated** advocate, never by an id the page supplies. Never visible to a client, not findings, no state, no part of sign-off. The planned settlement notes (D6) are a different kind, released only at sign-off. |
+| **Advocate margin notes** | the tab state (`lib/api/notes.ts`; `localStorage` before the persistence batch) | Persist scoped by the **authenticated** advocate, never by an id the page supplies. Never visible to a client, not findings, no state, no part of sign-off. The planned settlement notes (D6) are a different kind, released only at sign-off. |
 | **Onboarding** | `onboarding.ts`, `advocate.ts` | An invitation is single-use and expires. The password is a stand-in, never stored, so a real identity provider replaces that step. Declared conflicts merge into the one list the claim check reads. Onboarding assigns nothing: advocates claim. Nothing about an advocate is public, ranked, rated or searchable. |
 | **Billing profile** | `billing.ts` › `profiles` | Persist per organisation. |
 | **Corpus-review log** | `corpusReviewLoggedAt` on the document | Persist. Advocate-only. |
@@ -407,7 +409,27 @@ backend inherits; each is a thing to build or replace:
 - The document agent (`lib/mock/chat.mock.ts`) and the review agent (`lib/mock/review-agent.mock.ts`). The document agent explains the settled text and never advises. The review agent reads the first pass back and never decides.
 - `readBrief` (`lib/api/brief.ts`), which reads what a brief states and guesses nothing, the state of execution above all.
 - The contact form and the advocate invitation request (`contact.ts`, `advocate-invite.ts`) send nothing.
-- The preview banner promises exactly this: "Sample data, nothing is saved or sent."
+- The preview banner says what is true of all of it: "Sample data, kept in this browser tab only. Nothing is sent."
+
+### 9.1 The tab state, and what it must never become
+
+`lib/api/state.ts` writes every mock store to one `sessionStorage` key
+(`vidhata-preview-state`) after each mock call, and on page hide. It reads it back
+when the page loads. Rules, each held by `lib/api/state.test.ts`:
+
+- **Per tab.** `sessionStorage`, not `localStorage`: it dies with the tab and two tabs never share it. "Reset demo data" in the preview banner clears it.
+- **Versioned.** The stored state carries `SCHEMA_VERSION` and a fingerprint of the fixtures, the corpus and the prices it was built from. Any mismatch discards **everything**, not a part, because the slices refer to one another.
+- **Safe to read.** A value that is not JSON, or not the shape expected, is discarded and the fixtures are used. It never crashes a screen.
+- **JSON only.** A time is an ISO string and stays one. No store holds a `Date`.
+- **Same rules after a restore.** A restored paid document paid again makes no second payment; a restored consultation request, payment and answer stay one each. `?fail=1` behaves exactly as before.
+
+**A real backend keeps the consultation question and answer out of anything the
+client can store.** In the mock they are in the tab state, in plain text, because
+the mock is a single tab with no one else to read it. A real client must not keep
+them in `localStorage`, `sessionStorage`, IndexedDB or a cookie, nor in any cache
+or log the browser keeps beyond the request. The same goes for the settled text
+of a document, the advocate's notes, and anything else section 4 restricts: the
+tab state is a demo convenience and **not a model for client storage**.
 
 ## 10. Required behaviour that no screen exercises yet
 

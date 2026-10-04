@@ -1,6 +1,16 @@
+import { scheduleSave } from "./state";
+
 export function randomDelay(minMs = 600, maxMs = 1200): Promise<void> {
   const ms = minMs + Math.random() * (maxMs - minMs);
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve();
+      // The function waiting on this runs next, and changes what it is going
+      // to change. The save is queued behind it, so what a mock call does
+      // after its wait is stored without the call having to say so.
+      scheduleSave();
+    }, ms);
+  });
 }
 
 export class MockApiError extends Error {

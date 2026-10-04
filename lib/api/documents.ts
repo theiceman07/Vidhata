@@ -9,7 +9,6 @@ import type {
 } from "@/lib/types";
 import { PIPELINE_DURATION_MS, clauseNumberFromReference } from "@/lib/types";
 import { mockDocuments } from "@/lib/mock/documents.mock";
-import { mockVersions } from "@/lib/mock/versions.mock";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { recheckCitation, recheckFindings } from "@/lib/citations";
 import { declaredConflictWith } from "@/lib/conflicts";
@@ -20,6 +19,7 @@ import { revisionBlockedReason, revisionCycle } from "@/lib/revisions";
 import { assignReviewTier } from "@/lib/triage";
 import { declaredConflictNames } from "./advocate";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
+import { register, restored } from "./state";
 
 // QA 7.3: tier ordering used to sort the advocate queue, so the pricing
 // page's "Priority turnaround" claim (Enhanced/Senior tiers) is backed by
@@ -97,13 +97,15 @@ function buildExecutionSteps(doc: ContractDocument): ExecutionStep[] {
 
 // In-memory mutable store so adjudication/claim/sign-off actions persist
 // for the duration of the tab. Resets on reload — there is no backend yet.
-let store: ContractDocument[] = structuredClone(mockDocuments);
+let store: ContractDocument[] = restored("documents");
+register("documents", () => store);
 
 // Snapshots of drafts as they were handed on. They are written at hand-off
 // points only (see DocumentVersion), never on every edit, and kept apart from
 // the documents so list and queue reads stay light. Documents seeded before
 // snapshots existed have none.
-const versionStore: DocumentVersion[] = structuredClone(mockVersions);
+const versionStore: DocumentVersion[] = restored("versions");
+register("versions", () => versionStore);
 
 function recordVersion(doc: ContractDocument, createdBy: VersionCreatedBy): void {
   if (versionStore.some((v) => v.documentId === doc.id && v.number === doc.version)) {

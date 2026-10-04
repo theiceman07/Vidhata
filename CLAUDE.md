@@ -96,8 +96,13 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
   (measured), so ink uses light noise.
 - No visible scrollbars anywhere (globals.css).
 - Preview chrome: every signed-in page carries PreviewBanner ("Preview. Sample
-  data, nothing is saved or sent.", in the shell, not dismissible), so UI copy
-  must not say something was saved or sent. Both portals open through
+  data, kept in this browser tab only. Nothing is sent.", in the shell, not
+  dismissible, with "Reset demo data"), so UI copy must not say something was
+  sent. The mock stores are written to sessionStorage (lib/api/state.ts,
+  versioned by a fingerprint of the fixtures) so a refresh keeps the demo and
+  the tab ends it. A new store registers there; change a stored shape and bump
+  SCHEMA_VERSION. It holds the consultation text, which is fine for a mock and
+  a thing a real client must never store. Both portals open through
   PortalGate (components/shared/portal-gate.tsx): an ended session (a working
   day, lib/session-expiry.ts) and a wrong-portal account each get one screen
   before any page mounts, the same for an address that exists and one that does

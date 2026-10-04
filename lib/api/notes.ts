@@ -1,33 +1,25 @@
 import type { AdvocateNote } from "@/lib/types";
 import { MockApiError, randomDelay } from "./delay";
+import { register, restored } from "./state";
 
 /**
  * An advocate's margin notes.
  *
  * Private to the advocate who wrote them: every call is scoped to one
- * advocate, and nothing here is ever read on the client side. Until the
- * backend lands the notes live in this browser's localStorage, so they
- * survive a reload. A real backend must scope them by the authenticated
- * advocate, never by an id the page supplies.
+ * advocate, and nothing here is ever read on the client side. A real backend
+ * must scope them by the authenticated advocate, never by an id the page
+ * supplies.
  */
-const STORAGE_KEY = "vidhata-advocate-notes";
+// Held for this browser tab with the rest of the preview's data (lib/api/state),
+// so they survive a refresh and die with the tab. They used to be in
+// localStorage, which kept them for days and across tabs.
+let notes: AdvocateNote[] = restored("notes");
+register("notes", () => notes);
 
-function readAll(): AdvocateNote[] {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as AdvocateNote[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeAll(notes: AdvocateNote[]) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
-  } catch {
-    // Storage unavailable: the note lasts for this page only.
-  }
-}
+const readAll = () => notes;
+const writeAll = (next: AdvocateNote[]) => {
+  notes = next;
+};
 
 export async function listNotes(
   documentId: string,

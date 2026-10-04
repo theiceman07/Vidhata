@@ -1,11 +1,12 @@
-import { advocateProfileSeed } from "@/lib/mock/advocate.mock";
 import type { AdvocateEnrolment } from "@/lib/types";
 import { randomDelay, MockApiError, shouldSimulateFailure } from "./delay";
+import { register, restored } from "./state";
 
 // In-memory mutable store, same pattern as lib/api/documents.ts. Resets on
 // reload — there is no backend yet. QA 3.6: this used to be untracked
 // useState inside the profile page, so it had no effect on the queue.
-const profile = structuredClone(advocateProfileSeed);
+const profile: AdvocateProfile = restored("advocate");
+register("advocate", () => profile);
 
 export interface AdvocateProfile {
   available: boolean;

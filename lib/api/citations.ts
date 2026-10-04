@@ -1,5 +1,6 @@
 import { lookupCitation, type BlockedReason, type CitationLookup } from "@/lib/citations";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
+import { register, restored } from "./state";
 
 /**
  * One time an advocate typed a citation and the gate ran on it.
@@ -26,7 +27,8 @@ export interface CitationAttempt {
 
 // In-memory, like the rest of the mock layer: it resets on reload, and a
 // real backend would write each one as an event.
-const attempts: CitationAttempt[] = [];
+const attempts: CitationAttempt[] = restored("citationAttempts");
+register("citationAttempts", () => attempts);
 
 /** Run a typed citation through the gate, and record that it was tried. */
 export async function checkCitation(args: {

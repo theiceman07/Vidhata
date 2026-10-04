@@ -4,10 +4,12 @@ import type { BillingProfile, Invoice } from "@/lib/types";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { listOrgConsultations } from "./consultations";
 import { listDocuments } from "./documents";
+import { register, restored } from "./state";
 
 // In-memory, like everything in the preview: it resets on reload, and nothing
 // is sent anywhere. One profile per organisation.
-const profiles = new Map<string, BillingProfile>();
+const profiles = new Map<string, BillingProfile>(restored("billing"));
+register("billing", () => [...profiles]);
 
 function profileOf(orgId: string): BillingProfile {
   let profile = profiles.get(orgId);

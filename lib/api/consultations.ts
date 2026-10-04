@@ -6,9 +6,11 @@ import type {
 } from "@/lib/types";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { getDocument } from "./documents";
+import { register, restored } from "./state";
 
 // In-memory, like everything in the preview: it resets on reload.
-let store: Consultation[] = [];
+let store: Consultation[] = restored("consultations");
+register("consultations", () => store);
 
 /** Long enough for a real question, short enough that it is one. */
 export const MAX_QUESTION_LENGTH = 1500;
