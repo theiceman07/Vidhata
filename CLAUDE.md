@@ -92,7 +92,21 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
   tier: screening assigns it after the first pass (lib/triage.ts), and
   every price lives in lib/config/pricing.ts. The nav holds Pricing and Sign in only, floats with no strip behind it,
   and changes tone with scroll (mark dark bands data-nav-tone="dark").
+- An ink band takes `tile-grain tile-grain-ink`: dark noise cannot show on ink
+  (measured), so ink uses light noise.
 - No visible scrollbars anywhere (globals.css).
+- Preview chrome: every signed-in page carries PreviewBanner ("Preview. Sample
+  data, nothing is saved or sent.", in the shell, not dismissible), so UI copy
+  must not say something was saved or sent. Both portals open through
+  PortalGate (components/shared/portal-gate.tsx): an ended session (a working
+  day, lib/session-expiry.ts) and a wrong-portal account each get one screen
+  before any page mounts, the same for an address that exists and one that does
+  not. global-error.tsx has its own html and body. The consent banner declines
+  by default and lib/config/consent.ts must be revised when any analytics or
+  other tool is added.
+- Below lg the review workspace is not height-bound: it stacks, and the clauses
+  and findings dropdown opens above the contract. The client portal works at
+  768px.
 - Portals: the rail tucks away like Arc's sidebar. At rest it is a sliver
   of the ink capsule at the left edge; pointing at it or tabbing into it
   opens it in full (the Vidhata wordmark, search, sections, identity) and

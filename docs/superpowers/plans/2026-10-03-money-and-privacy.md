@@ -226,6 +226,37 @@ vendor agreement, which is not signed off, shows "Not available yet" on both
 the summary and the delivery with no title or content. `?fail=1` gives the
 error state with a retry on both, and clears.
 
+## The F pass (4 Oct)
+
+Done in the order set: the stamp-duty removal first, as its own commit because it
+changes a product claim, then F5, F1, F2, F3, F6, F4, and the grain-band check.
+Each was checked in a real browser (headless Chromium, with axe-core for F5).
+
+| What | Commit | What it did |
+|---|---|---|
+| Stamp duty | `17c815f` | The ten-state table, the "Rs 100" fallback, the MSA registration threshold and its Section 17 reason are gone. A generated checklist says the amount depends on the state of execution and the instrument and that the advocate confirms it, and that the advocate confirms whether registration applies. The settled NDA keeps "Rs 100 (Delhi)" as a labelled sample entry, and the landing page labels its fragments "Example". A test (`lib/api/checklist.test.ts`) runs documents through to sign-off and fails on any rupee figure or section citation in a generated checklist. Counsel list gained the state schedule and registration rules as a build task. |
+| Small points | `22d339e` | The working control is "Print this page (browser)"; the disabled PDF and Word buttons keep their note. A document with no summary says "No summary has been prepared for this document." |
+| F5 accessibility | `1fc9310` | Every adjudication button names its finding and clause. The chat inputs, the queue search and the proof file inputs carry explicit names. One `main` per page (the workspace's was nested in the shell's). No skipped heading levels. The legal pages have a `main`. Inline links are underlined so colour is not the only cue. Small tap targets enlarged. Faded neighbour clauses on the landing page meet 4.5:1. Severity, citation status and the change markers (Added, Removed, Changed, Round) were already a word beside any colour or icon. |
+| F1 preview banner | `e046816` | "Preview. Sample data, nothing is saved or sent." on its own row above every signed-in page, not dismissible, not printed. The pay and consultation toasts and labels no longer say "saved" or "sent" (`222659e`). |
+| F2, F3 | `75c6a24` | A preview session lasts a working day (`lib/session-expiry.ts`, one value). When it ends, the portal says so and links to the sign-in page of the portal the session was in. A client on an advocate address or an advocate on a client address gets one screen before any page mounts, identical for an address that exists and one that does not (checked on a real and a made-up document id, both directions). `global-error.tsx` carries its own html and body, brand fonts and a retry, and was seen rendering in a production build with a forced layout failure. The consent banner defaults to declining and says the preview sets no cookies beyond what the site needs; `lib/config/consent.ts` is marked for revision, and a test is the reminder, when analytics or another tool is added. |
+| F6 responsive | `5b73dbb` | Every client page, including history, billing, consultation, delivery and privacy, has no horizontal overflow at 768px. Fixed: the intake wizard (steps stack above the form until xl), a clause with a finding (grid track sized to its content), and the workspace height bound, which collapsed the clauses and findings dropdown to 1px between 768 and 1023. Below 1024 the review stacks, the dropdown opens, and a chosen finding opens as a sheet. The mobile header is opaque behind its pill, which was the greeting clip. |
+| F4 `?fail=1` | `d8506ce` | See the table. One fix: the billing pages said "Could not load your consultation requests"; they now say "Could not load your invoices." |
+| Grain bands | `2c461d9` | Measured in a browser: grain moves a parchment pixel by 7 to 8 levels and the pale accent band by 6, but an ink pixel by 0.8, so the ink footer had none and the ink accountability band never had the class. Both use a light-noise variant, about 6 levels. |
+
+### `?fail=1` on every page
+
+No page crashes or shows a blank screen. A page either shows an error state with
+a retry, or makes no API call when it loads and so renders as normal.
+
+| Result | Pages |
+|---|---|
+| Error state with a retry | `/documents`, `/documents/[id]` (all four states and a made-up id), `…/checklist`, `…/history`, `…/chat`, `…/consultation`, `…/delivery`, `…/summary`, `/billing`, `/billing/[id]` (existing and unknown), `/settings/privacy`, `/advocate-onboarding/[token]` (valid, expired, unknown), `/queue`, `/consultations`, `/review/[id]` (two documents and a made-up id), `/review/[id]/sign-off` |
+| Renders, no call on load | `/`, `/login`, `/advocate-login`, `/pricing`, `/privacy`, `/terms`, `/contact`, `/security`, `/scope`, `/contracts`, `/advocate-invite`, `/dev/components`, `/settings`, `/new`, `/profile`, the 404 page |
+| Redirects | `/dashboard` to `/documents` (renders), `/lawyer-login` to `/advocate-login` |
+
+Not covered by this table: actions after load (claim, settle, pay, answer),
+which have their own failure paths and tests.
+
 ### Decisions made while building
 
 - The export includes the client's own consultation questions, deliberately:
@@ -267,8 +298,27 @@ error state with a retry on both, and clears.
   page labels it "Example", and a test fails on any rupee figure in a generated
   checklist. Section 17 may return only with a rule built from the audited
   schedule.
-- The settled document page keeps its working "Save as PDF" (the browser's
-  print), while the delivery view says PDF downloads are not enabled. Both are
-  true, but a reader could find it inconsistent. Decide whether to keep one.
+- **Decided:** the settled document page's working control is now "Print this
+  page (browser)", so it does not read as a product download, and the disabled
+  PDF and Word buttons keep their note.
 - Summaries exist only for the two settled NDAs. A document signed off in the
-  preview (the MSA, the employment agreement) has none and says so.
+  preview (the MSA, the employment agreement) has none and now says "No summary
+  has been prepared for this document", which is fine for the preview.
+- The preview is a preview in the strict sense: sessions last a working day, the
+  consent banner records an answer nothing reads yet, and the real backend must
+  authorise every request itself. None of the session code is authority.
+
+### Remaining after the F pass
+
+None of these blocks a demo.
+
+- B5, E1, E2, C2, C10, D9, as numbered in the fix list.
+- C9, the acceptance notification, and D10, the payout statement, both
+  described above.
+- The chat batch, built with the settlement notes (D6): two kinds of advocate
+  note. Private working notes stay as they are (MarginNote). Settlement notes
+  are a deliberate per-clause note marked "share with client", released only at
+  sign-off, which the chat agent grounds on and nothing else. An advocate must
+  not be able to release one by accident. Building it means updating CLAUDE.md
+  to define both kinds and revisiting the rule that the client sees
+  dispositions but not notes.
