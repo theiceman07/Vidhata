@@ -36,6 +36,13 @@ export interface AuditEntry {
   clause?: string;
   /** An entry about the advocate's own working, which the client's trail leaves out. */
   advocateOnly?: boolean;
+  /**
+   * A decision the client is told of only once the document is signed off.
+   * Before it, a client is told what is raised and never what was decided, so
+   * the shaped trail (lib/api/client/shape-trail.ts) leaves these out. The older
+   * clientAuditTrail does not read this.
+   */
+  afterSignOff?: boolean;
 }
 
 export function buildAuditTrail(doc: ContractDocument): AuditEntry[] {
@@ -100,6 +107,7 @@ export function buildAuditTrail(doc: ContractDocument): AuditEntry[] {
       findingId: null,
       ref: null,
       kind: "decision",
+      afterSignOff: true,
     });
   }
 
@@ -128,6 +136,7 @@ export function buildAuditTrail(doc: ContractDocument): AuditEntry[] {
         findingId: finding.findingId,
         ref,
         kind: "decision",
+        afterSignOff: true,
       });
     });
 
@@ -163,6 +172,7 @@ export function buildAuditTrail(doc: ContractDocument): AuditEntry[] {
         findingId: finding.findingId,
         ref,
         kind: "decision",
+        afterSignOff: true,
       });
     }
   });
@@ -242,10 +252,13 @@ export function buildAuditTrail(doc: ContractDocument): AuditEntry[] {
  * changed is saying what it contains. After sign-off the whole record is
  * theirs.
  */
-export function clientAuditTrail(doc: ContractDocument): AuditEntry[] {
+export function clientAuditTrail(
+  doc: ContractDocument,
+  options: { advocateAddedAfterSignOff?: boolean } = {},
+): AuditEntry[] {
   // Built from the client's own view of the document, so finding numbers
   // cannot skip over one the client has not been told about.
-  const view: ContractDocument = { ...doc, findings: clientVisibleFindings(doc) };
+  const view: ContractDocument = { ...doc, findings: clientVisibleFindings(doc, options) };
   // The corpus-review log is the advocate's working record, so it is never
   // the client's, signed off or not.
   const all = buildAuditTrail(view).filter((entry) => !entry.advocateOnly);

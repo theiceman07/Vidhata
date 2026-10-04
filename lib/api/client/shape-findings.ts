@@ -103,7 +103,7 @@ function shapeFinding(
 }
 
 /**
- * The findings a client may read, each under the number it was given, in that
+ * The findings a client may read, each with the number it was given, in that
  * order.
  *
  * A finding the client may know of always has a client number, given when they
@@ -111,22 +111,36 @@ function shapeFinding(
  * turned on after a document was signed off: those findings are then numbered
  * here, after the highest the client has, in the order they were raised. That
  * is worked out and not stored, and is the same each time it is worked out.
+ *
+ * Shared by everything that names a finding to a client, so none of them can
+ * number it differently.
  */
-export function shapeClientFindings(record: ContractDocument, options: ShapeOptions = {}): ClientFinding[] {
+export function numberedForClient(
+  record: ContractDocument,
+  options: ShapeOptions = {},
+): { finding: Finding; number: string }[] {
   const advocateAdded = options.advocateAddedAfterSignOff ?? SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF;
   const doc = asClientReads(record);
-  const signedOff = isSignedOff(doc);
   const visible = clientVisibleFindings(doc, { advocateAddedAfterSignOff: advocateAdded });
 
   const given = visible.flatMap((f) => (f.clientNumber === null ? [] : [f.clientNumber]));
   return visible
-    .map((f) => {
-      let number = f.clientNumber;
+    .map((finding) => {
+      let number = finding.clientNumber;
       if (number === null) {
         number = nextNumber(given);
         given.push(number);
       }
-      return shapeFinding(f, number, signedOff, advocateAdded);
+      return { finding, number };
     })
     .sort((a, b) => Number(a.number) - Number(b.number));
+}
+
+/** The findings a client may read, as the client reads them, under their numbers. */
+export function shapeClientFindings(record: ContractDocument, options: ShapeOptions = {}): ClientFinding[] {
+  const advocateAdded = options.advocateAddedAfterSignOff ?? SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF;
+  const signedOff = isSignedOff(asClientReads(record));
+  return numberedForClient(record, options).map(({ finding, number }) =>
+    shapeFinding(finding, number, signedOff, advocateAdded),
+  );
 }

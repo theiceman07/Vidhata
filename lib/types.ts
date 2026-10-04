@@ -523,7 +523,7 @@ export interface ClientDiff {
  * sign-off the advocate is "Advocate", never a name. No entry about the
  * advocate's own working is in it.
  */
-export type ClientAuditEntry = Omit<AuditEntry, "advocateOnly" | "findingId"> & {
+export type ClientAuditEntry = Omit<AuditEntry, "advocateOnly" | "afterSignOff" | "findingId"> & {
   /** The finding the entry concerned, by its number. Never its id. */
   findingNumber: string | null;
 };
