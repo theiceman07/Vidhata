@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useSession } from "@/lib/session";
 import { MOCK_PREVIEW_CREDENTIALS } from "@/lib/mock/auth.mock";
+import { EXPIRED_INVITE_TOKEN, VALID_INVITE_TOKEN } from "@/lib/mock/invites.mock";
 
 const PREVIEW_MODE = process.env.NEXT_PUBLIC_VIDHATA_PREVIEW_MODE === "1";
 const MAX_ATTEMPTS = 5;
@@ -149,6 +150,24 @@ export default function LawyerLoginPage() {
         <Button type="button" variant="outline" size="lg" className="w-full" onClick={signIn}>
           Use the preview workspace
         </Button>
+
+        <p className="text-center text-meta text-muted-fg">
+          Preview: open a sample invitation,{" "}
+          <Link
+            href={`/advocate-onboarding/${VALID_INVITE_TOKEN}`}
+            className="text-accent hover:underline"
+          >
+            a valid one
+          </Link>{" "}
+          or{" "}
+          <Link
+            href={`/advocate-onboarding/${EXPIRED_INVITE_TOKEN}`}
+            className="text-accent hover:underline"
+          >
+            an expired one
+          </Link>
+          .
+        </p>
       </form>
     </AuthScreen>
   );

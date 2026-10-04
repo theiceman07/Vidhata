@@ -167,6 +167,14 @@ Four systems, each with its own state. Never fold them into one label.
   refuses without it and records conflictDeclaredAt). A name on their own
   declared conflicts that matches a party stops the claim. The verb stays
   "Claim", never "Assigned to you".
+- Onboarding: empanelment is by invitation, so an advocate joins through an
+  invitation link (/advocate-onboarding/[token]; lib/api/onboarding.ts):
+  password (a stand-in, never stored), confirm Bar details, declare conflicts.
+  The declared conflicts are written into the one list the claim check reads
+  (recordOnboarding in lib/api/advocate.ts). It ends at the queue and assigns
+  nothing: advocates claim. Nothing about an advocate is public, ranked,
+  rated or searchable by a client, and the page states no terms of
+  empanelment (they are for counsel to confirm).
 - Revisions: the limit is one value, lib/config/revisions.ts, read through
   revisionCycle() (lib/revisions.ts). At it the case is logged for corpus
   review (advocate trail only, never the client's), no new round can be

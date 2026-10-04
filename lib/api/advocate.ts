@@ -1,4 +1,5 @@
 import { advocateProfileSeed } from "@/lib/mock/advocate.mock";
+import type { AdvocateEnrolment } from "@/lib/types";
 import { randomDelay, MockApiError, shouldSimulateFailure } from "./delay";
 
 // In-memory mutable store, same pattern as lib/api/documents.ts. Resets on
@@ -8,7 +9,35 @@ const profile = structuredClone(advocateProfileSeed);
 
 export interface AdvocateProfile {
   available: boolean;
+  /** The names the claim check reads (declaredConflictNames). */
   declaredConflicts: string[];
+  /** What the advocate confirmed at onboarding, or null. */
+  enrolment: AdvocateEnrolment | null;
+}
+
+/**
+ * Write what onboarding collected. The declared conflicts go into the one list
+ * the claim check reads, merged with any already there, so what an advocate
+ * declares on joining is what stops a claim. Not a screen's to call: the
+ * onboarding API owns the delay, the failure switch and the invitation.
+ */
+export function recordOnboarding(details: {
+  barEnrolmentNumber: string;
+  stateBarCouncil: string;
+  declaredConflicts: string[];
+}): AdvocateProfile {
+  const names = [...profile.declaredConflicts];
+  for (const raw of details.declaredConflicts) {
+    const name = raw.trim();
+    if (name && !names.includes(name)) names.push(name);
+  }
+  profile.declaredConflicts = names;
+  profile.enrolment = {
+    barEnrolmentNumber: details.barEnrolmentNumber.trim(),
+    stateBarCouncil: details.stateBarCouncil.trim(),
+    confirmedAt: new Date().toISOString(),
+  };
+  return structuredClone(profile);
 }
 
 /**

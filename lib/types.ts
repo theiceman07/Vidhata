@@ -258,6 +258,17 @@ export interface Consultation {
   requestedAt: string;
 }
 
+/**
+ * What an advocate confirmed at onboarding about their enrolment. It is
+ * private to the advocate and the platform: nothing public, ranked, rated or
+ * searchable by a client is built from it.
+ */
+export interface AdvocateEnrolment {
+  barEnrolmentNumber: string;
+  stateBarCouncil: string;
+  confirmedAt: string;
+}
+
 /** One change to the client's choice about training use, with when it was made. */
 export interface ConsentEntry {
   at: string;
