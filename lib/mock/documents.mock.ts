@@ -567,6 +567,66 @@ const settledNda2: ContractDocument = {
   findings: [],
 };
 
+// A document the client has not yet paid for: screened and tiered, and not in
+// the advocate queue. It gives the dashboard a document in this state from the
+// first load, with the pay step to show. Fictional parties.
+const awaitingPaymentVendor: ContractDocument = {
+  id: "doc-vendor-awaiting-payment",
+  title: "Vendor Agreement · Orchid Packaging",
+  type: "vendor",
+  status: "awaiting_payment",
+  tier: "enhanced",
+  orgId: MOCK_CLIENT_ORG.id,
+  clientName: "Anaya Textiles Pvt Ltd",
+  counterpartyName: "Orchid Packaging Pvt Ltd",
+  stateOfExecution: "Gujarat",
+  transactionValue: 1800000,
+  counterpartyIsMsme: true,
+  durationMonths: 12,
+  governingLaw: "Laws of India",
+  keyTerms: null,
+  createdAt: "2026-09-30T09:00:00.000Z",
+  version: 1,
+  revisionCount: 0,
+  claimedAt: null,
+  settledAt: null,
+  analysisCompletesAt: null,
+  advocate: null,
+  clauses: vendorClauses,
+  findings: [],
+  executionSteps: [],
+};
+
+// A document taken all the way: signed off, then every step of its execution
+// checklist confirmed. Derived from the settled NDA so its text and sample
+// stamp-duty entry are the same, and the sample is labelled as one.
+const executedNda: ContractDocument = {
+  ...structuredClone(settledNda),
+  id: "doc-nda-executed",
+  title: "Mutual NDA · Prabhat Steel",
+  counterpartyName: "Prabhat Steel Pvt Ltd",
+  status: "executed",
+  createdAt: "2026-08-08T08:00:00.000Z",
+  version: 1,
+  claimedAt: "2026-08-09T10:00:00.000Z",
+  conflictDeclaredAt: "2026-08-09T10:00:00.000Z",
+  payment: paid("standard", "2026-08-08T08:40:00.000Z"),
+  settledAt: "2026-08-11T12:00:00.000Z",
+  executedAt: "2026-08-20T09:00:00.000Z",
+  findings: [],
+  executionSteps: settledNda.executionSteps.map((step) =>
+    step.kind === "esignature"
+      ? {
+          ...structuredClone(step),
+          complete: true,
+          completedAt: "2026-08-20T09:00:00.000Z",
+          completedBy: "Anaya Textiles Pvt Ltd",
+          evidence: { name: "signed-copy.pdf", attachedAt: "2026-08-20T08:55:00.000Z" },
+        }
+      : structuredClone(step),
+  ),
+};
+
 export const mockDocuments: ContractDocument[] = [
   settledNda,
   settledNda2,
@@ -574,6 +634,8 @@ export const mockDocuments: ContractDocument[] = [
   analysingEmployment,
   revisionVendor,
   rereviewEmployment,
+  awaitingPaymentVendor,
+  executedNda,
 ];
 
 export function getMockDocumentById(id: string): ContractDocument | undefined {
