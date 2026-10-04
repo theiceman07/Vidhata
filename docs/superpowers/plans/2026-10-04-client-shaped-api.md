@@ -1,12 +1,15 @@
 # Plan: client-shaped API
 
-Status: phase 1 done as a **proposal** (types and the field matrix test, 4 October
-2026); phases 2 to 6 not started. The types are not agreed with the backend
-team: nobody has yet asked whether they have started the document endpoints or
-which response shapes they assumed. Decided 4 October 2026: the boundary on what a
-client may see belongs in the API and the type system, not in browser
-narrowing. A larger refactor than the rest of the batch, so it is its own pass,
-done before the backend team starts.
+Status: phase 1 done as a **proposal** (types and the field matrix test,
+4 October 2026). Phase 2 done on the branch `client-shaped-api-phase-2`
+(5 October): the shapers and the client reads, built beside the old functions,
+which stay until phase 3. Nothing in `app/` or `components/` reads any of it
+yet. The types are not agreed with the backend team: nobody has yet asked
+whether they have started the document endpoints or which response shapes they
+assumed. Decided 4 October 2026: the boundary on what a client may see belongs
+in the API and the type system, not in browser narrowing. A larger refactor
+than the rest of the batch, so it is its own pass, done before the backend team
+starts.
 
 ## The problem
 
@@ -132,6 +135,70 @@ Consequences for copy, to be done in phase 3: "Farhan Sheikh needs your answer"
 becomes "Your advocate needs your answer", and the client's trail says
 "Advocate" before sign-off.
 
+## Phase 2 as built
+
+Under `lib/api/client/`, each with its tests beside it. Each shaper names every
+field it hands over, so a field added to an internal type is not handed over
+until someone adds it on purpose.
+
+| Module | What it does |
+|---|---|
+| `shape-findings.ts` | `shapeClientFindings`, `numberedForClient`, `signOffRecord`, `asClientReads`. The one place a finding becomes a `ClientFinding`. Reads the advocate-added switch. |
+| `requests.ts` | `getClientRequest(orgId, documentId, number)`: the request addressed to a client, found by its number. Every other case is the same null. |
+| `shape-document.ts`, `documents.ts` | `shapeClientDocument`, `shapeClientSummary`; `getClientDocument`, `listClientDocuments`. The list reads a `ClientDocumentSummary`, which carries no clauses, findings or steps. |
+| `shape-versions.ts`, `versions.ts` | `shapeClientVersionList`, `shapeClientDiff`; `getClientVersions`, `getClientDiff`. Delegates to `lib/clientVersions.ts`, numbering by stored client number. |
+| `shape-trail.ts`, `trail.ts` | `shapeClientTrail`; `getClientTrail`. |
+| `markers.ts` | Test support: collects the strings that must never reach a client. |
+
+What was built to the rules in questions 1 to 5:
+
+- **Stored numbers.** Every `Finding` carries `number` (the document's own) and
+  `clientNumber` (given when the client first may know of it). Both are given by
+  the API: the first pass at hand-off, an advocate-added finding when it is
+  added and again when a request is addressed to it or at sign-off. A caller's
+  own numbers are ignored. `lib/findingNumbers.test.ts` holds the rule over
+  every fixture and snapshot, and `lib/api/finding-numbers.test.ts` holds it
+  over the API. `SCHEMA_VERSION` is 3.
+- **Why two numbers.** One number would leave a gap in what a client sees
+  whenever an advocate-added finding no request is addressed to sits between two
+  they can see, and a gap says something was kept from them. `clientNumber`
+  counts only what they have been shown, so it has none.
+- **Same not-found.** A number never given, a finding kept from the client, one
+  with no request to them, another organisation's document, a document that is
+  not there and a malformed number are one null. The test fails if the
+  organisation check is removed or the lookup uses the document's own number.
+- **Sign-off is a recorded fact.** A document that says it is settled without an
+  advocate and a date on record is read as not signed off, by every shaper.
+  This is the rule `getDelivery` already follows.
+- **The leak test** runs every shaper over every fixture, with the advocate-added
+  switch on and off, searching for rule ids, override notes, withdrawal notes,
+  the organisation id and the advocate's identity. Each shaper was checked by
+  adding a leak and watching its test fail.
+
+Things phase 2 found and changed:
+
+- **The old diff numbering gave one finding two numbers.** On the vendor fixture
+  the same finding is 01 in one comparison and 02 in another, because the diff
+  numbers by position in the drafts it compares. Stored numbers fix it.
+  `clientVersionDiff` gained one optional hook, `numberFor`; without it the old
+  behaviour and its tests are unchanged.
+- **The old client trail told a client what the advocate decided.** Before
+  sign-off it showed "Finding settled", "Blocked source withdrawn" and the
+  advocate's conflict declaration for a finding with a request addressed to the
+  client, and named the advocate in the actor. The shaped trail leaves the
+  decisions out until sign-off and says "Advocate". After sign-off it is the old
+  trail entry for entry. `AuditEntry` gained an optional `afterSignOff` that the
+  old trail ignores.
+- **A client's passage is the draft's own wording.** Before sign-off a finding's
+  passage is null unless a request is addressed to them about it, so a finding
+  the client knows only exists is its number and clause reference.
+- **A latent id collision.** A new document's id came from the clock, so two made
+  in the same millisecond shared one. Fixed, with a test that fails without it.
+
+Not done in phase 2: the answer write (`respondToChanges`) still takes finding
+ids and has no organisation check, and `requestDataExport` still narrows in
+`lib/privacy.ts`. Both move in phase 3.
+
 ## Risks
 
 - **Size.** Eight client routes and a dozen components change. The phases are
@@ -150,7 +217,7 @@ becomes "Your advocate needs your answer", and the client's trail says
 
 ## Questions for you
 
-Questions 1 to 5 answered 4 October 2026. Question 6 is open.
+Questions 1 to 5 answered 4 October 2026. Questions 6 to 8 are open.
 
 1. **Who is the advocate to a client before sign-off?** Today the name is shown
    once a document is claimed ("Farhan Sheikh needs your answer"). Should the
@@ -189,6 +256,15 @@ Questions 1 to 5 answered 4 October 2026. Question 6 is open.
    proposal before you start. The rule is that the server must return
    client-shaped data and never rely on the browser to narrow it. The full rule
    list is in docs/api-contract.md." Their answers go here: _pending_.
+7. **A request the advocate has since settled.** The old screens drop a request
+   from "waiting on you" once the advocate settles its finding, which tells the
+   client a decision was made. The shapers do not: a request counts as waiting
+   until the client answers it. So a client may be asked to answer something the
+   advocate no longer needs. Decide before phase 3 moves the document page:
+   keep it (nothing leaks), or have the advocate withdraw the request when they
+   settle, which is an advocate-side action and not a read.
+8. **A stricter trail.** See "Things phase 2 found". The client's trail before
+   sign-off is now shorter than it was. Say if the old behaviour was meant.
 
 Phase 3 check, from the same decision: after it, no client screen shows an
 advocate's name before sign-off. That includes toasts, notifications (C9) and
