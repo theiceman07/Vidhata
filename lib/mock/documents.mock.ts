@@ -1,4 +1,4 @@
-import type { ContractDocument } from "@/lib/types";
+import type { ContractDocument, ReviewTier } from "@/lib/types";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import {
   ndaClauses,
@@ -9,6 +9,12 @@ import {
   EMPLOYMENT_PLACE_OF_WORK_REWORDED,
 } from "@/lib/mock/clauses.mock";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
+import { TIER_PRICING } from "@/lib/config/pricing";
+
+/** A fee paid at its tier's flat amount, so a fixture cannot disagree with the config. */
+function paid(tier: ReviewTier, paidAt: string) {
+  return { amount: TIER_PRICING[tier].amount, paidAt };
+}
 
 const settledNda: ContractDocument = {
   id: "doc-nda-settled",
@@ -33,6 +39,7 @@ const settledNda: ContractDocument = {
   revisionCount: 0,
   claimedAt: "2026-08-04T10:05:00.000Z",
   conflictDeclaredAt: "2026-08-04T10:05:00.000Z",
+  payment: paid("standard", "2026-08-02T09:50:00.000Z"),
   settledAt: "2026-08-05T14:40:00.000Z",
   analysisCompletesAt: null,
   advocate: { id: "adv-1", name: "Rhea Kapoor", bar: "D/1842/2016" },
@@ -150,6 +157,7 @@ const pendingReviewMsa: ContractDocument = {
   version: 1,
   revisionCount: 0,
   claimedAt: null,
+  payment: paid("enhanced", "2026-09-14T06:40:00.000Z"),
   settledAt: null,
   analysisCompletesAt: null,
   advocate: null,
@@ -296,6 +304,7 @@ const revisionVendor: ContractDocument = {
   revisionCount: 2,
   claimedAt: "2026-09-09T05:45:00.000Z",
   conflictDeclaredAt: "2026-09-09T05:45:00.000Z",
+  payment: paid("standard", "2026-09-08T11:50:00.000Z"),
   settledAt: null,
   analysisCompletesAt: null,
   advocate: { id: "adv-2", name: "Farhan Sheikh", bar: "TN/0932/2019" },
@@ -456,6 +465,7 @@ const rereviewEmployment: ContractDocument = {
   revisionCount: 1,
   claimedAt: "2026-09-23T06:10:00.000Z",
   conflictDeclaredAt: "2026-09-23T06:10:00.000Z",
+  payment: paid("standard", "2026-09-22T10:30:00.000Z"),
   settledAt: null,
   analysisCompletesAt: null,
   advocate: CURRENT_ADVOCATE,

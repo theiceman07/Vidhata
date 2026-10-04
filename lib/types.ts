@@ -1,7 +1,8 @@
 export type DocumentStatus =
   | "draft" // intake done, pipeline not run
   | "analysing" // pipeline running
-  | "pending_review" // in the advocate queue
+  | "awaiting_payment" // screened and tiered; the client has not paid the fee
+  | "pending_review" // in the advocate queue (paid)
   | "under_review" // an advocate has picked it up
   | "revision" // advocate asked for changes
   | "settled" // signed off
@@ -147,6 +148,13 @@ export interface ContractDocument {
    * claim without one is not a claim the product can make.
    */
   conflictDeclaredAt?: string | null;
+  /**
+   * The fixed fee for this document, paid before it reaches an advocate. One
+   * flat amount by tier, covering every revision round, in rupees before GST.
+   * Absent until paid. A document with no payment is not released to the
+   * advocate queue (isReleased in lib/api/documents.ts).
+   */
+  payment?: { amount: number; paidAt: string };
   /**
    * When the revision limit was reached and the case was logged for corpus
    * review (FR-20). Set once, when the last round is sent; null or absent

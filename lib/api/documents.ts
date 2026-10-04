@@ -13,6 +13,7 @@ import { mockVersions } from "@/lib/mock/versions.mock";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { recheckFindings } from "@/lib/citations";
 import { declaredConflictWith } from "@/lib/conflicts";
+import { TIER_PRICING } from "@/lib/config/pricing";
 import { revisionBlockedReason, revisionCycle } from "@/lib/revisions";
 import { assignReviewTier } from "@/lib/triage";
 import { declaredConflictNames } from "./advocate";
@@ -26,6 +27,20 @@ const TIER_PRIORITY: Record<ReviewTier, number> = {
   enhanced: 1,
   standard: 2,
 };
+
+/**
+ * Whether a document has been released to the advocate side: screened and
+ * paid for. Everything an advocate can read (the queue, a link to a review,
+ * a claim) goes through this, so an unpaid or unscreened document is not
+ * there for them, and is no part of any count built from the queue.
+ */
+export function isReleased(doc: Pick<ContractDocument, "status">): boolean {
+  return (
+    doc.status !== "draft" &&
+    doc.status !== "analysing" &&
+    doc.status !== "awaiting_payment"
+  );
+}
 
 // A document with no tier has not been screened, so it is not in the queue
 // yet; it sorts last rather than ahead of work that is.
@@ -157,7 +172,9 @@ function reconcileAnalysis(doc: ContractDocument): void {
   if (doc.status !== "analysing" || !doc.analysisCompletesAt) return;
   if (Date.now() < new Date(doc.analysisCompletesAt).getTime()) return;
 
-  doc.status = "pending_review";
+  // Screening is done and the tier is known, so the client now pays the fixed
+  // fee. Only a paid document is released to the advocate queue.
+  doc.status = "awaiting_payment";
   doc.analysisCompletesAt = null;
   // Screening assigns the review tier from the deal facts; the client does
   // not choose it.
@@ -196,9 +213,12 @@ function reconcileAll(): void {
 
 /**
  * @param orgId When provided, scopes the result to that org only (QA 3.5 —
- *   every client used to see every tenant's documents on one dashboard).
+ *   every client used to see every tenant's documents on one dashboard), and
+ *   returns every document the client has, whatever its state.
  *   Omitted for the advocate queue, which is intentionally cross-org: an
- *   advocate must see documents from every client company.
+ *   advocate must see documents from every client company, and only the ones
+ *   released to the queue. A document still awaiting payment is not in any
+ *   advocate-facing read, so it is in no count or metric built from one.
  */
 export async function listDocuments(
   orgId?: string,
@@ -208,7 +228,9 @@ export async function listDocuments(
     throw new MockApiError("Could not load your documents.");
   }
   reconcileAll();
-  const scoped = orgId ? store.filter((d) => d.orgId === orgId) : store;
+  const scoped = orgId
+    ? store.filter((d) => d.orgId === orgId)
+    : store.filter(isReleased);
   return structuredClone(scoped);
 }
 
@@ -223,6 +245,24 @@ export async function getDocument(
   if (!doc) return null;
   reconcileAnalysis(doc);
   return structuredClone(doc);
+}
+
+/**
+ * A document as an advocate may read it. One that is missing and one that has
+ * not been released to the queue both come back as null, so an advocate who
+ * follows a link to an unpaid document cannot tell it exists.
+ */
+export async function getDocumentForReview(
+  id: string,
+): Promise<ContractDocument | null> {
+  await randomDelay();
+  if (shouldSimulateFailure()) {
+    throw new MockApiError("Could not load this document.");
+  }
+  const doc = store.find((d) => d.id === id);
+  if (!doc) return null;
+  reconcileAnalysis(doc);
+  return isReleased(doc) ? structuredClone(doc) : null;
 }
 
 /**
@@ -410,6 +450,34 @@ export async function startAnalysis(id: string): Promise<ContractDocument> {
 }
 
 /**
+ * The client pays the fixed fee, and the document is released to the advocate
+ * queue. The fee is one flat amount for the tier screening assigned, before
+ * GST, and it covers every revision round.
+ *
+ * Paying twice is not possible: a document that has been paid for comes back
+ * as it is, so a double click makes one payment. A failure leaves the
+ * document awaiting payment, nothing recorded, and the client can try again.
+ */
+export async function payFee(id: string): Promise<ContractDocument> {
+  await randomDelay(400, 800);
+  const doc = store.find((d) => d.id === id);
+  if (!doc) throw new MockApiError("Document not found.");
+  if (doc.payment) return structuredClone(doc);
+  if (doc.status !== "awaiting_payment" || !doc.tier) {
+    throw new MockApiError("This document is not awaiting payment.");
+  }
+  if (shouldSimulateFailure()) {
+    throw new MockApiError("The payment did not go through. Nothing was charged. Try again.");
+  }
+  doc.payment = {
+    amount: TIER_PRICING[doc.tier].amount,
+    paidAt: new Date().toISOString(),
+  };
+  doc.status = "pending_review";
+  return structuredClone(doc);
+}
+
+/**
  * What an advocate affirms when they claim: no conflict of interest with
  * either party. A claim is refused without it, whatever the screen did.
  */
@@ -437,6 +505,10 @@ export async function claimDocument(
   }
   // Already theirs: nothing to claim, and nothing to reset.
   if (doc.advocate?.id === advocate.id) return structuredClone(doc);
+
+  // Only a released document can be claimed. An unpaid one is refused as if
+  // it were not there, so a claim cannot show that it exists.
+  if (!isReleased(doc)) throw new MockApiError("Document not found.");
 
   if (!declaration?.noConflictWithEitherParty) {
     throw new MockApiError(

@@ -69,6 +69,18 @@ export function buildAuditTrail(doc: ContractDocument): AuditEntry[] {
     });
   }
 
+  // The fact of payment, never the amount: that is on billing.
+  if (doc.payment) {
+    entries.push({
+      at: doc.payment.paidAt,
+      actor: doc.clientName,
+      action: "Fee paid",
+      findingId: null,
+      ref: null,
+      kind: "event",
+    });
+  }
+
   if (doc.claimedAt && doc.advocate) {
     entries.push({
       at: doc.claimedAt,

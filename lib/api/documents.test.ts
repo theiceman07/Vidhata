@@ -1,16 +1,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { lookupCitation } from "../citations";
+import { TIER_PRICING } from "../config/pricing";
 import { MAX_REVISION_CYCLES } from "../config/revisions";
 import { revisionCycle } from "../revisions";
 import { addDeclaredConflict, removeDeclaredConflict } from "./advocate";
 import {
   claimDocument,
+  createDraftDocument,
   getDocument,
+  getDocumentForReview,
   getDocumentVersions,
+  isReleased,
+  listDocuments,
+  payFee,
   requestChange,
   respondToChanges,
   updateFinding,
 } from "./documents";
+
+// The mock layer's failure switch (?fail=1 in a browser), set by a test.
+const failure = vi.hoisted(() => ({ on: false }));
+vi.mock("./delay", async (importOriginal) => {
+  const original = await importOriginal<typeof import("./delay")>();
+  return { ...original, shouldSimulateFailure: () => failure.on };
+});
 
 // The corpus without the MSMED s.15 entry. The fixture's finding cites it as
 // verified, so if the first-pass snapshot comes out blocked, the gate really
@@ -155,7 +168,8 @@ describe("the snapshot written when the first pass finishes", () => {
     // Seeded as analysing, with the finish time already in the past, so
     // reading it completes the first pass.
     const doc = await settle(getDocument("doc-employment-analysing"));
-    expect(doc?.status).toBe("pending_review");
+    // Screening is done and the tier is known, so it now awaits the fee.
+    expect(doc?.status).toBe("awaiting_payment");
 
     const versions = await settle(getDocumentVersions("doc-employment-analysing"));
     expect(versions).toHaveLength(1);
@@ -196,5 +210,117 @@ describe("the snapshot written when the first pass finishes", () => {
     await settle(getDocument("doc-employment-analysing"));
     const versions = await settle(getDocumentVersions("doc-employment-analysing"));
     expect(versions).toHaveLength(1);
+  });
+});
+
+// Last in the file on purpose: these pay for the employment fixture, which the
+// first-pass tests above read while it still awaits payment.
+describe("releasing a document to the advocate queue", () => {
+  const id = "doc-employment-analysing";
+
+  it("is not released while it awaits payment, whatever its tier", async () => {
+    const doc = await settle(getDocument(id));
+    expect(doc?.status).toBe("awaiting_payment");
+    expect(doc?.tier).toBe("senior");
+    expect(doc?.payment).toBeUndefined();
+    expect(isReleased(doc!)).toBe(false);
+  });
+
+  it("knows which states are released", () => {
+    expect(isReleased({ status: "draft" })).toBe(false);
+    expect(isReleased({ status: "analysing" })).toBe(false);
+    expect(isReleased({ status: "awaiting_payment" })).toBe(false);
+    for (const status of ["pending_review", "under_review", "revision", "settled", "executed"] as const) {
+      expect(isReleased({ status })).toBe(true);
+    }
+  });
+
+  it("is in the client's own list but in no advocate-facing read", async () => {
+    const advocateView = await settle(listDocuments());
+    expect(advocateView.some((d) => d.id === id)).toBe(false);
+    // And so in no count or metric built from the queue.
+    expect(advocateView.every(isReleased)).toBe(true);
+
+    const clientView = await settle(listDocuments("org-trivandrum-cloud-labs"));
+    expect(clientView.some((d) => d.id === id)).toBe(true);
+  });
+
+  it("looks the same to an advocate following a link as a document that does not exist", async () => {
+    const unpaid = await settle(getDocumentForReview(id));
+    const missing = await settle(getDocumentForReview("doc-does-not-exist"));
+    expect(unpaid).toBeNull();
+    expect(missing).toBeNull();
+  });
+
+  it("cannot be claimed, and the refusal is the one for a document that does not exist", async () => {
+    const refusal = async (docId: string) => {
+      const claim = claimDocument(docId, advocate, declaration);
+      const caught = claim.then(
+        () => null,
+        (e: Error) => e.message,
+      );
+      await vi.runAllTimersAsync();
+      return caught;
+    };
+    expect(await refusal(id)).toBe("Document not found.");
+    expect(await refusal("doc-does-not-exist")).toBe("Document not found.");
+    expect((await settle(getDocument(id)))?.advocate).toBeNull();
+  });
+
+  it("is left awaiting payment when the payment fails, and the client can try again", async () => {
+    failure.on = true;
+    const attempt = payFee(id);
+    const failed = expect(attempt).rejects.toThrow(/Nothing was charged/);
+    await vi.runAllTimersAsync();
+    await failed;
+    failure.on = false;
+
+    const after = await settle(getDocument(id));
+    expect(after?.status).toBe("awaiting_payment");
+    expect(after?.payment).toBeUndefined();
+
+    const retried = await settle(payFee(id));
+    expect(retried.status).toBe("pending_review");
+  });
+
+  it("is paid once, at its tier's flat fee, however many times Pay is pressed", async () => {
+    // The fixture was paid by the retry above. A second and a third press come
+    // back with the same single payment.
+    const first = payFee(id);
+    const second = payFee(id);
+    await vi.runAllTimersAsync();
+    const [a, b] = await Promise.all([first, second]);
+    expect(a.payment).toEqual(b.payment);
+    expect(a.payment?.amount).toBe(TIER_PRICING.senior.amount);
+    expect(a.status).toBe("pending_review");
+  });
+
+  it("is released once paid: in the advocate's reads, and open to a link", async () => {
+    const doc = await settle(getDocumentForReview(id));
+    expect(doc?.status).toBe("pending_review");
+    expect(isReleased(doc!)).toBe(true);
+    expect((await settle(listDocuments())).some((d) => d.id === id)).toBe(true);
+  });
+
+  it("refuses to take a fee for a document that is not awaiting payment", async () => {
+    const draft = await settle(
+      createDraftDocument({
+        title: "NDA",
+        type: "nda",
+        clientName: "Anaya Textiles Pvt Ltd",
+        counterpartyName: "Someone Pvt Ltd",
+        stateOfExecution: "Delhi",
+        transactionValue: 0,
+        counterpartyIsMsme: false,
+        durationMonths: 12,
+        governingLaw: "Laws of India",
+        keyTerms: "",
+      }),
+    );
+    expect(draft.status).toBe("draft");
+    const attempt = payFee(draft.id);
+    const refused = expect(attempt).rejects.toThrow(/not awaiting payment/);
+    await vi.runAllTimersAsync();
+    await refused;
   });
 });

@@ -166,6 +166,19 @@ Four systems, each with its own state. Never fold them into one label.
   review (advocate trail only, never the client's), no new round can be
   requested (the API refuses too), and asking for more in a round already
   open is still allowed. It never blocks settling or sign-off.
+- Payment: screening ends in awaiting_payment, and the client pays one flat
+  fee for the tier screening assigned. Only a paid document is released
+  (isReleased, lib/api/documents.ts): the advocate reads (the queue, a link to
+  /review/[id], claim) refuse an unpaid one exactly as they refuse a missing
+  id, so an advocate cannot tell it exists, and it is in no advocate-facing
+  count or metric. Fees are numbers in lib/config/pricing.ts, quoted "before
+  GST", covering every revision round. Never a percentage, share or any figure
+  that reads as part of legal fees (BCI fee-sharing rules, Architecture §8).
+  The payment step is a plainly fake "Pay (preview)": no card, UPI or bank
+  inputs, not even disabled. Pay is idempotent, and a failure leaves the
+  document awaiting payment with a retry. The client sees, before paying, only
+  the tier, the fee and the deal facts behind the tier, never a reason drawn
+  from findings.
 
 ## Design
 - Fill the screen. Pages use the full width they are given, not a narrow

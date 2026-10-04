@@ -147,3 +147,35 @@ queue showing nothing for an unpaid one.
 3. **Revisions are in the fee.** A document's fee covers all its revision rounds, up to the cap. Confirm.
 4. **What deletion keeps.** The list above is mine, apart from the sign-off record and audit trail, which come from the SRD. Invoices and payment records being kept is a proposal. It ships marked for counsel to confirm.
 5. **Not in this batch.** Cancelling an unpaid document, refunds, and the advocate's consultation inbox (D7).
+
+## Decisions after review (3 Oct)
+
+These replace anything above that they contradict.
+
+| Question | Decision |
+|---|---|
+| GST | Amounts before GST everywhere, with no computed tax: the pricing page, the consultation fee, the pay screen and billing all say "before GST" (`PRICE_BASIS`). GSTIN is optional and unvalidated. A real invoice needs a proper tax breakup: open item for the accountant. |
+| Consultation fee | Charged on acceptance, not on request. A request is free and stored as `requested`, saying "Fee payable if the advocate accepts". The charge step arrives with the advocate inbox (D7). There is no "not charged" or refund state. A `Consultation` record carries no payment and no invoice number in this batch. |
+| Revisions in the fee | Up to the cap of 3, nothing extra is charged. Past the cap, nothing extra is charged and the case is logged for corpus review as before. |
+| What delete keeps | As planned, and the consent and opt-in log is added to the kept records, since it is the proof a revocation happened. Marked for counsel. |
+| Unpaid documents | They have no exit yet (no cancel, no refund), so they will pile up. They appear in no advocate-facing read, count or metric. |
+| Direct URL to an unpaid document | `/review/[id]` and sign-off read through `getDocumentForReview`, which returns null for an unpaid document exactly as for a missing id, so the page is the same not-found state. Claiming one is refused with the same "Document not found." |
+| What the client sees before paying | The assigned tier, the fee, and the deal facts the mock triage rule uses (type, value, MSME counterparty). No "why this tier" drawn from findings: in the real Layer 6 severity feeds the score, so the reason could reveal findings. |
+| Payment robustness | `payFee` is idempotent: a document with a payment comes back as it is, so a double press makes one payment. Under `?fail=1` it fails with the document left awaiting payment and nothing recorded, and the client can retry. |
+| Invoice numbers | Not stored. `invoicesFor()` numbers an organisation's payments in the order paid, so the number cannot drift from the record. `payment` is therefore `{ amount, paidAt }`. |
+| `rupees()` | Lives in `lib/config/pricing.ts` with the amounts, not in `lib/billing.ts`, so the config can derive its own display strings without a cycle. |
+| Consultation invoice | The consultation is a legal service by the advocate's entity, and the platform's revenue must stay a flat technology fee (Architecture §8). Issuer and wording for a consultation invoice need counsel. The platform fee and the consultation fee are separate lines with separate labels. |
+| Guards | The fee-words and card-words guards (`lib/fees.test.ts`) cover the pricing config, the pricing table and the escalation prompt as well as the payment and billing files. |
+| Build order | Commits 0, 1, 2, then a browser pass in both portals: the client walk, then as an advocate, confirming the unpaid document is absent from the queue and a direct URL to it shows not-found. Commits 3 and 4 follow. |
+
+## Counsel and accountant list
+
+- Wording of the consultation invoice and who issues it.
+- A proper GST tax breakup on invoices (accountant).
+- The deletion scope: what is removed and what is kept, including invoices, payment records, the sign-off record, the audit trail and the consent log.
+- The security page and training opt-in wording.
+
+## Open items
+
+- Unpaid documents have no exit: no cancel, no refund.
+- The consultation charge step, with the advocate inbox (D7).

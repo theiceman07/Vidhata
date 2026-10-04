@@ -14,7 +14,14 @@ describe("what ran on a document", () => {
   });
 
   it("is every layer, in order, once it has", () => {
-    for (const status of ["pending_review", "under_review", "revision", "settled"] as const) {
+    // Screening is done once a document awaits payment, so every layer ran.
+    for (const status of [
+      "awaiting_payment",
+      "pending_review",
+      "under_review",
+      "revision",
+      "settled",
+    ] as const) {
       expect(layersRun(at(status))).toEqual([0, 1, 2, 3, 4, 5, 6]);
     }
   });

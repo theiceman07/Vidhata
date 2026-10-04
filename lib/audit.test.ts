@@ -39,6 +39,20 @@ describe("the activity trail before sign-off", () => {
   });
 });
 
+describe("the fee in the trail", () => {
+  it("records that it was paid, and never the amount", () => {
+    const entry = buildAuditTrail(vendor).find((e) => e.action === "Fee paid")!;
+    expect(entry.at).toBe(vendor.payment!.paidAt);
+    expect(JSON.stringify(entry)).not.toMatch(/₹|amount|4,?999/);
+    expect(clientAuditTrail(vendor).some((e) => e.action === "Fee paid")).toBe(true);
+  });
+
+  it("says nothing of it for a document with no payment", () => {
+    const unpaid: ContractDocument = { ...vendor, payment: undefined };
+    expect(buildAuditTrail(unpaid).some((e) => e.action === "Fee paid")).toBe(false);
+  });
+});
+
 describe("the claim", () => {
   const declared = "Declared no conflict of interest with either party";
 

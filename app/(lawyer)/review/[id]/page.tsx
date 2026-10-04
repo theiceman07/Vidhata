@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   addFinding,
   claimDocument,
-  getDocument,
+  getDocumentForReview,
   getDocumentVersions,
   requestChange,
   updateFinding,
@@ -56,7 +56,7 @@ export default function ReviewPage() {
     setState("loading");
     try {
       const [result, profile, ownNotes, drafts] = await Promise.all([
-        getDocument(params.id),
+        getDocumentForReview(params.id),
         getAdvocateProfile(),
         listNotes(params.id, CURRENT_ADVOCATE.id),
         getDocumentVersions(params.id),

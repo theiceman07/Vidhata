@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { getDocument, signOffDocument } from "@/lib/api/documents";
+import { getDocumentForReview, signOffDocument } from "@/lib/api/documents";
 import { signOffBlockers } from "@/lib/findings";
 import { buildAuditTrail } from "@/lib/audit";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
@@ -133,7 +133,7 @@ export default function SignOffPage() {
   const load = useCallback(async () => {
     setState("loading");
     try {
-      const result = await getDocument(params.id);
+      const result = await getDocumentForReview(params.id);
       if (!result) throw new Error("Document not found.");
       setDoc(result);
       setState("loaded");
