@@ -1,7 +1,13 @@
 import { SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF } from "@/lib/config/visibility";
 import { clientVisibleFindings } from "@/lib/findings";
 import { nextNumber } from "@/lib/numbering";
-import type { ClientCitation, ClientFinding, ContractDocument, Finding } from "@/lib/types";
+import type {
+  ClientCitation,
+  ClientFinding,
+  ContractDocument,
+  Finding,
+  SignOffRecord,
+} from "@/lib/types";
 
 /**
  * What a client is handed of a document's findings.
@@ -22,8 +28,32 @@ export interface ShapeOptions {
   advocateAddedAfterSignOff?: boolean;
 }
 
-export const isSignedOff = (doc: Pick<ContractDocument, "status">): boolean =>
-  doc.status === "settled" || doc.status === "executed";
+/**
+ * The recorded sign-off, or null. Nothing reaches a client without one, so the
+ * status alone is not enough: a document that says it is settled but has no
+ * advocate and date on record is not signed off, and is read as one that is
+ * not. This is the same gate delivery uses (lib/api/delivery.ts).
+ */
+export function signOffRecord(
+  doc: Pick<ContractDocument, "status" | "advocate" | "settledAt">,
+): SignOffRecord | null {
+  if (doc.status !== "settled" && doc.status !== "executed") return null;
+  if (!doc.advocate || !doc.settledAt) return null;
+  return { advocate: doc.advocate.name, enrolment: doc.advocate.bar, at: doc.settledAt };
+}
+
+export const isSignedOff = (doc: Pick<ContractDocument, "status" | "advocate" | "settledAt">): boolean =>
+  signOffRecord(doc) !== null;
+
+/**
+ * The document as a client reads it. One whose status says it is signed off
+ * without the record to show for it is read as still under review, so none of
+ * what follows sign-off is handed over for it.
+ */
+export function asClientReads(doc: ContractDocument): ContractDocument {
+  const claimsSignOff = doc.status === "settled" || doc.status === "executed";
+  return claimsSignOff && !isSignedOff(doc) ? { ...doc, status: "under_review" } : doc;
+}
 
 function shapeCitation(c: Finding["citations"][number]): ClientCitation {
   return {
@@ -82,8 +112,9 @@ function shapeFinding(
  * here, after the highest the client has, in the order they were raised. That
  * is worked out and not stored, and is the same each time it is worked out.
  */
-export function shapeClientFindings(doc: ContractDocument, options: ShapeOptions = {}): ClientFinding[] {
+export function shapeClientFindings(record: ContractDocument, options: ShapeOptions = {}): ClientFinding[] {
   const advocateAdded = options.advocateAddedAfterSignOff ?? SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF;
+  const doc = asClientReads(record);
   const signedOff = isSignedOff(doc);
   const visible = clientVisibleFindings(doc, { advocateAddedAfterSignOff: advocateAdded });
 

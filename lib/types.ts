@@ -426,6 +426,37 @@ export interface ClientDocument
   executionSteps: ExecutionStep[];
 }
 
+/**
+ * A document as the client's list reads it. A list is not a detail page: it
+ * carries no clauses, no findings and no checklist steps, only what the
+ * dashboard shows of each, as counts.
+ */
+export interface ClientDocumentSummary
+  extends Pick<
+    ClientDocument,
+    | "id"
+    | "title"
+    | "type"
+    | "status"
+    | "tier"
+    | "version"
+    | "createdAt"
+    | "claimedAt"
+    | "executedAt"
+    | "paidAt"
+    | "signOff"
+  > {
+  counterpartyName: string;
+  /** What the first pass raised. Findings an advocate added are not counted. */
+  findingCount: number;
+  /** Requests addressed to the client that they have not yet answered. */
+  openRequests: number;
+  /** When the latest request to the client was sent. Null when there has been none. */
+  latestRequestAt: string | null;
+  /** After sign-off only: applicable steps done, and in all. Zero before. */
+  checklist: { done: number; total: number };
+}
+
 /** One draft in the client's version list. Counts only; never the draft. */
 export interface ClientVersionRow {
   number: number;
