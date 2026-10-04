@@ -368,13 +368,20 @@ export type ClientFindingDetail = Pick<
 /**
  * A finding as the client reads it.
  *
- * Before sign-off: the passage and the request addressed to them, nothing more.
- * A finding with no request addressed to the client is not in the list at all
- * (an advocate-added finding reaches them only that way). After sign-off
- * `detail` is set. Never a rule id, a layer, a source, an override note or a
- * resolution time.
+ * The list holds what the client may know of: the findings the first pass
+ * raised, and an advocate-added one only once a request is addressed to them
+ * (or, after sign-off, whatever the switch allows). Before sign-off a finding
+ * is its number, its clause reference and, where a request is addressed to
+ * them, its passage and that request; `detail` is null. After sign-off the
+ * passage and `detail` are set. Never a rule id, a layer, a source, an override
+ * note or a resolution time.
  */
-export interface ClientFinding extends Pick<Finding, "clauseReference" | "clauseText"> {
+export interface ClientFinding extends Pick<Finding, "clauseReference"> {
+  /**
+   * The quoted passage. Null before sign-off unless a request is addressed to
+   * the client about it: the passage is the draft's own wording.
+   */
+  clauseText: string | null;
   /**
    * "04". The one reference a client has to a finding: what they read, what
    * they answer by, and what a list keys on. Unique within a document and
