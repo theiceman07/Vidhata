@@ -202,6 +202,12 @@ export interface ContractDocument {
    */
   corpusReviewLoggedAt?: string | null;
   settledAt: string | null;
+  /**
+   * When the client confirmed the last applicable execution step, so the
+   * document became executed. Cleared if a step is taken back. The trail reads
+   * it; nothing else should infer it from the steps.
+   */
+  executedAt?: string | null;
   // ISO timestamp the in-flight analysis resolves at, or null when not
   // analysing. Durable across navigation (QA 4.5) — lib/api/documents.ts
   // reconciles this on every read instead of relying on a component timer.

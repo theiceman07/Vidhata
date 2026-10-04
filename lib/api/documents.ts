@@ -13,6 +13,7 @@ import { mockVersions } from "@/lib/mock/versions.mock";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { recheckFindings } from "@/lib/citations";
 import { declaredConflictWith } from "@/lib/conflicts";
+import { esignatureStep } from "@/lib/config/esign";
 import { TIER_PRICING } from "@/lib/config/pricing";
 import { revisionBlockedReason, revisionCycle } from "@/lib/revisions";
 import { assignReviewTier } from "@/lib/triage";
@@ -64,6 +65,8 @@ const STAMP_DUTY_BY_STATE: Record<string, string> = {
   Kerala: "Rs 200",
 };
 
+// The e-signature step is the same for a generated document and a fixture, and
+// it is built in one place (lib/config/esign.ts).
 function buildExecutionSteps(doc: ContractDocument): ExecutionStep[] {
   const stampDuty = STAMP_DUTY_BY_STATE[doc.stateOfExecution] ?? "Rs 100";
   const requiresRegistration =
@@ -109,22 +112,7 @@ function buildExecutionSteps(doc: ContractDocument): ExecutionStep[] {
       completedBy: null,
       evidence: null,
     },
-    {
-      kind: "esignature",
-      applicable: true,
-      headline: "e-signature: valid under the IT Act",
-      detail: `Aadhaar-based e-sign satisfies Section 5 of the IT Act, 2000, for a document governed by ${doc.governingLaw}.`,
-      reason:
-        "This document type is not among the classes excluded from electronic execution.",
-      instructions: [
-        "Both signatories complete Aadhaar e-sign via the settlement portal.",
-        "Download the signed PDF with the embedded audit trail.",
-      ],
-      complete: false,
-      completedAt: null,
-      completedBy: null,
-      evidence: null,
-    },
+    esignatureStep(doc.type),
   ];
 }
 
@@ -769,8 +757,10 @@ export async function toggleExecutionStep(
   const applicable = doc.executionSteps.filter((s) => s.applicable);
   if (doc.status === "settled" && applicable.every((s) => s.complete)) {
     doc.status = "executed";
+    doc.executedAt = new Date().toISOString();
   } else if (doc.status === "executed" && !applicable.every((s) => s.complete)) {
     doc.status = "settled";
+    doc.executedAt = null;
   }
   return structuredClone(doc);
 }

@@ -9,6 +9,7 @@ import {
   EMPLOYMENT_PLACE_OF_WORK_REWORDED,
 } from "@/lib/mock/clauses.mock";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
+import { esignatureStep } from "@/lib/config/esign";
 import { TIER_PRICING } from "@/lib/config/pricing";
 
 /** A fee paid at its tier's flat amount, so a fixture cannot disagree with the config. */
@@ -119,22 +120,8 @@ const settledNda: ContractDocument = {
       completedBy: null,
       evidence: null,
     },
-    {
-      kind: "esignature",
-      applicable: true,
-      headline: "e-signature: valid under the IT Act",
-      detail: "Aadhaar-based e-sign satisfies Section 5 of the IT Act, 2000.",
-      reason:
-        "NDAs are not among the classes of documents excluded from electronic execution.",
-      instructions: [
-        "Both signatories complete Aadhaar e-sign via the settlement portal.",
-        "Download the signed PDF with the embedded audit trail.",
-      ],
-      complete: false,
-      completedAt: null,
-      completedBy: null,
-      evidence: null,
-    },
+    // Built in one place, with the generated documents' (lib/config/esign.ts).
+    esignatureStep("nda"),
   ],
 };
 

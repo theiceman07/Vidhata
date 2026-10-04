@@ -215,6 +215,17 @@ export function buildAuditTrail(doc: ContractDocument): AuditEntry[] {
     }
   });
 
+  if (doc.status === "executed" && doc.executedAt) {
+    entries.push({
+      at: doc.executedAt,
+      actor: doc.clientName,
+      action: "Recorded as executed · every execution step confirmed",
+      findingId: null,
+      ref: null,
+      kind: "event",
+    });
+  }
+
   return entries.sort(
     (a, b) => new Date(a.at).getTime() - new Date(b.at).getTime(),
   );

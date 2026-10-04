@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import type { ExecutionStep } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/shared/icon";
+import { EsignGuide } from "@/components/domain/esign-guide";
 import { cn } from "@/lib/utils";
 
 const STEP_ORDER: ExecutionStep["kind"][] = [
@@ -23,7 +24,7 @@ export const STEP_TITLE: Record<ExecutionStep["kind"], string> = {
 const EVIDENCE_HINT: Record<ExecutionStep["kind"], string> = {
   stamping: "The e-stamp certificate",
   registration: "The registration receipt",
-  esignature: "The signed PDF",
+  esignature: "The signed copy",
 };
 
 export function orderedSteps(steps: ExecutionStep[]): ExecutionStep[] {
@@ -230,6 +231,12 @@ function StepRow({
                 ))}
               </ol>
             )}
+
+            {step.kind === "esignature" && (
+              <div className="mt-6 max-w-prose">
+                <EsignGuide />
+              </div>
+            )}
           </div>
 
           {/* The record: proof, and who marked it done. */}
@@ -342,9 +349,12 @@ function StepRow({
                       className="w-full print:hidden"
                     >
                       <Icon name="check" size={18} />
-                      Mark complete
+                      {step.kind === "esignature" ? "Both have signed" : "Mark complete"}
                     </Button>
                     <p className="text-label text-muted-fg">
+                      {step.kind === "esignature"
+                        ? "This says both signatories have signed. "
+                        : ""}
                       Who marked it, and when, is recorded. It can be taken back.
                     </p>
                   </div>
