@@ -1,15 +1,14 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CONSULTATION, PRICE_BASIS, PRICING_IS_INDICATIVE } from "@/lib/config/pricing";
 
 interface EscalationPromptProps {
   advocateName: string;
-  onRequestConsultation?: () => void;
+  /** The consultation page for this document. */
+  href: string;
 }
 
-export function EscalationPrompt({
-  advocateName,
-  onRequestConsultation,
-}: EscalationPromptProps) {
+export function EscalationPrompt({ advocateName, href }: EscalationPromptProps) {
   return (
     <div className="flex justify-start">
       <div className="max-w-[80%] rounded-card border border-caution/30 bg-caution/10 p-4">
@@ -21,15 +20,16 @@ export function EscalationPrompt({
           I can only explain the settled document. I can&apos;t advise on
           your situation.
         </p>
-        <Button size="sm" className="mt-3" onClick={onRequestConsultation}>
-          Request a consultation with {advocateName}
+        <Button asChild size="sm" className="mt-3">
+          <Link href={href}>Request a consultation with {advocateName}</Link>
         </Button>
         <p className="mt-2 text-label text-muted-fg">
           {CONSULTATION.label} · {CONSULTATION.price} {PRICE_BASIS}
           {PRICING_IS_INDICATIVE && " (indicative)"}
         </p>
         <p className="mt-1 text-label text-muted-fg">
-          A request is free. The fee is payable only if the advocate accepts.
+          A request is free. The fee is payable only if the advocate accepts, and it is
+          separate from the platform&apos;s fixed document fee.
         </p>
       </div>
     </div>

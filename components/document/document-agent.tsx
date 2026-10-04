@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Icon } from "@/components/shared/icon";
+import { CONSULTATION, PRICE_BASIS } from "@/lib/config/pricing";
 import { cn } from "@/lib/utils";
 import { getMockReply } from "@/lib/mock/chat.mock";
 import type { ChatMessage, ContractDocument } from "@/lib/types";
@@ -92,6 +94,18 @@ export function DocumentAgent({
                   <p className="mt-1 text-body text-ink">
                     That asks what you should do, not what the document says.
                     {" "}{advocate} settled this document and can advise you.
+                  </p>
+                  <Link
+                    href={`/documents/${doc.id}/consultation`}
+                    className="mt-3 inline-flex items-center gap-1 rounded-full bg-ink px-4 py-2 text-meta font-medium text-paper transition-colors hover:bg-ink/85"
+                  >
+                    Request a consultation with {advocate}
+                    <Icon name="arrow_forward" size={16} />
+                  </Link>
+                  <p className="mt-2 text-label text-muted-fg">
+                    {CONSULTATION.price} {PRICE_BASIS}, payable only if {advocate} accepts. A
+                    request is free, and the fee is separate from the platform&apos;s fixed
+                    document fee.
                   </p>
                 </li>
               ) : (

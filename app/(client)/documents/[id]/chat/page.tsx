@@ -178,6 +178,7 @@ export default function ChatPage() {
                 <EscalationPrompt
                   key={m.id}
                   advocateName={doc.advocate?.name ?? "your advocate"}
+                  href={`/documents/${doc.id}/consultation`}
                 />
               ) : (
                 <ChatMessage

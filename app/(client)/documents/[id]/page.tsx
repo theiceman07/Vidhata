@@ -406,6 +406,14 @@ function SettledDocument({ doc }: { doc: ContractDocument }) {
           >
             Version history
           </Link>
+          {doc.advocate && (
+            <Link
+              href={`/documents/${doc.id}/consultation`}
+              className="text-label text-ink underline-offset-2 hover:underline"
+            >
+              Consultation
+            </Link>
+          )}
         </>
       }
       companion={({ goToClause }) => <DocumentAgent doc={doc} onCite={goToClause} />}

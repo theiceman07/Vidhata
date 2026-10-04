@@ -236,6 +236,28 @@ export interface Invoice {
   amount: number;
 }
 
+/**
+ * A client's request to talk to the advocate who settled their document.
+ *
+ * It is free to make, and stored as requested; the fee is payable only if the
+ * advocate accepts, and that charge arrives with the advocate's inbox, so
+ * there is no payment here and no state beyond "requested".
+ *
+ * The question is the client's own words and may hold sensitive facts. It is
+ * for the client and the advocate only: it is never put in the audit trail, a
+ * notification or an export (a test holds those files to it).
+ */
+export interface Consultation {
+  id: string;
+  documentId: string;
+  orgId: string;
+  /** The advocate who settled the document. Never chosen by the client. */
+  advocateName: string;
+  question: string;
+  status: "requested";
+  requestedAt: string;
+}
+
 /** Who an organisation's invoices are made out to. */
 export interface BillingProfile {
   name: string;

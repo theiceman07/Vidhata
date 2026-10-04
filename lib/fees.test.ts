@@ -76,6 +76,7 @@ describe("the money files", () => {
     "components/marketing/pricing-table.tsx",
     "components/domain/escalation-prompt.tsx",
     "components/domain/payment-panel.tsx",
+    "components/document/document-agent.tsx",
     "lib/billing.ts",
     "lib/api/billing.ts",
     "lib/api/consultations.ts",
