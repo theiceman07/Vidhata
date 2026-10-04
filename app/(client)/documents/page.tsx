@@ -323,7 +323,7 @@ function DocumentRow({ doc, move }: { doc: ContractDocument; move: Move | null }
   const date = since(doc);
 
   return (
-    <li className="relative grid items-center gap-x-10 gap-y-5 rounded-card border border-line bg-paper px-6 py-6 transition-colors hover:border-ink/25 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)_12rem] lg:px-8">
+    <li className="relative grid items-center gap-x-10 gap-y-5 rounded-card border border-line bg-paper px-6 py-6 transition-colors hover:border-ink/25 lg:px-8 xl:grid-cols-[minmax(0,1fr)_12rem] 2xl:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)_12rem]">
       <div className="min-w-0">
         <Link
           href={`/documents/${doc.id}`}
@@ -347,9 +347,15 @@ function DocumentRow({ doc, move }: { doc: ContractDocument; move: Move | null }
         </p>
       </div>
 
-      <LifecycleStepper doc={doc} />
+      {/* Three columns only where the title keeps room to be read: with the rail
+          open the page is about 950px wide at 1280, and a third column left the
+          title 136px, so two different NDAs both read "Mutual ND…". Below that
+          the stepper takes its own row. */}
+      <div className="xl:col-span-2 xl:row-start-2 2xl:col-span-1 2xl:row-start-auto">
+        <LifecycleStepper doc={doc} />
+      </div>
 
-      <div className="relative z-10 lg:justify-self-end">
+      <div className="relative z-10 xl:col-start-2 xl:row-start-1 xl:justify-self-end 2xl:col-start-auto 2xl:row-start-auto">
         {move ? (
           <Button asChild size="lg" variant={doc.status === "revision" ? "default" : "outline"}>
             <Link href={move.href}>{move.action}</Link>
