@@ -421,9 +421,16 @@ export interface ClientDocument
   clauses: ClientClause[];
   /** Clauses not shown, only counted. Always zero after sign-off. */
   otherClauseCount: number;
+  /**
+   * What the first pass raised. Findings an advocate added are not counted, so
+   * this reads the same whatever the advocate has done since.
+   */
+  findingCount: number;
   findingList: ClientFinding[];
   /** After sign-off only. Empty before. */
   executionSteps: ExecutionStep[];
+  /** After sign-off only: applicable steps done, and in all. Zero before. */
+  checklist: { done: number; total: number };
 }
 
 /**
@@ -445,16 +452,14 @@ export interface ClientDocumentSummary
     | "executedAt"
     | "paidAt"
     | "signOff"
+    | "findingCount"
+    | "checklist"
   > {
   counterpartyName: string;
-  /** What the first pass raised. Findings an advocate added are not counted. */
-  findingCount: number;
   /** Requests addressed to the client that they have not yet answered. */
   openRequests: number;
   /** When the latest request to the client was sent. Null when there has been none. */
   latestRequestAt: string | null;
-  /** After sign-off only: applicable steps done, and in all. Zero before. */
-  checklist: { done: number; total: number };
 }
 
 /** One draft in the client's version list. Counts only; never the draft. */
