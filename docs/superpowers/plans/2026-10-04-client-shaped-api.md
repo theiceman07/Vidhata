@@ -135,6 +135,41 @@ Consequences for copy, to be done in phase 3: "Farhan Sheikh needs your answer"
 becomes "Your advocate needs your answer", and the client's trail says
 "Advocate" before sign-off.
 
+## Phase 3 order and rules (decided 5 October)
+
+One screen at a time, ordered by risk, each with a browser check before the next
+and a commit gated on `npm run check`. The browser check is local, with
+`NEXT_PUBLIC_VIDHATA_PREVIEW_MODE=1` in `.env.local`: the variable is off on
+Production, and previews are behind Deployment Protection. The deployed check
+waits until phase 3 is merged.
+
+1. The document page and its request panel, with `respondToChanges`. The answer
+   write takes the organisation and keys each answer by the finding's client
+   number, looks the finding up by (organisation, document, number) the way
+   `getClientRequest` does, and gives the same refusal for anything that is not a
+   request addressed to this client. It lands with this page because it is the
+   same flow.
+2. The history page.
+3. The chat sidebar.
+4. The consultation and privacy screens, including `requestDataExport`.
+
+Rules every screen must meet:
+
+- Show `clientNumber`, never `number`: in the trail, in requests, in the
+  consultation page. The type has no `number` to show a client, so this is held
+  by the compiler as well as by `numbers.test.ts`.
+- No advocate's name before sign-off: not in a heading, a toast, a notification
+  (C9) or the consultation page header, which reads `doc.advocate` today. Say
+  "your advocate".
+- A request reads "Your advocate asked for your answer", with nothing about its
+  current status. It stays listed until answered, and after sign-off everything
+  is shown as resolved (question 7).
+- Take the finding list from `findingList`; nothing reads a document's own
+  `findings`.
+- C9 notifications, D9 and D10 wait until phase 3 is merged, because
+  notification text is an easy place to leak a name or a finding, and C9 must be
+  built on the client types.
+
 ## Phase 2 as built
 
 Under `lib/api/client/`, each with its tests beside it. Each shaper names every
@@ -199,6 +234,23 @@ Not done in phase 2: the answer write (`respondToChanges`) still takes finding
 ids and has no organisation check, and `requestDataExport` still narrows in
 `lib/privacy.ts`. Both move in phase 3.
 
+## Leaks fixed (do not restore)
+
+- **The old client activity trail** (`clientAuditTrail`, `lib/audit.ts`) told a
+  client, before sign-off, that a finding with a request addressed to them had
+  been settled ("Finding settled", "Finding settled with a note"), that a source
+  had been withdrawn, and that the advocate had declared no conflict; and it
+  named the advocate in the actor ("Name, advocate"). A client is told what is
+  raised and never what was decided, and never who holds their document before
+  sign-off. `shapeClientTrail` is the correct behaviour: "Advocate", no
+  decisions, until sign-off. **The old trail's behaviour must not return.** It
+  stays in the code only until phase 3 moves the last screen off it, and it is
+  deleted in phase 6. Nothing new may call it.
+- **Positional finding numbers** let one finding carry two numbers across
+  comparisons, and a client's numbering skip over a finding kept from them. Both
+  are closed by stored numbers; a client shaper must never hand over a finding's
+  own `number` (`lib/api/client/numbers.test.ts` fails if it does).
+
 ## Risks
 
 - **Size.** Eight client routes and a dozen components change. The phases are
@@ -258,13 +310,16 @@ Questions 1 to 5 answered 4 October 2026. Questions 6 to 8 are open.
    list is in docs/api-contract.md." Their answers go here: _pending_.
 7. **A request the advocate has since settled.** The old screens drop a request
    from "waiting on you" once the advocate settles its finding, which tells the
-   client a decision was made. The shapers do not: a request counts as waiting
-   until the client answers it. So a client may be asked to answer something the
-   advocate no longer needs. Decide before phase 3 moves the document page:
-   keep it (nothing leaks), or have the advocate withdraw the request when they
-   settle, which is an advocate-side action and not a read.
-8. **A stricter trail.** See "Things phase 2 found". The client's trail before
-   sign-off is now shorter than it was. Say if the old behaviour was meant.
+   client a decision was made. **Answer (5 October): keep it listed until the
+   client answers.** Hiding it would tell the client a decision was made, which
+   breaks the pre-sign-off rule, and the cost is that a client may answer
+   something the advocate no longer needs, which is acceptable. The confusion is
+   reduced in the wording only: "Your advocate asked for your answer", with no
+   hint of current status. After sign-off everything is shown as resolved.
+8. **A stricter trail.** **Answer (5 October): intended. The old trail was a
+   leak.** See "Leaks fixed" below. Before sign-off the trail shows a generic
+   "Advocate" and no decisions; after sign-off it matches the old one entry for
+   entry.
 
 Phase 3 check, from the same decision: after it, no client screen shows an
 advocate's name before sign-off. That includes toasts, notifications (C9) and
