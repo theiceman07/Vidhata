@@ -173,12 +173,12 @@ These replace anything above that they contradict.
 - Wording of the consultation invoice and who issues it.
 - A proper GST tax breakup on invoices (accountant).
 - The deletion scope: what is removed and what is kept, including invoices, payment records, the sign-off record, the audit trail and the consent log.
+- Whether a settled document itself is removed or kept on a deletion request. It sits under "Not yet decided" in the scope list until counsel says.
 - The security page and training opt-in wording.
 
 ## Open items
 
 - Unpaid documents have no exit: no cancel, no refund.
-- The consultation charge step, with the advocate inbox (D7).
 
 ## What shipped (4 Oct)
 
@@ -198,6 +198,14 @@ while a round is open. The vendor fixture gained its missing send-back draft
 and a test holds every fixture to the rule (`2a9ca45` pins that a client reads
 no decision from any snapshot and no repeated finding number).
 
+After the five commits above (also 4 Oct):
+
+| What | Commit | What it did |
+|---|---|---|
+| Pre-sign-off history wording | `e4ff95b` | Before sign-off a client is told only how many findings are no longer raised because a clause changed, and never that anything was "settled". After sign-off the full wording shows. A test flips the advocate's decisions and holds that the pre-sign-off line does not change. |
+| D1 advocate onboarding | `cc0c7e1` | Accept an invitation (invalid and expired states), a stand-in password that is never stored, confirm Bar details, declare conflicts into the one list the claim check reads. Ends at the queue and assigns nothing. Nothing public, ranked, rated or searchable. No terms of empanelment stated. |
+| D7 consultation inbox | `a127d31` | The advocate sees only requests on documents they settled; another's request and a made-up id are the same not-found. Accept sets one flat fee before GST, separate from the document fee; decline is free and never chargeable. The client pays an accepted request (idempotent, a failure leaves it accepted and unpaid). The advocate answers after payment and the client reads the answer only then. The advocate sees whether it is paid, never the fee or any payment detail. A paid consultation is its own invoice line, numbered with the document fees. A second settled fixture, `doc-nda-settled-2`, is settled by the preview advocate so the inbox has something of theirs. |
+
 ### Decisions made while building
 
 - The export includes the client's own consultation questions, deliberately:
@@ -216,14 +224,13 @@ no decision from any snapshot and no repeated finding number).
 ## Still open
 
 - Unpaid documents have no exit: no cancel, no refund.
-- The consultation charge arrives with the advocate's inbox (D7). Until then a
-  request is stored as `requested` and nothing moves it.
 - Counsel and the accountant: the consultation invoice issuer and wording; a
-  proper GST breakup on invoices; the deletion scope and wording; the security
-  page and the training opt-in wording.
+  proper GST breakup on invoices; the deletion scope and wording, including
+  whether a settled document itself is removed or kept; the security page and
+  the training opt-in wording.
 - The real backend must store each invoice number once, immutably, when the
   payment is made, and never recompute it.
 - Real conflict checks need party and matter data (SRD 4.2); the name match is
   a stand-in.
-- A notification when the advocate accepts a consultation (C9), and the
-  advocate's consultation inbox (D7).
+- A notification when the advocate accepts a consultation (C9). It may say that
+  a request was accepted or answered, never what was asked or answered.
