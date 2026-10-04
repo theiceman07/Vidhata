@@ -65,7 +65,7 @@ export default function BillingPage() {
       setProfile(saved);
       setName(saved.name);
       setGstin(saved.gstin ?? "");
-      toast.success("Billing details saved");
+      toast.success("Billing details updated");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save your billing details.");
     } finally {

@@ -159,7 +159,7 @@ export default function ConsultationRequestPage() {
               </p>
               {request.answeredAt && (
                 <p className="mt-2 text-label text-muted-fg">
-                  Sent {format(new Date(request.answeredAt), "d MMM yyyy")}
+                  Answered {format(new Date(request.answeredAt), "d MMM yyyy")}
                 </p>
               )}
             </div>
@@ -174,7 +174,7 @@ export default function ConsultationRequestPage() {
                 move(
                   "answer",
                   () => answerConsultation(CURRENT_ADVOCATE.id, request.id, answer),
-                  "Answer sent",
+                  "Answer recorded",
                 );
               }}
             >

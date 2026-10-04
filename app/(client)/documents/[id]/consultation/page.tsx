@@ -80,7 +80,7 @@ export default function ConsultationPage() {
         current.some((c) => c.id === made.id) ? current : [made, ...current],
       );
       setQuestion("");
-      toast.success(`Request sent to ${made.advocateName}`);
+      toast.success(`Request made to ${made.advocateName}`);
     } catch (err) {
       setFailed(err instanceof Error ? err.message : "Could not send your request.");
     } finally {
