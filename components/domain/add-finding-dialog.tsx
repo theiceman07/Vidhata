@@ -26,7 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { checkCitation } from "@/lib/api/citations";
 import type { CitationLookup } from "@/lib/citations";
 import { CORPUS } from "@/lib/mock/corpus.mock";
-import type { Citation, Clause, Finding, Severity } from "@/lib/types";
+import type { Citation, Clause, NewFinding, Severity } from "@/lib/types";
 
 const NO_SOURCE = "__none";
 
@@ -58,7 +58,7 @@ export function AddFindingDialog({
   clauses: Clause[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (finding: Finding) => Promise<void> | void;
+  onAdd: (finding: NewFinding) => Promise<void> | void;
 }) {
   const [clauseId, setClauseId] = useState("");
   const [description, setDescription] = useState("");

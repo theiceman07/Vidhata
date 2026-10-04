@@ -73,6 +73,24 @@ export function clauseNumberFromReference(reference: string): string {
 export interface Finding {
   findingId: string;
   /**
+   * The document's own number for this finding ("04"), given by the API when
+   * the finding is raised: one more than the highest the document has ever
+   * numbered, in any draft. Unique within the document, kept across its drafts
+   * and never reused. It is stored and not worked out from the finding's place
+   * in a list, so filtering or reordering a list cannot move it.
+   */
+  number: string;
+  /**
+   * The number a client reads this finding by, given by the API when the
+   * client first may know of it: a pipeline finding when the first pass is
+   * handed on, an advocate-added one when a request is addressed to them or
+   * at sign-off. Null until then. It counts only what the client has been
+   * shown, so there is never a gap that says something was kept from them, and
+   * it never changes once given. A client names a finding by this, and by
+   * nothing else.
+   */
+  clientNumber: string | null;
+  /**
    * Who raised it. "advocate" is a finding the first pass missed, added in
    * review. The addition and override metrics read this, so it is a field
    * and never inferred from the rule id.
@@ -92,6 +110,12 @@ export interface Finding {
   resolvedAt: string | null;
   changeRequest: ChangeRequest | null;
 }
+
+/**
+ * A finding as an advocate adds it. Its numbers are not the caller's to give:
+ * the API numbers it (lib/numbering.ts), so what is sent has none.
+ */
+export type NewFinding = Omit<Finding, "number" | "clientNumber">;
 
 export interface ExecutionStep {
   kind: "stamping" | "registration" | "esignature";

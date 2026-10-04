@@ -156,6 +156,8 @@ describe("running the gate again on the record", () => {
   it("changes only the citations on a finding, and not the input", () => {
     const finding = {
       findingId: "find-x",
+      number: "01",
+      clientNumber: "01",
       source: "advocate",
       layer: 6,
       severity: "low",

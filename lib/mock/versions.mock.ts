@@ -84,6 +84,8 @@ const WARRANTY_BEFORE_REVISION =
 
 const courtMismatch: Finding = {
   findingId: "find-7",
+  number: "01",
+  clientNumber: "01",
   source: "pipeline",
   layer: 3,
   severity: "medium",
@@ -331,6 +333,8 @@ function rereviewFirstDraftClauses(findingClauses: Record<string, string[]>): Cl
 // not raise it again.
 const remoteWorkDraft: Finding = {
   findingId: "find-e2",
+  number: "02",
+  clientNumber: "02",
   source: "pipeline",
   layer: 3,
   severity: "low",

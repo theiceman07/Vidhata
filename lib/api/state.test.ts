@@ -376,7 +376,7 @@ describe("a stored state that cannot be used", () => {
     const a = await load(fakeStorage());
     const b = await load(fakeStorage());
     expect(a.state.fingerprint()).toBe(b.state.fingerprint());
-    expect(a.state.fingerprint()).toMatch(/^2:[0-9a-f]+$/);
+    expect(a.state.fingerprint()).toMatch(new RegExp(`^${a.state.SCHEMA_VERSION}:[0-9a-f]+$`));
   });
 });
 

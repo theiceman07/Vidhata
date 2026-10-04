@@ -12,6 +12,8 @@ import {
 
 const finding = (over: Partial<Finding>): Finding => ({
   findingId: "f",
+  number: "01",
+  clientNumber: "01",
   source: "pipeline",
   layer: 2,
   severity: "medium",
