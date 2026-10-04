@@ -106,3 +106,34 @@ describe("the money files", () => {
     expect(offenders.map((f) => path.relative(root, f))).toEqual([]);
   });
 });
+
+// The platform's fee is a flat technology fee, and an advocate's money is
+// their own. An advocate screen may show a tier's name and the consultation
+// fee an advocate sets, and nothing of what the platform charges for the
+// document: no tier price, no payment record, no invoice, no split. A payout
+// statement (D10) must list consultation fees and nothing derived from the
+// platform fee.
+describe("the advocate's screens", () => {
+  const root = path.resolve(__dirname, "..");
+
+  function filesUnder(dir: string): string[] {
+    if (!existsSync(dir)) return [];
+    return readdirSync(dir).flatMap((name) => {
+      const full = path.join(dir, name);
+      return statSync(full).isDirectory() ? filesUnder(full) : [full];
+    });
+  }
+
+  const files = filesUnder(path.join(root, "app", "(lawyer)")).filter((f) => /\.tsx?$/.test(f));
+
+  it("lists the files it guards", () => {
+    expect(files.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("show no document fee, payment record, invoice or split", () => {
+    const platformMoney =
+      /TIER_PRICING|tierRange|\.payment\b|payFee|invoicesFor|api\/billing|lib\/billing|document fee|platform fee/i;
+    const offenders = files.filter((f) => platformMoney.test(readFileSync(f, "utf8")));
+    expect(offenders.map((f) => path.relative(root, f))).toEqual([]);
+  });
+});

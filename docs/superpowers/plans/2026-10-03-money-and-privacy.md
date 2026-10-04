@@ -170,6 +170,7 @@ These replace anything above that they contradict.
 
 ## Counsel and accountant list
 
+- **First, because it decides how real billing is built: who sets a consultation fee, who invoices it and who receives it.** A consultation is the advocate's legal service, and the platform's revenue must stay a flat technology fee (Architecture §8). In the preview the platform's config sets the amount and the platform's own invoice series numbers it, which is a stand-in and could be read as the platform collecting legal fees. Nothing in the real build should copy that until counsel decides.
 - Wording of the consultation invoice and who issues it.
 - A proper GST tax breakup on invoices (accountant).
 - The deletion scope: what is removed and what is kept, including invoices, payment records, the sign-off record, the audit trail and the consent log.
@@ -232,5 +233,8 @@ After the five commits above (also 4 Oct):
   payment is made, and never recompute it.
 - Real conflict checks need party and matter data (SRD 4.2); the name match is
   a stand-in.
+- A payout statement (D10) lists consultation fees and nothing derived from the
+  platform's document fee. A guard test (`lib/fees.test.ts`) keeps platform money
+  off every advocate screen until then.
 - A notification when the advocate accepts a consultation (C9). It may say that
   a request was accepted or answered, never what was asked or answered.

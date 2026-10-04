@@ -105,6 +105,30 @@ export interface ExecutionStep {
   evidence: { name: string; attachedAt: string } | null;
 }
 
+/**
+ * One line of a settled document's plain-language summary.
+ *
+ * It says what the settled text says and nothing about what the reader should
+ * do. `clauses` are the clause numbers it rests on, so a line can be checked
+ * against the text it explains. A line about something the document does not
+ * contain cites no clause.
+ */
+export interface SummaryItem {
+  label: string;
+  text: string;
+  clauses: string[];
+}
+
+/**
+ * A summary of one settled draft. `draft` is the draft it was written from: a
+ * summary is shown only while the document's head is still that draft.
+ */
+export interface SettledSummary {
+  documentId: string;
+  draft: number;
+  items: SummaryItem[];
+}
+
 export interface ContractDocument {
   id: string;
   title: string;

@@ -401,6 +401,12 @@ function SettledDocument({ doc }: { doc: ContractDocument }) {
             Execution checklist · {done} of {steps.length}
           </Link>
           <Link
+            href={`/documents/${doc.id}/summary`}
+            className="text-label text-ink underline-offset-2 hover:underline"
+          >
+            Summary
+          </Link>
+          <Link
             href={`/documents/${doc.id}/history`}
             className="text-label text-ink underline-offset-2 hover:underline"
           >
