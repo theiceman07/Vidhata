@@ -478,6 +478,29 @@ export interface AdvocateNote {
   updatedAt: string;
 }
 
+/**
+ * A client's own details and the people on its team. A preview: invitations
+ * send nothing, and every member has the same access. Real organisation
+ * membership and roles are backend work (docs/api-contract.md, section 10.2).
+ */
+export interface AccountProfile {
+  name: string;
+  email: string;
+}
+
+export interface TeamMember {
+  id: string;
+  /** Null for someone who has been invited and has not yet said who they are. */
+  name: string | null;
+  email: string;
+  status: "owner" | "active" | "invited";
+}
+
+export interface Account {
+  profile: AccountProfile;
+  members: TeamMember[];
+}
+
 /** What the document surface needs to show and keep an advocate's notes. */
 export interface MarginNotes {
   items: AdvocateNote[];

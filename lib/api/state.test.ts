@@ -50,6 +50,7 @@ async function load(storage: FakeStorage | null, reload = vi.fn()) {
     notes: await import("./notes"),
     privacy: await import("./privacy"),
     billing: await import("./billing"),
+    account: await import("./account"),
   };
 }
 
@@ -268,6 +269,23 @@ describe("payments and requests, after a refresh", () => {
   });
 });
 
+describe("the team, after a refresh", () => {
+  it("keeps an invitation, and the same invitation made again is still one", async () => {
+    const storage = fakeStorage();
+    const first = await load(storage);
+    await settle(first.account.inviteMember("org-anaya-textiles", "priya@anaya-textiles.example"));
+    await settle(first.account.saveProfile("org-anaya-textiles", { name: "Meera S. Shah", email: "meera@anaya-textiles.example" }));
+    await vi.runAllTimersAsync();
+
+    const second = await load(storage);
+    await settle(second.account.inviteMember("org-anaya-textiles", "PRIYA@anaya-textiles.example"));
+    const account = await settle(second.account.getAccount("org-anaya-textiles"));
+    expect(account.members.filter((m) => m.email.toLowerCase() === "priya@anaya-textiles.example")).toHaveLength(1);
+    expect(account.profile.name).toBe("Meera S. Shah");
+    expect(datesIn(account)).toEqual([]);
+  });
+});
+
 describe("failure injection", () => {
   it("is unchanged by a restore: a refused call still changes nothing, and works again", async () => {
     const storage = fakeStorage();
@@ -358,7 +376,7 @@ describe("a stored state that cannot be used", () => {
     const a = await load(fakeStorage());
     const b = await load(fakeStorage());
     expect(a.state.fingerprint()).toBe(b.state.fingerprint());
-    expect(a.state.fingerprint()).toMatch(/^1:[0-9a-f]+$/);
+    expect(a.state.fingerprint()).toMatch(/^2:[0-9a-f]+$/);
   });
 });
 

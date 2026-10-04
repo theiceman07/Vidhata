@@ -1,9 +1,11 @@
 import { CONSULTATION, TIER_PRICING } from "@/lib/config/pricing";
 import { CORPUS } from "@/lib/mock/corpus.mock";
+import { accountSeed } from "@/lib/mock/account.mock";
 import { advocateProfileSeed } from "@/lib/mock/advocate.mock";
 import { mockDocuments } from "@/lib/mock/documents.mock";
 import { mockVersions } from "@/lib/mock/versions.mock";
 import type {
+  Account,
   AdvocateNote,
   BillingProfile,
   Consultation,
@@ -41,7 +43,7 @@ import type { CitationAttempt } from "./citations";
  * can store (docs/api-contract.md, section 9).
  */
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 const STORAGE_KEY = "vidhata-preview-state";
 
 /** Every slice, in the shape it is stored. Maps and sets are stored as lists. */
@@ -52,6 +54,7 @@ export interface DemoState {
   citationAttempts: CitationAttempt[];
   privacy: [string, PrivacyState][];
   billing: [string, BillingProfile][];
+  account: [string, Account][];
   advocate: AdvocateProfile;
   invitationsUsed: string[];
   notes: AdvocateNote[];
@@ -73,7 +76,7 @@ let fingerprintCache: string | null = null;
 /** What the stored state was built from. A change to any of it discards the state. */
 export function fingerprint(): string {
   fingerprintCache ??= hash(
-    JSON.stringify([mockDocuments, mockVersions, advocateProfileSeed, CORPUS, TIER_PRICING, CONSULTATION]),
+    JSON.stringify([mockDocuments, mockVersions, advocateProfileSeed, accountSeed, CORPUS, TIER_PRICING, CONSULTATION]),
   );
   return `${SCHEMA_VERSION}:${fingerprintCache}`;
 }
@@ -93,6 +96,7 @@ const SHAPES: Record<Slice, (v: unknown) => boolean> = {
   citationAttempts: listOf((a) => isRecord(a) && typeof a.id === "string" && typeof a.outcome === "string"),
   privacy: listOf(pairOf),
   billing: listOf(pairOf),
+  account: listOf(pairOf),
   advocate: (v) => isRecord(v) && Array.isArray(v.declaredConflicts),
   invitationsUsed: listOf((t) => typeof t === "string"),
   notes: listOf((n) => isRecord(n) && typeof n.id === "string"),
@@ -148,6 +152,7 @@ const SEEDS: { [K in Slice]: () => DemoState[K] } = {
   citationAttempts: () => [],
   privacy: () => [],
   billing: () => [],
+  account: () => structuredClone(accountSeed),
   advocate: () => structuredClone(advocateProfileSeed),
   invitationsUsed: () => [],
   notes: () => [],

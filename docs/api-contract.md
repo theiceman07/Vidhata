@@ -396,6 +396,7 @@ the tab**. None of it is a real store.
 | **Advocate margin notes** | the tab state (`lib/api/notes.ts`; `localStorage` before the persistence batch) | Persist scoped by the **authenticated** advocate, never by an id the page supplies. Never visible to a client, not findings, no state, no part of sign-off. The planned settlement notes (D6) are a different kind, released only at sign-off. |
 | **Onboarding** | `onboarding.ts`, `advocate.ts` | An invitation is single-use and expires. The password is a stand-in, never stored, so a real identity provider replaces that step. Declared conflicts merge into the one list the claim check reads. Onboarding assigns nothing: advocates claim. Nothing about an advocate is public, ranked, rated or searchable. |
 | **Billing profile** | `billing.ts` › `profiles` | Persist per organisation. |
+| **Account: profile and team** | `account.ts` › `accounts` (C10) | A name, an email and a list of members (owner, member, invited). A preview invitation sends nothing and every member has the same access. Real organisation membership, roles, who may invite or remove, and protection of the last owner are backend work (section 10.2). |
 | **Corpus-review log** | `corpusReviewLoggedAt` on the document | Persist. Advocate-only. |
 | **Audit trail** | `lib/audit.ts`, derived and not stored | Either derive it as the mock does or store events. Either way every entry names its actor, and the client's trail is the filtered one (section 4). |
 | **Execution evidence** | `attachEvidence` keeps the **file name only** | Real upload and storage. |
@@ -524,6 +525,15 @@ read returns nothing instead.
 | `withdrawDeletion` | `orgId` | state | |
 | `checkCitation` | `documentId`, `advocateId`, `input` | the lookup; records the attempt | |
 | `listCitationAttempts` | none | attempts, oldest first | |
+
+### `lib/api/account.ts`
+
+| Function | Inputs | Returns | Refuses |
+|---|---|---|---|
+| `getAccount` | `orgId` | the profile and the team | "Account not found." |
+| `saveProfile` | `orgId`, `{ name, email }` | the account; the owner's line follows | blank name; not an email address; an address that is someone else's on the team |
+| `inviteMember` | `orgId`, `email` | the account. The same address again is the one invitation. | not an email address; an address already on the team |
+| `removeMember` | `orgId`, `memberId` | the account. Someone already gone changes nothing. | the owner |
 
 ### Advocate and public
 
