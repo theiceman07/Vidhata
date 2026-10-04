@@ -478,6 +478,40 @@ export interface AdvocateNote {
   updatedAt: string;
 }
 
+/** A count over a count. Nothing to divide is "none yet", not 0%. */
+export interface Ratio {
+  numerator: number;
+  denominator: number;
+}
+
+/** One citation an advocate typed that the corpus could not match. */
+export interface BlockedAttemptRow {
+  id: string;
+  /** ISO 8601. */
+  at: string;
+  documentTitle: string | null;
+  advocate: string;
+  /** Exactly what was typed. */
+  typed: string;
+  reason: string;
+}
+
+/**
+ * The metrics page's figures. Each has a source or says it has none: the
+ * triage override rate and the corpus-currency lag are `no_source`, and the
+ * page shows "No data source yet" for them, never a number.
+ */
+export interface Metrics {
+  /** Released documents the findings were counted over. */
+  documentsCounted: number;
+  overrides: Ratio;
+  additions: Ratio;
+  fabrication: Ratio;
+  blocked: BlockedAttemptRow[];
+  triageOverride: { state: "no_source" };
+  corpusLag: { state: "no_source" };
+}
+
 /**
  * A client's own details and the people on its team. A preview: invitations
  * send nothing, and every member has the same access. Real organisation

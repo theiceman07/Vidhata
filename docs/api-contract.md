@@ -526,6 +526,14 @@ read returns nothing instead.
 | `checkCitation` | `documentId`, `advocateId`, `input` | the lookup; records the attempt | |
 | `listCitationAttempts` | none | attempts, oldest first | |
 
+### `lib/api/metrics.ts`
+
+| Function | Inputs | Returns | Refuses |
+|---|---|---|---|
+| `getMetrics` | none | the override rate, the addition rate, the pre-gate fabrication rate, the blocked-citation log, and `no_source` for the triage override rate and the corpus-currency lag | the failure of either read |
+
+It counts over released documents only (what an advocate may read), reads findings (`disposition`, `source`) and the citation attempt log, and reads nothing about money or a consultation. Test: `lib/api/metrics.test.ts` › "leave a document awaiting payment out of every figure, until it is paid", "what the metrics read › is no fee, no payment, no invoice and no consultation". A figure with nothing behind it is `no_source`, never a number: the backend must not fill the triage override rate until override logging exists (section 10.1), nor the corpus-currency lag until the corpus carries effective dates.
+
 ### `lib/api/account.ts`
 
 | Function | Inputs | Returns | Refuses |

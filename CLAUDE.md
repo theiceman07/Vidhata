@@ -109,6 +109,12 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
   not. global-error.tsx has its own html and body. The consent banner declines
   by default and lib/config/consent.ts must be revised when any analytics or
   other tool is added.
+- Metrics (/metrics, advocate portal only, lib/api/metrics.ts): every figure
+  has a real source (Finding.disposition and Finding.source, the citation
+  attempt log) or says "No data source yet" (the triage override rate and the
+  corpus-currency lag). Never a number with nothing behind it, and a rate with
+  nothing to divide is "None yet", not 0%. It counts released documents only
+  and reads nothing about money or a consultation.
 - Below lg the review workspace is not height-bound: it stacks, and the clauses
   and findings dropdown opens above the contract. The client portal works at
   768px.
