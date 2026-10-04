@@ -21,6 +21,12 @@ import { createDraftDocument } from "@/lib/api/documents";
 import { DRAFT_NEEDS, readBrief } from "@/lib/api/brief";
 import { BRIEF_KEY } from "@/components/marketing/deal-prompt";
 import { ContractTypePicker } from "@/components/domain/contract-type-picker";
+import {
+  PRICE_BASIS,
+  PRICING_IS_INDICATIVE,
+  rupees,
+  tierRange,
+} from "@/lib/config/pricing";
 import { INDIAN_STATES } from "@/lib/mock/intake-options.mock";
 import { cn } from "@/lib/utils";
 
@@ -378,6 +384,13 @@ export function IntakeWizard() {
               placeholder="Anything specific the draft should account for?"
               rows={6}
             />
+            <p className="mt-5 max-w-measure rounded-card bg-parchment p-4 text-meta text-ink">
+              One fixed fee per document, set by the review tier screening assigns after the
+              first pass: from {rupees(tierRange().low)} to {rupees(tierRange().high)}{" "}
+              {PRICE_BASIS}
+              {PRICING_IS_INDICATIVE && " (indicative)"}. You pay once the document is screened,
+              and nothing reaches an advocate before then.
+            </p>
           </div>
         )}
 

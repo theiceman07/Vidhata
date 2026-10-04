@@ -16,6 +16,7 @@ import {
 } from "@/components/domain/document-context";
 import { CoveragePanel } from "@/components/domain/coverage-panel";
 import { DraftBanner } from "@/components/domain/draft-banner";
+import { PaymentPanel } from "@/components/domain/payment-panel";
 import { clientAuditTrail } from "@/lib/audit";
 import { ErrorState } from "@/components/shared/error-state";
 import { Icon } from "@/components/shared/icon";
@@ -157,6 +158,40 @@ export default function DocumentPage() {
 
   if (doc.status === "settled" || doc.status === "executed") {
     return <SettledDocument doc={doc} />;
+  }
+
+  // Screened and tiered, not yet paid. Only the tier, the fee and the deal
+  // facts behind it are shown: nothing from the review, because a client
+  // reads no finding before sign-off.
+  if (doc.status === "awaiting_payment") {
+    return (
+      <Frame>
+        <header className="flex min-w-0 items-start gap-4">
+          <BackButton fallbackHref="/documents" label="Back" />
+          <div className="min-w-0">
+            <StateLabel state={doc.status} />
+            <h1 className="mt-2 font-display text-h1 text-ink">{doc.title}</h1>
+            <p className="mt-1 text-meta text-muted-fg">{doc.counterpartyName}</p>
+          </div>
+        </header>
+
+        <div className="mt-10 grid gap-x-8 gap-y-8 lg:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem]">
+          <PaymentPanel
+            doc={doc}
+            onPaid={(paid) => {
+              setDoc(paid);
+              toast.success("Fee paid. Your document is in the advocate queue.");
+            }}
+          />
+          <aside className="min-w-0 space-y-4">
+            <WhatHappensNext doc={doc} />
+            <ContextPanel title="Where it is">
+              <Provenance doc={doc} />
+            </ContextPanel>
+          </aside>
+        </div>
+      </Frame>
+    );
   }
 
   return (

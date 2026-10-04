@@ -179,6 +179,23 @@ function stationsFor(doc: ContractDocument): Station[] {
     ];
   }
 
+  if (doc.status === "awaiting_payment") {
+    return [
+      {
+        title: "You pay the fee",
+        body: "One fixed fee for the tier screening assigned. Nothing reaches an advocate until it is paid.",
+        current: true,
+      },
+      {
+        title: "An advocate claims it",
+        body: "Once paid it is in the queue. The advocate who claims it holds it alone until sign-off.",
+        current: false,
+      },
+      signOff,
+      checklist,
+    ];
+  }
+
   if (doc.status === "pending_review") {
     return [
       {

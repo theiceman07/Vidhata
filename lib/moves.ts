@@ -22,7 +22,13 @@ export function outstandingSteps(doc: ContractDocument) {
 export type MoveGroup = "you" | "advocate" | "done";
 
 export function groupOf(doc: ContractDocument): MoveGroup {
-  if (doc.status === "revision" || doc.status === "draft") return "you";
+  if (
+    doc.status === "revision" ||
+    doc.status === "draft" ||
+    doc.status === "awaiting_payment"
+  ) {
+    return "you";
+  }
   if (doc.status === "settled" && outstandingSteps(doc).length > 0) return "you";
   if (doc.status === "settled" || doc.status === "executed") return "done";
   return "advocate";
@@ -49,6 +55,13 @@ export function yourMove(doc: ContractDocument): Move | null {
     return {
       note: "Not submitted. Nothing reaches an advocate until it is.",
       action: "Submit",
+      href: `/documents/${doc.id}`,
+    };
+  }
+  if (doc.status === "awaiting_payment") {
+    return {
+      note: "Screened. Pay the fee to send it to an advocate.",
+      action: "Pay",
       href: `/documents/${doc.id}`,
     };
   }

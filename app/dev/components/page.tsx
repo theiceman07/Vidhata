@@ -51,6 +51,7 @@ export default function ComponentsPage() {
         <div className="flex flex-wrap gap-2">
           <StateLabel state="draft" />
           <StateLabel state="analysing" />
+          <StateLabel state="awaiting_payment" />
           <StateLabel state="pending_review" />
           <StateLabel state="under_review" />
           <StateLabel state="revision" />

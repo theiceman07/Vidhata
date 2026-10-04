@@ -3,6 +3,7 @@ import { Icon } from "@/components/shared/icon";
 import { Button } from "@/components/ui/button";
 import {
   CONSULTATION,
+  PRICE_BASIS,
   PRICING_IS_INDICATIVE,
   TIER_ORDER,
   TIER_PRICING,
@@ -45,6 +46,7 @@ export function PricingTable() {
               <p className="mt-6 font-display text-[clamp(40px,4vw,56px)] font-medium leading-none tracking-[-0.02em] text-ink">
                 {t.price}
               </p>
+              <p className="mt-1 text-meta text-muted-fg">{PRICE_BASIS}</p>
               <p className="mt-3 text-body text-muted-fg">{t.description}</p>
 
               <div className="mt-6 flex-1 border-t border-line pt-5 text-body">
@@ -86,10 +88,14 @@ export function PricingTable() {
           <p className="font-display text-h2 text-ink">{CONSULTATION.label}</p>
           <p className="mt-2 max-w-measure text-body text-muted-fg">
             Separate from the review. A conversation with the advocate who
-            settled your document, about what it means for you.
+            settled your document, about what it means for you. A request is
+            free, and the fee is payable only if the advocate accepts.
           </p>
         </div>
-        <p className="font-display text-h2 text-ink">{CONSULTATION.price}</p>
+        <div className="sm:text-right">
+          <p className="font-display text-h2 text-ink">{CONSULTATION.price}</p>
+          <p className="text-meta text-muted-fg">{PRICE_BASIS}</p>
+        </div>
       </div>
 
       <div className="mt-8 flex justify-center">
@@ -102,7 +108,7 @@ export function PricingTable() {
           instead of implying a purchase. */}
       <p className="mt-6 text-center text-meta text-muted-fg">
         {PRICING_IS_INDICATIVE && "Indicative pricing. "}
-        Billing is not enabled in this preview. No payment is taken.
+        All figures are {PRICE_BASIS}. Preview: no payment is taken.
       </p>
     </div>
   );

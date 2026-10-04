@@ -90,6 +90,7 @@ describe("client screens", () => {
       "components/document/change-requests.tsx",
       "components/document/provenance.tsx",
       "components/domain/version-history.tsx",
+      "components/domain/payment-panel.tsx",
       "lib/moves.ts",
       "lib/mock/chat.mock.ts",
     ].map((f) => path.join(root, f)),
