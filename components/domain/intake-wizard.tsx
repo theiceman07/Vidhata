@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -70,6 +70,11 @@ export function IntakeWizard() {
   const [submitError, setSubmitError] = useState("");
   // How far the brief got: facts a draft needs that it stated, and not.
   const [fromBrief, setFromBrief] = useState<{ found: number; missing: number } | null>(null);
+  // Set the moment the person does anything: picks a type, types, moves a step.
+  // The brief is read after a wait, and when the reading lands it must not undo
+  // what they have already done (it used to put them back on step one and
+  // overwrite what they had typed).
+  const touched = useRef(false);
 
   const {
     register,
@@ -77,6 +82,7 @@ export function IntakeWizard() {
     trigger,
     watch,
     setValue,
+    getValues,
     formState: { errors },
   } = useForm<IntakeFormValues>({
     resolver: zodResolver(intakeSchema),
@@ -90,7 +96,11 @@ export function IntakeWizard() {
       transactionValue: 0,
       durationMonths: 12,
       stateOfExecution: "",
-      governingLaw: "",
+      // The one default: Vidhata settles Indian contracts, so unless a brief
+      // names another law this is the law, shown in the field and on the
+      // document. It used to be empty with the words only as a placeholder, so
+      // the field looked filled in and Continue refused it.
+      governingLaw: "Laws of India",
       keyTerms: "",
     },
   });
@@ -118,9 +128,16 @@ export function IntakeWizard() {
       } catch {
         // Nothing to clear.
       }
+      // A reading that lands after the person has begun only fills what they
+      // have not: it never overwrites a choice or a value, and never moves them.
+      const current = getValues();
+      const empty = (v: unknown) => v === undefined || v === "";
       for (const [key, value] of Object.entries(found)) {
-        if (value !== undefined) setValue(key as keyof IntakeFormValues, value as never);
+        if (value === undefined) continue;
+        if (touched.current && !empty(current[key as keyof IntakeFormValues])) continue;
+        setValue(key as keyof IntakeFormValues, value as never);
       }
+      if (touched.current) return;
       const first = STEP_FIELDS.findIndex((fields) =>
         fields.some((f) => missing.includes(f as (typeof missing)[number])),
       );
@@ -130,16 +147,18 @@ export function IntakeWizard() {
     return () => {
       cancelled = true;
     };
-  }, [setValue]);
+  }, [setValue, getValues]);
 
   const values = watch();
 
   async function goNext() {
+    touched.current = true;
     const valid = await trigger(STEP_FIELDS[step]);
     if (valid) setStep((s) => Math.min(s + 1, STEP_LABELS.length - 1));
   }
 
   function goBack() {
+    touched.current = true;
     setStep((s) => Math.max(s - 1, 0));
   }
 
@@ -236,7 +255,14 @@ export function IntakeWizard() {
         ))}
       </ol>
 
-      <form onSubmit={onFormSubmit} onKeyDown={onFormKeyDown} className="space-y-5">
+      <form
+        onSubmit={onFormSubmit}
+        onKeyDown={onFormKeyDown}
+        onChange={() => {
+          touched.current = true;
+        }}
+        className="space-y-5"
+      >
         {fromBrief && (
           <p className="rounded-control bg-parchment px-4 py-3 text-meta text-ink">
             Your brief gave {fromBrief.found} of the {DRAFT_NEEDS.length} details a draft needs.
@@ -248,7 +274,10 @@ export function IntakeWizard() {
         {step === 0 && (
           <ContractTypePicker
             value={values.type}
-            onChange={(type) => setValue("type", type, { shouldValidate: true })}
+            onChange={(type) => {
+              touched.current = true;
+              setValue("type", type, { shouldValidate: true });
+            }}
             error={errors.type?.message}
           />
         )}
