@@ -433,7 +433,7 @@ function SettledDocument({ doc }: { doc: ContractDocument }) {
         <>
           <Button variant="outline" onClick={() => window.print()}>
             <Icon name="print" size={18} />
-            Save as PDF
+            Print this page (browser)
           </Button>
         </>
       }

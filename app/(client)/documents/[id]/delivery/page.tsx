@@ -149,9 +149,8 @@ export default function DeliveryPage() {
               {delivery.summary ? (
                 <SummaryView summary={delivery.summary} />
               ) : (
-                <p className="max-w-measure text-body text-ink">
-                  A summary has not been written for this draft of the settled document in this
-                  preview.
+                <p className="max-w-measure text-body text-muted-fg">
+                  No summary has been prepared for this document.
                 </p>
               )}
             </div>

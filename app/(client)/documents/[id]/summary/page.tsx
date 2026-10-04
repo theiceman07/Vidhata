@@ -103,8 +103,8 @@ export default function SummaryPage() {
         {result.state === "none" && (
           <div className="max-w-xl">
             <EmptyState
-              title="No summary for this draft"
-              description="A summary has not been written for this draft of the settled document in this preview."
+              title="No summary has been prepared for this document"
+              description="The settled document is complete without one. You can read it in full."
               action={
                 <Button asChild variant="outline">
                   <Link href={`/documents/${params.id}`}>Read the settled document</Link>
