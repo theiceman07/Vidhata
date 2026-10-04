@@ -82,7 +82,7 @@ export default function LawyerLoginPage() {
       footer={
         <>
           Not on the panel yet?{" "}
-          <Link href="/advocate-invite" className="text-accent hover:underline">
+          <Link href="/advocate-invite" className="text-accent underline underline-offset-2 hover:no-underline">
             Request an invitation
           </Link>
         </>
@@ -108,7 +108,7 @@ export default function LawyerLoginPage() {
               onClick={() =>
                 toast.info("Password reset isn't available in this preview.")
               }
-              className="text-meta text-muted-fg transition-colors hover:text-ink"
+              className="inline-flex min-h-6 items-center text-meta text-muted-fg transition-colors hover:text-ink"
             >
               Forgot password?
             </button>
@@ -155,14 +155,14 @@ export default function LawyerLoginPage() {
           Preview: open a sample invitation,{" "}
           <Link
             href={`/advocate-onboarding/${VALID_INVITE_TOKEN}`}
-            className="text-accent hover:underline"
+            className="text-accent underline underline-offset-2 hover:no-underline"
           >
             a valid one
           </Link>{" "}
           or{" "}
           <Link
             href={`/advocate-onboarding/${EXPIRED_INVITE_TOKEN}`}
-            className="text-accent hover:underline"
+            className="text-accent underline underline-offset-2 hover:no-underline"
           >
             an expired one
           </Link>

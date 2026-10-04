@@ -410,6 +410,7 @@ export default function QueuePage() {
             />
             <input
               type="search"
+              aria-label="Search the queue"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by document or party"

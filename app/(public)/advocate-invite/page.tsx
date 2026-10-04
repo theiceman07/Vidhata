@@ -32,7 +32,7 @@ export default function AdvocateInvitePage() {
 
       <p className="mt-4 text-small text-muted-fg">
         Already on the panel?{" "}
-        <Link href="/advocate-login" className="text-accent hover:underline">
+        <Link href="/advocate-login" className="text-accent underline underline-offset-2 hover:no-underline">
           Advocate sign-in
         </Link>
         .

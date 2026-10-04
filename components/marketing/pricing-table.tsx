@@ -42,7 +42,7 @@ export function PricingTable() {
               key={tier}
               className="flex flex-col rounded-card bg-paper p-8 md:p-10"
             >
-              <h3 className="text-lead font-medium text-ink">{t.label}</h3>
+              <h2 className="text-lead font-medium text-ink">{t.label}</h2>
               <p className="mt-6 font-display text-[clamp(40px,4vw,56px)] font-medium leading-none tracking-[-0.02em] text-ink">
                 {t.price}
               </p>

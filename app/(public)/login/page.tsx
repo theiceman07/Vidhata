@@ -89,7 +89,7 @@ export default function ClientLoginPage() {
             onClick={() =>
               toast.info("Sign-up isn't available in this preview.")
             }
-            className="text-accent hover:underline"
+            className="text-accent underline underline-offset-2 hover:no-underline"
           >
             Create an account
           </button>
@@ -117,7 +117,7 @@ export default function ClientLoginPage() {
               onClick={() =>
                 toast.info("Password reset isn't available in this preview.")
               }
-              className="text-meta text-muted-fg transition-colors hover:text-ink"
+              className="inline-flex min-h-6 items-center text-meta text-muted-fg transition-colors hover:text-ink"
             >
               Forgot password?
             </button>

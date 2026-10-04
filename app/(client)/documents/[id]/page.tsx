@@ -212,7 +212,7 @@ export default function DocumentPage() {
               <span className="mx-1.5 text-muted-fg/50">·</span>
               <Link
                 href={`/documents/${doc.id}/history`}
-                className="text-ink underline-offset-2 hover:underline"
+                className="text-ink underline underline-offset-2 hover:no-underline"
               >
                 Version history
               </Link>

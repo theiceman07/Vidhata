@@ -604,7 +604,7 @@ export function DocumentWorkspace({
         </aside>
 
         {/* Centre · the contract. */}
-        <main className="min-w-0 bg-paper lg:overflow-y-auto">
+        <section aria-label="Contract text" className="min-w-0 bg-paper lg:overflow-y-auto">
           <DocumentSurface
             doc={view}
             findingNumbers={findingNumbers}
@@ -615,7 +615,7 @@ export function DocumentWorkspace({
             onActiveClauseChange={setActiveClauseId}
             notes={role === "advocate" ? notes : undefined}
           />
-        </main>
+        </section>
 
         {/* Right, when nothing else is open · the companion, full height.
             It is hidden rather than unmounted while a finding is open, so

@@ -215,7 +215,7 @@ export default function ChatPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about any clause in this document"
-                aria-label="Message"
+                aria-label="Ask about a clause in this document"
               />
               <Button type="submit" size="icon" aria-label="Send">
                 <Icon name="send" size={18} />

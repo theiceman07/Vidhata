@@ -180,9 +180,9 @@ function StepRow({
         <div className="rounded-card bg-parchment/50 p-6 md:px-7 print:p-0">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="text-label font-medium text-muted-fg">
+              <h2 className="text-label font-medium text-muted-fg">
                 {String(number).padStart(2, "0")} · {STEP_TITLE[step.kind]}
-              </h3>
+              </h2>
               <p className="mt-1 font-display text-h3 text-muted-fg">{step.headline}</p>
             </div>
             <StatusPill step={step} isNext={false} />
@@ -201,11 +201,11 @@ function StepRow({
           {/* What to do. */}
           <div className="min-w-0">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <h3 className="text-label font-medium text-muted-fg">
+              <h2 className="text-label font-medium text-muted-fg">
                 {String(number).padStart(2, "0")} · {STEP_TITLE[step.kind]}
                 <span className="mx-1.5 text-muted-fg/50">·</span>
                 <span className="font-normal">Owner · {owner}</span>
-              </h3>
+              </h2>
               <span className="xl:hidden">
                 <StatusPill step={step} isNext={isNext} />
               </span>
@@ -251,6 +251,7 @@ function StepRow({
                 ref={fileRef}
                 id={fileId}
                 type="file"
+                aria-label={`Attach proof for ${STEP_TITLE[step.kind]}`}
                 className="sr-only"
                 tabIndex={-1}
                 onChange={(e) => {

@@ -13,17 +13,19 @@ export const metadata: Metadata = {
 // before deploying.
 export default function ContactPage() {
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-10">
+    <>
+    <main className="mx-auto w-full max-w-3xl px-4 py-10">
       <PageHeader title="Contact" backHref="/" backLabel="Home" />
       <ContactForm />
       <p className="mt-4 text-small text-muted-fg">
         For empanelled advocates, use the{" "}
-        <Link href="/advocate-login" className="text-accent hover:underline">
+        <Link href="/advocate-login" className="text-accent underline underline-offset-2 hover:no-underline">
           advocate sign-in
         </Link>
         . This form is for general and client enquiries.
       </p>
-      <SiteFooter />
-    </div>
+    </main>
+    <SiteFooter />
+    </>
   );
 }

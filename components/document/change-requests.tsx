@@ -61,9 +61,9 @@ export function ChangeRequests({
                   <span className="mx-1.5 text-muted-fg/50">·</span>
                   <span className="font-mono">Clause {number}</span>
                 </p>
-                <h3 className="mt-0.5 font-display text-h3 text-ink">
+                <h2 className="mt-0.5 font-display text-h3 text-ink">
                   {clause?.heading ?? finding.clauseReference}
-                </h3>
+                </h2>
 
                 <blockquote className="mt-4 rounded-control bg-paper px-5 py-4 font-clause text-body text-ink">
                   {finding.clauseText}

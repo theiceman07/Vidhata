@@ -126,6 +126,9 @@ export function FindingDetail({
   const clause = doc.clauses.find((c) => c.number === clauseNumber);
   const history = buildAuditTrail(doc).filter((e) => e.findingId === finding.findingId);
   const request = finding.changeRequest;
+  // Each decision names the finding it is about, so a screen reader hears
+  // which one a control acts on, not just the verb.
+  const which = `finding ${number}, clause ${clauseNumber}`;
 
   function open(next: Draft, initial = "") {
     setDraft(next);
@@ -189,6 +192,7 @@ export function FindingDetail({
                           size="sm"
                           variant="outline"
                           disabled={busy}
+                          aria-label={`Withdraw source for ${which}`}
                           onClick={() => open({ kind: "withdraw", citationId: citation.id })}
                         >
                           Withdraw source
@@ -198,6 +202,7 @@ export function FindingDetail({
                             size="sm"
                             variant="ghost"
                             disabled={busy}
+                            aria-label={`Ask the client instead, for ${which}`}
                             onClick={() => open({ kind: "request" }, finding.remedySuggested)}
                           >
                             Ask the client instead
@@ -312,7 +317,13 @@ export function FindingDetail({
                 {finding.resolvedAt &&
                   ` · ${format(new Date(finding.resolvedAt), "d MMM yyyy, HH:mm")}`}
               </p>
-              <Button size="sm" variant="outline" onClick={onReopen} disabled={busy}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onReopen}
+                disabled={busy}
+                aria-label={`Reopen ${which}`}
+              >
                 Reopen
               </Button>
             </div>
@@ -337,10 +348,21 @@ export function FindingDetail({
                 }}
               />
               <div className="flex items-center gap-2">
-                <Button size="sm" onClick={submit} disabled={busy || !text.trim()}>
+                <Button
+                  size="sm"
+                  onClick={submit}
+                  disabled={busy || !text.trim()}
+                  aria-label={`${DRAFT_COPY[draft.kind].action}, ${which}`}
+                >
                   {DRAFT_COPY[draft.kind].action}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => setDraft(null)} disabled={busy}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setDraft(null)}
+                  disabled={busy}
+                  aria-label={`Cancel, ${which}`}
+                >
                   Cancel
                 </Button>
                 <span className="ml-auto hidden font-mono text-label text-muted-fg sm:inline">
@@ -374,7 +396,13 @@ export function FindingDetail({
               )}
               <div className="flex flex-wrap gap-2">
                 {!needsNote && (
-                  <Button size="sm" onClick={() => onSettle(null)} disabled={busy}>
+                  <Button
+                    size="sm"
+                    onClick={() => onSettle(null)}
+                    disabled={busy}
+                    aria-label={`Settle ${which}`}
+                    aria-keyshortcuts="C"
+                  >
                     Settle
                     <kbd className="font-mono text-label opacity-70">C</kbd>
                   </Button>
@@ -384,6 +412,7 @@ export function FindingDetail({
                   variant={needsNote ? "default" : "outline"}
                   onClick={() => open({ kind: "note" })}
                   disabled={busy}
+                  aria-label={`Settle with note, ${which}`}
                 >
                   Settle with note
                 </Button>
@@ -393,6 +422,7 @@ export function FindingDetail({
                     variant="ghost"
                     onClick={() => open({ kind: "request" }, finding.remedySuggested)}
                     disabled={busy}
+                    aria-label={`Request change, ${which}`}
                   >
                     Request change
                   </Button>
