@@ -1,6 +1,9 @@
 # Plan: client-shaped API
 
-Status: planned, not started. Decided 4 October 2026: the boundary on what a
+Status: phase 1 done as a **proposal** (types and the field matrix test, 4 October
+2026); phases 2 to 6 not started. The types are not agreed with the backend
+team: nobody has yet asked whether they have started the document endpoints or
+which response shapes they assumed. Decided 4 October 2026: the boundary on what a
 client may see belongs in the API and the type system, not in browser
 narrowing. A larger refactor than the rest of the batch, so it is its own pass,
 done before the backend team starts.
@@ -38,15 +41,23 @@ Client routes and domain components read these fields off a document today
 |---|---|---|
 | `id`, `title`, `type`, `status`, `tier`, `version`, `createdAt`, `claimedAt` | many | `ClientDocument`, unchanged |
 | `clientName`, `counterpartyName`, `stateOfExecution`, `transactionValue`, `counterpartyIsMsme`, `durationMonths`, `governingLaw`, `keyTerms` | 12 | `ClientDocument.deal`, unchanged |
-| `settledAt`, `advocate` | 39 | the sign-off record: name and Bar enrolment **only once signed off**; before it, the name of the advocate a request is from, and nothing else |
-| `payment` | 2 | `{ paidAt }`, never the amount in a screen that has no need of it |
+| `settledAt`, `advocate` | 39 | the sign-off record (`SignOffRecord`): name, Bar enrolment and date **only once signed off**. Before it the client is told "your advocate" and nothing else, in a request and in the trail too (decided 4 October, replacing "the name of the advocate a request is from") |
+| `payment` | 2 | `paidAt` only. The amount leaves the document: the consultation page's "Rs X, paid" reads the tier's price through a pricing function, and money lives on invoices |
 | `executionSteps` | 8 | after sign-off only; empty before |
 | `clauses` | 15 | **the large change**: before sign-off only the clauses behind requests addressed to the client, each with its text, and a count of the rest; after sign-off all, read-only |
 | `findings` | 7 | **the other large change**: `ClientFinding` (number, clause reference, description, the advocate's disposition after sign-off, its sources after sign-off). No rule id, no layer, no override note, no `source`, no advocate-added finding before sign-off unless a request is addressed to the client about it |
 
 Nothing in the client code reads `ruleApplied`, `layer`, `overrideNote`,
-`resolvedAt`, `changeRequest` internals beyond the request text, or the
-advocate's notes. So the new types lose nothing a screen uses.
+`resolvedAt`, or the advocate's notes.
+
+**Correction found in phase 1.** The audit above counted reads of `doc.findings`
+by name, and missed that the shared workspace receives findings as a prop. A
+client reading a settled document also reads each finding's `severity`,
+`clauseText`, `remedySuggested`, `source` (for the "added by the advocate" mark)
+and its citations (`text`, `status`, `corpusRef`, `withdrawn`), and a request's
+`requestedBy`. So `ClientFindingDetail` carries severity, description, remedy,
+disposition and citations, and drops `requestedBy` (the advocate's name) and the
+withdrawal note. Phase 3 will find anything else the compiler can.
 
 ## Phases
 
@@ -88,6 +99,38 @@ Each phase leaves `npm run check` green and the walkthrough passing
 6. **Retire.** Delete the browser-side narrowing that is now dead, remove the
    `Gap` notes in the contract, and update CLAUDE.md.
 
+## Proposed types (phase 1, not agreed)
+
+In `lib/types.ts`, tested in `lib/clientTypes.test.ts`. Derived with `Pick`, so a
+new internal field is private until someone adds it on purpose.
+
+- `SignOffRecord` (also now `Delivery.signOff`): `advocate`, `enrolment`, `at`.
+  The only place a client meets the advocate.
+- `ClientDocument`: `id, title, type, status, tier, version, createdAt,
+  claimedAt, executedAt`, `deal`, `paidAt`, `signOff`, `clauses` and
+  `otherClauseCount`, `findingList`, `executionSteps`. Named `findingList` so the
+  guard that fails on `.findings` in client code keeps working until the fence
+  replaces it.
+- `ClientFinding`: `id` (opaque), `number`, `clauseReference`, `clauseText`,
+  `request`, and `detail` (null before sign-off).
+- `ClientFindingDetail`: severity, description, remedy, disposition, citations,
+  and one optional `advocateAdded?: true`, absent when
+  `SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF` is off, so narrowing the setting never
+  changes the type.
+- `ClientClause`, `ClientChangeRequest`, `ClientCitation`, `ClientDeal`,
+  `ClientVersionRow` / `ClientVersionList`, `ClientDiff`, `ClientAuditEntry`.
+  The version and diff shapes moved here from `lib/clientVersions.ts`, which
+  re-exports its old names.
+
+The test walks every client type at any depth and fails the typecheck on a
+restricted key (rule id, layer, source, override note, resolution time, who
+asked, org, payment, fee, Bar enrolment, advocate notes). It was checked by
+adding `ruleApplied` to a client type and watching it fail.
+
+Consequences for copy, to be done in phase 3: "Farhan Sheikh needs your answer"
+becomes "Your advocate needs your answer", and the client's trail says
+"Advocate" before sign-off.
+
 ## Risks
 
 - **Size.** Eight client routes and a dozen components change. The phases are
@@ -106,13 +149,21 @@ Each phase leaves `npm run check` green and the walkthrough passing
 
 ## Questions for you
 
+Answered 4 October 2026 (1 to 4); question 5 is new.
+
 1. **Who is the advocate to a client before sign-off?** Today the name is shown
    once a document is claimed ("Farhan Sheikh needs your answer"). Should the
    Bar enrolment stay hidden until sign-off? The plan assumes yes.
+   **Answer: hide the enrolment and the name. The client meets the advocate
+   only in the sign-off record.**
 2. **The advocate-added switch** (`SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF`, currently
    on). It stays a configuration read in the API. Counsel's call.
+   **Answer: keep it a server-side value, default on, one optional field on the
+   client type that is absent when it is off.**
 3. **The payment amount.** Does a client's document page need it, or only the
    invoice? The plan drops it from `ClientDocument` and leaves it on the invoice.
+   **Answer: yes. Billing is a separate function and the pay view reads the fee
+   from the tier through a pricing function.**
 4. **Order against the backend team.** Phases 1 and 2 can start the day the
    backend team does; 3 and 4 are the part they should see land in the mock
    first.
