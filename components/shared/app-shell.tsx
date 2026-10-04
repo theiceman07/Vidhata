@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/session";
 import { BrandLogo } from "@/components/shared/brand-logo";
+import { PreviewBanner } from "@/components/shared/preview-banner";
 import { Icon, type IconName } from "@/components/shared/icon";
 import {
   PaletteProvider,
@@ -170,16 +171,21 @@ function ShellBody({
           </div>
         </header>
 
-        <main
-          className={cn(
-            "min-w-0 flex-1",
-            fullBleed
-              ? "md:h-screen md:overflow-y-auto lg:overflow-hidden"
-              : "px-4 py-6 pb-24 md:h-screen md:overflow-y-auto md:px-8 md:py-8",
-          )}
-        >
-          {children}
-        </main>
+        {/* The page and the preview banner share one column, so the banner
+            takes its own row and the page scrolls beneath it. */}
+        <div className="flex min-w-0 flex-1 flex-col md:h-screen">
+          <PreviewBanner />
+          <main
+            className={cn(
+              "min-h-0 min-w-0 flex-1",
+              fullBleed
+                ? "md:overflow-y-auto lg:overflow-hidden"
+                : "px-4 py-6 pb-24 md:overflow-y-auto md:px-8 md:py-8",
+            )}
+          >
+            {children}
+          </main>
+        </div>
 
         {/* The workspace owns the bottom of a small screen for its finding
             sheet, so the tab bar stands down there. */}
