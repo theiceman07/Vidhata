@@ -1,16 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getMockDocumentById } from "@/lib/mock/documents.mock";
 import type { ContractDocument, ExecutionStep } from "@/lib/types";
-import {
-  claimDocument,
-  createDraftDocument,
-  getDocument,
-  payFee,
-  signOffDocument,
-  startAnalysis,
-  updateFinding,
-  withdrawCitation,
-} from "./documents";
+import { signedOffDocument } from "./testing";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -18,13 +9,6 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
 });
-
-async function settle<T>(promise: Promise<T>): Promise<T> {
-  await vi.runAllTimersAsync();
-  return promise;
-}
-
-const advocate = { id: "adv-test", name: "Test Advocate", bar: "XX/0001/2020" };
 
 // A figure in rupees, however it is written: Rs 100, Rs. 1,00,000, INR 5000, ₹4,999.
 const RUPEE_FIGURE = /(?:₹|\brs\.?|\binr)\s*\d/i;
@@ -40,37 +24,7 @@ async function generatedChecklist(
   stateOfExecution: string,
   transactionValue: number,
 ): Promise<ExecutionStep[]> {
-  const draft = await settle(
-    createDraftDocument({
-      title: `Checklist ${type} ${stateOfExecution}`,
-      type,
-      clientName: "Anaya Textiles Pvt Ltd",
-      counterpartyName: "Counterparty Pvt Ltd",
-      stateOfExecution,
-      transactionValue,
-      counterpartyIsMsme: false,
-      durationMonths: 12,
-      governingLaw: "Laws of India",
-      keyTerms: "",
-    }),
-  );
-  await settle(startAnalysis(draft.id));
-  // Reading it after the analysis window reconciles it to awaiting payment.
-  vi.advanceTimersByTime(60_000);
-  await settle(getDocument(draft.id));
-  await settle(payFee(draft.id));
-  const claimed = await settle(
-    claimDocument(draft.id, advocate, { noConflictWithEitherParty: true }),
-  );
-  // The advocate settles every finding, and withdraws any blocked source, before sign-off.
-  for (const finding of claimed.findings) {
-    for (const citation of finding.citations.filter((c) => c.status === "blocked")) {
-      await settle(withdrawCitation(draft.id, finding.findingId, citation.id, "Withdrawn.", advocate.name));
-    }
-    await settle(updateFinding(draft.id, finding.findingId, { disposition: "confirmed", overrideNote: null }));
-  }
-  const settled = await settle(signOffDocument(draft.id));
-  return settled.executionSteps;
+  return (await signedOffDocument({ type, stateOfExecution, transactionValue })).executionSteps;
 }
 
 describe("a generated execution checklist", () => {

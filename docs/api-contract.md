@@ -61,7 +61,8 @@ document and for a made-up id, so an advocate following a link cannot tell the
 document exists. It is in no advocate-facing count or metric.
 Mock: `documents.ts` › `listDocuments`, `getDocumentForReview`.
 Test: `documents.test.ts` › "is in the client's own list but in no advocate-facing read", "looks the same to an advocate following a link as a document that does not exist".
-**Gap:** only these two reads apply the gate. See Appendix B, item 1.
+Every advocate **write** goes through the same gate (`documents.ts` › `heldDocument`): an unpaid document is refused as "Document not found." and so is a missing one.
+Test: `lib/api/advocate-gates.test.ts` › "an advocate's writes › are refused on an unpaid document exactly as on one that does not exist".
 
 **1.3 A document is not claimable until paid, and the refusal is the one for a
 missing id.** `claimDocument` throws "Document not found." for an unreleased
@@ -109,9 +110,9 @@ still `pending`, and no citation that is blocked and not withdrawn. It sets
 `status = "settled"` and `settledAt`, and builds the execution checklist once.
 Nothing reaches a client without a recorded advocate sign-off, so `settledAt`
 and `advocate` are the record.
+It also refuses anyone but the advocate who holds the claim, re-runs the citation gate first (section 3.3), and is idempotent: signing off a document that is already settled changes nothing, and `settledAt` stays.
 Mock: `documents.ts` › `signOffDocument`; the same blockers, as the screen reads them, in `lib/findings.ts` › `signOffBlockers`.
-Test: `signOffDocument` is exercised only by `checklist.test.ts` (the happy path, through to the checklist). **No test pins the two refusals.** Add them.
-**Gap:** the mock does not check that the caller is the claiming advocate. See Appendix B, item 1.
+Test: `lib/api/advocate-gates.test.ts` › "signing off › …" (four tests: open finding refused, blocked source refused, another advocate refused, recorded once and idempotent); `lib/api/signoff-recheck.test.ts` (the gate runs again at sign-off); `lib/api/checklist.test.ts` (through to the checklist).
 
 **2.2 The summary is unavailable until sign-off, and the gate is in the API.**
 `getSettledSummary` returns `{ state: "not_available" }` for any document that is
@@ -179,7 +180,9 @@ matching the corpus, never by being relabelled, and a verified one that no longe
 matches becomes blocked. A withdrawal survives it.
 Mock: `documents.ts` › `recordVersion`; `lib/citations.ts` › `recheckCitation`, `recheckFindings`.
 Test: `lib/citations.test.ts` › "running the gate again on the record › …" (five tests); `documents.test.ts` › "runs the citation gate again, so a citation the corpus no longer holds is blocked", "leaves every citation agreeing with a fresh lookup of its own text".
-**Gap:** the gate is not re-run at sign-off, and a finding added by an advocate is stored with whatever citation status the caller supplied until the next hand-off. See Appendix B, item 2.
+**The gate also runs at sign-off**, on every citation on the record, before the blockers are read. And a finding an advocate adds takes **no** word of the caller's about a citation's standing: `addFinding` computes each status from the lookup, drops any withdrawal the caller sent, and enters the finding open, marked as added by an advocate.
+Mock: `documents.ts` › `signOffDocument`, `addFinding`.
+Test: `lib/api/signoff-recheck.test.ts` › "runs the gate again, and refuses while a finding relies on a source that has gone"; `lib/api/advocate-gates.test.ts` › "adding a finding › takes no word of the caller's about whether a citation is verified", "enters the record open, marked as added by an advocate, whatever it arrived as".
 
 **3.4 A blocked citation can be withdrawn, never relabelled.** The advocate
 withdraws it with a note. The citation stays on the record as blocked, with who,
@@ -188,8 +191,8 @@ settled, and the document cannot be signed off, while one of its citations is
 blocked and not withdrawn. A finding with no verified source left can be settled
 only with the advocate's reasoning on the record.
 Mock: `documents.ts` › `withdrawCitation`, `updateFinding`, `signOffDocument`; `lib/findings.ts` › `blockingCitations`, `settleNeedsNote`.
-Test: `lib/findings.test.ts` and `lib/citations.test.ts` hold the lookups. **No test pins `withdrawCitation` or the refusal in `updateFinding` directly.**
-**Gap:** the note is required by the screen only; the API accepts an empty one, and `updateFinding` does not require a note where `settleNeedsNote` says it should. Appendix B, items 3 and 4.
+Both the withdrawal and the settling now refuse a blank note in the API, not only on the screen.
+Test: `lib/api/advocate-gates.test.ts` › "withdrawing a source › …" (three tests) and "settling a finding › …" (four tests); `lib/findings.test.ts` and `lib/citations.test.ts` hold the lookups.
 
 **3.5 The attempt log.** Every citation an advocate **types** is recorded: the
 exact input before any tidying, the outcome, the corpus ref or reason, the
@@ -430,7 +433,7 @@ currency-lag metric has a source.
 schedule and the registration rules from audited schedules. A generated checklist
 states nothing until then (section 2.6).
 
-**10.5 For counsel and the accountant** (also in `docs/superpowers/plans/2026-10-03-money-and-privacy.md`): who issues and receives a consultation invoice, and its wording; a proper GST breakup; the deletion scope and wording; whether a settled document is removed or kept on deletion; the security page and the training opt-in wording; the terms of advocate empanelment, which the onboarding page states none of.
+**10.5 For counsel and the accountant** (also in `docs/superpowers/plans/2026-10-03-money-and-privacy.md`): who issues and receives a consultation invoice, and its wording; a proper GST breakup; the deletion scope and wording; whether a settled document is removed or kept on deletion; the security page and the training opt-in wording; the terms of advocate empanelment, which the onboarding page states none of; and the wording of the advocate's sign-off attestation, which no longer cites a Bar Council rule number until counsel confirms which rule, if any, applies.
 
 ---
 
@@ -453,12 +456,12 @@ read returns nothing instead.
 | `startAnalysis` | `id` | document, `analysing` (a `draft` only) | "Document not found." |
 | `payFee` | `id` | document, `pending_review`, `payment` set | not found; "not awaiting payment"; the payment failure |
 | `claimDocument` | `id`, advocate, `ConflictDeclaration` | document, `under_review`, `claimedAt`, `conflictDeclaredAt` | already claimed by another; unreleased (as not found); no declaration; declared-conflict match |
-| `requestChange` | `docId`, `findingId`, `request`, `advocateName` | document, `revision` | past the cap; document or finding not found |
+| `requestChange` | `docId`, `findingId`, `request`, advocate `{ id, name }` | document, `revision` | past the cap; document or finding not found; unreleased (as not found); not the holder |
 | `respondToChanges` | `docId`, `{ findingId: answer }` | document; back to `under_review` or `pending_review` when nothing is left unanswered | not found |
-| `withdrawCitation` | `docId`, `findingId`, `citationId`, `note`, `advocateName` | document | not found; "Only a blocked source can be withdrawn." |
-| `updateFinding` | `docId`, `findingId`, `{ disposition, overrideNote }` | document | not found; settling while a source is blocked and not withdrawn |
-| `addFinding` | `docId`, `Finding` | document, the finding attached to its clause | not found |
-| `signOffDocument` | `docId` | document, `settled`, `settledAt`, checklist built | not found; no advocate; a finding pending; a citation blocked and not withdrawn |
+| `withdrawCitation` | `docId`, `findingId`, `citationId`, `note`, advocate `{ id, name }` | document | not found; unreleased; not the holder; blank note; "Only a blocked source can be withdrawn." |
+| `updateFinding` | `docId`, `findingId`, `{ disposition, overrideNote }`, `advocateId` | document. Reopening (`pending`) clears the note and the time. | not found; unreleased; not the holder; settling while a source is blocked and not withdrawn; settling with no verified source and no note |
+| `addFinding` | `docId`, `Finding`, `advocateId` | document, the finding attached to its clause. Enters open, `source: "advocate"`, each citation's status computed from the lookup. | not found; unreleased; not the holder; a finding id already on the record |
+| `signOffDocument` | `docId`, `advocateId` | document, `settled`, `settledAt`, checklist built. Idempotent once settled. The citation gate runs first. | not found; unreleased; not the holder; a finding pending; a citation blocked and not withdrawn |
 | `toggleExecutionStep` | `docId`, `kind`, `complete`, `actorName` | document; `executed` when the last applicable step is done | not found |
 | `attachEvidence` | `docId`, `kind`, `fileName \| null` | document | not found |
 
@@ -515,18 +518,19 @@ read returns nothing instead.
 
 ## Appendix B: rules the mock leaves to the screen
 
-A backend that copies the mock copies each of these. Each must be enforced
-on the server.
+A backend that copies the mock copies each of these. Each must be enforced on the
+server. Items marked **closed** were gaps in the first draft of this document and
+are now held in the mock and by test; they stay here so the backend team knows
+they were once open and why.
 
-1. **Caller identity and release on every advocate write.** `requestChange`, `updateFinding`, `addFinding`, `withdrawCitation`, `signOffDocument` find a document by id with no `isReleased` check and no check that the caller is the claiming advocate. The screen hides the controls from everyone but the holder, and `signOffDocument`'s own comment says a UI-only guard is not a guard. The backend must refuse every advocate write from anyone but the claimant, and refuse an unreleased document **as not found**.
-2. **Citation status is trusted on write.** `addFinding` stores whatever `status` the caller put on each citation, and `signOffDocument` reads the stored flags. The gate is re-run only at the next hand-off. The backend runs the gate on every citation in a submitted finding, ignores the status the client sent, and re-runs it at sign-off.
-3. **A withdrawal needs a note.** `withdrawCitation` accepts an empty note; only the screen asks for text.
-4. **Settling without a verified source needs a note.** `lib/findings.ts` › `settleNeedsNote` is read by the screen. `updateFinding` does not require the note.
+1. **Caller identity and release on every advocate write. Closed.** `requestChange`, `updateFinding`, `addFinding`, `withdrawCitation` and `signOffDocument` now take the caller's id, refuse an unreleased document as not found, and refuse anyone who does not hold the claim (`documents.ts` › `heldDocument`). Tests: `advocate-gates.test.ts` › "an advocate's writes › …".
+2. **Citation status is trusted on write. Closed.** `addFinding` computes it from the lookup; sign-off re-runs the gate.
+3. **A withdrawal needs a note. Closed.**
+4. **Settling without a verified source needs a note. Closed.**
 5. **`respondToChanges` has no owner or state check.** It does not check the caller owns the document, nor that the document is in `revision`.
 6. **Client reads and writes are not scoped to an organisation.** `getDocument`, `getDocumentVersions`, `getDelivery`, `getSettledSummary`, `respondToChanges`, `payFee`, `toggleExecutionStep`, `attachEvidence`, `requestConsultation`, `listConsultations`, `payConsultation` take a bare id. Another organisation's document, invoice or consultation must come back as the same not-found as a missing one.
-7. **Client visibility** (section 4). The mock returns the full record and the browser narrows it.
+7. **Client visibility** (section 4). The mock returns the full record and the browser narrows it. This is the largest gap, and it is planned as its own batch: client-facing functions return client-shaped types (a `ClientDocument` without the restricted fields), so the boundary lives in the API and in the type system, not in browser narrowing.
 8. **Execution on an unsigned document.** `toggleExecutionStep` and `attachEvidence` do not refuse a document that is not `settled` or `executed`.
 9. **Consultation requests are keyed by question text.** Use a client-supplied idempotency key.
 10. **No length cap on change requests, notes or findings.** Consultations have caps; these do not.
 11. **Invoice numbers are derived**, not allocated (section 7).
-12. **The sign-off refusals and the withdraw and settle refusals have no direct test** (sections 2.1 and 3.4). Write them against the backend before relying on it.

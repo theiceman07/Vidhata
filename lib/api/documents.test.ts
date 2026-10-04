@@ -100,7 +100,7 @@ describe("the revision limit", () => {
   const id = "doc-msa-pending";
 
   async function ask(findingId: string) {
-    return settle(requestChange(id, findingId, "Please confirm.", advocate.name));
+    return settle(requestChange(id, findingId, "Please confirm.", advocate));
   }
 
   async function answerEverything() {
@@ -153,7 +153,7 @@ describe("the revision limit", () => {
     await answerEverything();
 
     // A fourth round is refused, with the reason, and nothing changes.
-    const refused = expect(requestChange(id, b, "Once more.", advocate.name)).rejects.toThrow(
+    const refused = expect(requestChange(id, b, "Once more.", advocate)).rejects.toThrow(
       /used all 3 revision rounds.*logged for corpus review/,
     );
     await vi.runAllTimersAsync();
@@ -168,7 +168,7 @@ describe("the revision limit", () => {
     expect(revisionCycle(doc!).canRequest).toBe(false);
     const target = doc!.findings.find((f) => f.citations.every((c) => c.status !== "blocked"))!;
     const settled = await settle(
-      updateFinding(id, target.findingId, { disposition: "overridden", overrideNote: "Decided." }),
+      updateFinding(id, target.findingId, { disposition: "overridden", overrideNote: "Decided." }, advocate.id),
     );
     expect(settled.findings.find((f) => f.findingId === target.findingId)?.disposition).toBe(
       "overridden",

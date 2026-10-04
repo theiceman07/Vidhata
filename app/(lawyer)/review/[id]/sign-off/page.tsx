@@ -229,7 +229,7 @@ export default function SignOffPage() {
     if (!doc) return;
     setSubmitting(true);
     try {
-      setDoc(await signOffDocument(doc.id));
+      setDoc(await signOffDocument(doc.id, CURRENT_ADVOCATE.id));
       toast.success("Signed off. The client can now read the settled document.");
     } catch (err) {
       toast.error(

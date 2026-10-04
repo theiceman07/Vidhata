@@ -11,8 +11,9 @@ import { PIPELINE_DURATION_MS, clauseNumberFromReference } from "@/lib/types";
 import { mockDocuments } from "@/lib/mock/documents.mock";
 import { mockVersions } from "@/lib/mock/versions.mock";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
-import { recheckFindings } from "@/lib/citations";
+import { recheckCitation, recheckFindings } from "@/lib/citations";
 import { declaredConflictWith } from "@/lib/conflicts";
+import { blockingCitations, settleNeedsNote } from "@/lib/findings";
 import { esignatureStep } from "@/lib/config/esign";
 import { TIER_PRICING } from "@/lib/config/pricing";
 import { revisionBlockedReason, revisionCycle } from "@/lib/revisions";
@@ -501,9 +502,28 @@ export async function claimDocument(
   return structuredClone(doc);
 }
 
-function findFinding(docId: string, findingId: string) {
+/**
+ * The one gate every advocate write goes through.
+ *
+ * An unreleased document is refused exactly as a missing one is, so a write
+ * cannot show that it exists. Then the caller must be the advocate who holds
+ * the claim: the screen shows decision controls only to the holder, and that
+ * is not a guard, so it is held here as well.
+ */
+function heldDocument(docId: string, advocateId: string): ContractDocument {
   const doc = store.find((d) => d.id === docId);
-  if (!doc) throw new MockApiError("Document not found.");
+  if (!doc || !isReleased(doc)) throw new MockApiError("Document not found.");
+  if (!doc.advocate) {
+    throw new MockApiError("Claim this document before you decide anything on it.");
+  }
+  if (doc.advocate.id !== advocateId) {
+    throw new MockApiError(`${doc.advocate.name} holds this document.`);
+  }
+  return doc;
+}
+
+function findFinding(docId: string, findingId: string, advocateId: string) {
+  const doc = heldDocument(docId, advocateId);
   const finding = doc.findings.find((f) => f.findingId === findingId);
   if (!finding) throw new MockApiError("Finding not found.");
   return { doc, finding };
@@ -518,13 +538,13 @@ export async function requestChange(
   docId: string,
   findingId: string,
   request: string,
-  advocateName: string,
+  advocate: { id: string; name: string },
 ): Promise<ContractDocument> {
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not send this request.");
   }
-  const { doc, finding } = findFinding(docId, findingId);
+  const { doc, finding } = findFinding(docId, findingId, advocate.id);
   // The limit holds whatever the screen offered (FR-20). It stops a round
   // being started past it; it never stops sign-off.
   const blocked = revisionBlockedReason(revisionCycle(doc));
@@ -534,7 +554,7 @@ export async function requestChange(
   finding.changeRequest = {
     request,
     requestedAt: now,
-    requestedBy: advocateName,
+    requestedBy: advocate.name,
     response: null,
     respondedAt: null,
   };
@@ -604,22 +624,26 @@ export async function withdrawCitation(
   findingId: string,
   citationId: string,
   note: string,
-  advocateName: string,
+  advocate: { id: string; name: string },
 ): Promise<ContractDocument> {
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not withdraw this source.");
   }
-  const { doc, finding } = findFinding(docId, findingId);
+  const { doc, finding } = findFinding(docId, findingId, advocate.id);
   const citation = finding.citations.find((c) => c.id === citationId);
   if (!citation) throw new MockApiError("Citation not found.");
   if (citation.status !== "blocked") {
     throw new MockApiError("Only a blocked source can be withdrawn.");
   }
+  // A withdrawal is a decision about the finding, and it is on the record with
+  // its reasoning. Without the reasoning there is nothing to record.
+  const reasoning = note.trim();
+  if (!reasoning) throw new MockApiError("Record why the finding stands without this source.");
   citation.withdrawn = {
-    note,
+    note: reasoning,
     at: new Date().toISOString(),
-    by: advocateName,
+    by: advocate.name,
   };
   return structuredClone(doc);
 }
@@ -628,22 +652,31 @@ export async function updateFinding(
   docId: string,
   findingId: string,
   patch: Pick<Finding, "disposition" | "overrideNote">,
+  advocateId: string,
 ): Promise<ContractDocument> {
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not save this finding.");
   }
-  const { doc, finding } = findFinding(docId, findingId);
-  if (
-    patch.disposition !== "pending" &&
-    finding.citations.some((c) => c.status === "blocked" && !c.withdrawn)
-  ) {
-    throw new MockApiError(
-      "This finding's source is blocked. Withdraw it or resolve it before settling.",
-    );
+  const { doc, finding } = findFinding(docId, findingId, advocateId);
+  const note = patch.overrideNote?.trim() || null;
+  if (patch.disposition !== "pending") {
+    if (blockingCitations(finding).length > 0) {
+      throw new MockApiError(
+        "This finding's source is blocked. Withdraw it or resolve it before settling.",
+      );
+    }
+    // A finding without a verified source is an opinion. An advocate's judgment
+    // is the product, so it can be settled, but only with the reasoning written
+    // down.
+    if (settleNeedsNote(finding) && !note) {
+      throw new MockApiError(
+        "No verified source remains, so settling needs your reasoning on the record.",
+      );
+    }
   }
   finding.disposition = patch.disposition;
-  finding.overrideNote = patch.overrideNote;
+  finding.overrideNote = patch.disposition === "pending" ? null : note;
   finding.resolvedAt =
     patch.disposition === "pending" ? null : new Date().toISOString();
   return structuredClone(doc);
@@ -652,24 +685,41 @@ export async function updateFinding(
 export async function addFinding(
   docId: string,
   finding: Finding,
+  advocateId: string,
 ): Promise<ContractDocument> {
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not add this finding.");
   }
-  const doc = store.find((d) => d.id === docId);
-  if (!doc) throw new MockApiError("Document not found.");
-  doc.findings = [...doc.findings, finding];
+  const doc = heldDocument(docId, advocateId);
+  if (doc.findings.some((f) => f.findingId === finding.findingId)) {
+    throw new MockApiError("This finding is already on the record.");
+  }
+
+  // What the caller says about a citation's standing, or about the finding's
+  // own, is not taken. The corpus decides each citation's status, a withdrawal
+  // is the advocate's decision on a finding that is already on the record, and
+  // a finding added in review enters it open and marked as added by an advocate.
+  const entered: Finding = {
+    ...finding,
+    source: "advocate",
+    disposition: "pending",
+    overrideNote: null,
+    resolvedAt: null,
+    changeRequest: null,
+    citations: finding.citations.map((c) => recheckCitation({ ...c, withdrawn: null })),
+  };
+  doc.findings = [...doc.findings, entered];
 
   // Attach it to the clause it names, so an advocate-added finding is a
   // margin note like any other rather than floating free of the document.
   // If the reference names no clause in this contract the finding still
   // stands; the workspace lists it separately instead of losing it.
   const clause = doc.clauses.find(
-    (c) => c.number === clauseNumberFromReference(finding.clauseReference),
+    (c) => c.number === clauseNumberFromReference(entered.clauseReference),
   );
-  if (clause && !clause.findingIds.includes(finding.findingId)) {
-    clause.findingIds.push(finding.findingId);
+  if (clause && !clause.findingIds.includes(entered.findingId)) {
+    clause.findingIds.push(entered.findingId);
   }
 
   return structuredClone(doc);
@@ -677,27 +727,27 @@ export async function addFinding(
 
 export async function signOffDocument(
   docId: string,
+  advocateId: string,
 ): Promise<ContractDocument> {
   await randomDelay();
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not complete sign-off.");
   }
-  const doc = store.find((d) => d.id === docId);
-  if (!doc) throw new MockApiError("Document not found.");
-  if (!doc.advocate) {
-    throw new MockApiError("A document must be claimed before it is signed off.");
-  }
+  const doc = heldDocument(docId, advocateId);
+  // Signed off once. A second press changes nothing, and the date stays.
+  if (doc.status === "settled" || doc.status === "executed") return structuredClone(doc);
+
+  // The gate runs once more on every citation on the record, so what is signed
+  // off is what the corpus says now, not what it said when each was last
+  // looked at. A withdrawal is the advocate's decision and survives it.
+  doc.findings = recheckFindings(doc.findings);
   if (doc.findings.some((f) => f.disposition === "pending")) {
     throw new MockApiError("Every finding must be settled before sign-off.");
   }
   // A citation is either verified or blocked, never "probably fine". The
   // sign-off screen disables its control over this too, but the rule
   // belongs here as well: a UI-only guard is not a guard.
-  if (
-    doc.findings.some((f) =>
-      f.citations.some((c) => c.status === "blocked" && !c.withdrawn),
-    )
-  ) {
+  if (doc.findings.some((f) => blockingCitations(f).length > 0)) {
     throw new MockApiError(
       "A citation on this document is blocked. Resolve the source before sign-off.",
     );

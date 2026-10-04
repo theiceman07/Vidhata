@@ -157,10 +157,15 @@ export default function ReviewPage() {
       if (!doc) return;
       const updated = await run(
         () =>
-          updateFinding(doc.id, findingId, {
-            disposition: note ? "overridden" : "confirmed",
-            overrideNote: note,
-          }),
+          updateFinding(
+            doc.id,
+            findingId,
+            {
+              disposition: note ? "overridden" : "confirmed",
+              overrideNote: note,
+            },
+            CURRENT_ADVOCATE.id,
+          ),
         "Could not settle this finding.",
       );
       if (!updated) return;
@@ -169,10 +174,12 @@ export default function ReviewPage() {
         action: {
           label: "Undo",
           onClick: async () => {
-            const reverted = await updateFinding(doc.id, findingId, {
-              disposition: "pending",
-              overrideNote: null,
-            });
+            const reverted = await updateFinding(
+              doc.id,
+              findingId,
+              { disposition: "pending", overrideNote: null },
+              CURRENT_ADVOCATE.id,
+            );
             setDoc(reverted);
           },
         },
@@ -185,7 +192,13 @@ export default function ReviewPage() {
     async (findingId: string) => {
       if (!doc) return;
       await run(
-        () => updateFinding(doc.id, findingId, { disposition: "pending", overrideNote: null }),
+        () =>
+          updateFinding(
+            doc.id,
+            findingId,
+            { disposition: "pending", overrideNote: null },
+            CURRENT_ADVOCATE.id,
+          ),
         "Could not reopen this finding.",
       );
     },
@@ -196,7 +209,7 @@ export default function ReviewPage() {
     async (findingId: string, request: string) => {
       if (!doc) return;
       const updated = await run(
-        () => requestChange(doc.id, findingId, request, CURRENT_ADVOCATE.name),
+        () => requestChange(doc.id, findingId, request, CURRENT_ADVOCATE),
         "Could not send this request.",
       );
       if (updated) toast.success("Request sent to the client");
@@ -208,7 +221,7 @@ export default function ReviewPage() {
     async (findingId: string, citationId: string, note: string) => {
       if (!doc) return;
       const updated = await run(
-        () => withdrawCitation(doc.id, findingId, citationId, note, CURRENT_ADVOCATE.name),
+        () => withdrawCitation(doc.id, findingId, citationId, note, CURRENT_ADVOCATE),
         "Could not withdraw this source.",
       );
       if (updated) toast.success("Source withdrawn. The finding now rests on your note.");
@@ -362,7 +375,7 @@ export default function ReviewPage() {
               onOpenChange={setDialogOpen}
               onAdd={async (finding) => {
                 const updated = await run(
-                  () => addFinding(doc.id, finding),
+                  () => addFinding(doc.id, finding, CURRENT_ADVOCATE.id),
                   "Could not add this finding.",
                 );
                 if (updated) setDialogOpen(false);
