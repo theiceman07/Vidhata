@@ -8,24 +8,32 @@ import {
 import { getMockDocumentById } from "./documents.mock";
 
 /**
- * The history behind doc-vendor-revision, whose live head is draft 3.
+ * The history behind doc-vendor-revision, whose live head is draft 4.
  *
  * Snapshots are written at hand-off points only, so these are the drafts as
- * they were handed on, and the head may move ahead of the last one.
+ * they were handed on, and the head may move ahead of the last one. Every
+ * round is two hand-offs: the advocate sends it back (an advocate's revision)
+ * and the client answers (the client's answers). Two rounds, the second still
+ * open, make four drafts. The advocate's re-review of a round reads its round
+ * as revisionCount + 1, so this one is Round 3.
  *
  *   Draft 1 · first pass · 8 Sep
  *     Finding 7 (the court named is in another state from where the supply
  *     is delivered) and finding 4 (the 90-day payment term). Finding 4's
  *     citation is blocked: the corpus held no match on this run.
- *   Draft 2 · client's answers · 12 Sep
+ *   Draft 2 · advocate's revision · 10 Sep (round 1 sent back)
+ *     The wording is unchanged. The pipeline ran again and finding 4's source
+ *     now verifies. A request is out on finding 4, about the counterparty's
+ *     MSME registration.
+ *   Draft 3 · client's answers · 12 Sep
  *     Clauses 3.2 and 8.1 changed. Finding 7 is gone because Clause 8.1
- *     changed. Finding 4 is carried over, and its citation now verifies:
- *     the pipeline ran again and the corpus matched this time. Finding 8 is
- *     new, raised against the reworded Clause 3.2.
- *   Draft 3 · advocate's revision · 16 Sep (the head, as it was handed on)
+ *     changed. Finding 4 is carried over, with the client's answer on it.
+ *     Finding 8 is new, raised against the reworded Clause 3.2.
+ *   Draft 4 · advocate's revision · 16 Sep (round 2 sent back; the head, as
+ *   it was handed on)
  *     Clause 6.1 revised. Finding 8 settled by the advocate. Finding 4 still
- *     open, with a request to the client. Findings 9 and 10 added by the
- *     advocate, one with a verified source and one with a blocked one.
+ *     open, with a second request to the client. Findings 9 and 10 added by
+ *     the advocate, one with a verified source and one with a blocked one.
  *
  * Fixture prose is about contract facts. It says nothing about what any
  * statute provides, and the blocked placeholder is plainly not an authority.
@@ -107,16 +115,41 @@ const paymentTermDraft1: Finding = (() => {
   return finding;
 })();
 
-// Draft 2: the same finding after the pipeline ran again. The corpus matched
-// this time, so the citation verifies; the request has not been made yet.
+// The advocate's first request, about the same finding, sent back after the
+// first pass. The head's request (a second round) replaces it on the finding.
+const FIRST_ROUND_REQUEST = {
+  request:
+    "Please confirm that Ganesh Packaging Works is a registered MSME, and send its registration number if you have it.",
+  requestedAt: "2026-09-10T08:15:00.000Z",
+  requestedBy: "Farhan Sheikh",
+};
+
+// Draft 2: the finding as the advocate sent it back, after the pipeline ran
+// again. The corpus matched this time, so the citation verifies, and the
+// first request is out and unanswered.
 const paymentTermDraft2: Finding = (() => {
   const finding = headFinding("find-4");
-  finding.changeRequest = null;
+  finding.changeRequest = {
+    ...FIRST_ROUND_REQUEST,
+    response: null,
+    respondedAt: null,
+  };
   return finding;
 })();
 
-// Draft 2: the finding as it was raised, before the advocate decided it.
-const lateReplacementDraft2: Finding = (() => {
+// Draft 3: the same finding once the client has answered that request.
+const paymentTermDraft3: Finding = (() => {
+  const finding = headFinding("find-4");
+  finding.changeRequest = {
+    ...FIRST_ROUND_REQUEST,
+    response: "Yes, they are a registered MSME. The Udyam number is on file with our accounts team.",
+    respondedAt: "2026-09-12T09:05:00.000Z",
+  };
+  return finding;
+})();
+
+// Draft 3: the finding as it was raised, before the advocate decided it.
+const lateReplacementDraft3: Finding = (() => {
   const finding = headFinding("find-8");
   finding.disposition = "pending";
   finding.overrideNote = null;
@@ -144,9 +177,21 @@ const draft1: DocumentVersion = {
   findings: [courtMismatch, paymentTermDraft1],
 };
 
+// The advocate's first send-back. The wording is unchanged from draft 1, and
+// the pipeline has run again, so finding 4's source now verifies.
 const draft2: DocumentVersion = {
   documentId: DOCUMENT_ID,
   number: 2,
+  createdAt: "2026-09-10T08:20:00.000Z",
+  createdBy: "advocate_revision",
+  pipelineRunAt: "2026-09-10T08:19:00.000Z",
+  clauses: draft1.clauses.map((c) => ({ ...c })),
+  findings: [courtMismatch, paymentTermDraft2],
+};
+
+const draft3: DocumentVersion = {
+  documentId: DOCUMENT_ID,
+  number: 3,
   createdAt: "2026-09-12T09:12:00.000Z",
   createdBy: "client_response",
   pipelineRunAt: "2026-09-12T09:11:00.000Z",
@@ -155,14 +200,14 @@ const draft2: DocumentVersion = {
     "cl-ven-6": { findingIds: ["find-4"] },
     "cl-ven-7": { body: WARRANTY_BEFORE_REVISION },
   }),
-  findings: [paymentTermDraft2, lateReplacementDraft2],
+  findings: [paymentTermDraft3, lateReplacementDraft3],
 };
 
 // The head as it was handed to the client on 16 Sep, with the request on
 // finding 4.
-const draft3: DocumentVersion = {
+const draft4: DocumentVersion = {
   documentId: DOCUMENT_ID,
-  number: 3,
+  number: 4,
   createdAt: "2026-09-16T07:40:00.000Z",
   createdBy: "advocate_revision",
   pipelineRunAt: "2026-09-16T07:31:00.000Z",
@@ -374,6 +419,7 @@ export const mockVersions: DocumentVersion[] = [
   draft1,
   draft2,
   draft3,
+  draft4,
   ndaDraft1,
   ndaDraft2,
   rereviewDraft1,

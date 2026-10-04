@@ -296,11 +296,13 @@ const revisionVendor: ContractDocument = {
   governingLaw: "Laws of India",
   keyTerms: "Packaging specification per Annexure A; quarterly price review.",
   createdAt: "2026-09-08T11:30:00.000Z",
-  // Draft 3. The history is in lib/mock/versions.mock.ts: the first pass,
-  // the client's answers to the advocate's first request, and the
-  // advocate's revision that carries the request now waiting on the client.
-  version: 3,
-  // The advocate has sent it back twice: after draft 1, and after draft 2.
+  // Draft 4. The history is in lib/mock/versions.mock.ts: the first pass, the
+  // advocate's first send-back, the client's answers to it, and the advocate's
+  // second send-back, which carries the request now waiting on the client.
+  version: 4,
+  // The advocate has sent it back twice: after draft 1, and after draft 3.
+  // Each send-back and each answer is a draft, so two rounds, the second
+  // still open, are four drafts.
   revisionCount: 2,
   claimedAt: "2026-09-09T05:45:00.000Z",
   conflictDeclaredAt: "2026-09-09T05:45:00.000Z",

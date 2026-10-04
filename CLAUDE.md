@@ -154,6 +154,12 @@ Four systems, each with its own state. Never fold them into one label.
   before the current one. Not the latest snapshot: that is written at
   hand-off and equals the head, so the comparison would show nothing. Do not
   change this to "the latest snapshot".
+- Rounds and drafts: a round is two hand-offs, each a snapshot: the advocate
+  sends it back (requestChange writes an advocate_revision, carrying every
+  decision so far and the request) and the client answers (respondToChanges
+  writes a client_response). So a document sent back N times has 1 + 2N
+  drafts, one fewer while a round is open. "Round N" is revisionCount + 1,
+  never counted from drafts, and a test holds every fixture to the rule.
 - Finding.source says who raised a finding ("pipeline" or "advocate"). Never
   infer it from the rule id.
 - Claiming: an advocate declares no conflict with either party before every

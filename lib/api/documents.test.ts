@@ -121,7 +121,15 @@ describe("the revision limit", () => {
     // Rounds 1 and 2.
     let doc = await ask(a);
     expect([doc.revisionCount, doc.status, doc.corpusReviewLoggedAt]).toEqual([1, "revision", undefined]);
+    // Sending it back is a hand-off, so it is a snapshot, carrying the request.
+    let drafts = await settle(getDocumentVersions(id));
+    expect(drafts.map((v) => v.createdBy)).toEqual(["advocate_revision"]);
+    expect(drafts[0].number).toBe(doc.version);
+    expect(drafts[0].findings.find((f) => f.findingId === a)?.changeRequest).not.toBeNull();
     await answerEverything();
+    // The client's answers are the next.
+    drafts = await settle(getDocumentVersions(id));
+    expect(drafts.map((v) => v.createdBy)).toEqual(["advocate_revision", "client_response"]);
     doc = await ask(b);
     expect(doc.revisionCount).toBe(2);
     expect(doc.corpusReviewLoggedAt).toBeUndefined();
@@ -133,10 +141,15 @@ describe("the revision limit", () => {
     expect(doc.corpusReviewLoggedAt).toBeDefined();
     const loggedAt = doc.corpusReviewLoggedAt;
 
-    // A second request in the round already open is not a new round.
+    // A second request in the round already open is not a new round, and not
+    // another hand-off.
+    const draftsBefore = (await settle(getDocumentVersions(id))).length;
+    const versionBefore = doc.version;
     doc = await ask(a);
     expect(doc.revisionCount).toBe(MAX_REVISION_CYCLES);
     expect(doc.corpusReviewLoggedAt).toBe(loggedAt);
+    expect(doc.version).toBe(versionBefore);
+    expect((await settle(getDocumentVersions(id))).length).toBe(draftsBefore);
     await answerEverything();
 
     // A fourth round is refused, with the reason, and nothing changes.

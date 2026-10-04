@@ -27,8 +27,8 @@ describe("the scope of the vendor agreement's re-review", () => {
   it("compares the live draft with the one before it, not with its own snapshot", () => {
     // Draft 3's own snapshot is written at hand-off and equals the live
     // document, so against it nothing would show.
-    expect([scope.baseline, scope.head]).toEqual([2, 3]);
-    expect([scope.baselineLabel, scope.headLabel]).toEqual(["Draft 2", "Draft 3"]);
+    expect([scope.baseline, scope.head]).toEqual([3, 4]);
+    expect([scope.baselineLabel, scope.headLabel]).toEqual(["Draft 3", "Draft 4"]);
   });
 
   it("says which round it is from how many times it was sent back", () => {
@@ -142,7 +142,7 @@ describe("with no earlier draft", () => {
   it("has no scope, so the whole review is the scope", () => {
     expect(reviewScope({ ...vendor, version: 1 }, vendorVersions)).toBeNull();
     expect(reviewScope(vendor, [])).toBeNull();
-    expect(reviewScope(vendor, vendorVersions.filter((v) => v.number === 3))).toBeNull();
+    expect(reviewScope(vendor, vendorVersions.filter((v) => v.number === 4))).toBeNull();
   });
 });
 

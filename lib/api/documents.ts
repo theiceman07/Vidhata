@@ -574,11 +574,21 @@ export async function requestChange(
   };
   // Sending it back is what the cycle count counts, so a second request in
   // the same round does not add another.
-  if (doc.status !== "revision") doc.revisionCount += 1;
+  const startsRound = doc.status !== "revision";
+  if (startsRound) doc.revisionCount += 1;
   doc.status = "revision";
   // The round that uses the last of them logs the case, once.
   if (revisionCycle(doc).reached && !doc.corpusReviewLoggedAt) {
     doc.corpusReviewLoggedAt = now;
+  }
+  // Sending a draft back is a hand-off, so it is a snapshot: the draft as the
+  // advocate handed it on, with every decision made so far and the request.
+  // Without it a finding decided before the send-back is in no snapshot, and
+  // the next review could not tell it from one decided since. A second
+  // request in the same round is not another hand-off.
+  if (startsRound) {
+    doc.version += 1;
+    recordVersion(doc, "advocate_revision");
   }
   return structuredClone(doc);
 }

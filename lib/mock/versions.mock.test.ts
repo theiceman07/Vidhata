@@ -6,7 +6,7 @@ import { CORPUS } from "./corpus.mock";
 import { mockDocuments } from "./documents.mock";
 import { mockVersions } from "./versions.mock";
 
-const [draft1, draft2, draft3] = mockVersions;
+const [draft1, draft2, draft3, draft4] = mockVersions;
 const vendor = mockDocuments.find((d) => d.id === "doc-vendor-revision")!;
 
 const changed = (diff: ReturnType<typeof diffVersions>) =>
@@ -16,18 +16,27 @@ const findingsOf = (diff: ReturnType<typeof diffVersions>) =>
   diff.findings.map((f) => `${f.findingId} ${f.kind}${f.resolvedReason ? ` (${f.resolvedReason})` : ""}`);
 
 describe("the vendor agreement's history", () => {
-  it("draft 1 to 2: a clause change resolves one finding, one carries over, one is new", () => {
+  it("draft 1 to 2: the advocate sends it back with the wording unchanged and a request out", () => {
     const diff = diffVersions(draft1, draft2);
+    expect(changed(diff)).toEqual([]);
+    expect(findingsOf(diff)).toEqual(["find-7 unresolved", "find-4 unresolved"]);
+    expect(draft2.findings.find((f) => f.findingId === "find-4")!.changeRequest?.response).toBeNull();
+  });
+
+  it("draft 2 to 3: a clause change resolves one finding, one carries over, one is new", () => {
+    const diff = diffVersions(draft2, draft3);
     expect(changed(diff)).toEqual(["3.2 changed", "8.1 changed"]);
     expect(findingsOf(diff)).toEqual([
       "find-4 unresolved",
       "find-8 new",
       "find-7 resolved (clause_changed)",
     ]);
+    // The client's answer to the first request is on the finding now.
+    expect(draft3.findings.find((f) => f.findingId === "find-4")!.changeRequest?.response).toBeTruthy();
   });
 
-  it("draft 2 to 3: the advocate settles one, adds two, and revises one clause", () => {
-    const diff = diffVersions(draft2, draft3);
+  it("draft 3 to 4: the advocate settles one, adds two, and revises one clause", () => {
+    const diff = diffVersions(draft3, draft4);
     expect(changed(diff)).toEqual(["6.1 changed"]);
     expect(findingsOf(diff)).toEqual([
       "find-4 unresolved",
@@ -37,24 +46,46 @@ describe("the vendor agreement's history", () => {
     ]);
   });
 
-  it("re-checks the citation on the second run rather than copying the first", () => {
+  it("re-checks the citation on each run rather than copying the first", () => {
     const state = (version: typeof draft1) =>
       version.findings.find((f) => f.findingId === "find-4")!.citations[0].status;
     expect(state(draft1)).toBe("blocked");
     expect(state(draft2)).toBe("verified");
+    expect(state(draft3)).toBe("verified");
     expect(draft2.pipelineRunAt > draft1.pipelineRunAt).toBe(true);
+    expect(draft3.pipelineRunAt > draft2.pipelineRunAt).toBe(true);
   });
 
   it("numbers the drafts in order, and the head is the latest draft", () => {
     const history = mockVersions.filter((v) => v.documentId === "doc-vendor-revision");
-    expect(history.map((v) => v.number)).toEqual([1, 2, 3]);
+    expect(history.map((v) => v.number)).toEqual([1, 2, 3, 4]);
     expect(history.map((v) => v.createdBy)).toEqual([
       "first_pass",
+      "advocate_revision",
       "client_response",
       "advocate_revision",
     ]);
-    expect(vendor.version).toBe(draft3.number);
+    expect(vendor.version).toBe(draft4.number);
     expect(vendor.revisionCount).toBe(2);
+  });
+});
+
+describe("rounds and drafts", () => {
+  // Every round is two hand-offs: the advocate sends it back and the client
+  // answers. A round still open has only the first. So a document that has
+  // been sent back N times has 1 + 2N drafts, less one while a round is open.
+  // The label "Round N" reads revisionCount, so the two must not disagree.
+  it("agree in every fixture that has been sent back", () => {
+    const sentBack = mockDocuments.filter((d) => d.revisionCount > 0);
+    expect(sentBack.map((d) => d.id).sort()).toEqual(
+      ["doc-employment-rereview", "doc-vendor-revision"].sort(),
+    );
+    for (const doc of sentBack) {
+      const drafts = mockVersions.filter((v) => v.documentId === doc.id);
+      const open = doc.status === "revision" ? 1 : 0;
+      expect(drafts.length, doc.id).toBe(1 + 2 * doc.revisionCount - open);
+      expect(drafts[drafts.length - 1].number, doc.id).toBe(doc.version);
+    }
   });
 });
 

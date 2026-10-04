@@ -30,25 +30,31 @@ function diffOf(
 describe("the version list", () => {
   it("names the latest snapshot current, and no other", () => {
     const rows = clientVersionList(vendor, vendorVersions);
-    expect(rows.map((r) => r.label)).toEqual(["Draft 3 (current)", "Draft 2", "Draft 1"]);
-    expect(rows.map((r) => r.current)).toEqual([true, false, false]);
+    expect(rows.map((r) => r.label)).toEqual([
+      "Draft 4 (current)",
+      "Draft 3",
+      "Draft 2",
+      "Draft 1",
+    ]);
+    expect(rows.map((r) => r.current)).toEqual([true, false, false, false]);
   });
 
   it("says in plain words who made each draft", () => {
     expect(clientVersionList(vendor, vendorVersions).map((r) => r.madeBy)).toEqual([
       "Advocate's revision",
       "Your answers",
+      "Advocate's revision",
       "First pass",
     ]);
   });
 
   it("counts only the findings the client may know about", () => {
-    // Draft 3 holds four findings, two of them added by the advocate and
+    // Draft 4 holds four findings, two of them added by the advocate and
     // not addressed to the client.
-    expect(vendorVersions.find((v) => v.number === 3)!.findings).toHaveLength(4);
+    expect(vendorVersions.find((v) => v.number === 4)!.findings).toHaveLength(4);
     const rows = clientVersionList(vendor, vendorVersions);
-    expect(rows.map((r) => r.findingCount)).toEqual([2, 2, 2]);
-    expect(rows.map((r) => r.clauseCount)).toEqual([9, 9, 9]);
+    expect(rows.map((r) => r.findingCount)).toEqual([2, 2, 2, 2]);
+    expect(rows.map((r) => r.clauseCount)).toEqual([9, 9, 9, 9]);
   });
 
   it("counts an advocate-added finding after sign-off, unless the switch is off", () => {
@@ -67,7 +73,7 @@ describe("the version list", () => {
 
 describe("which two drafts are compared by default", () => {
   it("is the latest two", () => {
-    expect(defaultComparison(vendorVersions)).toEqual({ from: 2, to: 3 });
+    expect(defaultComparison(vendorVersions)).toEqual({ from: 3, to: 4 });
   });
 
   it("is nothing when there is no earlier draft", () => {
@@ -92,16 +98,16 @@ describe("comparing two drafts", () => {
   });
 
   it("reads the earlier draft as the start whichever order they are given", () => {
-    const forwards = diffOf(vendor, vendorVersions, 2, 3);
-    const backwards = diffOf(vendor, vendorVersions, 3, 2);
+    const forwards = diffOf(vendor, vendorVersions, 3, 4);
+    const backwards = diffOf(vendor, vendorVersions, 4, 3);
     expect(backwards).toEqual(forwards);
-    expect([forwards.from, forwards.to]).toEqual([2, 3]);
-    expect([forwards.fromLabel, forwards.toLabel]).toEqual(["Draft 2", "Draft 3 (current)"]);
+    expect([forwards.from, forwards.to]).toEqual([3, 4]);
+    expect([forwards.fromLabel, forwards.toLabel]).toEqual(["Draft 3", "Draft 4 (current)"]);
   });
 });
 
 describe("before sign-off", () => {
-  const diff = () => diffOf(vendor, vendorVersions, 2, 3);
+  const diff = () => diffOf(vendor, vendorVersions, 3, 4);
 
   it("is not signed off", () => {
     expect(vendor.status).toBe("revision");
@@ -161,10 +167,10 @@ describe("before sign-off", () => {
       f.findingId === "find-9" ? { ...f, changeRequest: request } : f;
     const addressed: ContractDocument = { ...vendor, findings: vendor.findings.map(addressTo) };
     const versions = vendorVersions.map((v) =>
-      v.number === 3 ? { ...v, findings: v.findings.map(addressTo) } : v,
+      v.number === 4 ? { ...v, findings: v.findings.map(addressTo) } : v,
     );
 
-    const d = diffOf(addressed, versions, 2, 3);
+    const d = diffOf(addressed, versions, 3, 4);
     expect(d.findingRows.map((r) => r.clauseReference)).toEqual(["Clause 5.3", "Clause 5.3"]);
     expect(d.findingCounts.new).toBe(1);
     // Still not said to be the advocate's: that is for after sign-off.
@@ -172,7 +178,7 @@ describe("before sign-off", () => {
   });
 
   it("counts what changed between the first two drafts without naming it", () => {
-    const d = diffOf(vendor, vendorVersions, 1, 2);
+    const d = diffOf(vendor, vendorVersions, 2, 3);
     expect(d.otherClauses).toEqual({ added: 0, removed: 0, changed: 2, unchanged: 6 });
     expect(d.findingCounts).toEqual({ new: 1, stillOpen: 1, resolved: 1 });
     expect(JSON.stringify(d)).not.toContain("Mumbai");
@@ -183,7 +189,7 @@ describe("before sign-off", () => {
       ...vendor,
       clauses: vendor.clauses.map((c) => ({ ...c, body: "HEAD ONLY WORDING" })),
     };
-    expect(JSON.stringify(diffOf(moved, vendorVersions, 2, 3))).not.toContain("HEAD ONLY WORDING");
+    expect(JSON.stringify(diffOf(moved, vendorVersions, 3, 4))).not.toContain("HEAD ONLY WORDING");
   });
 });
 
@@ -234,7 +240,7 @@ describe("after sign-off", () => {
 
   it("shows the whole record once a document is signed off", () => {
     const settled: ContractDocument = { ...vendor, status: "settled" };
-    const d = diffOf(settled, vendorVersions, 1, 2);
+    const d = diffOf(settled, vendorVersions, 2, 3);
     expect(d.clauses).toHaveLength(9);
     expect(d.findingRows.map((r) => r.change)).toEqual([
       "Still open",
@@ -286,8 +292,8 @@ describe("the words a client reads", () => {
 
   it("puts no internal term in anything a row says", () => {
     const rows = [
-      ...diffOf(vendor, vendorVersions, 1, 2).findingRows,
-      ...diffOf({ ...vendor, status: "settled" }, vendorVersions, 1, 2).findingRows,
+      ...diffOf(vendor, vendorVersions, 2, 3).findingRows,
+      ...diffOf({ ...vendor, status: "settled" }, vendorVersions, 2, 3).findingRows,
       ...diffOf(nda, ndaVersions, 1, 2).findingRows,
     ];
     for (const row of rows) {
