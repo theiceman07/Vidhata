@@ -62,7 +62,10 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col">
         <SessionProvider>
           <div className="flex flex-1 flex-col [&>*]:w-full">{children}</div>
-          <Toaster />
+          {/* Top centre, below the preview banner: a toast sits over the
+              corner a decision was just taken in, and in the workspace that
+              corner holds the next decision's buttons. */}
+          <Toaster position="top-center" offset={44} mobileOffset={44} />
           <ConsentBanner />
         </SessionProvider>
       </body>
