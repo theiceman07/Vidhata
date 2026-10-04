@@ -17,8 +17,6 @@ const nonCompete = MSA?.findings.find(
 const paymentTerms = MSA?.findings.find(
   (f) => f.clauseReference === "Clause 4.1",
 );
-const stamping = NDA?.executionSteps.find((s) => s.kind === "stamping");
-const registration = NDA?.executionSteps.find((s) => s.kind === "registration");
 const esignature = NDA?.executionSteps.find((s) => s.kind === "esignature");
 
 interface Check {
@@ -53,13 +51,6 @@ const CHECKS: Check[] = [
     fragment: paymentTerms?.clauseText,
   },
   {
-    notation: "Stamp",
-    title: "Stamp duty",
-    description:
-      "Your checklist tells you the stamp duty for your state, confirmed by your advocate.",
-    fragment: stamping?.headline,
-  },
-  {
     notation: "IT Act",
     title: "e-signature validity",
     description:
@@ -67,11 +58,17 @@ const CHECKS: Check[] = [
     fragment: esignature?.headline,
   },
   {
+    notation: "Stamp",
+    title: "Stamp duty",
+    description:
+      "Stamp duty depends on the state of execution and the instrument. Your advocate confirms the amount before you sign.",
+    fragment: "Stamp duty: confirmed by your advocate",
+  },
+  {
     notation: "Reg. Act",
     title: "Registration",
-    description:
-      "Your checklist says whether registration applies, confirmed by your advocate.",
-    fragment: registration?.headline,
+    description: "Your advocate confirms whether registration applies.",
+    fragment: "Registration: confirmed by your advocate",
   },
 ];
 
@@ -82,8 +79,9 @@ export function IndiaChecks() {
       <div className="max-w-2xl">
         <h2 className="font-display text-display text-ink">Built for Indian contracts</h2>
         <p className="mt-6 text-lead text-muted-fg">
-          Six checks a generic drafting tool has no way to run. Each one runs
-          against the statute it names.
+          Four checks a generic drafting tool has no way to run, each against
+          the statute it names. Stamp duty and registration are confirmed by
+          your advocate.
         </p>
       </div>
 

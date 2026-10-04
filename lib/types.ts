@@ -438,7 +438,7 @@ export const PIPELINE_LAYERS: Record<
   2: {
     name: "Statutory compliance",
     description:
-      "Checks the draft against Indian Contract Act s.27 and s.74, MSMED payment terms and stamping.",
+      "Checks the draft against Indian Contract Act s.27 and s.74 and MSMED payment terms. Stamp duty and registration are confirmed by your advocate.",
   },
   3: {
     name: "Cross-clause consistency",

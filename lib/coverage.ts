@@ -27,8 +27,9 @@ export const COVERAGE = {
     corpusLabel("ica-1872-s27"),
     corpusLabel("ica-1872-s74"),
     "MSMED payment terms",
-    "Stamping",
   ],
+  /** Not a check. The pipeline has no stamp-duty table or registration rule. */
+  statutoryNote: "Stamp duty and registration are confirmed by your advocate.",
   /** Checks that read one clause against another, at Layers 3 and 4. */
   crossClause: [
     "Uncapped indemnity against the liability cap",

@@ -55,7 +55,11 @@ export function CoveragePanel({
 
       <p className="mt-6 text-label text-muted-fg">The same for every document</p>
       <div className="mt-3 grid gap-6 lg:grid-cols-3">
-        <CoverageList title="Checks run · Layer 2" items={COVERAGE.statutory} />
+        <CoverageList
+          title="Checks run · Layer 2"
+          items={COVERAGE.statutory}
+          note={COVERAGE.statutoryNote}
+        />
         {/* Non-breaking spaces keep "Layers 3 and 4" together, so the heading
             wraps before it rather than leaving the 4 on a line of its own. */}
         <CoverageList
@@ -68,7 +72,15 @@ export function CoveragePanel({
   );
 }
 
-function CoverageList({ title, items }: { title: string; items: readonly string[] }) {
+function CoverageList({
+  title,
+  items,
+  note,
+}: {
+  title: string;
+  items: readonly string[];
+  note?: string;
+}) {
   return (
     <div>
       <h3 className="text-meta font-medium text-ink">{title}</h3>
@@ -79,6 +91,7 @@ function CoverageList({ title, items }: { title: string; items: readonly string[
           </li>
         ))}
       </ul>
+      {note && <p className="mt-3 text-label text-muted-fg">{note}</p>}
     </div>
   );
 }

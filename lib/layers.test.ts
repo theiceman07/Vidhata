@@ -22,6 +22,14 @@ describe("the pipeline layers", () => {
     }
   });
 
+  it("does not claim a stamping or registration check", () => {
+    // The pipeline has no stamp-duty table or registration rule. Layer 2 says
+    // so: both are confirmed by the advocate, never checked.
+    const text = PIPELINE_LAYERS[2].description;
+    expect(text).toContain("Stamp duty and registration are confirmed by your advocate");
+    expect(text.replace("Stamp duty and registration", "")).not.toMatch(/stamp|registration/i);
+  });
+
   it("files every MSMED finding under statutory compliance", () => {
     const findings = [
       ...mockDocuments.flatMap((d) => d.findings),
