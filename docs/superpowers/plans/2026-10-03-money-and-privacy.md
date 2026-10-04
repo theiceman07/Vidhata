@@ -176,6 +176,16 @@ These replace anything above that they contradict.
 - The deletion scope: what is removed and what is kept, including invoices, payment records, the sign-off record, the audit trail and the consent log.
 - Whether a settled document itself is removed or kept on a deletion request. It sits under "Not yet decided" in the scope list until counsel says.
 - The security page and training opt-in wording.
+- **The sign-off attestation and "Rule 37".** The advocate's third sign-off
+  confirmation read "This sign-off complies with Bar Council of India Rule 37."
+  The number comes from the SRD ("Advocate sign-off is binding; constitutes
+  legal opinion per BCI Rule 37") and the Frontend Build Plan ("Rule 37
+  legal-opinion line"). It is a team assumption: nobody has confirmed what that
+  rule says, or that a sign-off amounts to a legal opinion under it. The screen
+  now reads "I sign this off under my own professional responsibility as an
+  advocate." Counsel to confirm which rule, if any, applies, and the wording the
+  advocate should attest to. Original text kept here: "This sign-off complies
+  with Bar Council of India Rule 37."
 - **Build task for the legal owner:** the state stamp-duty schedule and the
   registration rules, audited against the real schedules. Nothing is mocked
   further in the meantime.

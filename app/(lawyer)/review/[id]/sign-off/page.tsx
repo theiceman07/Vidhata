@@ -42,8 +42,14 @@ const CONFIRMATIONS = [
       "Every finding settled against the first pass is supported by a reason recorded on the finding.",
   },
   {
-    id: "rule-37",
-    label: "This sign-off complies with Bar Council of India Rule 37.",
+    // Generic until counsel confirms. This line used to cite a Bar Council of
+    // India rule by number: the team assumed it, nobody has checked what that
+    // rule says or that a sign-off amounts to a legal opinion under it, and an
+    // advocate should not attest to a rule number nobody has verified. The
+    // original wording and the question are on the counsel list in
+    // docs/superpowers/plans/2026-10-03-money-and-privacy.md.
+    id: "responsibility",
+    label: "I sign this off under my own professional responsibility as an advocate.",
   },
   {
     id: "audit",
