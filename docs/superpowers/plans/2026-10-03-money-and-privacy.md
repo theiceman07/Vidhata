@@ -179,3 +179,51 @@ These replace anything above that they contradict.
 
 - Unpaid documents have no exit: no cancel, no refund.
 - The consultation charge step, with the advocate inbox (D7).
+
+## What shipped (4 Oct)
+
+| # | Commit | What it did |
+|---|---|---|
+| 0 | `c36a729` | `awaiting_payment`, numeric flat fees before GST, `payFee` (idempotent, a failure leaves the document awaiting payment), `isReleased`, the unpaid document refused everywhere an advocate reads as if it did not exist, fee-words and card-words guards. |
+| 1 | `77f6a30`, `2323cce` | The pay view: tier, fee and deal facts only, a plainly fake "Pay (preview)", no inputs. A ref guard so simultaneous presses make one call and one toast. |
+| 2 | `da4ac12` | Billing: invoices read from payments, receipts, optional unvalidated GSTIN. |
+| 3 | `edd05fc` | Consultation request: free, stored as `requested`, the settling advocate named and never chosen, idempotent, the fee shown separately from the platform fee, the client's own list. Both escalation prompts lead to it. |
+| 4 | `c44187d` | Privacy controls in settings: training opt-in off by default with a timestamped consent log, the export, and a deletion request. |
+
+Also found and fixed while walking it (`e6bb767`): `requestChange` wrote no
+snapshot, so a finding decided before a send-back was in no snapshot and D5's
+"decided in an earlier round" could never fire in a real flow. A round is now
+two hand-offs, so a document sent back N times has 1 + 2N drafts, one fewer
+while a round is open. The vendor fixture gained its missing send-back draft
+and a test holds every fixture to the rule (`2a9ca45` pins that a client reads
+no decision from any snapshot and no repeated finding number).
+
+### Decisions made while building
+
+- The export includes the client's own consultation questions, deliberately:
+  they are the client's own words and their own data. Tests hold the choice.
+  The question is kept out of the audit trail, billing, notifications, any
+  page title or tooltip, and anything others could read.
+- The deletion scope has three lists: removed, kept, and not yet decided. The
+  settled document itself is in the third, because whether it goes or stays
+  with its sign-off record is for counsel. The consent log is in "kept".
+- The rail lights only the most specific link, so Settings and Privacy are not
+  both lit on `/settings/privacy`.
+- The consultation list is on the document's own consultation page, with a
+  "Consultation" link in the settled document's header, and not inside the
+  three-pane workspace.
+
+## Still open
+
+- Unpaid documents have no exit: no cancel, no refund.
+- The consultation charge arrives with the advocate's inbox (D7). Until then a
+  request is stored as `requested` and nothing moves it.
+- Counsel and the accountant: the consultation invoice issuer and wording; a
+  proper GST breakup on invoices; the deletion scope and wording; the security
+  page and the training opt-in wording.
+- The real backend must store each invoice number once, immutably, when the
+  payment is made, and never recompute it.
+- Real conflict checks need party and matter data (SRD 4.2); the name match is
+  a stand-in.
+- A notification when the advocate accepts a consultation (C9), and the
+  advocate's consultation inbox (D7).
