@@ -337,3 +337,33 @@ describe("releasing a document to the advocate queue", () => {
     await refused;
   });
 });
+
+describe("creating documents", () => {
+  const input = {
+    title: "NDA",
+    type: "nda" as const,
+    clientName: "Anaya Textiles Pvt Ltd",
+    counterpartyName: "Someone Pvt Ltd",
+    stateOfExecution: "Delhi",
+    transactionValue: 0,
+    counterpartyIsMsme: false,
+    durationMonths: 12,
+    governingLaw: "Laws of India",
+    keyTerms: "",
+  };
+
+  it("gives two documents made in the same instant two ids, and each is read back as itself", async () => {
+    // The wait before a create is random. Fixed, both resume at the same instant,
+    // which is when a clock-made id would be the same for both.
+    vi.setSystemTime(new Date("2026-10-05T09:00:00.000Z"));
+    const random = vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const first = createDraftDocument({ ...input, title: "First" });
+    const second = createDraftDocument({ ...input, title: "Second" });
+    await vi.runAllTimersAsync();
+    const [a, b] = [await first, await second];
+    random.mockRestore();
+    expect(a.id).not.toBe(b.id);
+    expect((await settle(getDocument(a.id)))?.title).toBe("First");
+    expect((await settle(getDocument(b.id)))?.title).toBe("Second");
+  });
+});

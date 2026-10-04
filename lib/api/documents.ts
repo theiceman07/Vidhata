@@ -411,8 +411,13 @@ export async function createDraftDocument(
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not create the draft.");
   }
+  // Two documents made in the same millisecond must not share an id: the
+  // second would be unreachable behind the first, and a read of either would
+  // answer with the wrong one.
+  let id = `doc-${Date.now()}`;
+  for (let n = 2; store.some((d) => d.id === id); n += 1) id = `doc-${Date.now()}-${n}`;
   const doc: ContractDocument = {
-    id: `doc-${Date.now()}`,
+    id,
     title: input.title,
     type: input.type,
     status: "draft",
