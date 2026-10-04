@@ -206,8 +206,13 @@ Four systems, each with its own state. Never fold them into one label.
   "Sign electronically (preview)" takes no signature; the client confirms that
   both have signed. The last applicable step confirmed makes the document
   executed (executedAt, which the trail records and which clears if a step is
-  taken back). Stamp duty and registration come from fixtures; do not add a
-  rate table.
+  taken back). A generated checklist states no stamp-duty amount and no
+  registration rule: "Stamp duty depends on the state of execution and the
+  instrument. Your advocate confirms the amount before you sign." and "Your
+  advocate confirms whether registration applies." A figure appears only on a
+  fixture, labelled a sample entry. Do not add a rate table or a threshold
+  until the state schedule is audited (counsel list); a test fails on any
+  rupee figure in a generated checklist.
 - Revisions: the limit is one value, lib/config/revisions.ts, read through
   revisionCycle() (lib/revisions.ts). At it the case is logged for corpus
   review (advocate trail only, never the client's), no new round can be

@@ -49,40 +49,25 @@ export function getQueuePriority(doc: ContractDocument): number {
   return doc.tier ? TIER_PRIORITY[doc.tier] : Object.keys(TIER_PRIORITY).length;
 }
 
-// Illustrative flat stamp duty figures for the demo pipeline's output —
-// not legal advice, mirrors the pattern already used in the settled NDA
-// fixture (lib/mock/documents.mock.ts).
-const STAMP_DUTY_BY_STATE: Record<string, string> = {
-  Delhi: "Rs 100",
-  Maharashtra: "Rs 500",
-  Karnataka: "Rs 200",
-  "Tamil Nadu": "Rs 100",
-  Telangana: "Rs 100",
-  Gujarat: "Rs 300",
-  "West Bengal": "Rs 150",
-  Haryana: "Rs 200",
-  "Uttar Pradesh": "Rs 100",
-  Kerala: "Rs 200",
-};
-
-// The e-signature step is the same for a generated document and a fixture, and
-// it is built in one place (lib/config/esign.ts).
+// The checklist of a generated document carries no figure and no rule. Stamp
+// duty varies by state and instrument, and registration turns on rules that
+// have not been built from an audited schedule, so neither is stated here: the
+// advocate confirms both. The e-signature step is the same for a generated
+// document and a fixture, and it is built in one place (lib/config/esign.ts).
+// A figure appears only on a fixture an advocate has confirmed.
 function buildExecutionSteps(doc: ContractDocument): ExecutionStep[] {
-  const stampDuty = STAMP_DUTY_BY_STATE[doc.stateOfExecution] ?? "Rs 100";
-  const requiresRegistration =
-    doc.type === "msa" && doc.transactionValue > 1000000;
-
   return [
     {
       kind: "stamping",
       applicable: true,
-      headline: `Stamp duty: ${stampDuty} (${doc.stateOfExecution})`,
-      detail: `Flat-rate stamp duty for a ${doc.type.toUpperCase()} executed in ${doc.stateOfExecution}.`,
-      reason: `Documents of this kind executed in ${doc.stateOfExecution} attract a flat stamp duty.`,
+      headline: "Stamp duty: confirmed by your advocate",
+      detail:
+        "Stamp duty depends on the state of execution and the instrument. Your advocate confirms the amount before you sign.",
+      reason: `Stamp duty depends on the state of execution (${doc.stateOfExecution}) and the instrument.`,
       instructions: [
-        "Purchase e-stamp paper via SHCIL or an authorised vendor.",
-        "Print the settled document on the stamp paper.",
-        "Have both signatories sign on the last page.",
+        "Your advocate confirms the amount before you sign.",
+        "Pay it as your advocate confirms, and attach the certificate here as proof.",
+        "Have both signatories sign the settled document.",
       ],
       complete: false,
       completedAt: null,
@@ -91,22 +76,15 @@ function buildExecutionSteps(doc: ContractDocument): ExecutionStep[] {
     },
     {
       kind: "registration",
-      applicable: requiresRegistration,
-      headline: requiresRegistration
-        ? "Registration: required"
-        : "Registration: not required",
-      detail: requiresRegistration
-        ? "File the document with the local Sub-Registrar."
-        : "No registration filing needed.",
-      reason: requiresRegistration
-        ? "High-value MSAs are compulsorily registrable under Section 17 of the Registration Act, 1908."
-        : "This document type is not compulsorily registrable under Section 17 of the Registration Act, 1908.",
-      instructions: requiresRegistration
-        ? [
-            "Book an appointment with the Sub-Registrar's office.",
-            "Carry two witnesses and original identity proof.",
-          ]
-        : [],
+      applicable: true,
+      headline: "Registration: confirmed by your advocate",
+      detail: "Your advocate confirms whether registration applies.",
+      reason: "Whether registration applies is confirmed by your advocate.",
+      instructions: [
+        "Your advocate confirms whether registration applies.",
+        "If it does, complete it as your advocate directs and attach the receipt here.",
+        "Mark this step complete when your advocate has confirmed it and, if it applies, it is done.",
+      ],
       complete: false,
       completedAt: null,
       completedBy: null,

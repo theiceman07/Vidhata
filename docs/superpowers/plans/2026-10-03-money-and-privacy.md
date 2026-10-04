@@ -176,6 +176,9 @@ These replace anything above that they contradict.
 - The deletion scope: what is removed and what is kept, including invoices, payment records, the sign-off record, the audit trail and the consent log.
 - Whether a settled document itself is removed or kept on a deletion request. It sits under "Not yet decided" in the scope list until counsel says.
 - The security page and training opt-in wording.
+- **Build task for the legal owner:** the state stamp-duty schedule and the
+  registration rules, audited against the real schedules. Nothing is mocked
+  further in the meantime.
 
 ## Open items
 
@@ -244,7 +247,8 @@ error state with a retry on both, and clears.
 - Counsel and the accountant: the consultation invoice issuer and wording; a
   proper GST breakup on invoices; the deletion scope and wording, including
   whether a settled document itself is removed or kept; the security page and
-  the training opt-in wording.
+  the training opt-in wording; and, as a build task for the legal owner, the
+  state stamp-duty schedule and registration rules.
 - The real backend must store each invoice number once, immutably, when the
   payment is made, and never recompute it.
 - Real conflict checks need party and matter data (SRD 4.2); the name match is
@@ -254,18 +258,15 @@ error state with a retry on both, and clears.
   off every advocate screen until then.
 - A notification when the advocate accepts a consultation (C9). It may say that
   a request was accepted or answered, never what was asked or answered.
-- **A stamp-duty rate table already exists and needs a decision.**
-  `STAMP_DUTY_BY_STATE` in `lib/api/documents.ts` holds a rate for ten states,
-  with "Rs 100" as the fallback for any other state, and it feeds the checklist
-  of any document signed off in the preview. The marketing page also says stamp
-  duty is "computed" per state. That is the invented-rate failure the docs
-  warn about, and it pre-dates this work, so it is untouched. Options: keep it
-  as a labelled stand-in, or remove it and let generated documents say the
-  amount depends on the state and must be confirmed (which also changes the
-  marketing claim).
-- The registration rule in the same function (MSAs above a fixed value are
-  registrable) is also generated and not from a fixture, and its reason text
-  cites a statute section. Same decision as above.
+- **Stamp duty and registration: decided, rate table and rule removed.** A
+  generated checklist now says the amount depends on the state of execution and
+  the instrument and that the advocate confirms it, and that the advocate
+  confirms whether registration applies. The ten-state table, the "Rs 100"
+  fallback, the MSA threshold and the Section 17 reason text are gone. The
+  settled NDA keeps "Rs 100 (Delhi)" as a labelled sample entry. The landing
+  page labels it "Example", and a test fails on any rupee figure in a generated
+  checklist. Section 17 may return only with a rule built from the audited
+  schedule.
 - The settled document page keeps its working "Save as PDF" (the browser's
   print), while the delivery view says PDF downloads are not enabled. Both are
   true, but a reader could find it inconsistent. Decide whether to keep one.

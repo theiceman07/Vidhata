@@ -26,7 +26,7 @@ const STEPS = [
   {
     n: "4",
     title: "You execute it",
-    body: "The settled document arrives with an execution checklist: stamp duty for your state, whether it must be registered, and whether it can be signed electronically.",
+    body: "The settled document arrives with an execution checklist: the stamp duty for your state and whether it must be registered, each confirmed by your advocate, and whether it can be signed electronically.",
   },
 ];
 

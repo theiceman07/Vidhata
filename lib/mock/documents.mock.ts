@@ -92,8 +92,10 @@ const settledNda: ContractDocument = {
       kind: "stamping",
       applicable: true,
       headline: "Stamp duty: Rs 100 (Delhi)",
-      detail: "Flat rate for a mutual NDA under the Delhi Stamp Act.",
-      reason: "NDAs executed in Delhi attract a fixed Rs 100 stamp duty.",
+      // A sample entry: the figure stands for one an advocate confirmed on
+      // this sample document. A generated checklist never states one.
+      detail: "Sample entry, as confirmed by the advocate who settled this sample document.",
+      reason: "Sample entry, as confirmed by the advocate who settled this sample document.",
       instructions: [
         "Purchase Rs 100 e-stamp paper via SHCIL or an authorised vendor.",
         "Print the settled document on the stamp paper.",
@@ -111,9 +113,8 @@ const settledNda: ContractDocument = {
       kind: "registration",
       applicable: false,
       headline: "Registration: not required",
-      detail: "No registration filing needed.",
-      reason:
-        "NDAs are not compulsorily registrable under Section 17 of the Registration Act, 1908.",
+      detail: "Sample entry, as confirmed by the advocate who settled this sample document.",
+      reason: "Sample entry: the advocate who settled this sample document confirmed registration does not apply.",
       instructions: [],
       complete: true,
       completedAt: null,

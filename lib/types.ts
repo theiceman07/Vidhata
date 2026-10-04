@@ -93,7 +93,7 @@ export interface Finding {
 export interface ExecutionStep {
   kind: "stamping" | "registration" | "esignature";
   applicable: boolean;
-  headline: string; // "Stamp duty: Rs 100 (Delhi)"
+  headline: string; // "Stamp duty: confirmed by your advocate"; a figure only on a fixture
   detail: string;
   reason: string; // why it does or does not apply
   instructions: string[];

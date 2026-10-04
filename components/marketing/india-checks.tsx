@@ -56,7 +56,7 @@ const CHECKS: Check[] = [
     notation: "Stamp",
     title: "Stamp duty",
     description:
-      "State-specific stamp duty is computed so you know what to pay before execution.",
+      "Your checklist tells you the stamp duty for your state, confirmed by your advocate.",
     fragment: stamping?.headline,
   },
   {
@@ -70,7 +70,7 @@ const CHECKS: Check[] = [
     notation: "Reg. Act",
     title: "Registration",
     description:
-      "Documents are checked to flag when compulsory registration applies before execution.",
+      "Your checklist says whether registration applies, confirmed by your advocate.",
     fragment: registration?.headline,
   },
 ];
@@ -96,9 +96,10 @@ export function IndiaChecks() {
             <h3 className="mt-6 font-display text-h2 text-ink">{check.title}</h3>
             <p className="mt-3 text-body text-muted-fg">{check.description}</p>
             {check.fragment && (
-              <p className="mt-6 border-t border-line pt-5 font-clause text-meta italic text-ink">
-                {check.fragment}
-              </p>
+              <div className="mt-6 border-t border-line pt-5">
+                <p className="text-label text-muted-fg">Example</p>
+                <p className="mt-1.5 font-clause text-meta italic text-ink">{check.fragment}</p>
+              </div>
             )}
           </li>
         ))}
