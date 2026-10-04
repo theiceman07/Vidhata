@@ -81,9 +81,11 @@ describe("the money files", () => {
     "lib/api/billing.ts",
     "lib/api/consultations.ts",
     "app/(client)/documents/[id]/consultation/page.tsx",
+    "components/domain/consultation-status.tsx",
   ]
     .map((f) => path.join(root, f))
     .concat(filesUnder(path.join(root, "app", "(client)", "billing")))
+    .concat(filesUnder(path.join(root, "app", "(lawyer)", "consultations")))
     .filter((f) => existsSync(f) && /\.(ts|tsx)$/.test(f));
 
   it("lists the files it guards", () => {

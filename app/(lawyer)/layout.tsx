@@ -10,7 +10,10 @@ import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 const SECTIONS: ShellSection[] = [
   {
     label: "Review",
-    links: [{ href: "/queue", label: "Queue", icon: "description" }],
+    links: [
+      { href: "/queue", label: "Queue", icon: "description" },
+      { href: "/consultations", label: "Consultations", icon: "mail" },
+    ],
   },
   {
     label: "Account",

@@ -124,11 +124,20 @@ describe("the rest of the export", () => {
     const request: Consultation = {
       id: "consultation-1",
       documentId: nda.id,
+      documentTitle: nda.title,
       orgId: nda.orgId,
+      clientName: nda.clientName,
+      advocateId: "adv-1",
       advocateName: "Rhea Kapoor",
       question: "Does clause 6.1 let them keep a copy after the term ends?",
       status: "requested",
       requestedAt: "2026-10-03T09:00:00.000Z",
+      acceptedAt: null,
+      declinedAt: null,
+      fee: null,
+      paidAt: null,
+      answer: null,
+      answeredAt: null,
     };
     const file = exportOf([nda], [request]);
     expect(file.consultationRequests).toEqual([
@@ -138,8 +147,32 @@ describe("the rest of the export", () => {
         requestedAt: "2026-10-03T09:00:00.000Z",
         status: "requested",
         question: request.question,
+        answer: null,
       },
     ]);
+  });
+
+  it("includes the advocate's answer to the client's own question, once there is one", () => {
+    const answered: Consultation = {
+      id: "consultation-2",
+      documentId: nda.id,
+      documentTitle: nda.title,
+      orgId: nda.orgId,
+      clientName: nda.clientName,
+      advocateId: "adv-1",
+      advocateName: "Rhea Kapoor",
+      question: "A question.",
+      status: "answered",
+      requestedAt: "2026-10-03T09:00:00.000Z",
+      acceptedAt: "2026-10-03T10:00:00.000Z",
+      declinedAt: null,
+      fee: 2999,
+      paidAt: "2026-10-03T11:00:00.000Z",
+      answer: "An answer.",
+      answeredAt: "2026-10-03T12:00:00.000Z",
+    };
+    const [entry] = exportOf([nda], [answered]).consultationRequests;
+    expect(entry).toMatchObject({ status: "answered", answer: "An answer." });
   });
 
   it("has no consultation section content when there are no requests", () => {

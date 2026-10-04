@@ -2,6 +2,7 @@ import { invoicesFor } from "@/lib/billing";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { BillingProfile, Invoice } from "@/lib/types";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
+import { listOrgConsultations } from "./consultations";
 import { listDocuments } from "./documents";
 
 // In-memory, like everything in the preview: it resets on reload, and nothing
@@ -19,9 +20,13 @@ function profileOf(orgId: string): BillingProfile {
 
 /** An organisation's invoices, newest first, read from its documents. */
 export async function listInvoices(orgId: string): Promise<Invoice[]> {
-  // listDocuments owns the delay and the failure switch, and scopes by org.
-  const docs = await listDocuments(orgId);
-  return invoicesFor(docs);
+  // Each of these owns its own delay and failure switch, and scopes by org. The
+  // consultations are read for what was paid and when, and nothing else.
+  const [docs, consultations] = await Promise.all([
+    listDocuments(orgId),
+    listOrgConsultations(orgId),
+  ]);
+  return invoicesFor(docs, consultations);
 }
 
 export async function getInvoice(orgId: string, number: string): Promise<Invoice | null> {

@@ -7,8 +7,8 @@ import { BackButton } from "@/components/shared/back-button";
 import { ErrorState } from "@/components/shared/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getBillingProfile, getInvoice } from "@/lib/api/billing";
-import { INVOICE_KIND_LABEL } from "@/lib/billing";
-import { PRICE_BASIS, rupees, tierLabel } from "@/lib/config/pricing";
+import { INVOICE_KIND_LABEL, invoiceBasis } from "@/lib/billing";
+import { PRICE_BASIS, rupees } from "@/lib/config/pricing";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { BillingProfile, Invoice } from "@/lib/types";
 
@@ -88,7 +88,7 @@ export default function ReceiptPage() {
           <dt className="text-muted-fg">For</dt>
           <dd className="text-ink">{invoice.description}</dd>
           <dt className="text-muted-fg">{INVOICE_KIND_LABEL[invoice.kind]}</dt>
-          <dd className="text-ink">Fixed fee · {tierLabel(invoice.tier)} review</dd>
+          <dd className="text-ink">{invoiceBasis(invoice)}</dd>
         </dl>
 
         <div className="mt-8 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
@@ -99,8 +99,10 @@ export default function ReceiptPage() {
           </p>
         </div>
         <p className="mt-4 max-w-measure text-label text-muted-fg">
-          GST is added at the rate in force. A tax breakup is not part of this preview. The fee
-          covers every revision round of the document.
+          GST is added at the rate in force. A tax breakup is not part of this preview.{" "}
+          {invoice.kind === "consultation_fee"
+            ? "This is the consultation fee. It is separate from the document fee. Who issues an invoice for it is waiting for counsel to confirm, and the wording here is not final."
+            : "The fee covers every revision round of the document."}
         </p>
       </section>
 

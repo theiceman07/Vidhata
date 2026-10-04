@@ -558,8 +558,30 @@ const rereviewEmployment: ContractDocument = {
   executionSteps: [],
 };
 
+/**
+ * A second signed-off document, settled by the advocate the preview signs in
+ * as. The first was settled by another advocate, so between them the
+ * consultation inbox can show a request that is yours and one that is not.
+ * It has no findings and one draft: it exists to be asked about.
+ */
+const settledNda2: ContractDocument = {
+  ...structuredClone(settledNda),
+  id: "doc-nda-settled-2",
+  title: "Mutual NDA · Tarang Foods",
+  counterpartyName: "Tarang Foods Pvt Ltd",
+  createdAt: "2026-08-10T08:30:00.000Z",
+  version: 1,
+  claimedAt: "2026-08-11T10:00:00.000Z",
+  conflictDeclaredAt: "2026-08-11T10:00:00.000Z",
+  payment: paid("standard", "2026-08-10T09:00:00.000Z"),
+  settledAt: "2026-08-12T15:20:00.000Z",
+  advocate: { ...CURRENT_ADVOCATE },
+  findings: [],
+};
+
 export const mockDocuments: ContractDocument[] = [
   settledNda,
+  settledNda2,
   pendingReviewMsa,
   analysingEmployment,
   revisionVendor,

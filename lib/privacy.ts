@@ -85,6 +85,8 @@ export function buildDataExport(input: {
       requestedAt: c.requestedAt,
       status: c.status,
       question: c.question,
+      // Their own answer, read the way the client reads it: only once paid.
+      answer: c.answer,
     })),
     trainingOptIn: input.privacy.trainingOptIn,
     consentLog: input.privacy.consentLog,

@@ -11,9 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { ConsultationStatus } from "@/components/domain/consultation-status";
 import {
   MAX_QUESTION_LENGTH,
   listConsultations,
+  payConsultation,
   requestConsultation,
 } from "@/lib/api/consultations";
 import { getDocument } from "@/lib/api/documents";
@@ -210,26 +212,126 @@ export default function ConsultationPage() {
         ) : (
           <ul className="mt-3 space-y-3">
             {requests.map((r) => (
-              <li key={r.id} className="rounded-card bg-parchment p-5">
-                <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-label text-muted-fg">
-                  <span>
-                    {r.advocateName} · {format(new Date(r.requestedAt), "d MMM yyyy")}
-                  </span>
-                  <span className="rounded-full border border-line px-2.5 py-0.5 font-medium text-ink">
-                    Requested
-                  </span>
-                </p>
-                <p className="mt-2 line-clamp-3 max-w-measure whitespace-pre-line text-meta text-ink">
-                  {r.question}
-                </p>
-                <p className="mt-2 text-label text-muted-fg">
-                  Fee payable if the advocate accepts, {PRICE_BASIS}.
-                </p>
-              </li>
+              <RequestItem
+                key={r.id}
+                request={r}
+                onChanged={(next) =>
+                  setRequests((current) => current.map((c) => (c.id === next.id ? next : c)))
+                }
+              />
             ))}
           </ul>
         )}
       </section>
     </div>
+  );
+}
+
+/**
+ * One request in the client's list, in the state it is in.
+ *
+ * The fee appears only once the advocate has accepted, and money moves only
+ * when it is paid here. A declined request says plainly that nothing was
+ * charged. The advocate's answer is shown once the fee is paid, and the API
+ * does not hand it over before that.
+ */
+function RequestItem({
+  request: r,
+  onChanged,
+}: {
+  request: Consultation;
+  onChanged: (next: Consultation) => void;
+}) {
+  const [paying, setPaying] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
+  // State alone cannot stop two presses in one instant; the ref does.
+  const inFlight = useRef(false);
+
+  const paid = r.paidAt !== null;
+
+  async function pay() {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setPaying(true);
+    setFailed(null);
+    try {
+      onChanged(await payConsultation(r.id));
+      toast.success("Consultation fee paid");
+    } catch (err) {
+      setFailed(
+        err instanceof Error ? err.message : "The payment did not go through. Try again.",
+      );
+    } finally {
+      setPaying(false);
+      inFlight.current = false;
+    }
+  }
+
+  return (
+    <li className="rounded-card bg-parchment p-5">
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-label text-muted-fg">
+        <span>
+          {r.advocateName} · {format(new Date(r.requestedAt), "d MMM yyyy")}
+        </span>
+        <ConsultationStatus consultation={{ status: r.status, paid }} audience="client" />
+      </p>
+      <p className="mt-2 line-clamp-3 max-w-measure whitespace-pre-line text-meta text-ink">
+        {r.question}
+      </p>
+
+      {r.status === "requested" && (
+        <p className="mt-2 text-label text-muted-fg">
+          Fee payable if the advocate accepts, {PRICE_BASIS}.
+        </p>
+      )}
+
+      {r.status === "declined" && (
+        <p className="mt-2 text-label text-muted-fg">
+          The advocate declined this request. You were not charged.
+        </p>
+      )}
+
+      {r.status === "accepted" && !paid && r.fee !== null && (
+        <div className="mt-4 max-w-md rounded-card bg-paper p-5">
+          <p className="text-label font-medium text-muted-fg">Consultation fee · the advocate</p>
+          <p className="mt-2 font-display text-h2 text-ink">{rupees(r.fee)}</p>
+          <p className="text-meta text-muted-fg">{PRICE_BASIS}</p>
+          <p className="mt-3 text-meta text-ink">
+            {r.advocateName} accepted. Nothing is charged until you pay. This is separate from the
+            document fee.
+          </p>
+          <p className="mt-1 text-label text-muted-fg">GST is added at the rate in force.</p>
+
+          {failed && (
+            <p role="alert" className="mt-4 text-meta text-flagged">
+              {failed}
+            </p>
+          )}
+
+          <Button className="mt-4 w-full" size="lg" onClick={pay} disabled={paying}>
+            {paying ? "Paying" : failed ? "Try again" : "Pay (preview)"}
+          </Button>
+          <p className="mt-3 text-label text-muted-fg">Preview. No payment is taken.</p>
+        </div>
+      )}
+
+      {r.status === "accepted" && paid && (
+        <p className="mt-2 text-label text-muted-fg">
+          Paid. {r.advocateName} will answer here.
+        </p>
+      )}
+
+      {r.status === "answered" && r.answer && (
+        <div className="mt-4 border-l-2 border-line pl-4">
+          <p className="text-label font-medium text-muted-fg">Answer from {r.advocateName}</p>
+          <p className="mt-1.5 max-w-measure whitespace-pre-line text-meta text-ink">{r.answer}</p>
+          {r.answeredAt && (
+            <p className="mt-1.5 text-label text-muted-fg">
+              {format(new Date(r.answeredAt), "d MMM yyyy")}
+            </p>
+          )}
+        </div>
+      )}
+    </li>
   );
 }

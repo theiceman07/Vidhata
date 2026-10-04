@@ -239,24 +239,52 @@ export interface Invoice {
 /**
  * A client's request to talk to the advocate who settled their document.
  *
- * It is free to make, and stored as requested; the fee is payable only if the
- * advocate accepts, and that charge arrives with the advocate's inbox, so
- * there is no payment here and no state beyond "requested".
+ * It is free to make. The advocate accepts or declines. A decline is free and
+ * is never chargeable. An accept sets the fee, one flat amount before GST and
+ * separate from the platform's document fee, and money moves only when the
+ * client pays it. The advocate answers only after that, and the client reads
+ * the answer only once it is paid for.
  *
  * The question is the client's own words and may hold sensitive facts. It is
- * for the client and the advocate only: it is never put in the audit trail, a
- * notification or an export (a test holds those files to it).
+ * for the client and the advocate only, and the advocate reads it inside the
+ * request itself, never in a list. It is never put in the audit trail, a
+ * notification or a title or tooltip (a test holds those files to it). The
+ * client's own export carries it, deliberately, because it is their data.
  */
 export interface Consultation {
   id: string;
   documentId: string;
+  /** The document's title when asked, so a list need not read the document. */
+  documentTitle: string;
   orgId: string;
+  clientName: string;
   /** The advocate who settled the document. Never chosen by the client. */
+  advocateId: string;
   advocateName: string;
   question: string;
-  status: "requested";
+  status: "requested" | "accepted" | "declined" | "answered";
   requestedAt: string;
+  acceptedAt: string | null;
+  declinedAt: string | null;
+  /** Rupees before GST, set when the advocate accepts. Null until then. */
+  fee: number | null;
+  /** When the client paid it. The advocate sees only whether this is set. */
+  paidAt: string | null;
+  answer: string | null;
+  answeredAt: string | null;
 }
+
+/**
+ * A consultation as the advocate reads it: the status, and only whether it is
+ * paid. Never the fee, the time of payment or any card or payment detail.
+ */
+export type AdvocateConsultation = Omit<Consultation, "fee" | "paidAt"> & { paid: boolean };
+
+/**
+ * As the advocate's list shows it. It has no question, so a list cannot show
+ * one: the question is read inside the request.
+ */
+export type ConsultationSummary = Omit<AdvocateConsultation, "question" | "answer">;
 
 /**
  * What an advocate confirmed at onboarding about their enrolment. It is
@@ -325,13 +353,17 @@ export interface DataExport {
     }[];
   }[];
   invoices: Invoice[];
-  /** The client's own questions to the advocate who settled a document. */
+  /**
+   * The client's own questions to the advocate who settled a document, and the
+   * answer once it is paid for.
+   */
   consultationRequests: {
     document: string;
     advocate: string;
     requestedAt: string;
-    status: "requested";
+    status: "requested" | "accepted" | "declined" | "answered";
     question: string;
+    answer: string | null;
   }[];
   trainingOptIn: boolean;
   consentLog: ConsentEntry[];

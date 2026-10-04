@@ -175,6 +175,20 @@ Four systems, each with its own state. Never fold them into one label.
   nothing: advocates claim. Nothing about an advocate is public, ranked,
   rated or searchable by a client, and the page states no terms of
   empanelment (they are for counsel to confirm).
+- Consultations (lib/api/consultations.ts): a client asks the advocate who
+  settled a document, read from the document, never chosen. Requesting is
+  free. States: requested, accepted, declined, answered. Accepting sets one
+  flat fee, "before GST", separate from the document fee and never a share of
+  it; declining is free and never chargeable. Money moves only when the client
+  pays an accepted request ("Pay (preview)", idempotent, a failure leaves it
+  accepted and unpaid). The advocate answers once it is paid, and the client
+  reads the answer only then. An advocate sees only requests on documents they
+  settled; another's request and a made-up id are the same not-found. They
+  see whether it is paid, never the fee, the time or any payment detail. The
+  question (and the answer) appear only inside the request: not in a list, a
+  tab title, a tooltip, the audit trail, a notification, billing or a metric.
+  The client's own export carries them, deliberately. Who issues the
+  consultation invoice is for counsel to confirm and is marked so.
 - Revisions: the limit is one value, lib/config/revisions.ts, read through
   revisionCycle() (lib/revisions.ts). At it the case is logged for corpus
   review (advocate trail only, never the client's), no new round can be

@@ -139,7 +139,10 @@ export default function BillingPage() {
                         {invoice.description}
                       </span>
                       <span className="mt-0.5 block text-meta text-muted-fg">
-                        {INVOICE_KIND_LABEL[invoice.kind]} · {tierLabel(invoice.tier)}
+                        {INVOICE_KIND_LABEL[invoice.kind]} ·{" "}
+                        {invoice.kind === "consultation_fee"
+                          ? "the advocate who settled it"
+                          : tierLabel(invoice.tier)}
                       </span>
                     </span>
                     <span className="sm:text-right">

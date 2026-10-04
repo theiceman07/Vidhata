@@ -65,7 +65,7 @@ export async function requestDataExport(
   const file = buildDataExport({
     organisation,
     documents,
-    invoices: invoicesFor(documents),
+    invoices: invoicesFor(documents, consultations),
     consultations,
     privacy: stateOf(orgId),
     now: new Date(),
