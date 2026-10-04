@@ -159,6 +159,8 @@ const clause = (number: string, body: string): Clause => ({
 
 const finding = (id: string, clauseReference: string, overrides: Partial<Finding> = {}): Finding => ({
   findingId: id,
+  number: "01",
+  clientNumber: "01",
   source: "pipeline",
   layer: 2,
   severity: "medium",

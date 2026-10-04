@@ -73,6 +73,24 @@ export function clauseNumberFromReference(reference: string): string {
 export interface Finding {
   findingId: string;
   /**
+   * The document's own number for this finding ("04"), given by the API when
+   * the finding is raised: one more than the highest the document has ever
+   * numbered, in any draft. Unique within the document, kept across its drafts
+   * and never reused. It is stored and not worked out from the finding's place
+   * in a list, so filtering or reordering a list cannot move it.
+   */
+  number: string;
+  /**
+   * The number a client reads this finding by, given by the API when the
+   * client first may know of it: a pipeline finding when the first pass is
+   * handed on, an advocate-added one when a request is addressed to them or
+   * at sign-off. Null until then. It counts only what the client has been
+   * shown, so there is never a gap that says something was kept from them, and
+   * it never changes once given. A client names a finding by this, and by
+   * nothing else.
+   */
+  clientNumber: string | null;
+  /**
    * Who raised it. "advocate" is a finding the first pass missed, added in
    * review. The addition and override metrics read this, so it is a field
    * and never inferred from the rule id.
@@ -92,6 +110,12 @@ export interface Finding {
   resolvedAt: string | null;
   changeRequest: ChangeRequest | null;
 }
+
+/**
+ * A finding as an advocate adds it. Its numbers are not the caller's to give:
+ * the API numbers it (lib/numbering.ts), so what is sent has none.
+ */
+export type NewFinding = Omit<Finding, "number" | "clientNumber">;
 
 export interface ExecutionStep {
   kind: "stamping" | "registration" | "esignature";
@@ -344,13 +368,20 @@ export type ClientFindingDetail = Pick<
 /**
  * A finding as the client reads it.
  *
- * Before sign-off: the passage and the request addressed to them, nothing more.
- * A finding with no request addressed to the client is not in the list at all
- * (an advocate-added finding reaches them only that way). After sign-off
- * `detail` is set. Never a rule id, a layer, a source, an override note or a
- * resolution time.
+ * The list holds what the client may know of: the findings the first pass
+ * raised, and an advocate-added one only once a request is addressed to them
+ * (or, after sign-off, whatever the switch allows). Before sign-off a finding
+ * is its number, its clause reference and, where a request is addressed to
+ * them, its passage and that request; `detail` is null. After sign-off the
+ * passage and `detail` are set. Never a rule id, a layer, a source, an override
+ * note or a resolution time.
  */
-export interface ClientFinding extends Pick<Finding, "clauseReference" | "clauseText"> {
+export interface ClientFinding extends Pick<Finding, "clauseReference"> {
+  /**
+   * The quoted passage. Null before sign-off unless a request is addressed to
+   * the client about it: the passage is the draft's own wording.
+   */
+  clauseText: string | null;
   /**
    * "04". The one reference a client has to a finding: what they read, what
    * they answer by, and what a list keys on. Unique within a document and
@@ -393,6 +424,37 @@ export interface ClientDocument
   findingList: ClientFinding[];
   /** After sign-off only. Empty before. */
   executionSteps: ExecutionStep[];
+}
+
+/**
+ * A document as the client's list reads it. A list is not a detail page: it
+ * carries no clauses, no findings and no checklist steps, only what the
+ * dashboard shows of each, as counts.
+ */
+export interface ClientDocumentSummary
+  extends Pick<
+    ClientDocument,
+    | "id"
+    | "title"
+    | "type"
+    | "status"
+    | "tier"
+    | "version"
+    | "createdAt"
+    | "claimedAt"
+    | "executedAt"
+    | "paidAt"
+    | "signOff"
+  > {
+  counterpartyName: string;
+  /** What the first pass raised. Findings an advocate added are not counted. */
+  findingCount: number;
+  /** Requests addressed to the client that they have not yet answered. */
+  openRequests: number;
+  /** When the latest request to the client was sent. Null when there has been none. */
+  latestRequestAt: string | null;
+  /** After sign-off only: applicable steps done, and in all. Zero before. */
+  checklist: { done: number; total: number };
 }
 
 /** One draft in the client's version list. Counts only; never the draft. */
@@ -461,7 +523,7 @@ export interface ClientDiff {
  * sign-off the advocate is "Advocate", never a name. No entry about the
  * advocate's own working is in it.
  */
-export type ClientAuditEntry = Omit<AuditEntry, "advocateOnly" | "findingId"> & {
+export type ClientAuditEntry = Omit<AuditEntry, "advocateOnly" | "afterSignOff" | "findingId"> & {
   /** The finding the entry concerned, by its number. Never its id. */
   findingNumber: string | null;
 };

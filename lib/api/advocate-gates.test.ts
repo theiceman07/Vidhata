@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Finding } from "@/lib/types";
+import type { Finding, NewFinding } from "@/lib/types";
 import {
   addFinding,
   getDocument,
@@ -26,7 +26,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const added = (over: Partial<Finding> = {}): Finding => ({
+const added = (over: Partial<NewFinding> = {}): NewFinding => ({
   findingId: "added-finding-1",
   source: "advocate",
   layer: 0,

@@ -7,6 +7,7 @@ import type {
   ClientDeal,
   ClientDiff,
   ClientDocument,
+  ClientDocumentSummary,
   ClientFinding,
   ClientFindingDetail,
   ClientVersionList,
@@ -79,8 +80,9 @@ describe("the walk that finds a restricted key", () => {
 });
 
 describe("client types carry no restricted key", () => {
-  it("not the document", () => {
+  it("not the document, or its summary in the list", () => {
     expectTypeOf<Leak<ClientDocument>>().toBeNever();
+    expectTypeOf<Leak<ClientDocumentSummary>>().toBeNever();
   });
 
   it("not a finding, with its detail, request and sources", () => {

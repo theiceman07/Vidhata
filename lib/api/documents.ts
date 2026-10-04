@@ -4,6 +4,7 @@ import type {
   DocumentVersion,
   ExecutionStep,
   Finding,
+  NewFinding,
   ReviewTier,
   VersionCreatedBy,
 } from "@/lib/types";
@@ -15,6 +16,8 @@ import { declaredConflictWith } from "@/lib/conflicts";
 import { blockingCitations, settleNeedsNote } from "@/lib/findings";
 import { esignatureStep } from "@/lib/config/esign";
 import { TIER_PRICING } from "@/lib/config/pricing";
+import { SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF } from "@/lib/config/visibility";
+import { nextNumber } from "@/lib/numbering";
 import { revisionBlockedReason, revisionCycle } from "@/lib/revisions";
 import { assignReviewTier } from "@/lib/triage";
 import { declaredConflictNames } from "./advocate";
@@ -107,6 +110,35 @@ register("documents", () => store);
 const versionStore: DocumentVersion[] = restored("versions");
 register("versions", () => versionStore);
 
+// Every number a document has ever given a finding, in any draft. A finding
+// that has gone from the head still holds its number in a snapshot, so the next
+// one is worked out from both and a number is never given twice.
+function numbersUsed(doc: ContractDocument): string[] {
+  const inSnapshots = versionStore
+    .filter((v) => v.documentId === doc.id)
+    .flatMap((v) => v.findings.map((f) => f.number));
+  return [...doc.findings.map((f) => f.number), ...inSnapshots];
+}
+
+// The same for the numbers a client has been shown.
+function clientNumbersUsed(doc: ContractDocument): string[] {
+  const inSnapshots = versionStore
+    .filter((v) => v.documentId === doc.id)
+    .flatMap((v) => v.findings.map((f) => f.clientNumber));
+  return [...doc.findings.map((f) => f.clientNumber), ...inSnapshots].filter(
+    (n): n is string => n !== null,
+  );
+}
+
+// A client is shown a finding by its client number, given the first time they
+// may know of it and never changed. Giving it only ever takes the next number,
+// so what a client has been shown is one run with no gap in it.
+function showToClient(doc: ContractDocument, finding: Finding): void {
+  if (finding.clientNumber === null) {
+    finding.clientNumber = nextNumber(clientNumbersUsed(doc));
+  }
+}
+
 function recordVersion(doc: ContractDocument, createdBy: VersionCreatedBy): void {
   if (versionStore.some((v) => v.documentId === doc.id && v.number === doc.version)) {
     return;
@@ -170,6 +202,14 @@ function reconcileAnalysis(doc: ContractDocument): void {
     if (!clause) return false;
     clause.findingIds.push(f.findingId);
     return true;
+  });
+  // The first pass raised these, in this order, and the client may know of all
+  // of them. They are numbered after the filter, so a finding dropped above
+  // leaves no gap, and the two numbers are given here and kept.
+  doc.findings = doc.findings.map((f) => ({ ...f, number: "", clientNumber: null }));
+  doc.findings.forEach((f) => {
+    f.number = nextNumber(doc.findings.map((g) => g.number));
+    showToClient(doc, f);
   });
 
   // The first pass is handed to the advocate queue: that is a hand-off.
@@ -371,8 +411,13 @@ export async function createDraftDocument(
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not create the draft.");
   }
+  // Two documents made in the same millisecond must not share an id: the
+  // second would be unreachable behind the first, and a read of either would
+  // answer with the wrong one.
+  let id = `doc-${Date.now()}`;
+  for (let n = 2; store.some((d) => d.id === id); n += 1) id = `doc-${Date.now()}-${n}`;
   const doc: ContractDocument = {
-    id: `doc-${Date.now()}`,
+    id,
     title: input.title,
     type: input.type,
     status: "draft",
@@ -560,6 +605,10 @@ export async function requestChange(
     response: null,
     respondedAt: null,
   };
+  // A request addressed to the client is how a finding an advocate added
+  // reaches them, so this is the first they may know of it, and it is numbered
+  // now, before any snapshot is written. A second request changes nothing.
+  showToClient(doc, finding);
   // Sending it back is what the cycle count counts, so a second request in
   // the same round does not add another.
   const startsRound = doc.status !== "revision";
@@ -686,7 +735,7 @@ export async function updateFinding(
 
 export async function addFinding(
   docId: string,
-  finding: Finding,
+  finding: NewFinding,
   advocateId: string,
 ): Promise<ContractDocument> {
   await randomDelay(300, 600);
@@ -704,6 +753,10 @@ export async function addFinding(
   // a finding added in review enters it open and marked as added by an advocate.
   const entered: Finding = {
     ...finding,
+    // Numbered here, never by the caller: the next the document has ever used,
+    // and none for the client until they may know of it.
+    number: nextNumber(numbersUsed(doc)),
+    clientNumber: null,
     source: "advocate",
     disposition: "pending",
     overrideNote: null,
@@ -753,6 +806,12 @@ export async function signOffDocument(
     throw new MockApiError(
       "A citation on this document is blocked. Resolve the source before sign-off.",
     );
+  }
+  // After sign-off the record is the client's to read, so what the advocate
+  // added and the client has not yet been shown is shown now, in the order it
+  // was raised, if the switch has it so. Nothing already numbered changes.
+  if (SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF) {
+    doc.findings.forEach((f) => showToClient(doc, f));
   }
   doc.status = "settled";
   doc.settledAt = new Date().toISOString();

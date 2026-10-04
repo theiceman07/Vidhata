@@ -176,6 +176,8 @@ These replace anything above that they contradict.
 - The deletion scope: what is removed and what is kept, including invoices, payment records, the sign-off record, the audit trail and the consent log.
 - Whether a settled document itself is removed or kept on a deletion request. It sits under "Not yet decided" in the scope list until counsel says.
 - The security page and training opt-in wording.
+- **The cookie banner's "Decline non-essential" and "Accept non-essential" buttons.** The site runs nothing non-essential, so the buttons imply a choice that does not exist. The banner's sentence is true in every build ("This site doesn't use cookies beyond what it needs to work. Nothing is tracked.") and is marked for counsel in `lib/config/consent.ts`; the buttons need counsel to say whether to keep them, reword them or drop them until something non-essential is added.
+- **"Not required" on a checklist step.** The settled NDA fixture says registration is not required, a conclusion no audited rule supports. The public sample shows "confirmed by your advocate" instead; the fixture and the preview workspace still carry it, for counsel to decide with the stamp-duty and registration schedules.
 - **The sign-off attestation and "Rule 37".** The advocate's third sign-off
   confirmation read "This sign-off complies with Bar Council of India Rule 37."
   The number comes from the SRD ("Advocate sign-off is binding; constitutes

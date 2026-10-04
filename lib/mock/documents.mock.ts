@@ -50,6 +50,8 @@ const settledNda: ContractDocument = {
       // Raised by the first pass against draft 1, which gave the term as
       // thirty six months. Settled once the advocate corrected the clause.
       findingId: "find-n1",
+      number: "01",
+      clientNumber: "01",
       source: "pipeline",
       layer: 3,
       severity: "low",
@@ -69,6 +71,8 @@ const settledNda: ContractDocument = {
     {
       // Added by the advocate in review, and decided in the same sitting.
       findingId: "find-n2",
+      number: "02",
+      clientNumber: "02",
       source: "advocate",
       layer: 6,
       severity: "low",
@@ -153,6 +157,8 @@ const pendingReviewMsa: ContractDocument = {
   findings: [
     {
       findingId: "find-1",
+      number: "01",
+      clientNumber: "01",
       source: "pipeline",
       layer: 2,
       severity: "high",
@@ -180,6 +186,8 @@ const pendingReviewMsa: ContractDocument = {
     },
     {
       findingId: "find-2",
+      number: "02",
+      clientNumber: "02",
       source: "pipeline",
       layer: 2,
       severity: "medium",
@@ -207,6 +215,8 @@ const pendingReviewMsa: ContractDocument = {
     },
     {
       findingId: "find-3",
+      number: "03",
+      clientNumber: "03",
       source: "pipeline",
       layer: 3,
       severity: "low",
@@ -302,6 +312,8 @@ const revisionVendor: ContractDocument = {
   findings: [
     {
       findingId: "find-4",
+      number: "02",
+      clientNumber: "02",
       source: "pipeline",
       layer: 2,
       severity: "medium",
@@ -340,6 +352,8 @@ const revisionVendor: ContractDocument = {
       // names no statute: the rule is a cross-clause check, so settling it
       // carries the advocate's note.
       findingId: "find-8",
+      number: "03",
+      clientNumber: "03",
       source: "pipeline",
       layer: 4,
       severity: "low",
@@ -362,6 +376,8 @@ const revisionVendor: ContractDocument = {
       // Added by the advocate in review. Its source verifies against the
       // corpus, so it can be settled once the advocate has decided it.
       findingId: "find-9",
+      number: "04",
+      clientNumber: null,
       source: "advocate",
       layer: 6,
       severity: "medium",
@@ -394,6 +410,8 @@ const revisionVendor: ContractDocument = {
       // plain placeholder on purpose, so it cannot be mistaken for a real
       // authority.
       findingId: "find-10",
+      number: "05",
+      clientNumber: null,
       source: "advocate",
       layer: 6,
       severity: "low",
@@ -463,6 +481,8 @@ const rereviewEmployment: ContractDocument = {
   findings: [
     {
       findingId: "find-e1",
+      number: "01",
+      clientNumber: "01",
       source: "pipeline",
       layer: 3,
       severity: "low",
@@ -482,6 +502,8 @@ const rereviewEmployment: ContractDocument = {
     },
     {
       findingId: "find-e3",
+      number: "03",
+      clientNumber: "03",
       source: "pipeline",
       layer: 3,
       severity: "medium",
@@ -508,6 +530,8 @@ const rereviewEmployment: ContractDocument = {
     },
     {
       findingId: "find-e4",
+      number: "05",
+      clientNumber: "05",
       source: "pipeline",
       layer: 3,
       severity: "medium",
@@ -525,6 +549,8 @@ const rereviewEmployment: ContractDocument = {
     },
     {
       findingId: "find-e5",
+      number: "04",
+      clientNumber: "04",
       source: "pipeline",
       layer: 4,
       severity: "low",

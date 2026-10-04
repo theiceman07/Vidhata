@@ -16,6 +16,8 @@ function clause(number: string, body: string): Clause {
 function finding(findingId: string, overrides: Partial<Finding> = {}): Finding {
   return {
     findingId,
+    number: "01",
+    clientNumber: "01",
     source: "pipeline",
     layer: 2,
     severity: "medium",

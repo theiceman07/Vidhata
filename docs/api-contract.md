@@ -456,7 +456,7 @@ currency-lag metric has a source.
 schedule and the registration rules from audited schedules. A generated checklist
 states nothing until then (section 2.6).
 
-**10.5 For counsel and the accountant** (also in `docs/superpowers/plans/2026-10-03-money-and-privacy.md`): who issues and receives a consultation invoice, and its wording; a proper GST breakup; the deletion scope and wording; whether a settled document is removed or kept on deletion; the security page and the training opt-in wording; the terms of advocate empanelment, which the onboarding page states none of; and the wording of the advocate's sign-off attestation, which no longer cites a Bar Council rule number until counsel confirms which rule, if any, applies.
+**10.5 For counsel and the accountant** (also in `docs/superpowers/plans/2026-10-03-money-and-privacy.md`): who issues and receives a consultation invoice, and its wording; a proper GST breakup; the deletion scope and wording; whether a settled document is removed or kept on deletion; the security page and the training opt-in wording; the terms of advocate empanelment, which the onboarding page states none of; the wording of the advocate's sign-off attestation, which no longer cites a Bar Council rule number until counsel confirms which rule, if any, applies; and the cookie banner's "Decline non-essential" and "Accept non-essential" buttons, which imply a choice while nothing non-essential runs.
 
 ---
 
