@@ -12,6 +12,36 @@ vi.mock("./delay", async (importOriginal) => {
   return { ...original, shouldSimulateFailure: () => failure.on };
 });
 
+// A test-only fixture. The shipped fixtures no longer rule registration out (no audited rule
+// stands behind "not required"), so the rule that a step that does not apply never holds
+// execution up is held here, on a copy of the settled NDA whose registration step does not
+// apply. Nothing outside this file sees it.
+vi.mock("@/lib/mock/documents.mock", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/lib/mock/documents.mock")>();
+  return {
+    ...original,
+    mockDocuments: original.mockDocuments.map((d) =>
+      d.id !== "doc-nda-settled-2"
+        ? d
+        : {
+            ...d,
+            executionSteps: d.executionSteps.map((s) =>
+              s.kind === "registration"
+                ? {
+                    ...s,
+                    applicable: false,
+                    headline: "Registration: does not apply (test fixture)",
+                    complete: true,
+                    completedAt: null,
+                    completedBy: null,
+                  }
+                : s,
+            ),
+          },
+    ),
+  };
+});
+
 beforeEach(() => {
   vi.useFakeTimers();
 });
@@ -35,7 +65,8 @@ async function refusal(promise: Promise<unknown>): Promise<string> {
 }
 
 // Signed off by Ananya Rao. Stamping is done and carries its proof, registration
-// does not apply, and the e-signature is the one step left.
+// does not apply (in this file only: see the test-only fixture above), and the
+// e-signature is the one step left.
 const id = "doc-nda-settled-2";
 const client = "Anaya Textiles Pvt Ltd";
 
