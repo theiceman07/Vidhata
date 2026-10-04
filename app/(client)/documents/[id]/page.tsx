@@ -395,6 +395,12 @@ function SettledDocument({ doc }: { doc: ContractDocument }) {
             </span>
           )}
           <Link
+            href={`/documents/${doc.id}/delivery`}
+            className="text-label text-ink underline-offset-2 hover:underline"
+          >
+            Delivery
+          </Link>
+          <Link
             href={`/documents/${doc.id}/checklist`}
             className="text-label text-ink underline-offset-2 hover:underline"
           >

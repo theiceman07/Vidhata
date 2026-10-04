@@ -1,5 +1,5 @@
 import { mockSummaries } from "@/lib/mock/summaries.mock";
-import type { SettledSummary } from "@/lib/types";
+import type { ContractDocument, SettledSummary } from "@/lib/types";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { getDocument } from "./documents";
 
@@ -29,6 +29,14 @@ export async function getSettledSummary(documentId: string): Promise<SummaryResu
   }
   const doc = await getDocument(documentId);
   if (!doc) throw new MockApiError("Document not found.");
+  return summaryResultFor(doc);
+}
+
+/**
+ * The summary reading of a document already in hand. The one place the gate
+ * lives, so the summary page and the delivery view cannot disagree about it.
+ */
+export function summaryResultFor(doc: ContractDocument): SummaryResult {
   if (doc.status !== "settled" && doc.status !== "executed") {
     return { state: "not_available" };
   }

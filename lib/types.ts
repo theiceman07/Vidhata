@@ -129,6 +129,21 @@ export interface SettledSummary {
   items: SummaryItem[];
 }
 
+/**
+ * What a client is handed once a document is settled: the recorded sign-off,
+ * the summary where one exists, and how far the execution checklist has got.
+ * It exists only for a document with a recorded advocate sign-off.
+ */
+export interface Delivery {
+  documentId: string;
+  title: string;
+  counterparty: string;
+  status: "settled" | "executed";
+  signOff: { advocate: string; enrolment: string; at: string };
+  summary: SettledSummary | null;
+  checklist: { done: number; total: number };
+}
+
 export interface ContractDocument {
   id: string;
   title: string;
