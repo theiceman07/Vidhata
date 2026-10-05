@@ -172,6 +172,22 @@ export interface Delivery {
 }
 
 /**
+ * What asking for a delivery can come back as. Before sign-off the answer is
+ * only that: nothing about the document, the advocate or the summary.
+ */
+export type DeliveryResult = { state: "not_available" } | { state: "ready"; delivery: Delivery };
+
+/**
+ * What asking for a summary can come back as. Three states, and the first two
+ * carry nothing about the content: a document that is not signed off says only
+ * that, and a signed-off one with no summary says only that.
+ */
+export type SummaryResult =
+  | { state: "not_available" }
+  | { state: "none" }
+  | { state: "ready"; summary: SettledSummary };
+
+/**
  * The advocate's recorded sign-off: who, under which Bar enrolment, and when.
  * It is the only place a client meets the advocate. Before sign-off a client
  * is never told who holds their document, so no client type carries a name or
@@ -552,6 +568,67 @@ export interface Invoice {
   description: string;
   tier: ReviewTier | null;
   amount: number;
+}
+
+/**
+ * A source as the shared workspace reads it. That it was withdrawn is always
+ * there. Who withdrew it, when and why are the advocate's record, so they may be
+ * absent: a client is told a source was withdrawn and never by whom or why.
+ */
+export interface WorkspaceCitation extends Pick<Citation, "id" | "text" | "status" | "corpusRef"> {
+  withdrawn: { at?: string; by?: string; note?: string } | null;
+}
+
+/**
+ * A finding as the shared workspace reads it, for either portal. The advocate's
+ * working (the rule and layer behind it, the override note, when it was decided
+ * and who asked for a change) is optional: an advocate's record has it and a
+ * client's never does, so a client's document is built without it and the type
+ * does not ask for it. The workspace shows it only to an advocate.
+ */
+export interface WorkspaceFinding
+  extends Pick<
+    Finding,
+    | "findingId"
+    | "source"
+    | "severity"
+    | "clauseReference"
+    | "clauseText"
+    | "description"
+    | "remedySuggested"
+    | "disposition"
+  > {
+  citations: WorkspaceCitation[];
+  changeRequest: (Omit<ChangeRequest, "requestedBy"> & { requestedBy?: string }) | null;
+  ruleApplied?: string;
+  layer?: PipelineLayer;
+  overrideNote?: string | null;
+  resolvedAt?: string | null;
+}
+
+/**
+ * A document as the shared workspace reads it. The advocate's own record
+ * (ContractDocument) satisfies it, and a client's is built to it from what a
+ * client is handed (lib/client-workspace.ts), so the workspace can be given
+ * nothing of the organisation, the claim or the advocate's identity by a client.
+ */
+export interface WorkspaceDocument
+  extends Pick<
+    ContractDocument,
+    | "id"
+    | "title"
+    | "type"
+    | "status"
+    | "tier"
+    | "clientName"
+    | "counterpartyName"
+    | "version"
+    | "clauses"
+    | "executionSteps"
+  > {
+  findings: WorkspaceFinding[];
+  /** Named for the document, once there is one. Never carries the advocate's id. */
+  advocate: { name: string; bar: string } | null;
 }
 
 /**

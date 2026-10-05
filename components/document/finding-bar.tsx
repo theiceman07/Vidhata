@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { blockingCitations, findingState } from "@/lib/findings";
-import type { Finding } from "@/lib/types";
+import type { WorkspaceFinding } from "@/lib/types";
 import { AddedByLabel } from "./added-by-label";
 import { FindingRule } from "./finding-rule";
 import { useReviewScope } from "./review-scope-context";
@@ -29,7 +29,7 @@ export function FindingBar({
   onSelect,
   onHover,
 }: {
-  finding: Finding;
+  finding: WorkspaceFinding;
   /** Display ordinal, "04". Never the opaque id. */
   number: string;
   selected: boolean;

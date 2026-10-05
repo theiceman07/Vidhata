@@ -8,6 +8,7 @@ import { CitationBlock } from "@/components/document/citation-block";
 import { FindingBar } from "@/components/document/finding-bar";
 import { FindingDetail } from "@/components/document/finding-detail";
 import { DocumentSurface } from "@/components/document/document-surface";
+import { buildAuditTrail } from "@/lib/audit";
 import { getMockDocumentById } from "@/lib/mock/documents.mock";
 
 /**
@@ -115,6 +116,7 @@ export default function ComponentsPage() {
               finding={selectedFinding}
               number={findingNumbers[selectedFinding.findingId]}
               role="advocate"
+              trail={buildAuditTrail(doc)}
               canAdjudicate
               onSettle={() => undefined}
               onReopen={() => undefined}
@@ -133,6 +135,8 @@ export default function ComponentsPage() {
               finding={selectedFinding}
               number={findingNumbers[selectedFinding.findingId]}
               role="client"
+              // A client is handed their own record by the API, never the full one.
+              trail={[]}
               canAdjudicate={false}
               onSettle={() => undefined}
               onReopen={() => undefined}

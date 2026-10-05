@@ -1,17 +1,7 @@
 import { mockSummaries } from "@/lib/mock/summaries.mock";
-import type { ContractDocument, SettledSummary } from "@/lib/types";
+import type { ContractDocument, SummaryResult } from "@/lib/types";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { getDocument } from "./documents";
-
-/**
- * What asking for a summary can come back as. Three states, and the first two
- * carry nothing about the content: a document that is not signed off says only
- * that, and a signed-off one with no summary says only that.
- */
-export type SummaryResult =
-  | { state: "not_available" }
-  | { state: "none" }
-  | { state: "ready"; summary: SettledSummary };
 
 /**
  * The plain-language summary of a settled document.

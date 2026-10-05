@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { DURATION, EASE, duration } from "@/lib/motion";
 import { findingState } from "@/lib/findings";
-import type { Finding, Severity } from "@/lib/types";
+import type { Severity, WorkspaceFinding } from "@/lib/types";
 
 const SEVERITY_RULE: Record<Severity, string> = {
   high: "bg-flagged",
@@ -28,7 +28,7 @@ export function FindingRule({
   finding,
   className,
 }: {
-  finding: Finding;
+  finding: WorkspaceFinding;
   className?: string;
 }) {
   const reduced = useReducedMotion();

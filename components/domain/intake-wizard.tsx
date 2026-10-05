@@ -17,7 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createDraftDocument } from "@/lib/api/documents";
+import { createClientDraft } from "@/lib/api/client/documents";
+import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { DRAFT_NEEDS, readBrief } from "@/lib/api/brief";
 import { BRIEF_KEY } from "@/components/marketing/deal-prompt";
 import { ContractTypePicker } from "@/components/domain/contract-type-picker";
@@ -166,7 +167,7 @@ export function IntakeWizard() {
     setSubmitting(true);
     setSubmitError("");
     try {
-      const doc = await createDraftDocument({
+      const doc = await createClientDraft(MOCK_CLIENT_ORG.id, {
         title: data.title,
         type: data.type,
         clientName: data.clientName,

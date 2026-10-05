@@ -286,3 +286,8 @@ Four systems, each with its own state. Never fold them into one label.
 
 ## Commands
 npm run dev / npm run build / npm run lint / npm run typecheck
+
+After a browser session, kill the dev server's node process and check memory.
+Stopping the task that started `npm run dev` ends only the npm wrapper; the
+`node` child running next's start-server.js keeps its memory (about 3.6 GB) and
+can starve the next `npm run check`.

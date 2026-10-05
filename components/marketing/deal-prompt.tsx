@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Icon } from "@/components/shared/icon";
 import { readBrief, intakeFromReading } from "@/lib/api/brief";
-import { createDraftDocument } from "@/lib/api/documents";
+import { createClientDraft } from "@/lib/api/client/documents";
+import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { cn } from "@/lib/utils";
 
 /**
@@ -94,7 +95,7 @@ export function DealPrompt({
         router.push("/new");
         return;
       }
-      const doc = await createDraftDocument(intake);
+      const doc = await createClientDraft(MOCK_CLIENT_ORG.id, intake);
       try {
         window.sessionStorage.removeItem(BRIEF_KEY);
       } catch {

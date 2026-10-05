@@ -1,6 +1,14 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import * as React from "react";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { CitationBlock } from "@/components/document/citation-block";
+
+// The tests compile JSX the classic way, which looks for React in scope. Giving it here keeps
+// the test config as it is, and is only for rendering a component to text.
+(globalThis as { React?: typeof React }).React = React;
 import { workspaceDocOf, workspaceNumbering } from "./client-workspace";
 import { groupOf, yourMove } from "./moves";
 import { leaked, markersFor } from "./api/client/markers";
@@ -113,8 +121,26 @@ describe("a signed-off document, as the shared workspace reads it for a client",
       const client = shapeClientDocument(d);
       const adapted = workspaceDocOf(client);
       expect(leaked(adapted, markersFor(d).machinery), d.id).toEqual([]);
+      // The advocate's working is not there to be filled with an empty value: the keys are absent.
+      expect(Object.keys(adapted).sort(), d.id).toEqual([
+        "advocate",
+        "clauses",
+        "clientName",
+        "counterpartyName",
+        "executionSteps",
+        "findings",
+        "id",
+        "status",
+        "tier",
+        "title",
+        "type",
+        "version",
+      ]);
       for (const f of adapted.findings) {
-        expect([f.ruleApplied, f.layer, f.overrideNote, f.resolvedAt], d.id).toEqual(["", 0, null, null]);
+        for (const key of ["ruleApplied", "layer", "overrideNote", "resolvedAt"]) {
+          expect(Object.keys(f), `${d.id} ${key}`).not.toContain(key);
+        }
+        if (f.changeRequest) expect(Object.keys(f.changeRequest)).not.toContain("requestedBy");
       }
     }
   });
@@ -134,8 +160,8 @@ describe("a signed-off document, as the shared workspace reads it for a client",
     for (const d of signedOff) {
       const client = shapeClientDocument(d);
       const adapted = workspaceDocOf(client);
-      expect(adapted.advocate).toEqual({ id: "", name: client.signOff!.advocate, bar: client.signOff!.enrolment });
-      expect(adapted.settledAt).toBe(client.signOff!.at);
+      // Named and enrolled, and with no id of the advocate's own.
+      expect(adapted.advocate).toEqual({ name: client.signOff!.advocate, bar: client.signOff!.enrolment });
     }
   });
 
@@ -159,6 +185,37 @@ describe("a signed-off document, as the shared workspace reads it for a client",
       ),
     };
     const citation = workspaceDocOf(withdrawn).findings[0].citations.at(-1)!;
-    expect(citation.withdrawn).toEqual({ note: "", at: "", by: "" });
+    // That it was withdrawn, and nothing of who, when or why.
+    expect(citation.withdrawn).toEqual({});
+  });
+
+  it("is drawn without a name or a date for a source withdrawn, and does not fall over for want of one", () => {
+    const html = renderToStaticMarkup(
+      createElement(CitationBlock, {
+        citations: [{ id: "c-w", text: "A source, s.1", status: "blocked", corpusRef: null, withdrawn: {} }],
+        showWithdrawalNote: false,
+      }),
+    );
+    expect(html).toContain("Withdrawn. The finding no longer relies on this source.");
+    expect(html).not.toMatch(/Invalid|NaN| by /);
+  });
+
+  it("still says who withdrew a source, when and why, for an advocate", () => {
+    const html = renderToStaticMarkup(
+      createElement(CitationBlock, {
+        citations: [
+          {
+            id: "c-w",
+            text: "A source, s.1",
+            status: "blocked",
+            corpusRef: null,
+            withdrawn: { by: "Rhea Kapoor", at: "2026-09-01T12:00:00.000Z", note: "Not relied on." },
+          },
+        ],
+        showWithdrawalNote: true,
+      }),
+    );
+    expect(html).toContain("Withdrawn by Rhea Kapoor · 1 Sep 2026.");
+    expect(html).toContain("Not relied on.");
   });
 });

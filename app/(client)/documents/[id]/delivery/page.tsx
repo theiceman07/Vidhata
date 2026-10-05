@@ -13,9 +13,9 @@ import { Icon } from "@/components/shared/icon";
 import { StateLabel } from "@/components/document/state-label";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { DeliveryResult } from "@/lib/api/delivery";
 import { getClientDelivery } from "@/lib/api/client/delivery";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
+import type { DeliveryResult } from "@/lib/types";
 
 type Load =
   | { phase: "loading" }

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/shared/icon";
 import { blockingCitations, findingState } from "@/lib/findings";
-import type { Clause, Finding, Severity } from "@/lib/types";
+import type { Clause, Severity, WorkspaceFinding } from "@/lib/types";
 import { clauseNumberFromReference } from "@/lib/types";
 import { SeverityGlyph } from "./severity";
 
@@ -33,7 +33,7 @@ export function ClauseIndex({
   onHoverFinding,
 }: {
   clauses: Clause[];
-  findings: Finding[];
+  findings: WorkspaceFinding[];
   findingNumbers: Record<string, string>;
   activeClauseId: string | null;
   selectedFindingId: string | null;
@@ -62,7 +62,7 @@ export function ClauseIndex({
           {clauses.map((clause) => {
             const clauseFindings = clause.findingIds
               .map((id) => byId.get(id))
-              .filter((f): f is Finding => Boolean(f));
+              .filter((f): f is WorkspaceFinding => Boolean(f));
             const pending = clauseFindings
               .filter((f) => findingState(f) !== "settled")
               .sort((a, b) => RANK[a.severity] - RANK[b.severity]);

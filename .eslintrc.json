@@ -1,3 +1,66 @@
 {
-  "extends": ["next/core-web-vitals", "next/typescript"]
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "overrides": [
+    {
+      "files": [
+        "app/(client)/**/*.{ts,tsx}",
+        "components/document/change-requests.tsx",
+        "components/document/client-reader.tsx",
+        "components/document/dateline.tsx",
+        "components/document/document-agent.tsx",
+        "components/document/provenance.tsx",
+        "components/domain/chat-message.tsx",
+        "components/domain/contract-type-picker.tsx",
+        "components/domain/coverage-panel.tsx",
+        "components/domain/document-context.tsx",
+        "components/domain/download-options.tsx",
+        "components/domain/draft-banner.tsx",
+        "components/domain/draft-paths.tsx",
+        "components/domain/escalation-prompt.tsx",
+        "components/domain/esign-guide.tsx",
+        "components/domain/execution-checklist.tsx",
+        "components/domain/intake-wizard.tsx",
+        "components/domain/payment-panel.tsx",
+        "components/domain/pipeline-progress.tsx",
+        "components/domain/summary-view.tsx",
+        "components/domain/version-history.tsx",
+        "components/marketing/deal-prompt.tsx"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/lib/types", "**/lib/types.*"],
+                "importNames": ["ContractDocument", "Finding"],
+                "message": "The client portal reads what a client is handed (ClientDocument, ClientFinding), never the internal record. See lib/api/client."
+              },
+              {
+                "group": ["**/lib/api/documents", "**/lib/api/documents.*"],
+                "message": "The client portal reads and writes through lib/api/client, which takes the organisation and hands back client types."
+              },
+              {
+                "group": [
+                  "**/lib/mock/documents.mock", "**/lib/mock/documents.mock.*",
+                  "**/lib/api/consultations", "**/lib/api/consultations.*",
+                  "**/lib/api/delivery", "**/lib/api/delivery.*",
+                  "**/lib/api/summaries", "**/lib/api/summaries.*",
+                  "**/lib/api/notes", "**/lib/api/notes.*",
+                  "**/lib/api/advocate", "**/lib/api/advocate.*",
+                  "**/lib/findings", "**/lib/findings.*",
+                  "**/lib/audit", "**/lib/audit.*",
+                  "**/lib/api/citations", "**/lib/api/citations.*",
+                  "**/lib/api/metrics", "**/lib/api/metrics.*",
+                  "**/lib/api/onboarding", "**/lib/api/onboarding.*",
+                  "**/lib/api/advocate-invite", "**/lib/api/advocate-invite.*"
+                ],
+                "message": "These hold or read the internal record, or are the advocate's. A client file reads through lib/api/client, which hands back client types."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

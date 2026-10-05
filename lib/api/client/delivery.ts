@@ -1,5 +1,6 @@
-import { getDelivery, type DeliveryResult } from "../delivery";
-import { getSettledSummary, type SummaryResult } from "../summaries";
+import type { DeliveryResult, SummaryResult } from "@/lib/types";
+import { getDelivery } from "../delivery";
+import { getSettledSummary } from "../summaries";
 import { ownDocument } from "./own";
 
 /**

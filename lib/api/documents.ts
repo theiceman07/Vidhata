@@ -406,6 +406,7 @@ function buildClauses(input: IntakeInput): Clause[] {
 
 export async function createDraftDocument(
   input: IntakeInput,
+  orgId: string = MOCK_CLIENT_ORG.id,
 ): Promise<ContractDocument> {
   await randomDelay();
   if (shouldSimulateFailure()) {
@@ -422,11 +423,11 @@ export async function createDraftDocument(
     type: input.type,
     status: "draft",
     tier: null,
-    // The mock layer only ever authenticates one client identity, so every
-    // document a client creates belongs to that identity's org regardless
-    // of the "your company name" text entered in the wizard (that field is
-    // display text on the contract, not a tenant selector).
-    orgId: MOCK_CLIENT_ORG.id,
+    // The organisation is the caller's, never read from the "your company
+    // name" text entered in the wizard (that field is display text on the
+    // contract, not a tenant selector). The preview's one client identity is
+    // the default.
+    orgId,
     clientName: input.clientName,
     counterpartyName: input.counterpartyName,
     stateOfExecution: input.stateOfExecution,

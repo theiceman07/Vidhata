@@ -2,7 +2,9 @@ import type { ClientDocument, ClientDocumentSummary, ContractDocument, Execution
 import { MockApiError } from "../delay";
 import {
   attachEvidence,
+  createDraftDocument,
   getDocument,
+  type IntakeInput,
   listDocuments,
   payFee,
   respondToChanges,
@@ -32,6 +34,15 @@ export async function getClientDocument(orgId: string, id: string): Promise<Clie
 export async function listClientDocuments(orgId: string): Promise<ClientDocumentSummary[]> {
   const docs = await listDocuments(orgId);
   return docs.filter((d) => d.orgId === orgId).map((d) => shapeClientSummary(d));
+}
+
+/**
+ * Starts a draft for the client's organisation, from what the client stated.
+ * The draft is the organisation's, whatever the company name in the form says,
+ * and what comes back is what a client reads of it.
+ */
+export async function createClientDraft(orgId: string, input: IntakeInput): Promise<ClientDocument> {
+  return shapeClientDocument(await createDraftDocument(input, orgId));
 }
 
 /** Starts the first pass on the client's own draft. */

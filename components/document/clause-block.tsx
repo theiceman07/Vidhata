@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { findingState } from "@/lib/findings";
-import type { Clause, Finding, MarginNotes } from "@/lib/types";
+import type { Clause, MarginNotes, WorkspaceFinding } from "@/lib/types";
 import { Icon } from "@/components/shared/icon";
 import { FindingBar } from "./finding-bar";
 import { AddMarginNote, MarginNote } from "./margin-note";
@@ -17,7 +17,7 @@ import { useReviewScope } from "./review-scope-context";
  * holding it. Settled findings keep a hairline in verified ink, because
  * the passage was looked at and decided, and that is worth seeing.
  */
-function markClass(finding: Finding, emphasised: boolean): string {
+function markClass(finding: WorkspaceFinding, emphasised: boolean): string {
   const state = findingState(finding);
   if (state === "settled") {
     return cn(
@@ -49,7 +49,7 @@ function markClass(finding: Finding, emphasised: boolean): string {
  */
 function withHighlights(
   paragraph: string,
-  findings: Finding[],
+  findings: WorkspaceFinding[],
   emphasisedId: string | null,
   onSelect: (findingId: string) => void,
 ) {
@@ -109,7 +109,7 @@ export function ClauseBlock({
 }: {
   clause: Clause;
   /** The findings raised against this clause, in pipeline order. */
-  findings: Finding[];
+  findings: WorkspaceFinding[];
   findingNumbers: Record<string, string>;
   selectedFindingId: string | null;
   hoveredFindingId: string | null;

@@ -1,9 +1,9 @@
 import { SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF } from "@/lib/config/visibility";
 import type {
-  Citation,
   ContractDocument,
   Finding,
   Severity,
+  WorkspaceCitation,
 } from "@/lib/types";
 
 /**
@@ -26,7 +26,15 @@ import type {
  */
 export type FindingState = "open" | "with_client" | "settled";
 
-export function findingState(finding: Finding): FindingState {
+/**
+ * What a finding's state is read from. The shared workspace holds a client's
+ * findings as well as an advocate's, so these take only what they read, and a
+ * caller's richer finding comes back as it went in.
+ */
+type Decidable = Pick<Finding, "disposition"> & { changeRequest: { response: string | null } | null };
+type Cited = { citations: WorkspaceCitation[] };
+
+export function findingState(finding: Decidable): FindingState {
   if (finding.disposition !== "pending") return "settled";
   if (finding.changeRequest && !finding.changeRequest.response) {
     return "with_client";
@@ -35,15 +43,15 @@ export function findingState(finding: Finding): FindingState {
 }
 
 /** Everything not yet settled: open, or waiting on the client. */
-export function unsettledFindings(doc: ContractDocument): Finding[] {
+export function unsettledFindings<F extends Decidable>(doc: { findings: F[] }): F[] {
   return doc.findings.filter((f) => findingState(f) !== "settled");
 }
 
-export function openFindingCount(doc: ContractDocument): number {
+export function openFindingCount(doc: { findings: Decidable[] }): number {
   return unsettledFindings(doc).length;
 }
 
-export function findingsWithClient(doc: ContractDocument): Finding[] {
+export function findingsWithClient<F extends Decidable>(doc: { findings: F[] }): F[] {
   return doc.findings.filter((f) => findingState(f) === "with_client");
 }
 
@@ -84,19 +92,19 @@ export function firstPassFindings(doc: ContractDocument): Finding[] {
  * A blocked citation that an advocate has withdrawn no longer blocks the
  * finding, but it is still blocked: nothing here pretends it was checked.
  */
-export function blockingCitations(finding: Finding): Citation[] {
+export function blockingCitations<C extends WorkspaceCitation>(finding: { citations: C[] }): C[] {
   return finding.citations.filter(
     (c) => c.status === "blocked" && c.withdrawn === null,
   );
 }
 
-export function reliedCitations(finding: Finding): Citation[] {
+export function reliedCitations<C extends WorkspaceCitation>(finding: { citations: C[] }): C[] {
   return finding.citations.filter(
     (c) => c.status === "verified" && c.withdrawn === null,
   );
 }
 
-export function canSettle(finding: Finding): boolean {
+export function canSettle(finding: Cited): boolean {
   return blockingCitations(finding).length === 0;
 }
 
@@ -105,19 +113,15 @@ export function canSettle(finding: Finding): boolean {
  * settled, because an advocate's judgment is the product, but only with
  * the reasoning written down.
  */
-export function settleNeedsNote(finding: Finding): boolean {
+export function settleNeedsNote(finding: Cited): boolean {
   return reliedCitations(finding).length === 0;
 }
 
-export function hasBlockedCitation(doc: ContractDocument): boolean {
-  return doc.findings.some((f) => blockingCitations(f).length > 0);
-}
-
-export function blockedCitationCount(doc: ContractDocument): number {
+export function blockedCitationCount(doc: { findings: Cited[] }): number {
   return doc.findings.reduce((n, f) => n + blockingCitations(f).length, 0);
 }
 
-export function severityCounts(findings: Finding[]): Record<Severity, number> {
+export function severityCounts(findings: Pick<Finding, "severity">[]): Record<Severity, number> {
   const counts: Record<Severity, number> = { high: 0, medium: 0, low: 0 };
   findings.forEach((f) => {
     counts[f.severity] += 1;

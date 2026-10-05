@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { ContractDocument, Finding, MarginNotes } from "@/lib/types";
+import type { MarginNotes, WorkspaceDocument, WorkspaceFinding } from "@/lib/types";
 import { ClauseBlock } from "./clause-block";
 import { FindingBar } from "./finding-bar";
 
@@ -27,7 +27,7 @@ export function DocumentSurface({
   onActiveClauseChange,
   notes,
 }: {
-  doc: ContractDocument;
+  doc: WorkspaceDocument;
   findingNumbers: Record<string, string>;
   selectedFindingId: string | null;
   hoveredFindingId: string | null;
@@ -99,7 +99,7 @@ export function DocumentSurface({
             clause={clause}
             findings={clause.findingIds
               .map((id) => byId.get(id))
-              .filter((f): f is Finding => Boolean(f))}
+              .filter((f): f is WorkspaceFinding => Boolean(f))}
             findingNumbers={findingNumbers}
             selectedFindingId={selectedFindingId}
             hoveredFindingId={hoveredFindingId}
