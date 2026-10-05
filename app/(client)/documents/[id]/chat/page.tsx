@@ -10,22 +10,26 @@ import { EscalationPrompt } from "@/components/domain/escalation-prompt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getDocument } from "@/lib/api/documents";
-import { shapeClientDocument } from "@/lib/api/client/shape-document";
-import { clientVisibleFindings } from "@/lib/findings";
+import { getClientDocument } from "@/lib/api/client/documents";
 import {
   buildInitialMessages,
   getMockReply,
   SUGGESTED_QUESTIONS,
 } from "@/lib/mock/chat.mock";
-import type { ChatMessage as ChatMessageType, ContractDocument } from "@/lib/types";
+import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
+import type { ChatMessage as ChatMessageType, ClientDocument } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type LoadState = "loading" | "error" | "loaded";
 
+/**
+ * The document's agent on a page of its own, from what a client is handed. It
+ * explains the settled document and never advises, and there is nothing for it
+ * to read until the advocate's sign-off is on record.
+ */
 export default function ChatPage() {
   const params = useParams<{ id: string }>();
-  const [doc, setDoc] = useState<ContractDocument | null>(null);
+  const [doc, setDoc] = useState<ClientDocument | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
@@ -38,10 +42,10 @@ export default function ChatPage() {
   const load = useCallback(async () => {
     setState("loading");
     try {
-      const result = await getDocument(params.id);
+      const result = await getClientDocument(MOCK_CLIENT_ORG.id, params.id);
       if (!result) throw new Error("Document not found.");
       setDoc(result);
-      setMessages(buildInitialMessages(shapeClientDocument(result)));
+      setMessages(buildInitialMessages(result));
       setState("loaded");
     } catch (err) {
       setErrorMessage(
@@ -68,7 +72,7 @@ export default function ChatPage() {
       citedClauseReference: null,
       isEscalation: false,
     };
-    const reply = getMockReply(text, shapeClientDocument(doc));
+    const reply = getMockReply(text, doc);
     const agentMessage: ChatMessageType = {
       id: `agent-${Date.now()}`,
       role: "agent",
@@ -104,8 +108,9 @@ export default function ChatPage() {
 
   // The chat agent explains the settled document. Before sign-off there
   // is no settled document to explain, and nothing reaches the client
-  // until there is.
-  if (doc.status !== "settled" && doc.status !== "executed") {
+  // until there is a recorded sign-off.
+  const signOff = doc.signOff;
+  if (!signOff) {
     return (
       <div className="mx-auto w-full max-w-2xl">
         <PageHeader
@@ -138,14 +143,14 @@ export default function ChatPage() {
               Clauses
             </p>
             <ul className="space-y-1">
-              {clientVisibleFindings(doc).length === 0 && (
+              {doc.findingList.length === 0 && (
                 <li className="text-small text-muted-fg">
                   No flagged clauses on this document.
                 </li>
               )}
-              {clientVisibleFindings(doc).map((f) => (
+              {doc.findingList.map((f) => (
                 <li
-                  key={f.findingId}
+                  key={f.number}
                   id={`sidebar-${f.clauseReference.replace(/\s+/g, "-")}`}
                   className={cn(
                     "rounded-control px-2 py-1.5 text-small transition-colors",
@@ -159,17 +164,15 @@ export default function ChatPage() {
               ))}
             </ul>
           </div>
-          {doc.advocate && (
-            <div className="rounded-card border border-line bg-paper p-4 shadow-card">
-              <p className="mb-1 text-small font-medium text-muted-fg">
-                Advocate notes
-              </p>
-              <p className="text-small text-ink">
-                Settled by {doc.advocate.name} ({doc.advocate.bar}). Ask me
-                about any clause above.
-              </p>
-            </div>
-          )}
+          <div className="rounded-card border border-line bg-paper p-4 shadow-card">
+            <p className="mb-1 text-small font-medium text-muted-fg">
+              Advocate notes
+            </p>
+            <p className="text-small text-ink">
+              Settled by {signOff.advocate} ({signOff.enrolment}). Ask me
+              about any clause above.
+            </p>
+          </div>
         </aside>
 
         <div className="flex flex-col rounded-card border border-line bg-paper shadow-card">
@@ -178,7 +181,7 @@ export default function ChatPage() {
               m.isEscalation ? (
                 <EscalationPrompt
                   key={m.id}
-                  advocateName={doc.advocate?.name ?? "your advocate"}
+                  advocateName={signOff.advocate}
                   href={`/documents/${doc.id}/consultation`}
                 />
               ) : (
