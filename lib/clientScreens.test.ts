@@ -24,6 +24,7 @@ const read = (file: string) => readFileSync(path.join(root, file), "utf8");
 const MIGRATED = [
   "app/(client)/documents/page.tsx",
   "app/(client)/documents/[id]/page.tsx",
+  "app/(client)/documents/[id]/checklist/page.tsx",
   "components/document/change-requests.tsx",
   "components/document/client-reader.tsx",
   "components/document/provenance.tsx",

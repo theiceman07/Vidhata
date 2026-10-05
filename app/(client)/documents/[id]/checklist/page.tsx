@@ -22,21 +22,28 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  attachEvidence,
-  getDocument,
-  toggleExecutionStep,
-} from "@/lib/api/documents";
-import { clientAuditTrail } from "@/lib/audit";
-import { shapeClientDocument } from "@/lib/api/client/shape-document";
+  attachClientEvidence,
+  getClientDocument,
+  toggleClientStep,
+} from "@/lib/api/client/documents";
+import { getClientTrail } from "@/lib/api/client/trail";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
-import type { ContractDocument, ExecutionStep } from "@/lib/types";
+import type { ClientAuditEntry, ClientDocument, ExecutionStep } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
 type Kind = ExecutionStep["kind"];
 
+const ORG = MOCK_CLIENT_ORG.id;
+
+/**
+ * The execution checklist, from what a client is handed: the document, its
+ * checklist and the client's own activity. The advocate is named only by the
+ * sign-off record, and a step is ticked as the client's organisation.
+ */
 export default function ChecklistPage() {
   const params = useParams<{ id: string }>();
-  const [doc, setDoc] = useState<ContractDocument | null>(null);
+  const [doc, setDoc] = useState<ClientDocument | null>(null);
+  const [trail, setTrail] = useState<ClientAuditEntry[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [busyKind, setBusyKind] = useState<Kind | null>(null);
@@ -44,9 +51,14 @@ export default function ChecklistPage() {
   const load = useCallback(async () => {
     setState("loading");
     try {
-      const result = await getDocument(params.id);
-      if (!result) throw new Error("Document not found.");
+      // Read together, so the activity never disagrees with the document.
+      const [result, entries] = await Promise.all([
+        getClientDocument(ORG, params.id),
+        getClientTrail(ORG, params.id),
+      ]);
+      if (!result || !entries) throw new Error("Document not found.");
       setDoc(result);
+      setTrail(entries);
       setState("loaded");
     } catch (err) {
       setErrorMessage(
@@ -60,10 +72,13 @@ export default function ChecklistPage() {
     load();
   }, [load]);
 
-  async function save(kind: Kind, action: () => Promise<ContractDocument>, failure: string) {
+  async function save(kind: Kind, action: () => Promise<ClientDocument>, failure: string) {
     setBusyKind(kind);
     try {
-      setDoc(await action());
+      const changed = await action();
+      setDoc(changed);
+      // A step ticked is activity, so the trail is read again with it.
+      setTrail((await getClientTrail(ORG, changed.id)) ?? trail);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : failure);
     } finally {
@@ -73,17 +88,12 @@ export default function ChecklistPage() {
 
   function handleToggle(kind: Kind, complete: boolean) {
     if (!doc) return;
-    // The preview authenticates one client identity, the organisation.
-    save(
-      kind,
-      () => toggleExecutionStep(doc.id, kind, complete, MOCK_CLIENT_ORG.name),
-      "Could not update the checklist.",
-    );
+    save(kind, () => toggleClientStep(ORG, doc.id, kind, complete), "Could not update the checklist.");
   }
 
   function handleAttach(kind: Kind, fileName: string | null) {
     if (!doc) return;
-    save(kind, () => attachEvidence(doc.id, kind, fileName), "Could not attach this file.");
+    save(kind, () => attachClientEvidence(ORG, doc.id, kind, fileName), "Could not attach this file.");
   }
 
   if (state === "loading") {
@@ -113,8 +123,8 @@ export default function ChecklistPage() {
 
   const isSettled = doc.status === "settled" || doc.status === "executed";
   const owners: Record<Kind, string> = {
-    stamping: doc.clientName,
-    registration: doc.clientName,
+    stamping: doc.deal.clientName,
+    registration: doc.deal.clientName,
     esignature: "Both signatories",
   };
 
@@ -154,7 +164,7 @@ export default function ChecklistPage() {
       <div className="hidden print:mb-6 print:block">
         <h1 className="font-display text-h1 text-ink">{doc.title}</h1>
         <p className="text-body text-muted-fg">
-          {doc.clientName} and {doc.counterpartyName} · Execution checklist ·
+          {doc.deal.clientName} and {doc.deal.counterpartyName} · Execution checklist ·
           Generated {format(new Date(), "d MMM yyyy, HH:mm")}
         </p>
       </div>
@@ -190,14 +200,13 @@ export default function ChecklistPage() {
 
           <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3 print:hidden">
             <ContextPanel title="Activity" className="md:col-span-2 xl:col-span-1">
-              <AuditTrail entries={clientAuditTrail(doc)} title={null} />
+              <AuditTrail entries={trail} title={null} />
             </ContextPanel>
-            {/* Bridge: this page is not migrated yet, so the panel is handed the client shape of the document. */}
-            <DealOnFile doc={shapeClientDocument(doc)} />
+            <DealOnFile doc={doc} />
             <div className="flex min-w-0 flex-col gap-4">
               <ContextPanel title="The settled document">
                 <p className="text-meta text-ink">
-                  Read the text {doc.advocate?.name ?? "the advocate"} signed
+                  Read the text {doc.signOff?.advocate ?? "the advocate"} signed
                   off, and ask its agent what any clause means.
                 </p>
                 <div className="mt-4 flex flex-col gap-2">
@@ -245,7 +254,7 @@ function ExecutionSummary({
   doc,
   owners,
 }: {
-  doc: ContractDocument;
+  doc: ClientDocument;
   owners: Record<Kind, string>;
 }) {
   const applicable = doc.executionSteps.filter((s) => s.applicable);
@@ -319,15 +328,16 @@ function ExecutionSummary({
       {/* The sign-off the sheet rests on: a decision, so it carries the accent. */}
       <div className="flex flex-col justify-between gap-6 rounded-card bg-paper p-6">
         <p className="text-label font-medium text-muted-fg">Signed off</p>
-        {doc.advocate ? (
+        {doc.signOff ? (
           <div>
             <p className="inline-flex items-center gap-1.5 font-display text-h3 text-ink">
               <Icon name="check_circle" size={20} className="text-accent" />
-              {doc.advocate.name}
+              {doc.signOff.advocate}
             </p>
             <p className="mt-1 text-meta text-muted-fg">
-              <span className="font-mono">{doc.advocate.bar}</span>
-              {doc.settledAt && <> · {format(new Date(doc.settledAt), "d MMM yyyy")}</>}
+              <span className="font-mono">{doc.signOff.enrolment}</span>
+              {" · "}
+              {format(new Date(doc.signOff.at), "d MMM yyyy")}
             </p>
           </div>
         ) : (

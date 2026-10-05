@@ -1,6 +1,14 @@
-import type { ClientDocument, ClientDocumentSummary, ContractDocument } from "@/lib/types";
+import type { ClientDocument, ClientDocumentSummary, ContractDocument, ExecutionStep } from "@/lib/types";
 import { MockApiError } from "../delay";
-import { getDocument, listDocuments, payFee, respondToChanges, startAnalysis } from "../documents";
+import {
+  attachEvidence,
+  getDocument,
+  listDocuments,
+  payFee,
+  respondToChanges,
+  startAnalysis,
+  toggleExecutionStep,
+} from "../documents";
 import { shapeClientDocument, shapeClientSummary } from "./shape-document";
 import { numberedForClient } from "./shape-findings";
 
@@ -79,4 +87,43 @@ export async function respondToClientRequests(
     responses[findingId] = answer;
   }
   return shapeClientDocument(await respondToChanges(id, responses));
+}
+
+/**
+ * The client's own document, once it has been signed off: the execution
+ * checklist is the client's to work only then. A document read as not signed off
+ * (no record to show for it) is refused the same.
+ */
+async function ownSettledDocument(orgId: string, id: string): Promise<ContractDocument> {
+  const doc = await ownDocument(orgId, id);
+  if (shapeClientDocument(doc).signOff === null) {
+    throw new MockApiError("The execution checklist is not available yet.");
+  }
+  return doc;
+}
+
+/**
+ * Ticks, or takes back, one step of the client's own execution checklist. The
+ * step says it was done by the client's organisation, and the last applicable
+ * step ticked makes the document executed.
+ */
+export async function toggleClientStep(
+  orgId: string,
+  id: string,
+  kind: ExecutionStep["kind"],
+  complete: boolean,
+): Promise<ClientDocument> {
+  const doc = await ownSettledDocument(orgId, id);
+  return shapeClientDocument(await toggleExecutionStep(id, kind, complete, doc.clientName));
+}
+
+/** Keeps the name of the file the client gives as proof of a step, or clears it. Nothing is uploaded. */
+export async function attachClientEvidence(
+  orgId: string,
+  id: string,
+  kind: ExecutionStep["kind"],
+  fileName: string | null,
+): Promise<ClientDocument> {
+  await ownSettledDocument(orgId, id);
+  return shapeClientDocument(await attachEvidence(id, kind, fileName));
 }
