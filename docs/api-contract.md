@@ -229,9 +229,13 @@ This is the section the backend most needs to own.
 > What the mock still does not give you: the store holds the full record, and
 > `lib/api/documents.ts` still returns it. That is right for the advocate's screens
 > and for nobody else's, so no endpoint that returns it may be reachable by a
-> client. The client portal does not import it, and `lib/clientScreens.test.ts`
-> scans the migrated screens to hold that. A lint rule to the same effect is not in
-> yet. Appendix B item 7 lists what is left.
+> client. The client portal does not import it. Two things hold that: a lint rule in
+> `.eslintrc.json` that fails on `ContractDocument`, the internal `Finding` and
+> `lib/api/documents` in `app/(client)` and the components only the client portal
+> uses, and `lib/clientFence.test.ts`, which fails if a client-only component is
+> missing from the rule's list of files. The rule blocks the named imports and not
+> every route to the record. Appendix B item 7 says which are blocked and which are
+> not.
 
 ### What a client may receive
 
@@ -621,7 +625,9 @@ they were once open and why.
 6. **Client reads and writes are not scoped to an organisation. Closed for the client.** Every client read and write is in `lib/api/client/*` and takes the organisation, and another organisation's document, request or invoice is the same not-found as a missing one (Appendix A). The functions below it still take a bare id, which is right for the advocate's screens (gated by release and claim) and for the client layer. A backend derives the organisation from the session and takes it from nowhere else.
 7. **Client visibility** (section 4). **Closed in the types, open in the store.** What a client is handed is a client type, built field by field, with a leak test over every fixture. What is left, for the backend and for later:
    - The store holds the full record and `lib/api/documents.ts` returns it. No endpoint that does so may be reachable by a client.
-   - Nothing yet stops a client screen importing `ContractDocument`, the internal `Finding` or `lib/api/documents`, except `lib/clientScreens.test.ts`, which scans the migrated screens' imports. A lint rule is the right fence and is not in yet.
+   - **The fence.** A lint rule (`no-restricted-imports`, an error, in `.eslintrc.json`) stops a client screen importing `ContractDocument` or the internal `Finding` from `@/lib/types`, or `lib/api/documents`, in `app/(client)` and in the 21 components only the client portal uses. `lib/clientFence.test.ts` computes those components from the imports and fails if one is missing from the rule's list, if the list names a file that is gone or that the advocate portal also uses, or if the rule is weakened. It was proved on a real file: a forbidden import failed `npm run lint`, and removing it passed.
+   - **What the fence blocks:** the named imports by alias (as `import type`, an inline `type` modifier, renamed, or a namespace import), a re-export of them, and `lib/api/documents` by alias or by relative path.
+   - **What the fence does not block:** a relative import of `lib/types`; `@/lib/api/documents.ts` written with its extension; a dynamic `import()` or `require()` of `lib/api/documents`; an inline type `import("@/lib/types").ContractDocument`; and any other module that holds or reads the internal record (`lib/mock/documents.mock`, `lib/api/consultations`, `delivery`, `summaries`, `notes`, `advocate`, `lib/findings`, `lib/audit`). Two client pages do import `DeliveryResult` and `SummaryResult` as types from the internal `delivery` and `summaries` modules, which are client-safe shapes. A client component that is on neither list is caught by the completeness test and not by lint. A backend does not rely on any of this: it returns client types and nothing else.
    - Two public pages read a fixture through the internal readers in the browser: `app/(public)/sample/page.tsx` (`clientAuditTrail`, `clientVisibleFindings`) and `components/marketing/accountability.tsx` (`openFindingCount`). They show a fictional sample and no client's data, and have no server path. A real backend serves `/sample` from sample data of its own and never from a real organisation's document, and if a sample is ever generated from the API it is built from the client types.
    - The shared document workspace reads a `WorkspaceDocument`, which the advocate's record satisfies and a client's is built to (`lib/client-workspace.ts`). It has no place for the organisation, the advocate's id, the rule or layer behind a finding, the override note, when it was decided, who asked for a change, or who withdrew a source. It builds no trail and works out no numbers itself: each portal gives its own.
    - `lib/privacy.ts` is no longer narrowing code. It builds the export from client types inside `requestDataExport`.
