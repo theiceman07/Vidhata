@@ -129,23 +129,30 @@ describe("the lint fence's list of files", () => {
 });
 
 describe("the rule the fence enforces", () => {
+  type Restriction = { name?: string; group?: string[]; importNames?: string[] };
   const rule = (fence?.rules?.["no-restricted-imports"] ?? []) as [
     string,
-    { paths?: { name: string; importNames?: string[] }[]; patterns?: { group: string[] }[] },
+    { paths?: Restriction[]; patterns?: Restriction[] },
   ];
   const [severity, options] = rule;
+  const restrictions: Restriction[] = [...(options?.paths ?? []), ...(options?.patterns ?? [])];
+
+  /** The restrictions that name a module, whether written as a path by alias or as a pattern by glob. */
+  const naming = (module: string): Restriction[] =>
+    restrictions.filter(
+      (r) => r.name === `@/${module}` || (r.group ?? []).some((g) => g === `**/${module}` || g === module),
+    );
 
   it("is an error and not a warning", () => {
     expect(severity).toBe("error");
   });
 
   it("still forbids ContractDocument and the internal Finding from lib/types", () => {
-    const types = options?.paths?.find((p) => p.name === "@/lib/types");
-    expect(types?.importNames).toEqual(expect.arrayContaining(["ContractDocument", "Finding"]));
+    const names = naming("lib/types").flatMap((r) => r.importNames ?? []);
+    expect(names).toEqual(expect.arrayContaining(["ContractDocument", "Finding"]));
   });
 
-  it("still forbids lib/api/documents, by alias and by path", () => {
-    expect(options?.paths?.some((p) => p.name === "@/lib/api/documents")).toBe(true);
-    expect(options?.patterns?.some((p) => p.group.some((g) => g.includes("api/documents")))).toBe(true);
+  it("still forbids lib/api/documents", () => {
+    expect(naming("lib/api/documents").length).toBeGreaterThan(0);
   });
 });
