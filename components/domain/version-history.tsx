@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { AddedByLabel } from "@/components/document/added-by-label";
 import { ContextPanel } from "@/components/domain/document-context";
+import { ErrorState } from "@/components/shared/error-state";
 import { Icon, type IconName } from "@/components/shared/icon";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -13,25 +15,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  clientVersionDiff,
-  clientVersionList,
-  defaultComparison,
-  dispositionText,
-  findingsSummary,
-  type ClientClauseRow,
-  type ClientFindingRow,
-  type ClientVersionDiff,
-} from "@/lib/clientVersions";
-import type { ContractDocument, DocumentVersion } from "@/lib/types";
+import { getClientDiff } from "@/lib/api/client/versions";
+import { dispositionText, findingsSummary, type ClientVersionDiffResult } from "@/lib/clientVersions";
+import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
+import type {
+  ClientClauseRow,
+  ClientFindingRow,
+  ClientDiff,
+  ClientVersionList,
+} from "@/lib/types";
 
 /**
  * A document's drafts, and what changed between any two of them.
  *
- * It draws what lib/clientVersions decides and decides nothing itself: what
- * the client may see is settled there, in one place. Every change is said in
- * a word, with an icon beside it where there is one, so no change is told by
- * colour alone.
+ * It draws what the API hands over and decides nothing itself: the list of
+ * drafts is counts, and each comparison is asked for when it is chosen, already
+ * limited to what the client may read. The drafts themselves never reach this
+ * component. Every change is said in a word, with an icon beside it where there
+ * is one, so no change is told by colour alone.
  */
 
 const CLAUSE_CHANGE: Record<ClientClauseRow["kind"], { word: string; icon: IconName | null }> = {
@@ -43,22 +44,56 @@ const CLAUSE_CHANGE: Record<ClientClauseRow["kind"], { word: string; icon: IconN
 
 const day = (iso: string) => format(new Date(iso), "d MMM yyyy");
 
+type DiffLoad =
+  | { phase: "idle" }
+  | { phase: "loading" }
+  | { phase: "error"; message: string }
+  | { phase: "loaded"; result: ClientVersionDiffResult };
+
 export function VersionHistory({
-  doc,
-  versions,
+  documentId,
+  rows,
 }: {
-  doc: ContractDocument;
-  versions: DocumentVersion[];
+  documentId: string;
+  rows: ClientVersionList;
 }) {
-  const rows = useMemo(() => clientVersionList(doc, versions), [doc, versions]);
-  const initial = useMemo(() => defaultComparison(versions), [versions]);
+  // The latest two drafts, or nothing when there is nothing earlier to compare.
+  const initial = useMemo(() => {
+    const numbers = rows.map((r) => r.number).sort((a, b) => b - a);
+    return numbers.length >= 2 ? { from: numbers[1], to: numbers[0] } : null;
+  }, [rows]);
   const [from, setFrom] = useState<number | null>(initial?.from ?? null);
   const [to, setTo] = useState<number | null>(initial?.to ?? null);
+  const [load, setLoad] = useState<DiffLoad>({ phase: "idle" });
+  const [attempt, setAttempt] = useState(0);
 
-  const result = useMemo(
-    () => (from !== null && to !== null ? clientVersionDiff(doc, versions, from, to) : null),
-    [doc, versions, from, to],
-  );
+  // Each comparison is asked for when it is chosen. A reply to a comparison that
+  // is no longer the one chosen is dropped, so a slow answer cannot replace a
+  // newer one.
+  useEffect(() => {
+    if (from === null || to === null || from === to) {
+      setLoad({ phase: "idle" });
+      return;
+    }
+    let current = true;
+    setLoad({ phase: "loading" });
+    getClientDiff(MOCK_CLIENT_ORG.id, documentId, from, to)
+      .then((result) => {
+        if (!current) return;
+        if (!result) throw new Error("Document not found.");
+        setLoad({ phase: "loaded", result });
+      })
+      .catch((err) => {
+        if (!current) return;
+        setLoad({
+          phase: "error",
+          message: err instanceof Error ? err.message : "Could not load this comparison.",
+        });
+      });
+    return () => {
+      current = false;
+    };
+  }, [documentId, from, to, attempt]);
 
   if (rows.length === 0) {
     return (
@@ -116,11 +151,19 @@ export function VersionHistory({
             </div>
 
             <div className="mt-8" aria-live="polite">
-              {result?.ok ? (
-                <DiffView diff={result.diff} />
+              {load.phase === "loading" ? (
+                <div className="space-y-4" aria-busy="true">
+                  <Skeleton className="h-8 w-1/2" />
+                  <Skeleton className="h-40 w-full rounded-card" />
+                  <Skeleton className="h-24 w-full rounded-card" />
+                </div>
+              ) : load.phase === "error" ? (
+                <ErrorState message={load.message} onRetry={() => setAttempt((n) => n + 1)} />
+              ) : load.phase === "loaded" && load.result.ok ? (
+                <DiffView diff={load.result.diff} />
               ) : (
                 <p className="max-w-2xl rounded-card bg-parchment p-6 text-body text-ink">
-                  {result?.reason === "same_draft"
+                  {load.phase === "loaded" && !load.result.ok && load.result.reason === "same_draft"
                     ? "Choose two different drafts to compare."
                     : "Choose the two drafts to compare."}
                 </p>
@@ -198,7 +241,7 @@ function plural(n: number, one: string, many: string) {
   return `${n} ${n === 1 ? one : many}`;
 }
 
-function DiffView({ diff }: { diff: ClientVersionDiff }) {
+function DiffView({ diff }: { diff: ClientDiff }) {
   const shown = diff.clauses.filter((c) => c.kind !== "unchanged" || !diff.signedOff);
   const quiet = diff.clauses.filter((c) => c.kind === "unchanged" && diff.signedOff);
   const others = diff.otherClauses;
@@ -275,7 +318,7 @@ function DiffView({ diff }: { diff: ClientVersionDiff }) {
   );
 }
 
-function ClauseDiff({ clause, diff }: { clause: ClientClauseRow; diff: ClientVersionDiff }) {
+function ClauseDiff({ clause, diff }: { clause: ClientClauseRow; diff: ClientDiff }) {
   return (
     <article className="rounded-card bg-parchment p-5">
       <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1">

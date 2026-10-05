@@ -6,35 +6,37 @@ import { BackButton } from "@/components/shared/back-button";
 import { ErrorState } from "@/components/shared/error-state";
 import { VersionHistory } from "@/components/domain/version-history";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getDocument, getDocumentVersions } from "@/lib/api/documents";
-import type { ContractDocument, DocumentVersion } from "@/lib/types";
+import { getClientDocument } from "@/lib/api/client/documents";
+import { getClientVersions } from "@/lib/api/client/versions";
+import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
+import type { ClientDocument, ClientVersionList } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
 
 /**
  * A document's drafts and what changed between them, for the client.
  *
- * What is shown, and what is held back until sign-off, is decided in
- * lib/clientVersions. This page loads the document and its snapshots and
- * hands them over.
+ * What is shown, and what is held back until sign-off, is decided in the
+ * API. This page loads the list of drafts as counts, and the comparison is
+ * asked for when two are chosen. The drafts themselves are never loaded here.
  */
 export default function VersionHistoryPage() {
   const params = useParams<{ id: string }>();
-  const [doc, setDoc] = useState<ContractDocument | null>(null);
-  const [versions, setVersions] = useState<DocumentVersion[]>([]);
+  const [doc, setDoc] = useState<ClientDocument | null>(null);
+  const [rows, setRows] = useState<ClientVersionList>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
 
   const load = useCallback(async () => {
     setState("loading");
     try {
-      const [document, snapshots] = await Promise.all([
-        getDocument(params.id),
-        getDocumentVersions(params.id),
+      const [document, drafts] = await Promise.all([
+        getClientDocument(MOCK_CLIENT_ORG.id, params.id),
+        getClientVersions(MOCK_CLIENT_ORG.id, params.id),
       ]);
-      if (!document) throw new Error("Document not found.");
+      if (!document || !drafts) throw new Error("Document not found.");
       setDoc(document);
-      setVersions(snapshots);
+      setRows(drafts);
       setState("loaded");
     } catch (err) {
       setErrorMessage(
@@ -83,7 +85,7 @@ export default function VersionHistoryPage() {
       </header>
 
       <div className="mt-10">
-        <VersionHistory doc={doc} versions={versions} />
+        <VersionHistory documentId={doc.id} rows={rows} />
       </div>
     </div>
   );
