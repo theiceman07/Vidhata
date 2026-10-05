@@ -155,4 +155,42 @@ describe("the rule the fence enforces", () => {
   it("still forbids lib/api/documents", () => {
     expect(naming("lib/api/documents").length).toBeGreaterThan(0);
   });
+
+  it("forbids every module that holds or reads the internal record, or is the advocate's", () => {
+    const internal = [
+      "lib/mock/documents.mock",
+      "lib/api/consultations",
+      "lib/api/delivery",
+      "lib/api/summaries",
+      "lib/api/notes",
+      "lib/api/advocate",
+      "lib/findings",
+      "lib/audit",
+    ];
+    expect(internal.filter((m) => naming(m).length === 0)).toEqual([]);
+  });
+
+  it("forbids no module a client file is meant to use, so the fence is not the thing someone disables", () => {
+    // What the client portal reads through: its own layer, the organisation's reads, presentation
+    // helpers and configuration. Blocking any of these would break a client file.
+    const clientSafe = [
+      "lib/api/client/documents",
+      "lib/api/client/versions",
+      "lib/api/client/trail",
+      "lib/api/client/delivery",
+      "lib/api/client/consultations",
+      "lib/api/billing",
+      "lib/api/account",
+      "lib/api/privacy",
+      "lib/api/brief",
+      "lib/billing",
+      "lib/clientVersions",
+      "lib/client-workspace",
+      "lib/moves",
+      "lib/coverage",
+      "lib/config/pricing",
+      "lib/mock/client.mock",
+    ];
+    expect(clientSafe.filter((m) => naming(m).length > 0)).toEqual([]);
+  });
 });
