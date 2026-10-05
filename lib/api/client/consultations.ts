@@ -22,7 +22,8 @@ import { ownDocument } from "./own";
 /** The longest question a request takes, so the form and the API agree on it. */
 export { MAX_QUESTION_LENGTH } from "../consultations";
 
-function shape(c: Consultation): ClientConsultation {
+/** A stored request as the client who made it reads it, built field by field. */
+export function shapeClientConsultation(c: Consultation): ClientConsultation {
   return {
     id: c.id,
     documentId: c.documentId,
@@ -47,7 +48,7 @@ export async function requestClientConsultation(
   question: string,
 ): Promise<ClientConsultation> {
   await ownDocument(orgId, documentId);
-  return shape(await requestConsultation(documentId, question));
+  return shapeClientConsultation(await requestConsultation(documentId, question));
 }
 
 /** The requests on the client's own document, newest first. */
@@ -56,11 +57,11 @@ export async function listClientConsultations(
   documentId: string,
 ): Promise<ClientConsultation[]> {
   await ownDocument(orgId, documentId);
-  return (await listConsultations(documentId)).map(shape);
+  return (await listConsultations(documentId)).map(shapeClientConsultation);
 }
 
 /** Pay the fee on the organisation's own accepted request. Paying twice makes one payment. */
 export async function payClientConsultation(orgId: string, id: string): Promise<ClientConsultation> {
   if (consultationOrg(id) !== orgId) throw new MockApiError("Request not found.");
-  return shape(await payConsultation(id));
+  return shapeClientConsultation(await payConsultation(id));
 }

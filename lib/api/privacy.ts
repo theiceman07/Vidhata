@@ -2,6 +2,8 @@ import { invoicesFor } from "@/lib/billing";
 import { buildDataExport } from "@/lib/privacy";
 import type { PrivacyState } from "@/lib/types";
 import { getBillingProfile } from "./billing";
+import { shapeClientConsultation } from "./client/consultations";
+import { shapeClientDocument } from "./client/shape-document";
 import { listOrgConsultations } from "./consultations";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { listDocuments } from "./documents";
@@ -64,11 +66,13 @@ export async function requestDataExport(
     getBillingProfile(orgId),
     listOrgConsultations(orgId),
   ]);
+  // The invoices are worked out here, from the records. The rest of the file is built
+  // from what the client reads, so it cannot carry what a client screen cannot.
   const file = buildDataExport({
     organisation,
-    documents,
+    documents: documents.map((d) => shapeClientDocument(d)),
     invoices: invoicesFor(documents, consultations),
-    consultations,
+    consultations: consultations.map(shapeClientConsultation),
     privacy: stateOf(orgId),
     now: new Date(),
   });

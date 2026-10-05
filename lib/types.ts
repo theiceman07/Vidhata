@@ -681,7 +681,8 @@ export interface DataExport {
     findings: {
       number: string;
       clauseReference: string;
-      passage: string;
+      /** The quoted passage. Null only if the client has none to read, which no shown finding lacks. */
+      passage: string | null;
       /** The first pass's own words, and the advocate's disposition: after sign-off only. */
       description: string | null;
       disposition: "confirmed" | "overridden" | "pending" | null;
