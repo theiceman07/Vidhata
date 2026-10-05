@@ -9,7 +9,9 @@ test that holds it, and says plainly where the mock does **not** enforce a rule
 and relies on the screen. Where this document and the code disagree, the code
 and its tests are the record, and this document is wrong and should be fixed.
 
-Written from the repo at the end of the F pass (4 October 2026).
+Written from the repo at the end of the F pass (4 October 2026), and brought up to date
+for the client-shaped API (phases 1 to 4, 5 October 2026): section 4, the client
+functions in Appendix A, and Appendix B.
 
 ## How to read it
 
@@ -212,15 +214,24 @@ owner, not a guess.
 
 This is the section the backend most needs to own.
 
-> **In the mock, the API returns everything and the screen narrows it.**
-> `getDocument`, `getDocumentVersions` and `listDocuments(orgId)` hand a client
-> the whole `ContractDocument`: every finding, every disposition, every clause,
-> the advocate-added findings, the rule ids and layers. The rules below are
-> applied afterwards, in the browser, by `lib/findings.ts`,
-> `lib/clientVersions.ts`, `lib/audit.ts` and `lib/privacy.ts`. The tests hold
-> those functions, and one test scans client screens for direct reads. None of
-> that protects data that has already left the server. A real backend applies
-> every rule here **in the response**, so restricted data never reaches a client.
+> **In the mock, the client API narrows, and hands back client-shaped types.**
+> Every read and write a client screen makes is in `lib/api/client/*`. Each takes
+> the organisation, and each returns a type from `lib/types.ts` that is built field
+> by field and has no place for what a client may not see: `ClientDocument`,
+> `ClientDocumentSummary`, `ClientFinding`, `ClientVersionList`, `ClientDiff`,
+> `ClientAuditEntry`, `Delivery`, `SettledSummary`, `ClientConsultation` and the
+> export `DataExport`. They are never the internal `ContractDocument`. The narrowing
+> code (`lib/findings.ts`, `lib/clientVersions.ts`, `lib/audit.ts`, the shapers in
+> `lib/api/client`, `lib/privacy.ts`) runs **inside that layer**, over the in-memory
+> store, and not in a screen. Those types are the response shapes a real backend
+> returns, and it applies every rule here in the response.
+>
+> What the mock still does not give you: the store holds the full record, and
+> `lib/api/documents.ts` still returns it. That is right for the advocate's screens
+> and for nobody else's, so no endpoint that returns it may be reachable by a
+> client. The client portal does not import it, and `lib/clientScreens.test.ts`
+> scans the migrated screens to hold that. A lint rule to the same effect is not in
+> yet. Appendix B item 7 lists what is left.
 
 ### What a client may receive
 
@@ -242,13 +253,13 @@ This is the section the backend most needs to own.
 **Never, at any time:**
 
 - The advocate's private notes (`MarginNote`, section 9).
-- The pipeline's machinery: rule ids and layer numbers, and internal ids. Findings are numbered for display in the order the pipeline raised them.
+- The pipeline's machinery: rule ids and layer numbers, and internal ids. A finding's number to a client (`ClientFinding.number`, "04") is given when the client may first know of it, counts only what the client has been shown so there is never a gap that says something was kept from them, and never changes. The document's own number for a finding is never given, and a client names a finding by their number and by nothing else.
 - Decisions inside a snapshot before sign-off. A snapshot written at a send-back holds the advocate's decisions so far. The client's view of it reads the same line, counts and rows whatever the advocate decided.
 - The corpus-review log (the revision-limit entry). It is the advocate's working record.
 - Another organisation's documents, invoices or consultations.
 
-Mock (the readers to reproduce on the server): `lib/findings.ts` › `clientVisibleFindings`, `firstPassFindings`; `lib/clientVersions.ts` (every client screen that shows versions goes through it); `lib/audit.ts` › `clientAuditTrail`; `lib/privacy.ts` › `buildDataExport`.
-Test: `lib/findings.test.ts` › "what the client may be told of a document's findings › …"; `clientVersions.test.ts` › "before sign-off › …", "after sign-off › …", "a client's view of snapshots that hold decisions › …"; `lib/audit.test.ts`; `lib/privacy.test.ts` › "the export of a document not yet signed off › …", "never carries the advocate's own notes or the pipeline's machinery".
+Mock (the readers to reproduce on the server): `lib/api/client/shape-document.ts`, `shape-findings.ts`, `shape-versions.ts` and `shape-trail.ts`, which call `lib/findings.ts` › `clientVisibleFindings`, `firstPassFindings`; `lib/clientVersions.ts`; `lib/audit.ts` › `clientAuditTrail`; and `lib/privacy.ts` › `buildDataExport`, which is built from `ClientDocument` and `ClientConsultation`, so a finding is the same number in the export as on the screens.
+Test: `lib/findings.test.ts` › "what the client may be told of a document's findings › …"; `clientVersions.test.ts` › "before sign-off › …", "after sign-off › …", "a client's view of snapshots that hold decisions › …"; `lib/audit.test.ts`; `lib/privacy.test.ts` › "the export of a document not yet signed off › …", "never carries the advocate's own notes or the pipeline's machinery"; `lib/api/privacy.test.ts` › "the export › numbers and lists findings exactly as the client's own screens do"; and the leak tests over every fixture in `lib/api/client/*.test.ts` (`markers.ts` › `leaked`, `markersFor`), which search what a client is handed for the strings that must never be in it.
 
 ### What an advocate may receive
 
@@ -263,7 +274,7 @@ A client's question, and the advocate's answer, appear **only inside the request
 They appear in no list, page title, tooltip, audit trail, notification, billing
 line or metric. The client's own data export carries them, deliberately. A
 backend must keep them out of logs, analytics and any event stream as well.
-Test: `consultations.test.ts` › "where the question may not go › …" (four tests). They scan the mock's source files; the backend equivalent is a review of every place a request body is written.
+A client reads, lists and pays their requests through `lib/api/client/consultations.ts`, which returns a `ClientConsultation`: the advocate named as the one who settled the document, and none of the advocate's id, the organisation's id or the client's name. Another organisation's request and one never made are the same "Request not found.", and nothing is paid. Test: `lib/api/client/consultations.test.ts`; `consultations.test.ts` › "where the question may not go › …" (four tests). The four scan the mock's source files; the backend equivalent is a review of every place a request body is written.
 
 ## 5. The revision cap, and the round and draft counting rule
 
@@ -465,7 +476,46 @@ states nothing until then (section 2.6).
 Every function the screens call. "Refuses" lists what throws; "null" means the
 read returns nothing instead.
 
+### `lib/api/client/*`: what a client screen calls
+
+Every one takes the organisation first, and returns a client type (section 4).
+**Another organisation's document and one that is not there are the same answer**
+(`null` for a read, "Document not found." for a write), and a request that is not
+the organisation's is the same "Request not found." as one never made, so asking
+cannot show that something exists. These sit over the functions in the sections
+below, which return the full record and are for the advocate's screens and for the
+client layer itself.
+
+| Function | Inputs | Returns | Refuses or returns null |
+|---|---|---|---|
+| `getClientDocument` | `orgId`, `id` | `ClientDocument`, or `null` | |
+| `listClientDocuments` | `orgId` | `ClientDocumentSummary[]`, any state | |
+| `createClientDraft` | `orgId`, `IntakeInput` | `ClientDocument`, `draft`, the organisation's whatever the company name in the form says | |
+| `startClientAnalysis` | `orgId`, `id` | `ClientDocument`, `analysing` | "Document not found."; `startAnalysis`'s own |
+| `payClientFee` | `orgId`, `id` | `ClientDocument`, `pending_review`, `paidAt` set and never the amount. Paying twice pays once. | "Document not found."; `payFee`'s own |
+| `respondToClientRequests` | `orgId`, `id`, `{ number: answer }` | `ClientDocument`; back to the advocate | "Document not found."; "Request not found." for any number that is not a request addressed to this client, and then **nothing is recorded**, not even answers to real requests |
+| `getClientRequest` | `orgId`, `documentId`, `number` | the `ClientFinding` a request is addressed about, or `null` for every other case alike | |
+| `toggleClientStep` | `orgId`, `id`, `kind`, `complete` | `ClientDocument`; `executed` when the last applicable step is done. The step names the organisation. | "Document not found."; "The execution checklist is not available yet." without a recorded sign-off |
+| `attachClientEvidence` | `orgId`, `id`, `kind`, `fileName \| null` | `ClientDocument` | as above |
+| `getClientVersions` | `orgId`, `id` | `ClientVersionList`: the drafts as counts, newest first; never the drafts | `null` |
+| `getClientDiff` | `orgId`, `id`, `a`, `b` | `ok` with a `ClientDiff`, or `same_draft` or `unknown_draft` | `null` |
+| `getClientTrail` | `orgId`, `id` | `ClientAuditEntry[]` | `null` |
+| `getClientDelivery` | `orgId`, `id` | `not_available` or `ready` with the delivery | "Document not found." |
+| `getClientSummary` | `orgId`, `id` | `{ title, result }`; `title` is `null` unless the summary is the client's to read | "Document not found." |
+| `requestClientConsultation` | `orgId`, `documentId`, `question` | `ClientConsultation` | "Document not found."; not signed off; empty or too long |
+| `listClientConsultations` | `orgId`, `documentId` | `ClientConsultation[]`, newest first, the answer only once paid | "Document not found." |
+| `payClientConsultation` | `orgId`, `id` | `ClientConsultation` | "Request not found."; declined; not accepted; the payment failure |
+
+Tests: `lib/api/client/documents.test.ts`, `actions.test.ts`, `checklist.test.ts`,
+`draft.test.ts`, `versions.test.ts`, `trail.test.ts`, `requests.test.ts`,
+`delivery.test.ts`, `consultations.test.ts`, `numbers.test.ts` and
+`shape-findings.test.ts`. Each organisation check has a test that fails without it,
+and the leak tests search every fixture's output for what must not be in it.
+
 ### `lib/api/documents.ts`
+
+The advocate's reads and writes, and the store under the client layer. They return
+the full record. A client screen does not call them.
 
 | Function | Inputs | Returns | Refuses or returns null |
 |---|---|---|---|
@@ -475,7 +525,7 @@ read returns nothing instead.
 | `getDocument` | `id` | document or `null` | |
 | `getDocumentForReview` | `id` | document, or `null` if missing **or** unreleased | |
 | `getDocumentVersions` | `id` | snapshots, oldest first | |
-| `createDraftDocument` | `IntakeInput` | the new document, `draft` | |
+| `createDraftDocument` | `IntakeInput`, `orgId?` | the new document, `draft`, the organisation's. The preview identity when none is given. | |
 | `startAnalysis` | `id` | document, `analysing` (a `draft` only) | "Document not found." |
 | `payFee` | `id` | document, `pending_review`, `payment` set | not found; "not awaiting payment"; the payment failure |
 | `claimDocument` | `id`, advocate, `ConflictDeclaration` | document, `under_review`, `claimedAt`, `conflictDeclaredAt` | already claimed by another; unreleased (as not found); no declaration; declared-conflict match |
@@ -520,7 +570,7 @@ read returns nothing instead.
 | `saveBillingProfile` | `orgId`, `{ name, gstin }` | the saved profile | no name |
 | `getPrivacy` | `orgId` | training opt-in, consent log, deletion request | |
 | `setTrainingOptIn` | `orgId`, `granted` | state; logs only a change | |
-| `requestDataExport` | `orgId` | `{ fileName, contents }`, built from what the client may read | |
+| `requestDataExport` | `orgId` | `{ fileName, contents }`, built from `ClientDocument` and `ClientConsultation`, the types the screens read, so a finding is the same number in the file as on a screen | |
 | `requestDeletion` | `orgId`, `{ understood: true }` | state; the first time kept | no confirmation |
 | `withdrawDeletion` | `orgId` | state | |
 | `checkCitation` | `documentId`, `advocateId`, `input` | the lookup; records the attempt | |
@@ -567,10 +617,15 @@ they were once open and why.
 2. **Citation status is trusted on write. Closed.** `addFinding` computes it from the lookup; sign-off re-runs the gate.
 3. **A withdrawal needs a note. Closed.**
 4. **Settling without a verified source needs a note. Closed.**
-5. **`respondToChanges` has no owner or state check.** It does not check the caller owns the document, nor that the document is in `revision`.
-6. **Client reads and writes are not scoped to an organisation.** `getDocument`, `getDocumentVersions`, `getDelivery`, `getSettledSummary`, `respondToChanges`, `payFee`, `toggleExecutionStep`, `attachEvidence`, `requestConsultation`, `listConsultations`, `payConsultation` take a bare id. Another organisation's document, invoice or consultation must come back as the same not-found as a missing one.
-7. **Client visibility** (section 4). The mock returns the full record and the browser narrows it. This is the largest gap, and it is planned as its own batch: client-facing functions return client-shaped types (a `ClientDocument` without the restricted fields), so the boundary lives in the API and in the type system, not in browser narrowing.
-8. **Execution on an unsigned document.** `toggleExecutionStep` and `attachEvidence` do not refuse a document that is not `settled` or `executed`.
+5. **`respondToChanges` has no owner or state check. Partly closed.** The client function (`respondToClientRequests`) checks the organisation and that every answer is to a request addressed to the client. The mock still does not refuse an answer when the document is not in `revision`. A backend refuses it when no round is open.
+6. **Client reads and writes are not scoped to an organisation. Closed for the client.** Every client read and write is in `lib/api/client/*` and takes the organisation, and another organisation's document, request or invoice is the same not-found as a missing one (Appendix A). The functions below it still take a bare id, which is right for the advocate's screens (gated by release and claim) and for the client layer. A backend derives the organisation from the session and takes it from nowhere else.
+7. **Client visibility** (section 4). **Closed in the types, open in the store.** What a client is handed is a client type, built field by field, with a leak test over every fixture. What is left, for the backend and for later:
+   - The store holds the full record and `lib/api/documents.ts` returns it. No endpoint that does so may be reachable by a client.
+   - Nothing yet stops a client screen importing `ContractDocument`, the internal `Finding` or `lib/api/documents`, except `lib/clientScreens.test.ts`, which scans the migrated screens' imports. A lint rule is the right fence and is not in yet.
+   - Two public pages read a fixture through the internal readers in the browser: `app/(public)/sample/page.tsx` (`clientAuditTrail`, `clientVisibleFindings`) and `components/marketing/accountability.tsx` (`openFindingCount`). They show a fictional sample and no client's data, and have no server path. If a sample is ever generated from the API it must be built from the client types.
+   - The shared document workspace reads a `WorkspaceDocument`, which the advocate's record satisfies and a client's is built to (`lib/client-workspace.ts`). It has no place for the organisation, the advocate's id, the rule or layer behind a finding, the override note, when it was decided, who asked for a change, or who withdrew a source. It builds no trail and works out no numbers itself: each portal gives its own.
+   - `lib/privacy.ts` is no longer narrowing code. It builds the export from client types inside `requestDataExport`.
+8. **Execution on an unsigned document. Closed for the client.** `toggleClientStep` and `attachClientEvidence` refuse a document with no recorded sign-off. The internal `toggleExecutionStep` and `attachEvidence` still do not, and a backend refuses at the write.
 9. **Consultation requests are keyed by question text.** Use a client-supplied idempotency key.
 10. **No length cap on change requests, notes or findings.** Consultations have caps; these do not.
 11. **Invoice numbers are derived**, not allocated (section 7).
