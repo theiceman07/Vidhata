@@ -1,3 +1,55 @@
 {
-  "extends": ["next/core-web-vitals", "next/typescript"]
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "overrides": [
+    {
+      "files": [
+        "app/(client)/**/*.{ts,tsx}",
+        "components/document/change-requests.tsx",
+        "components/document/client-reader.tsx",
+        "components/document/dateline.tsx",
+        "components/document/document-agent.tsx",
+        "components/document/provenance.tsx",
+        "components/domain/chat-message.tsx",
+        "components/domain/contract-type-picker.tsx",
+        "components/domain/coverage-panel.tsx",
+        "components/domain/document-context.tsx",
+        "components/domain/download-options.tsx",
+        "components/domain/draft-banner.tsx",
+        "components/domain/draft-paths.tsx",
+        "components/domain/escalation-prompt.tsx",
+        "components/domain/esign-guide.tsx",
+        "components/domain/execution-checklist.tsx",
+        "components/domain/intake-wizard.tsx",
+        "components/domain/payment-panel.tsx",
+        "components/domain/pipeline-progress.tsx",
+        "components/domain/summary-view.tsx",
+        "components/domain/version-history.tsx",
+        "components/marketing/deal-prompt.tsx"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@/lib/types",
+                "importNames": ["ContractDocument", "Finding"],
+                "message": "The client portal reads what a client is handed (ClientDocument, ClientFinding), never the internal record. See lib/api/client."
+              },
+              {
+                "name": "@/lib/api/documents",
+                "message": "The client portal reads and writes through lib/api/client, which takes the organisation and hands back client types."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["**/lib/api/documents", "**/api/documents"],
+                "message": "The client portal reads and writes through lib/api/client, which takes the organisation and hands back client types."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }
