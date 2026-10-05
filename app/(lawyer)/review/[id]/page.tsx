@@ -23,6 +23,7 @@ import {
 } from "@/lib/api/documents";
 import { getAdvocateProfile } from "@/lib/api/advocate";
 import { addNote, deleteNote, listNotes, updateNote } from "@/lib/api/notes";
+import { buildAuditTrail } from "@/lib/audit";
 import { findingNumbers, signOffBlockers } from "@/lib/findings";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import { reviewScope } from "@/lib/reviewScope";
@@ -324,6 +325,8 @@ export default function ReviewPage() {
     <DocumentWorkspace
       doc={doc}
       role="advocate"
+      numbering={findingNumbers(doc)}
+      trail={buildAuditTrail(doc)}
       back={{ href: "/queue", label: "Queue" }}
       owner={owner}
       canAdjudicate={canAdjudicate}

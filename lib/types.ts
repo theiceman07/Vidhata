@@ -555,6 +555,67 @@ export interface Invoice {
 }
 
 /**
+ * A source as the shared workspace reads it. That it was withdrawn is always
+ * there. Who withdrew it, when and why are the advocate's record, so they may be
+ * absent: a client is told a source was withdrawn and never by whom or why.
+ */
+export interface WorkspaceCitation extends Pick<Citation, "id" | "text" | "status" | "corpusRef"> {
+  withdrawn: { at?: string; by?: string; note?: string } | null;
+}
+
+/**
+ * A finding as the shared workspace reads it, for either portal. The advocate's
+ * working (the rule and layer behind it, the override note, when it was decided
+ * and who asked for a change) is optional: an advocate's record has it and a
+ * client's never does, so a client's document is built without it and the type
+ * does not ask for it. The workspace shows it only to an advocate.
+ */
+export interface WorkspaceFinding
+  extends Pick<
+    Finding,
+    | "findingId"
+    | "source"
+    | "severity"
+    | "clauseReference"
+    | "clauseText"
+    | "description"
+    | "remedySuggested"
+    | "disposition"
+  > {
+  citations: WorkspaceCitation[];
+  changeRequest: (Omit<ChangeRequest, "requestedBy"> & { requestedBy?: string }) | null;
+  ruleApplied?: string;
+  layer?: PipelineLayer;
+  overrideNote?: string | null;
+  resolvedAt?: string | null;
+}
+
+/**
+ * A document as the shared workspace reads it. The advocate's own record
+ * (ContractDocument) satisfies it, and a client's is built to it from what a
+ * client is handed (lib/client-workspace.ts), so the workspace can be given
+ * nothing of the organisation, the claim or the advocate's identity by a client.
+ */
+export interface WorkspaceDocument
+  extends Pick<
+    ContractDocument,
+    | "id"
+    | "title"
+    | "type"
+    | "status"
+    | "tier"
+    | "clientName"
+    | "counterpartyName"
+    | "version"
+    | "clauses"
+    | "executionSteps"
+  > {
+  findings: WorkspaceFinding[];
+  /** Named for the document, once there is one. Never carries the advocate's id. */
+  advocate: { name: string; bar: string } | null;
+}
+
+/**
  * A client's request to talk to the advocate who settled their document.
  *
  * It is free to make. The advocate accepts or declines. A decline is free and

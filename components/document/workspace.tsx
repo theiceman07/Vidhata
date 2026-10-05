@@ -15,7 +15,6 @@ import {
 import {
   blockingCitations,
   canSettle,
-  findingNumbers as numberFindings,
   findingState,
   findingsWithClient,
   settleNeedsNote,
@@ -23,7 +22,6 @@ import {
   unsettledFindings,
   type Blocker,
 } from "@/lib/findings";
-import { buildAuditTrail } from "@/lib/audit";
 import type { ReviewScope } from "@/lib/reviewScope";
 import {
   revisionBlockedReason,
@@ -31,7 +29,7 @@ import {
   revisionNotice,
   type RevisionCycle,
 } from "@/lib/revisions";
-import type { ContractDocument, MarginNotes } from "@/lib/types";
+import type { MarginNotes, WorkspaceDocument } from "@/lib/types";
 import { ReviewScopePanel } from "@/components/domain/review-scope-panel";
 import { ReviewScopeProvider } from "./review-scope-context";
 import { StateLabel } from "./state-label";
@@ -79,7 +77,7 @@ export function DocumentWorkspace({
   numbering,
   trail,
 }: {
-  doc: ContractDocument;
+  doc: WorkspaceDocument;
   role: "client" | "advocate";
   back: { href: string; label: string };
   /** Who holds the document, as a phrase: "Claimed by you". */
@@ -120,17 +118,16 @@ export function DocumentWorkspace({
   busy?: boolean;
   /**
    * The number each finding is read by, by the id this workspace holds it under.
-   * Given, it is used as it is. Not given, findings are numbered by their place
-   * in the document. A client's reader gives it, because a client's numbers are
-   * their own and stored.
+   * Each portal gives its own: a client's numbers are their own and stored, an
+   * advocate's are the document's. The workspace works none out itself.
    */
-  numbering?: Record<string, string>;
+  numbering: Record<string, string>;
   /**
-   * The record to show, in place of the one built from the document. A client's
-   * reader gives it, because the full record names the advocate and what they
-   * decided, and a client is shown only what the API hands over.
+   * The record to show. Each portal gives its own, because the full record names
+   * the advocate and what they decided, and a client is shown only what the API
+   * hands over. The workspace builds none from the document.
    */
-  trail?: TrailEntry[];
+  trail: TrailEntry[];
 }) {
   const reduced = useReducedMotion();
   const { open: openPalette } = usePalette();
@@ -144,9 +141,8 @@ export function DocumentWorkspace({
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
-  // Display ordinals, fixed by the order the pipeline raised the
-  // findings, so "finding 04" means one thing across every pane.
-  const findingNumbers = useMemo(() => numbering ?? numberFindings(doc), [doc, numbering]);
+  // Display ordinals, so "finding 04" means one thing across every pane.
+  const findingNumbers = numbering;
 
   // The re-review is scoped to what the last round changed. Only an
   // advocate has a scope, and the full set is one switch away.
@@ -162,7 +158,7 @@ export function DocumentWorkspace({
   // What the panes show. The counts below it are over the whole document
   // (what sign-off checks); every finding needing a decision is in scope, so
   // the two never disagree. Numbers, detail and the trail keep using `doc`.
-  const view = useMemo<ContractDocument>(() => {
+  const view = useMemo<WorkspaceDocument>(() => {
     if (!activeScope || showAll) return doc;
     const keep = new Set(activeScope.inScope);
     return {
@@ -707,7 +703,7 @@ export function DocumentWorkspace({
             ) : (
               <div className="p-4 lg:p-5">
                 <AuditTrail
-                  entries={trail ?? buildAuditTrail(doc)}
+                  entries={trail}
                   title={null}
                   onSelectFinding={selectFinding}
                 />

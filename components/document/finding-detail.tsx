@@ -11,8 +11,7 @@ import {
   findingState,
   settleNeedsNote,
 } from "@/lib/findings";
-import { buildAuditTrail } from "@/lib/audit";
-import type { ContractDocument, Finding } from "@/lib/types";
+import type { WorkspaceDocument, WorkspaceFinding } from "@/lib/types";
 import { PIPELINE_LAYERS, clauseNumberFromReference } from "@/lib/types";
 import { AddedByLabel } from "./added-by-label";
 import { useReviewScope } from "./review-scope-context";
@@ -87,8 +86,8 @@ export function FindingDetail({
   busy = false,
   trail,
 }: {
-  doc: ContractDocument;
-  finding: Finding;
+  doc: WorkspaceDocument;
+  finding: WorkspaceFinding;
   number: string;
   role: "client" | "advocate";
   /** An advocate holding this document. */
@@ -106,8 +105,8 @@ export function FindingDetail({
    */
   requestBlockedReason?: string | null;
   busy?: boolean;
-  /** The record to draw the history from, in place of the one built from the document. */
-  trail?: TrailEntry[];
+  /** The record to draw the history from. Each portal brings its own. */
+  trail: TrailEntry[];
 }) {
   const reduced = useReducedMotion();
   const [draft, setDraft] = useState<Draft>(null);
@@ -127,8 +126,7 @@ export function FindingDetail({
   const needsNote = settleNeedsNote(finding);
   const clauseNumber = clauseNumberFromReference(finding.clauseReference);
   const clause = doc.clauses.find((c) => c.number === clauseNumber);
-  const record: TrailEntry[] = trail ?? buildAuditTrail(doc);
-  const history = record.filter(
+  const history = trail.filter(
     (e) => (e.findingId ?? e.findingNumber) === finding.findingId,
   );
   const request = finding.changeRequest;
@@ -281,8 +279,12 @@ export function FindingDetail({
             ) : (
               <p className="font-mono text-label text-muted-fg">
                 {finding.ruleApplied}
-                <span className="mx-1.5 text-line">·</span>
-                Layer {finding.layer} · {PIPELINE_LAYERS[finding.layer].name}
+                {finding.layer !== undefined && (
+                  <>
+                    <span className="mx-1.5 text-line">·</span>
+                    Layer {finding.layer} · {PIPELINE_LAYERS[finding.layer].name}
+                  </>
+                )}
               </p>
             )}
           </Section>

@@ -9,7 +9,7 @@ import {
   scopeTagLabel,
   type ReviewScope,
 } from "@/lib/reviewScope";
-import type { Finding } from "@/lib/types";
+import type { WorkspaceFinding } from "@/lib/types";
 
 /**
  * What the last round changed, for the advocate re-reviewing a draft.
@@ -35,7 +35,7 @@ export function ReviewScopePanel({
   onOpenFinding,
 }: {
   scope: ReviewScope;
-  findings: Finding[];
+  findings: WorkspaceFinding[];
   findingNumbers: Record<string, string>;
   showAll: boolean;
   onShowAllChange: (showAll: boolean) => void;
@@ -221,7 +221,7 @@ function FindingJump({
   note,
   onOpen,
 }: {
-  finding: Finding;
+  finding: WorkspaceFinding;
   number: string;
   note?: string;
   onOpen: (findingId: string) => void;
