@@ -30,21 +30,28 @@
         "no-restricted-imports": [
           "error",
           {
-            "paths": [
+            "patterns": [
               {
-                "name": "@/lib/types",
+                "group": ["**/lib/types", "**/lib/types.*"],
                 "importNames": ["ContractDocument", "Finding"],
                 "message": "The client portal reads what a client is handed (ClientDocument, ClientFinding), never the internal record. See lib/api/client."
               },
               {
-                "name": "@/lib/api/documents",
+                "group": ["**/lib/api/documents", "**/lib/api/documents.*"],
                 "message": "The client portal reads and writes through lib/api/client, which takes the organisation and hands back client types."
-              }
-            ],
-            "patterns": [
+              },
               {
-                "group": ["**/lib/api/documents", "**/api/documents"],
-                "message": "The client portal reads and writes through lib/api/client, which takes the organisation and hands back client types."
+                "group": [
+                  "**/lib/mock/documents.mock", "**/lib/mock/documents.mock.*",
+                  "**/lib/api/consultations", "**/lib/api/consultations.*",
+                  "**/lib/api/delivery", "**/lib/api/delivery.*",
+                  "**/lib/api/summaries", "**/lib/api/summaries.*",
+                  "**/lib/api/notes", "**/lib/api/notes.*",
+                  "**/lib/api/advocate", "**/lib/api/advocate.*",
+                  "**/lib/findings", "**/lib/findings.*",
+                  "**/lib/audit", "**/lib/audit.*"
+                ],
+                "message": "These hold or read the internal record, or are the advocate's. A client file reads through lib/api/client, which hands back client types."
               }
             ]
           }
