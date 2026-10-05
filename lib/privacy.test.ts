@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { shapeClientConsultation } from "./api/client/consultations";
+import { shapeClientDocument } from "./api/client/shape-document";
 import { invoicesFor } from "./billing";
 import { DELETION_RECORDED, DELETION_SCOPE, DELETION_STATUS } from "./config/privacy";
 import { mockDocuments } from "./mock/documents.mock";
@@ -9,12 +11,13 @@ const vendor = mockDocuments.find((d) => d.id === "doc-vendor-revision")!; // no
 const nda = mockDocuments.find((d) => d.id === "doc-nda-settled")!; // signed off
 const privacy: PrivacyState = { trainingOptIn: false, consentLog: [], deletionRequestedAt: null };
 
+// The export is built from the client's own types, the way the API hands them over.
 function exportOf(documents: ContractDocument[], consultations: Consultation[] = []) {
   return buildDataExport({
     organisation: { name: "Anaya Textiles Pvt Ltd", gstin: null },
-    documents,
+    documents: documents.map((d) => shapeClientDocument(d)),
     invoices: invoicesFor(documents),
-    consultations,
+    consultations: consultations.map(shapeClientConsultation),
     privacy,
     now: new Date("2026-10-04T00:00:00.000Z"),
   });
@@ -35,7 +38,9 @@ describe("the export of a document not yet signed off", () => {
   it("carries only the finding a request is addressed to the client about", () => {
     expect(doc.findings).toHaveLength(1);
     expect(doc.findings[0]).toMatchObject({
-      number: "01",
+      // The number the client was given, as the screens show it. The file used to count the
+      // findings it listed and say "01", which was not the number anywhere else.
+      number: "02",
       clauseReference: "Clause 5.3",
       description: null,
       disposition: null,

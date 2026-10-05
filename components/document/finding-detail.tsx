@@ -21,7 +21,7 @@ import { scopeNote } from "@/lib/reviewScope";
 import { StateLabel } from "./state-label";
 import { SeverityMark } from "./severity";
 import { CitationBlock } from "./citation-block";
-import { AuditTrail } from "./audit-trail";
+import { AuditTrail, type TrailEntry } from "./audit-trail";
 
 type Draft =
   | { kind: "note" }
@@ -85,6 +85,7 @@ export function FindingDetail({
   onWithdrawSource,
   requestBlockedReason = null,
   busy = false,
+  trail,
 }: {
   doc: ContractDocument;
   finding: Finding;
@@ -105,6 +106,8 @@ export function FindingDetail({
    */
   requestBlockedReason?: string | null;
   busy?: boolean;
+  /** The record to draw the history from, in place of the one built from the document. */
+  trail?: TrailEntry[];
 }) {
   const reduced = useReducedMotion();
   const [draft, setDraft] = useState<Draft>(null);
@@ -124,7 +127,10 @@ export function FindingDetail({
   const needsNote = settleNeedsNote(finding);
   const clauseNumber = clauseNumberFromReference(finding.clauseReference);
   const clause = doc.clauses.find((c) => c.number === clauseNumber);
-  const history = buildAuditTrail(doc).filter((e) => e.findingId === finding.findingId);
+  const record: TrailEntry[] = trail ?? buildAuditTrail(doc);
+  const history = record.filter(
+    (e) => (e.findingId ?? e.findingNumber) === finding.findingId,
+  );
   const request = finding.changeRequest;
   // Each decision names the finding it is about, so a screen reader hears
   // which one a control acts on, not just the verb.
@@ -231,8 +237,10 @@ export function FindingDetail({
               <div>
                 <p className="text-meta text-ink">{request.request}</p>
                 <p className="mt-1 text-label text-muted-fg">
-                  {request.requestedBy}, advocate ·{" "}
-                  {format(new Date(request.requestedAt), "d MMM yyyy")}
+                  {role === "client"
+                    ? "Your advocate asked for your answer"
+                    : `${request.requestedBy}, advocate`}{" "}
+                  · {format(new Date(request.requestedAt), "d MMM yyyy")}
                 </p>
               </div>
               {request.response ? (

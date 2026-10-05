@@ -9,11 +9,10 @@ import { LifecycleStepper, stageCaption } from "@/components/document/provenance
 import { DealPrompt } from "@/components/marketing/deal-prompt";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { listDocuments } from "@/lib/api/documents";
-import { clientVisibleFindings, firstPassFindings } from "@/lib/findings";
+import { listClientDocuments } from "@/lib/api/client/documents";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { groupOf, yourMove, type Move, type MoveGroup } from "@/lib/moves";
-import type { ContractDocument } from "@/lib/types";
+import type { ClientDocumentSummary } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type LoadState = "loading" | "error" | "loaded";
@@ -36,22 +35,18 @@ function greeting(): string {
 }
 
 /** When the document entered the stage it is in. */
-function since(doc: ContractDocument): string | null {
-  const requests = clientVisibleFindings(doc)
-    .map((f) => f.changeRequest?.requestedAt)
-    .filter((d): d is string => Boolean(d))
-    .sort();
+function since(doc: ClientDocumentSummary): string | null {
   const at =
     doc.status === "revision"
-      ? requests[requests.length - 1]
-      : doc.status === "settled" || doc.status === "executed"
-        ? doc.settledAt
+      ? doc.latestRequestAt
+      : doc.signOff
+        ? doc.signOff.at
         : doc.claimedAt ?? doc.createdAt;
   return at ? format(new Date(at), "d MMM") : null;
 }
 
 export default function DocumentsPage() {
-  const [docs, setDocs] = useState<ContractDocument[]>([]);
+  const [docs, setDocs] = useState<ClientDocumentSummary[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -59,7 +54,7 @@ export default function DocumentsPage() {
     setState("loading");
     try {
       // Scoped in the data layer, not with a .filter() here.
-      const result = await listDocuments(MOCK_CLIENT_ORG.id);
+      const result = await listClientDocuments(MOCK_CLIENT_ORG.id);
       setDocs(result);
       setState("loaded");
     } catch (err) {
@@ -100,7 +95,7 @@ export default function DocumentsPage() {
   const groups: {
     key: MoveGroup;
     title: string;
-    docs: ContractDocument[];
+    docs: ClientDocumentSummary[];
     empty: string;
     promise: string;
   }[] = [
@@ -118,7 +113,7 @@ export default function DocumentsPage() {
       docs: byGroup("advocate"),
       empty: "No document is with an advocate right now.",
       promise:
-        "Submit a draft and the advocate who claims it is named here, with the day they claimed it.",
+        "Submit a draft and it waits here while an advocate reviews it, with the day it was claimed.",
     },
     {
       key: "done",
@@ -220,16 +215,18 @@ function EmptyGroup({
  * Everything Vidhata has done for this organisation, counted from the
  * documents themselves. Nothing here is estimated.
  */
-function YourRecord({ docs }: { docs: ContractDocument[] }) {
+function YourRecord({ docs }: { docs: ClientDocumentSummary[] }) {
   const screened = docs.filter((d) => d.status !== "draft" && d.status !== "analysing");
   // What the first passes raised. Findings an advocate added are not counted:
   // before sign-off they reach the client only through a request.
-  const findings = screened.reduce((n, d) => n + firstPassFindings(d).length, 0);
-  const signedOff = docs.filter((d) => d.status === "settled" || d.status === "executed");
-  const steps = docs.flatMap((d) => d.executionSteps.filter((s) => s.applicable));
-  const stepsDone = steps.filter((s) => s.complete).length;
+  const findings = screened.reduce((n, d) => n + d.findingCount, 0);
+  const signedOff = docs.filter((d) => d.signOff !== null);
+  const stepsInAll = docs.reduce((n, d) => n + d.checklist.total, 0);
+  const stepsDone = docs.reduce((n, d) => n + d.checklist.done, 0);
+  // Named by their sign-offs and by nothing else: before one, a client is told
+  // "an advocate".
   const advocates = Array.from(
-    new Set(docs.map((d) => d.advocate?.name).filter((n): n is string => Boolean(n))),
+    new Set(signedOff.map((d) => d.signOff?.advocate).filter((n): n is string => Boolean(n))),
   );
 
   const figures: { label: string; value: number; note: string }[] = [
@@ -248,13 +245,13 @@ function YourRecord({ docs }: { docs: ContractDocument[] }) {
       value: signedOff.length,
       note:
         signedOff.length > 0
-          ? `By ${Array.from(new Set(signedOff.map((d) => d.advocate?.name).filter(Boolean))).join(", ")}`
+          ? `By ${advocates.join(", ")}`
           : "None yet",
     },
     {
       label: "Execution steps done",
       value: stepsDone,
-      note: steps.length > 0 ? `Of ${steps.length} that apply` : "None apply yet",
+      note: stepsInAll > 0 ? `Of ${stepsInAll} that apply` : "None apply yet",
     },
   ];
 
@@ -271,7 +268,7 @@ function YourRecord({ docs }: { docs: ContractDocument[] }) {
           </p>
           {advocates.length > 0 && (
             <p className="mt-2 text-meta text-muted-fg">
-              Advocates on your documents · {advocates.join(", ")}
+              Signed off by · {advocates.join(", ")}
             </p>
           )}
         </div>
@@ -319,7 +316,7 @@ function Section({
  * move if it is yours. The whole row opens the document; the action goes
  * straight to where the move is made.
  */
-function DocumentRow({ doc, move }: { doc: ContractDocument; move: Move | null }) {
+function DocumentRow({ doc, move }: { doc: ClientDocumentSummary; move: Move | null }) {
   const date = since(doc);
 
   return (

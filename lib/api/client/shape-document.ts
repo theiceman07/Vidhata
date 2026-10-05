@@ -34,6 +34,7 @@ export function shapeClientDocument(record: ContractDocument, options: ShapeOpti
       .map((f) => clauseNumberFromReference(f.clauseReference)),
   );
   const shown = signOff ? doc.clauses : doc.clauses.filter((c) => asked.has(c.number));
+  const applicable = signOff ? doc.executionSteps.filter((s) => s.applicable) : [];
 
   return {
     id: doc.id,
@@ -60,8 +61,10 @@ export function shapeClientDocument(record: ContractDocument, options: ShapeOpti
     signOff,
     clauses: shown.map((c) => ({ number: c.number, heading: c.heading, body: c.body })),
     otherClauseCount: doc.clauses.length - shown.length,
+    findingCount: firstPassFindings(doc).length,
     findingList: shapeClientFindings(doc, options),
     executionSteps: signOff ? structuredClone(doc.executionSteps) : [],
+    checklist: { done: applicable.filter((s) => s.complete).length, total: applicable.length },
   };
 }
 

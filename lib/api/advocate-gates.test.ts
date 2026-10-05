@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Finding, NewFinding } from "@/lib/types";
+import type { NewFinding } from "@/lib/types";
 import {
   addFinding,
   getDocument,

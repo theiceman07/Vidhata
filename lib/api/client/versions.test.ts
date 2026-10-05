@@ -63,7 +63,8 @@ describe("what changed between two drafts, for the client", () => {
         const old = clientVersionDiff(d, versions, a, b);
         expect(shaped.ok, `${d.id} ${a}-${b}`).toBe(true);
         if (!shaped.ok || !old.ok) continue;
-        const withoutNumbers = (rows: ClientFindingRow[]) => rows.map(({ number, ...rest }) => rest);
+        const withoutNumbers = (rows: ClientFindingRow[]) =>
+          rows.map((row) => Object.fromEntries(Object.entries(row).filter(([key]) => key !== "number")));
         expect(withoutNumbers(shaped.diff.findingRows), `${d.id} ${a}-${b}`).toEqual(
           withoutNumbers(old.diff.findingRows),
         );

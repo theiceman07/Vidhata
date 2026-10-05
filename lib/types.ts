@@ -421,9 +421,16 @@ export interface ClientDocument
   clauses: ClientClause[];
   /** Clauses not shown, only counted. Always zero after sign-off. */
   otherClauseCount: number;
+  /**
+   * What the first pass raised. Findings an advocate added are not counted, so
+   * this reads the same whatever the advocate has done since.
+   */
+  findingCount: number;
   findingList: ClientFinding[];
   /** After sign-off only. Empty before. */
   executionSteps: ExecutionStep[];
+  /** After sign-off only: applicable steps done, and in all. Zero before. */
+  checklist: { done: number; total: number };
 }
 
 /**
@@ -445,16 +452,14 @@ export interface ClientDocumentSummary
     | "executedAt"
     | "paidAt"
     | "signOff"
+    | "findingCount"
+    | "checklist"
   > {
   counterpartyName: string;
-  /** What the first pass raised. Findings an advocate added are not counted. */
-  findingCount: number;
   /** Requests addressed to the client that they have not yet answered. */
   openRequests: number;
   /** When the latest request to the client was sent. Null when there has been none. */
   latestRequestAt: string | null;
-  /** After sign-off only: applicable steps done, and in all. Zero before. */
-  checklist: { done: number; total: number };
 }
 
 /** One draft in the client's version list. Counts only; never the draft. */
@@ -588,6 +593,29 @@ export interface Consultation {
 }
 
 /**
+ * A consultation as the client who made it reads it. The request, the fee they
+ * pay and their answer, with the advocate named as the one who settled the
+ * document. Not the advocate's id, not the organisation's id and not the
+ * client's name: the request is theirs, and asking for it already says whose.
+ */
+export type ClientConsultation = Pick<
+  Consultation,
+  | "id"
+  | "documentId"
+  | "documentTitle"
+  | "advocateName"
+  | "question"
+  | "status"
+  | "requestedAt"
+  | "acceptedAt"
+  | "declinedAt"
+  | "fee"
+  | "paidAt"
+  | "answer"
+  | "answeredAt"
+>;
+
+/**
  * A consultation as the advocate reads it: the status, and only whether it is
  * paid. Never the fee, the time of payment or any card or payment detail.
  */
@@ -653,7 +681,8 @@ export interface DataExport {
     findings: {
       number: string;
       clauseReference: string;
-      passage: string;
+      /** The quoted passage. Null only if the client has none to read, which no shown finding lacks. */
+      passage: string | null;
       /** The first pass's own words, and the advocate's disposition: after sign-off only. */
       description: string | null;
       disposition: "confirmed" | "overridden" | "pending" | null;

@@ -1,5 +1,7 @@
-import { clientVisibleFindings } from "@/lib/findings";
-import type { ChatMessage, ContractDocument } from "@/lib/types";
+import type { ChatMessage, ClientDocument } from "@/lib/types";
+
+/** What the agent reads of a document: the settled text and its findings, as a client has them. */
+export type ChatSource = Pick<ClientDocument, "title" | "clauses" | "findingList">;
 
 export const SUGGESTED_QUESTIONS = [
   "What does this clause mean?",
@@ -33,7 +35,7 @@ export interface ChatReply {
 
 export function getMockReply(
   userText: string,
-  doc: ContractDocument,
+  doc: ChatSource,
 ): ChatReply {
   if (ADVICE_PATTERN.test(userText)) {
     return { text: "", citedClauseReference: null, isEscalation: true };
@@ -68,10 +70,10 @@ export function getMockReply(
     };
   }
 
-  const finding = clientVisibleFindings(doc)[0];
-  if (finding) {
+  const finding = doc.findingList[0];
+  if (finding?.clauseText && finding.detail) {
     return {
-      text: `${finding.clauseReference} covers this: "${finding.clauseText}" In plain terms: ${finding.description}`,
+      text: `${finding.clauseReference} covers this: "${finding.clauseText}" In plain terms: ${finding.detail.description}`,
       citedClauseReference: finding.clauseReference,
       isEscalation: false,
     };
@@ -84,7 +86,7 @@ export function getMockReply(
   };
 }
 
-export function buildInitialMessages(doc: ContractDocument): ChatMessage[] {
+export function buildInitialMessages(doc: ChatSource): ChatMessage[] {
   return [
     {
       id: "welcome",

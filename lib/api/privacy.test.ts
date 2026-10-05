@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { getClientDocument } from "./client/documents";
 import { requestConsultation } from "./consultations";
 import {
   getPrivacy,
@@ -97,6 +98,24 @@ describe("the export", () => {
   it("holds nothing of an unsigned document's review beyond what is addressed", async () => {
     const { contents } = await settle(requestDataExport(org));
     expect(contents).not.toMatch(/find-9|find-10|PLACEHOLDER|overrideNote|ruleApplied/);
+  });
+
+  it("numbers and lists findings exactly as the client's own screens do", async () => {
+    // The file is the client's own record, so a finding is the same number in it as on the
+    // screens, and it holds the findings the screens show and no others.
+    const file = JSON.parse((await settle(requestDataExport(org))).contents);
+    expect(file.documents.length).toBeGreaterThan(2);
+    for (const exported of file.documents) {
+      const client = (await settle(getClientDocument(org, exported.id)))!;
+      const screens = client.findingList
+        .filter((f) => client.signOff !== null || f.request !== null)
+        .map((f) => `${f.number} ${f.clauseReference}`)
+        .sort();
+      const inFile = exported.findings
+        .map((f: { number: string; clauseReference: string }) => `${f.number} ${f.clauseReference}`)
+        .sort();
+      expect(inFile, exported.id).toEqual(screens);
+    }
   });
 
   it("prepares nothing when it fails", async () => {

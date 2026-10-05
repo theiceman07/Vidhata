@@ -58,12 +58,14 @@ describe("a document as a client reads it, before sign-off", () => {
 
   it("names exactly what it carries", () => {
     expect(Object.keys(shaped).sort()).toEqual([
+      "checklist",
       "claimedAt",
       "clauses",
       "createdAt",
       "deal",
       "executedAt",
       "executionSteps",
+      "findingCount",
       "findingList",
       "id",
       "otherClauseCount",

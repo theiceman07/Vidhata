@@ -4,8 +4,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { clientVisibleFindings } from "@/lib/findings";
-import type { ContractDocument } from "@/lib/types";
+import type { ClientDocument } from "@/lib/types";
 import { clauseNumberFromReference } from "@/lib/types";
 
 /**
@@ -17,7 +16,15 @@ import { clauseNumberFromReference } from "@/lib/types";
  * go back as one submission, which is what makes the next draft a draft.
  *
  * The client sees the passage in question and the request, never the
- * rule machinery or the first pass's own wording of the concern.
+ * rule machinery or the first pass's own wording of the concern, and never
+ * who asked: before sign-off they are told "your advocate". Each request is
+ * named by the number the client reads its finding by, and the answers go back
+ * keyed by it.
+ *
+ * Every request addressed to the client stays listed until they answer it. It
+ * does not leave the list when the advocate settles its finding, because that
+ * would tell the client a decision had been made, and the wording says only
+ * that the advocate asked.
  *
  * Each request is a parchment sheet: the passage and the request on one
  * side, the answer beside it where the screen allows. Sheets are divided
@@ -28,31 +35,30 @@ export function ChangeRequests({
   onSubmit,
   submitting,
 }: {
-  doc: ContractDocument;
+  doc: Pick<ClientDocument, "clauses" | "findingList" | "version">;
+  /** The answers, keyed by the number the client reads each finding by. */
   onSubmit: (responses: Record<string, string>) => void;
   submitting: boolean;
 }) {
-  const requested = clientVisibleFindings(doc).filter(
-    (f) => f.disposition === "pending" && f.changeRequest,
-  );
-  const open = requested.filter((f) => !f.changeRequest?.response);
+  const requested = doc.findingList.filter((f) => f.request !== null);
+  const open = requested.filter((f) => !f.request?.response);
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
-  const ready = open.every((f) => (answers[f.findingId] ?? "").trim().length > 0);
+  const ready = open.every((f) => (answers[f.number] ?? "").trim().length > 0);
 
   return (
     <div>
       <ol className="space-y-4">
         {requested.map((finding, i) => {
-          const request = finding.changeRequest;
+          const request = finding.request;
           if (!request) return null;
           const number = clauseNumberFromReference(finding.clauseReference);
           const clause = doc.clauses.find((c) => c.number === number);
-          const fieldId = `response-${finding.findingId}`;
+          const fieldId = `response-${finding.number}`;
 
           return (
             <li
-              key={finding.findingId}
+              key={finding.number}
               className="grid gap-x-10 gap-y-6 rounded-card bg-parchment p-6 md:p-8 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]"
             >
               <div className="min-w-0">
@@ -74,7 +80,7 @@ export function ChangeRequests({
                 <div className="mt-5 border-l-2 border-caution pl-4">
                   <p className="text-body text-ink">{request.request}</p>
                   <p className="mt-1 text-label text-muted-fg">
-                    {request.requestedBy}, advocate ·{" "}
+                    Your advocate asked for your answer ·{" "}
                     {format(new Date(request.requestedAt), "d MMM yyyy")}
                   </p>
                 </div>
@@ -97,18 +103,17 @@ export function ChangeRequests({
                     id={fieldId}
                     className="mt-1.5 flex-1 xl:min-h-[10rem]"
                     rows={4}
-                    value={answers[finding.findingId] ?? ""}
+                    value={answers[finding.number] ?? ""}
                     onChange={(e) =>
                       setAnswers((prev) => ({
                         ...prev,
-                        [finding.findingId]: e.target.value,
+                        [finding.number]: e.target.value,
                       }))
                     }
                     placeholder="Confirm, decline, or tell the advocate what you need instead."
                   />
                   <p className="mt-2 text-label text-muted-fg">
-                    Goes to {request.requestedBy} only, and stays on this
-                    document&apos;s record.
+                    Goes to your advocate only, and stays on this document&apos;s record.
                   </p>
                 </div>
               )}

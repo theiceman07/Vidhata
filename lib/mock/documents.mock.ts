@@ -115,14 +115,21 @@ const settledNda: ContractDocument = {
     },
     {
       kind: "registration",
-      applicable: false,
-      headline: "Registration: not required",
-      detail: "Sample entry, as confirmed by the advocate who settled this sample document.",
-      reason: "Sample entry: the advocate who settled this sample document confirmed registration does not apply.",
-      instructions: [],
+      applicable: true,
+      // The wording a generated checklist has (lib/api/documents.ts). Whether
+      // registration applies is a legal call with no audited rule behind it, so
+      // no fixture rules it out: the advocate confirms, and here it is confirmed.
+      headline: "Registration: confirmed by your advocate",
+      detail: "Your advocate confirms whether registration applies.",
+      reason: "Whether registration applies is confirmed by your advocate.",
+      instructions: [
+        "Your advocate confirms whether registration applies.",
+        "If it does, complete it as your advocate directs and attach the receipt here.",
+        "Mark this step complete when your advocate has confirmed it and, if it applies, it is done.",
+      ],
       complete: true,
-      completedAt: null,
-      completedBy: null,
+      completedAt: "2026-08-07T06:40:00.000Z",
+      completedBy: "Anaya Textiles Pvt Ltd",
       evidence: null,
     },
     // Built in one place, with the generated documents' (lib/config/esign.ts).
@@ -618,7 +625,7 @@ const awaitingPaymentVendor: ContractDocument = {
   settledAt: null,
   analysisCompletesAt: null,
   advocate: null,
-  clauses: vendorClauses,
+  clauses: vendorClauses.map((c) => ({ ...c, findingIds: [], revisedAt: null })),
   findings: [],
   executionSteps: [],
 };

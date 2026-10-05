@@ -14,13 +14,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { ConsultationStatus } from "@/components/domain/consultation-status";
 import {
   MAX_QUESTION_LENGTH,
-  listConsultations,
-  payConsultation,
-  requestConsultation,
-} from "@/lib/api/consultations";
-import { getDocument } from "@/lib/api/documents";
-import { CONSULTATION, PRICE_BASIS, rupees } from "@/lib/config/pricing";
-import type { Consultation, ContractDocument } from "@/lib/types";
+  listClientConsultations,
+  payClientConsultation,
+  requestClientConsultation,
+} from "@/lib/api/client/consultations";
+import { getClientDocument } from "@/lib/api/client/documents";
+import { CONSULTATION, PRICE_BASIS, TIER_PRICING, rupees } from "@/lib/config/pricing";
+import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
+import type { ClientConsultation, ClientDocument } from "@/lib/types";
+
+const ORG = MOCK_CLIENT_ORG.id;
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -36,8 +39,8 @@ type LoadState = "loading" | "error" | "loaded";
  */
 export default function ConsultationPage() {
   const params = useParams<{ id: string }>();
-  const [doc, setDoc] = useState<ContractDocument | null>(null);
-  const [requests, setRequests] = useState<Consultation[]>([]);
+  const [doc, setDoc] = useState<ClientDocument | null>(null);
+  const [requests, setRequests] = useState<ClientConsultation[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -50,8 +53,8 @@ export default function ConsultationPage() {
     setState("loading");
     try {
       const [found, list] = await Promise.all([
-        getDocument(params.id),
-        listConsultations(params.id),
+        getClientDocument(ORG, params.id),
+        listClientConsultations(ORG, params.id),
       ]);
       if (!found) throw new Error("Document not found.");
       setDoc(found);
@@ -75,7 +78,7 @@ export default function ConsultationPage() {
     setSending(true);
     setFailed(null);
     try {
-      const made = await requestConsultation(doc.id, question);
+      const made = await requestClientConsultation(ORG, doc.id, question);
       setRequests((current) =>
         current.some((c) => c.id === made.id) ? current : [made, ...current],
       );
@@ -105,8 +108,9 @@ export default function ConsultationPage() {
     return <ErrorState message={errorMessage} onRetry={load} />;
   }
 
-  const settled = (doc.status === "settled" || doc.status === "executed") && doc.advocate;
-  if (!settled) {
+  // The advocate to ask is the one on the recorded sign-off, and until there is one there is no one to ask.
+  const signOff = doc.signOff;
+  if (!signOff) {
     return (
       <div className="w-full">
         <div className="flex items-start gap-4">
@@ -123,7 +127,7 @@ export default function ConsultationPage() {
     );
   }
 
-  const advocate = doc.advocate!.name;
+  const advocate = signOff.advocate;
 
   return (
     <div className="w-full">
@@ -138,7 +142,7 @@ export default function ConsultationPage() {
       <div className="mt-10 grid gap-x-10 gap-y-10 lg:grid-cols-[minmax(0,1fr)_24rem]">
         <section className="min-w-0">
           <p className="max-w-measure text-body text-ink">
-            A conversation with {advocate} ({doc.advocate!.bar}), who settled this document. It is
+            A conversation with {advocate} ({signOff.enrolment}), who settled this document. It is
             with the advocate, and it is not part of the platform&apos;s fixed document fee.
           </p>
 
@@ -181,7 +185,9 @@ export default function ConsultationPage() {
               <div>
                 <dt className="text-label font-medium text-ink">Document fee · the platform</dt>
                 <dd className="mt-1 text-meta text-muted-fg">
-                  {doc.payment ? `${rupees(doc.payment.amount)} ${PRICE_BASIS}, paid. ` : ""}
+                  {doc.paidAt && doc.tier
+                    ? `${rupees(TIER_PRICING[doc.tier].amount)} ${PRICE_BASIS}, paid. `
+                    : ""}
                   One fixed fee for the document and its review. It does not include a
                   consultation.
                 </dd>
@@ -239,8 +245,8 @@ function RequestItem({
   request: r,
   onChanged,
 }: {
-  request: Consultation;
-  onChanged: (next: Consultation) => void;
+  request: ClientConsultation;
+  onChanged: (next: ClientConsultation) => void;
 }) {
   const [paying, setPaying] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
@@ -255,7 +261,7 @@ function RequestItem({
     setPaying(true);
     setFailed(null);
     try {
-      onChanged(await payConsultation(r.id));
+      onChanged(await payClientConsultation(ORG, r.id));
       toast.success("Consultation fee paid");
     } catch (err) {
       setFailed(

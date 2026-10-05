@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clientAuditTrail } from "@/lib/audit";
+import { shapeClientSummary } from "@/lib/api/client/shape-document";
 import { groupOf } from "@/lib/moves";
 import { stateText } from "@/components/document/state-label";
 import { getDocument, toggleExecutionStep } from "./documents";
@@ -9,6 +10,36 @@ const failure = vi.hoisted(() => ({ on: false }));
 vi.mock("./delay", async (importOriginal) => {
   const original = await importOriginal<typeof import("./delay")>();
   return { ...original, shouldSimulateFailure: () => failure.on };
+});
+
+// A test-only fixture. The shipped fixtures no longer rule registration out (no audited rule
+// stands behind "not required"), so the rule that a step that does not apply never holds
+// execution up is held here, on a copy of the settled NDA whose registration step does not
+// apply. Nothing outside this file sees it.
+vi.mock("@/lib/mock/documents.mock", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/lib/mock/documents.mock")>();
+  return {
+    ...original,
+    mockDocuments: original.mockDocuments.map((d) =>
+      d.id !== "doc-nda-settled-2"
+        ? d
+        : {
+            ...d,
+            executionSteps: d.executionSteps.map((s) =>
+              s.kind === "registration"
+                ? {
+                    ...s,
+                    applicable: false,
+                    headline: "Registration: does not apply (test fixture)",
+                    complete: true,
+                    completedAt: null,
+                    completedBy: null,
+                  }
+                : s,
+            ),
+          },
+    ),
+  };
 });
 
 beforeEach(() => {
@@ -34,7 +65,8 @@ async function refusal(promise: Promise<unknown>): Promise<string> {
 }
 
 // Signed off by Ananya Rao. Stamping is done and carries its proof, registration
-// does not apply, and the e-signature is the one step left.
+// does not apply (in this file only: see the test-only fixture above), and the
+// e-signature is the one step left.
 const id = "doc-nda-settled-2";
 const client = "Anaya Textiles Pvt Ltd";
 
@@ -51,7 +83,7 @@ describe("executing a settled document", () => {
     expect(doc.executionSteps.filter((s) => s.applicable && !s.complete).map((s) => s.kind)).toEqual([
       "esignature",
     ]);
-    expect(groupOf(doc)).toBe("you");
+    expect(groupOf(shapeClientSummary(doc))).toBe("you");
     expect(executedEntries(doc)).toEqual([]);
   });
 
@@ -68,7 +100,7 @@ describe("executing a settled document", () => {
     const doc = await read();
     // The badge, the dashboard's grouping and the trail.
     expect(stateText(doc.status)).toBe("Executed");
-    expect(groupOf(doc)).toBe("done");
+    expect(groupOf(shapeClientSummary(doc))).toBe("done");
     const entries = executedEntries(doc);
     expect(entries).toHaveLength(1);
     expect(entries[0]).toMatchObject({ actor: client, at: doc.executedAt });
@@ -86,7 +118,7 @@ describe("executing a settled document", () => {
     const doc = await sign(false);
     expect(doc.status).toBe("settled");
     expect(doc.executedAt).toBeNull();
-    expect(groupOf(doc)).toBe("you");
+    expect(groupOf(shapeClientSummary(doc))).toBe("you");
     expect(stateText(doc.status)).toBe("Settled");
     expect(executedEntries(doc)).toEqual([]);
   });

@@ -5,8 +5,8 @@ import Link from "next/link";
 import { Icon } from "@/components/shared/icon";
 import { CONSULTATION, PRICE_BASIS } from "@/lib/config/pricing";
 import { cn } from "@/lib/utils";
-import { getMockReply } from "@/lib/mock/chat.mock";
-import type { ChatMessage, ContractDocument } from "@/lib/types";
+import { getMockReply, type ChatSource } from "@/lib/mock/chat.mock";
+import type { ChatMessage, ClientDocument } from "@/lib/types";
 import { clauseNumberFromReference } from "@/lib/types";
 
 /**
@@ -25,14 +25,15 @@ export function DocumentAgent({
   doc,
   onCite,
 }: {
-  doc: ContractDocument;
+  doc: ChatSource & Pick<ClientDocument, "id" | "signOff">;
   /** Carry the document to a clause the agent quoted. */
   onCite: (clauseNumber: string) => void;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const threadRef = useRef<HTMLDivElement>(null);
-  const advocate = doc.advocate?.name ?? "your advocate";
+  // Named by the sign-off record, which this agent only ever has: it explains a settled document.
+  const advocate = doc.signOff?.advocate ?? "your advocate";
 
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" });

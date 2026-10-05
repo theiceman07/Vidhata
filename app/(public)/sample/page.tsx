@@ -68,38 +68,18 @@ function Paragraphs({ text }: { text: string }) {
   );
 }
 
-// The sample's registration entry is shown the way a real checklist shows it,
-// not as the fixture's conclusion. "Not required" is a legal call with no
-// audited rule behind it, and nothing the product generates makes one: the
-// advocate confirms whether registration applies (lib/api/documents.ts). The
-// stamp-duty figure stays, labelled a sample entry.
-const REGISTRATION_AS_SHOWN = {
-  headline: "Registration: confirmed by your advocate",
-  body: "Your advocate confirms whether registration applies.",
-  status: "Confirmed by your advocate",
-};
-
 function Step({ step, number }: { step: ExecutionStep; number: number }) {
-  const registration = step.kind === "registration";
   return (
     <li className="rounded-card bg-paper p-6">
       <p className="text-label font-medium text-muted-fg">
         {String(number).padStart(2, "0")} · {STEP_TITLE[step.kind]}
       </p>
-      <p className="mt-2 font-display text-h3 text-ink">
-        {registration ? REGISTRATION_AS_SHOWN.headline : step.headline}
-      </p>
+      <p className="mt-2 font-display text-h3 text-ink">{step.headline}</p>
       <p className="mt-2 max-w-measure text-meta text-ink">
-        {registration ? REGISTRATION_AS_SHOWN.body : step.applicable ? step.detail : step.reason}
+        {step.applicable ? step.detail : step.reason}
       </p>
       <p className="mt-3 text-label text-muted-fg">
-        {registration
-          ? REGISTRATION_AS_SHOWN.status
-          : !step.applicable
-            ? "Not required"
-            : step.complete
-              ? "Complete"
-              : "Not done"}
+        {!step.applicable ? "Not required" : step.complete ? "Complete" : "Not done"}
       </p>
     </li>
   );

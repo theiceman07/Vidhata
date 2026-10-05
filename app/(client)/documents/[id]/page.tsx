@@ -17,48 +17,69 @@ import {
 import { CoveragePanel } from "@/components/domain/coverage-panel";
 import { DraftBanner } from "@/components/domain/draft-banner";
 import { PaymentPanel } from "@/components/domain/payment-panel";
-import { clientAuditTrail } from "@/lib/audit";
 import { ErrorState } from "@/components/shared/error-state";
 import { Icon } from "@/components/shared/icon";
 import { PipelineProgress } from "@/components/domain/pipeline-progress";
-import { DocumentWorkspace } from "@/components/document/workspace";
+import { ClientReader } from "@/components/document/client-reader";
 import { Provenance } from "@/components/document/provenance";
 import { ChangeRequests } from "@/components/document/change-requests";
 import { DocumentAgent } from "@/components/document/document-agent";
 import { StateLabel } from "@/components/document/state-label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { getDocument, respondToChanges, startAnalysis } from "@/lib/api/documents";
+import {
+  getClientDocument,
+  respondToClientRequests,
+  startClientAnalysis,
+} from "@/lib/api/client/documents";
+import { getClientTrail } from "@/lib/api/client/trail";
 import { tierLabel } from "@/lib/config/pricing";
-import { clientVisibleFindings } from "@/lib/findings";
-import type { ContractDocument } from "@/lib/types";
+import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
+import type { ClientAuditEntry, ClientDocument } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
+
+const ORG = MOCK_CLIENT_ORG.id;
 
 /**
  * One document, as the client meets it.
  *
  * No document reaches a client without a recorded advocate sign-off, so
  * what this page shows depends on where the document is. While the first
- * pass runs, its progress. While an advocate has it, where it is and who
- * holds it, but not the draft. When the advocate needs something, exactly
+ * pass runs, its progress. While an advocate has it, where it is, but not the
+ * draft and not who holds it. When the advocate needs something, exactly
  * what, on which clause. Once signed off, the settled document itself.
+ *
+ * Everything here is read from what a client is handed (a ClientDocument and
+ * the client's own trail), and the answers go back keyed by the number the
+ * client reads each finding by. Nothing on this page can show an advocate's
+ * name before sign-off, because the type it holds has no name to show.
  */
 export default function DocumentPage() {
   // Read from the router, not a prop: in Next 15 the page's params prop is a
   // Promise, and this is a client component.
   const params = useParams<{ id: string }>();
-  const [doc, setDoc] = useState<ContractDocument | null>(null);
+  const [doc, setDoc] = useState<ClientDocument | null>(null);
+  const [trail, setTrail] = useState<ClientAuditEntry[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  /** The document and its trail, read together so they never disagree. */
+  const read = useCallback(async () => {
+    const [result, entries] = await Promise.all([
+      getClientDocument(ORG, params.id),
+      getClientTrail(ORG, params.id),
+    ]);
+    if (!result || !entries) throw new Error("Document not found.");
+    setDoc(result);
+    setTrail(entries);
+  }, [params.id]);
+
   const load = useCallback(async () => {
     setState("loading");
     try {
-      const result = await getDocument(params.id);
-      if (!result) throw new Error("Document not found.");
-      setDoc(result);
+      await read();
       setState("loaded");
     } catch (err) {
       setErrorMessage(
@@ -66,7 +87,7 @@ export default function DocumentPage() {
       );
       setState("error");
     }
-  }, [params.id]);
+  }, [read]);
 
   useEffect(() => {
     load();
@@ -90,7 +111,7 @@ export default function DocumentPage() {
     if (!docId || state !== "loaded") return;
 
     if (docStatus === "draft") {
-      startAnalysis(docId).then(setDoc).catch(failWith);
+      startClientAnalysis(ORG, docId).then(setDoc).catch(failWith);
       return;
     }
 
@@ -99,25 +120,22 @@ export default function DocumentPage() {
     // mounted. Polling here only picks up that change.
     if (docStatus === "analysing") {
       const interval = setInterval(() => {
-        getDocument(docId)
-          .then((result) => {
-            if (result) setDoc(result);
-          })
-          .catch((err) => {
-            clearInterval(interval);
-            failWith(err);
-          });
+        read().catch((err) => {
+          clearInterval(interval);
+          failWith(err);
+        });
       }, 2000);
       return () => clearInterval(interval);
     }
-  }, [docId, docStatus, state, failWith]);
+  }, [docId, docStatus, state, failWith, read]);
 
   async function handleRespond(responses: Record<string, string>) {
     if (!doc) return;
     setSubmitting(true);
     try {
-      const updated = await respondToChanges(doc.id, responses);
+      const updated = await respondToClientRequests(ORG, doc.id, responses);
       setDoc(updated);
+      setTrail((await getClientTrail(ORG, doc.id)) ?? trail);
       toast.success("Sent to the advocate");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not send your responses.");
@@ -156,8 +174,8 @@ export default function DocumentPage() {
     );
   }
 
-  if (doc.status === "settled" || doc.status === "executed") {
-    return <SettledDocument doc={doc} />;
+  if (doc.signOff && (doc.status === "settled" || doc.status === "executed")) {
+    return <SettledDocument doc={doc} trail={trail} />;
   }
 
   // Screened and tiered, not yet paid. Only the tier, the fee and the deal
@@ -171,7 +189,7 @@ export default function DocumentPage() {
           <div className="min-w-0">
             <StateLabel state={doc.status} />
             <h1 className="mt-2 font-display text-h1 text-ink">{doc.title}</h1>
-            <p className="mt-1 text-meta text-muted-fg">{doc.counterpartyName}</p>
+            <p className="mt-1 text-meta text-muted-fg">{doc.deal.counterpartyName}</p>
           </div>
         </header>
 
@@ -180,6 +198,7 @@ export default function DocumentPage() {
             doc={doc}
             onPaid={(paid) => {
               setDoc(paid);
+              getClientTrail(ORG, paid.id).then((entries) => entries && setTrail(entries));
               toast.success("Fee paid. Your document is in the advocate queue.");
             }}
           />
@@ -206,7 +225,7 @@ export default function DocumentPage() {
             {/* The one display moment on this screen. */}
             <h1 className="mt-2 font-display text-h1 text-ink">{doc.title}</h1>
             <p className="mt-1 text-meta text-muted-fg">
-              {doc.counterpartyName}
+              {doc.deal.counterpartyName}
               <span className="mx-1.5 text-muted-fg/50">·</span>
               Draft {doc.version}
               <span className="mx-1.5 text-muted-fg/50">·</span>
@@ -259,7 +278,7 @@ export default function DocumentPage() {
           </ContextPanel>
           <AdvocatePanel doc={doc} />
           <ContextPanel title="Activity">
-            <AuditTrail entries={clientAuditTrail(doc)} title={null} />
+            <AuditTrail entries={trail} title={null} />
           </ContextPanel>
           <OnYourDesk currentId={doc.id} />
         </aside>
@@ -273,21 +292,18 @@ export default function DocumentPage() {
  * requests are open, how long they have waited, and what the document
  * becomes once they are answered.
  */
-function MoveSummary({ doc }: { doc: ContractDocument }) {
-  const open = clientVisibleFindings(doc).filter(
-    (f) => f.disposition === "pending" && f.changeRequest && !f.changeRequest.response,
-  );
+function MoveSummary({ doc }: { doc: ClientDocument }) {
+  const open = doc.findingList.filter((f) => f.request && !f.request.response);
   const asked = open
-    .map((f) => f.changeRequest?.requestedAt)
+    .map((f) => f.request?.requestedAt)
     .filter((d): d is string => Boolean(d))
     .sort()[0];
-  const advocate = doc.advocate?.name ?? "Your advocate";
 
   const figures: { label: string; value: string; note: string }[] = [
     {
       label: open.length === 1 ? "Request open" : "Requests open",
       value: String(open.length),
-      note: `From ${advocate}`,
+      note: "From your advocate",
     },
     {
       label: "Waiting",
@@ -304,7 +320,7 @@ function MoveSummary({ doc }: { doc: ContractDocument }) {
   return (
     <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
       <p className="max-w-2xl text-lead text-ink">
-        {advocate} needs your answer before this document can be settled. The
+        Your advocate asked for your answer before this document can be settled. The
         rest of the review continues in the meantime.
       </p>
       <dl className="grid grid-cols-3 gap-2">
@@ -339,15 +355,15 @@ function Frame({ children }: { children: React.ReactNode }) {
 }
 
 /** Pending or under review: where it is, and why the draft is not shown. */
-function WithAdvocate({ doc }: { doc: ContractDocument }) {
-  const answered = clientVisibleFindings(doc).filter((f) => f.changeRequest?.response);
+function WithAdvocate({ doc }: { doc: ClientDocument }) {
+  const answered = doc.findingList.filter((f) => f.request?.response);
 
   return (
     <div className="max-w-3xl space-y-8">
       <p className="text-lead text-ink">
         {doc.status === "pending_review"
           ? "The first pass has drafted and screened this document. It is in the advocate queue, and an empanelled advocate will claim it for review."
-          : `${doc.advocate?.name ?? "An advocate"} is reviewing the findings the first pass raised.`}{" "}
+          : "An advocate is reviewing the findings the first pass raised."}{" "}
         You will read the document once it is settled and signed off. Nothing
         reaches you before an advocate has recorded a sign-off.
       </p>
@@ -357,15 +373,15 @@ function WithAdvocate({ doc }: { doc: ContractDocument }) {
           <h2 className="text-label font-medium text-muted-fg">Your responses</h2>
           <ul className="mt-3 space-y-2">
             {answered.map((f) => (
-              <li key={f.findingId} className="rounded-control bg-parchment px-4 py-3">
+              <li key={f.number} className="rounded-control bg-parchment px-4 py-3">
                 <p className="text-label text-muted-fg">
                   <span className="font-mono">{f.clauseReference}</span>
-                  {f.changeRequest?.respondedAt && (
-                    <> · {format(new Date(f.changeRequest.respondedAt), "d MMM yyyy")}</>
+                  {f.request?.respondedAt && (
+                    <> · {format(new Date(f.request.respondedAt), "d MMM yyyy")}</>
                   )}
                 </p>
-                <p className="mt-0.5 text-meta text-muted-fg">{f.changeRequest?.request}</p>
-                <p className="mt-1 text-meta text-ink">{f.changeRequest?.response}</p>
+                <p className="mt-0.5 text-meta text-muted-fg">{f.request?.request}</p>
+                <p className="mt-1 text-meta text-ink">{f.request?.response}</p>
               </li>
             ))}
           </ul>
@@ -376,22 +392,21 @@ function WithAdvocate({ doc }: { doc: ContractDocument }) {
 }
 
 /** Signed off: the settled document itself, read only. */
-function SettledDocument({ doc }: { doc: ContractDocument }) {
-  const steps = doc.executionSteps.filter((s) => s.applicable);
-  const done = steps.filter((s) => s.complete).length;
+function SettledDocument({ doc, trail }: { doc: ClientDocument; trail: ClientAuditEntry[] }) {
+  const { done, total } = doc.checklist;
 
   return (
-    <DocumentWorkspace
+    <ClientReader
       doc={doc}
-      role="client"
+      trail={trail}
       back={{ href: "/documents", label: "Documents" }}
       aside={
         <>
-          {doc.settledAt && doc.advocate && (
+          {doc.signOff && (
             <span className="inline-flex items-center gap-1 text-label text-verified">
               <Icon name="check_circle" size={16} />
-              Signed off by {doc.advocate.name} ·{" "}
-              {format(new Date(doc.settledAt), "d MMM yyyy")}
+              Signed off by {doc.signOff.advocate} ·{" "}
+              {format(new Date(doc.signOff.at), "d MMM yyyy")}
             </span>
           )}
           <Link
@@ -404,7 +419,7 @@ function SettledDocument({ doc }: { doc: ContractDocument }) {
             href={`/documents/${doc.id}/checklist`}
             className="text-label text-ink underline-offset-2 hover:underline"
           >
-            Execution checklist · {done} of {steps.length}
+            Execution checklist · {done} of {total}
           </Link>
           <Link
             href={`/documents/${doc.id}/summary`}
@@ -418,7 +433,7 @@ function SettledDocument({ doc }: { doc: ContractDocument }) {
           >
             Version history
           </Link>
-          {doc.advocate && (
+          {doc.signOff && (
             <Link
               href={`/documents/${doc.id}/consultation`}
               className="text-label text-ink underline-offset-2 hover:underline"
