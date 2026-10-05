@@ -10,6 +10,7 @@ import {
   toggleExecutionStep,
 } from "../documents";
 import { shapeClientDocument, shapeClientSummary } from "./shape-document";
+import { ownDocument } from "./own";
 import { numberedForClient } from "./shape-findings";
 
 /**
@@ -31,17 +32,6 @@ export async function getClientDocument(orgId: string, id: string): Promise<Clie
 export async function listClientDocuments(orgId: string): Promise<ClientDocumentSummary[]> {
   const docs = await listDocuments(orgId);
   return docs.filter((d) => d.orgId === orgId).map((d) => shapeClientSummary(d));
-}
-
-/**
- * The client's own document, or the one refusal every other case gets: another
- * organisation's document and one that is not there are both "Document not
- * found.", so a write cannot show that a document exists.
- */
-async function ownDocument(orgId: string, id: string): Promise<ContractDocument> {
-  const doc = await getDocument(id);
-  if (!doc || doc.orgId !== orgId) throw new MockApiError("Document not found.");
-  return doc;
 }
 
 /** Starts the first pass on the client's own draft. */

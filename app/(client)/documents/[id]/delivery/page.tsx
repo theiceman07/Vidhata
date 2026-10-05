@@ -13,7 +13,9 @@ import { Icon } from "@/components/shared/icon";
 import { StateLabel } from "@/components/document/state-label";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getDelivery, type DeliveryResult } from "@/lib/api/delivery";
+import type { DeliveryResult } from "@/lib/api/delivery";
+import { getClientDelivery } from "@/lib/api/client/delivery";
+import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 
 type Load =
   | { phase: "loading" }
@@ -39,7 +41,7 @@ export default function DeliveryPage() {
   const fetchDelivery = useCallback(async () => {
     setLoad({ phase: "loading" });
     try {
-      setLoad({ phase: "loaded", result: await getDelivery(params.id) });
+      setLoad({ phase: "loaded", result: await getClientDelivery(MOCK_CLIENT_ORG.id, params.id) });
     } catch (err) {
       setLoad({
         phase: "error",

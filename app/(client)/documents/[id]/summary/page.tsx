@@ -9,13 +9,14 @@ import { ErrorState } from "@/components/shared/error-state";
 import { SummaryView } from "@/components/domain/summary-view";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getDocument } from "@/lib/api/documents";
-import { getSettledSummary, type SummaryResult } from "@/lib/api/summaries";
+import { getClientSummary } from "@/lib/api/client/delivery";
+import type { SummaryResult } from "@/lib/api/summaries";
+import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 
 type Load =
   | { phase: "loading" }
   | { phase: "error"; message: string }
-  | { phase: "loaded"; title: string; result: SummaryResult };
+  | { phase: "loaded"; title: string | null; result: SummaryResult };
 
 /**
  * A one-page summary of the settled document's key terms.
@@ -32,12 +33,9 @@ export default function SummaryPage() {
   const fetchSummary = useCallback(async () => {
     setLoad({ phase: "loading" });
     try {
-      // The summary call owns the gate; the title is only the page's heading.
-      const [result, doc] = await Promise.all([
-        getSettledSummary(params.id),
-        getDocument(params.id),
-      ]);
-      setLoad({ phase: "loaded", title: doc?.title ?? "Document", result });
+      // The call owns the gate, and gives the title only once the summary is the client's to read.
+      const { title, result } = await getClientSummary(MOCK_CLIENT_ORG.id, params.id);
+      setLoad({ phase: "loaded", title, result });
     } catch (err) {
       setLoad({
         phase: "error",
@@ -72,9 +70,7 @@ export default function SummaryPage() {
         <BackButton fallbackHref={`/documents/${params.id}`} label="Document" />
         <div className="min-w-0">
           {/* Before sign-off the page says only that it is not available. */}
-          {result.state !== "not_available" && (
-            <p className="truncate text-meta text-muted-fg">{title}</p>
-          )}
+          {title && <p className="truncate text-meta text-muted-fg">{title}</p>}
           <h1 className="mt-1 font-display text-h1 text-ink">Summary</h1>
         </div>
       </header>
