@@ -10,8 +10,8 @@ import { SummaryView } from "@/components/domain/summary-view";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getClientSummary } from "@/lib/api/client/delivery";
-import type { SummaryResult } from "@/lib/api/summaries";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
+import type { SummaryResult } from "@/lib/types";
 
 type Load =
   | { phase: "loading" }

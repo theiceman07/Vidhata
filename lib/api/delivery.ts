@@ -1,13 +1,7 @@
-import type { Delivery } from "@/lib/types";
+import type { DeliveryResult } from "@/lib/types";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { getDocument } from "./documents";
 import { summaryResultFor } from "./summaries";
-
-/**
- * What asking for a delivery can come back as. Before sign-off the answer is
- * only that: nothing about the document, the advocate or the summary.
- */
-export type DeliveryResult = { state: "not_available" } | { state: "ready"; delivery: Delivery };
 
 /**
  * The settled document as it is handed to the client.

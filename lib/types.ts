@@ -172,6 +172,22 @@ export interface Delivery {
 }
 
 /**
+ * What asking for a delivery can come back as. Before sign-off the answer is
+ * only that: nothing about the document, the advocate or the summary.
+ */
+export type DeliveryResult = { state: "not_available" } | { state: "ready"; delivery: Delivery };
+
+/**
+ * What asking for a summary can come back as. Three states, and the first two
+ * carry nothing about the content: a document that is not signed off says only
+ * that, and a signed-off one with no summary says only that.
+ */
+export type SummaryResult =
+  | { state: "not_available" }
+  | { state: "none" }
+  | { state: "ready"; summary: SettledSummary };
+
+/**
  * The advocate's recorded sign-off: who, under which Bar enrolment, and when.
  * It is the only place a client meets the advocate. Before sign-off a client
  * is never told who holds their document, so no client type carries a name or
