@@ -117,10 +117,6 @@ export function settleNeedsNote(finding: Cited): boolean {
   return reliedCitations(finding).length === 0;
 }
 
-export function hasBlockedCitation(doc: { findings: Cited[] }): boolean {
-  return doc.findings.some((f) => blockingCitations(f).length > 0);
-}
-
 export function blockedCitationCount(doc: { findings: Cited[] }): number {
   return doc.findings.reduce((n, f) => n + blockingCitations(f).length, 0);
 }

@@ -16,7 +16,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getClientDiff } from "@/lib/api/client/versions";
-import { dispositionText, findingsSummary, type ClientVersionDiffResult } from "@/lib/clientVersions";
+import {
+  defaultComparison,
+  dispositionText,
+  findingsSummary,
+  type ClientVersionDiffResult,
+} from "@/lib/clientVersions";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type {
   ClientClauseRow,
@@ -58,10 +63,7 @@ export function VersionHistory({
   rows: ClientVersionList;
 }) {
   // The latest two drafts, or nothing when there is nothing earlier to compare.
-  const initial = useMemo(() => {
-    const numbers = rows.map((r) => r.number).sort((a, b) => b - a);
-    return numbers.length >= 2 ? { from: numbers[1], to: numbers[0] } : null;
-  }, [rows]);
+  const initial = useMemo(() => defaultComparison(rows), [rows]);
   const [from, setFrom] = useState<number | null>(initial?.from ?? null);
   const [to, setTo] = useState<number | null>(initial?.to ?? null);
   const [load, setLoad] = useState<DiffLoad>({ phase: "idle" });

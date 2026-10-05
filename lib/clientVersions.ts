@@ -95,7 +95,7 @@ export function clientVersionList(
 
 /** The latest two drafts, or null when there is nothing earlier to compare. */
 export function defaultComparison(
-  versions: DocumentVersion[],
+  versions: { number: number }[],
 ): { from: number; to: number } | null {
   const numbers = versions.map((v) => v.number).sort((a, b) => b - a);
   return numbers.length >= 2 ? { from: numbers[1], to: numbers[0] } : null;
