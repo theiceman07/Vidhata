@@ -39,6 +39,15 @@ function forAdvocate(c: Consultation): AdvocateConsultation {
   return structuredClone({ ...rest, paid: paidAt !== null });
 }
 
+/**
+ * Which organisation made a request, for the client layer to check a request is
+ * the caller's before it acts on it. Null when there is no such request. It reads
+ * the store and nothing else, so it cannot wait or fail.
+ */
+export function consultationOrg(id: string): string | null {
+  return store.find((c) => c.id === id)?.orgId ?? null;
+}
+
 function ownedBy(advocateId: string, id: string): Consultation | undefined {
   const found = store.find((c) => c.id === id);
   return found && found.advocateId === advocateId ? found : undefined;

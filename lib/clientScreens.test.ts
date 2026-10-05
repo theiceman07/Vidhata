@@ -28,6 +28,7 @@ const MIGRATED = [
   "app/(client)/documents/[id]/delivery/page.tsx",
   "app/(client)/documents/[id]/summary/page.tsx",
   "app/(client)/documents/[id]/chat/page.tsx",
+  "app/(client)/documents/[id]/consultation/page.tsx",
   "components/document/document-agent.tsx",
   "lib/mock/chat.mock.ts",
   "components/document/change-requests.tsx",

@@ -593,6 +593,29 @@ export interface Consultation {
 }
 
 /**
+ * A consultation as the client who made it reads it. The request, the fee they
+ * pay and their answer, with the advocate named as the one who settled the
+ * document. Not the advocate's id, not the organisation's id and not the
+ * client's name: the request is theirs, and asking for it already says whose.
+ */
+export type ClientConsultation = Pick<
+  Consultation,
+  | "id"
+  | "documentId"
+  | "documentTitle"
+  | "advocateName"
+  | "question"
+  | "status"
+  | "requestedAt"
+  | "acceptedAt"
+  | "declinedAt"
+  | "fee"
+  | "paidAt"
+  | "answer"
+  | "answeredAt"
+>;
+
+/**
  * A consultation as the advocate reads it: the status, and only whether it is
  * paid. Never the fee, the time of payment or any card or payment detail.
  */
