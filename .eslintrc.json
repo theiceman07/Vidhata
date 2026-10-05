@@ -49,7 +49,11 @@
                   "**/lib/api/notes", "**/lib/api/notes.*",
                   "**/lib/api/advocate", "**/lib/api/advocate.*",
                   "**/lib/findings", "**/lib/findings.*",
-                  "**/lib/audit", "**/lib/audit.*"
+                  "**/lib/audit", "**/lib/audit.*",
+                  "**/lib/api/citations", "**/lib/api/citations.*",
+                  "**/lib/api/metrics", "**/lib/api/metrics.*",
+                  "**/lib/api/onboarding", "**/lib/api/onboarding.*",
+                  "**/lib/api/advocate-invite", "**/lib/api/advocate-invite.*"
                 ],
                 "message": "These hold or read the internal record, or are the advocate's. A client file reads through lib/api/client, which hands back client types."
               }
