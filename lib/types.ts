@@ -256,6 +256,15 @@ export interface ContractDocument {
    * (lib/revisions.ts), and this is the record that it was logged.
    */
   corpusReviewLoggedAt?: string | null;
+  /**
+   * The advocate's notes to the client, one per clause at most. Held by the
+   * advocate who holds the document, and the advocate's alone until sign-off
+   * releases the ones marked to share. Not the working notes in the margin
+   * (AdvocateNote), which are a different kind and never leave the advocate
+   * portal. No client type names this field, so nothing hands it to a client:
+   * the client reads what was released through lib/api/client only.
+   */
+  settlementNotes?: SettlementNote[];
   settledAt: string | null;
   /**
    * When the client confirmed the last applicable execution step, so the
@@ -885,6 +894,36 @@ export const PIPELINE_LAYERS: Record<
       "Scores the document's value and risk to assign its review tier, then packages the findings for the advocate.",
   },
 };
+
+/**
+ * A deliberate note from the advocate to the client about one clause, the one
+ * way an advocate's own words reach a client (decided 3 October).
+ *
+ * It is written in a composer of its own and starts as a draft. Marking it
+ * (`shareWithClient`) is a second, explicit act. Only sign-off releases a note,
+ * and only a marked one: `releasedAt` is set by `signOffDocument` and by nothing
+ * else, and a released note can no longer be changed. A working note
+ * (AdvocateNote) has no control that turns it into one of these.
+ */
+export interface SettlementNote {
+  id: string;
+  /** Joins to Clause.number, as a finding's clause reference does. */
+  clauseNumber: string;
+  text: string;
+  /** False is a draft: written, and not to be shared. */
+  shareWithClient: boolean;
+  createdAt: string;
+  updatedAt: string;
+  /** Set at sign-off for a marked note, never before. Null for a draft, always. */
+  releasedAt: string | null;
+}
+
+/**
+ * A released note as the client reads it: where it is, what it says and when it
+ * was released. Not whether it was ever a draft, and nothing of the advocate: the
+ * byline is the sign-off record's, which already names them.
+ */
+export type ClientSettlementNote = Pick<SettlementNote, "id" | "clauseNumber" | "text" | "releasedAt">;
 
 /**
  * An advocate's own note, stuck in the margin of a clause.

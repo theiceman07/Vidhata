@@ -558,7 +558,7 @@ export async function claimDocument(
  * the claim: the screen shows decision controls only to the holder, and that
  * is not a guard, so it is held here as well.
  */
-function heldDocument(docId: string, advocateId: string): ContractDocument {
+export function heldDocument(docId: string, advocateId: string): ContractDocument {
   const doc = store.find((d) => d.id === docId);
   if (!doc || !isReleased(doc)) throw new MockApiError("Document not found.");
   if (!doc.advocate) {

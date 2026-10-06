@@ -59,6 +59,7 @@ async function load(storage: FakeStorage | null, reload = vi.fn()) {
     documents: await import("./documents"),
     consultations: await import("./consultations"),
     notes: await import("./notes"),
+    settlementNotes: await import("./settlement-notes"),
     privacy: await import("./privacy"),
     billing: await import("./billing"),
     account: await import("./account"),
@@ -274,6 +275,23 @@ describe("payments and requests, after a refresh", () => {
       (c) => c.id === asked.id,
     );
     expect(read).toMatchObject({ status: "answered", answer: "Yes, on thirty days' notice." });
+  });
+
+  it("keeps a note to the client, marked and not released, as the advocate left it", async () => {
+    const storage = fakeStorage();
+    const first = await load(storage);
+    const id = "doc-employment-rereview";
+    const clause = (await settle(first.documents.getDocument(id)))!.clauses[0].number;
+    const note = await settle(
+      first.settlementNotes.addSettlementNote("adv-current", id, clause, "Read this with the next clause."),
+    );
+    await settle(first.settlementNotes.updateSettlementNote("adv-current", id, note.id, { shareWithClient: true }));
+    await vi.runAllTimersAsync();
+
+    const second = await load(storage);
+    expect(await settle(second.settlementNotes.listSettlementNotes("adv-current", id))).toMatchObject([
+      { id: note.id, clauseNumber: clause, text: "Read this with the next clause.", shareWithClient: true, releasedAt: null },
+    ]);
   });
 
   it("keeps an advocate's notes and the client's choices", async () => {

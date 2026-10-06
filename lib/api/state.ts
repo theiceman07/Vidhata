@@ -44,7 +44,7 @@ import type { CitationAttempt } from "./citations";
  * can store (docs/api-contract.md, section 9).
  */
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 const STORAGE_KEY = "vidhata-preview-state";
 
 /** Every slice, in the shape it is stored. Maps and sets are stored as lists. */
