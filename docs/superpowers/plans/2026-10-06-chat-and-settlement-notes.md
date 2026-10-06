@@ -190,3 +190,21 @@ The twelve questions this plan first asked, answered on 6 October.
 10. **Naming and byline.** "Note to client" for the composer and "Your advocate's note" for the client. The settling advocate's name may appear on a released note: the sign-off record already names them, and a released note appears at sign-off. The name comes from the sign-off record, never from the note, and never appears before sign-off.
 11. **CLAUDE.md.** Rewritten in its own commit, with the consultations bullet corrected. Done.
 12. **Advice inside a released note.** For counsel. Until answered, the agent quotes a released note only on the clause the client asked about, labelled as the advocate's, and the check's advice rule applies to everything the agent writes itself.
+
+## As built
+
+Eight tasks, one commit each, each gated on a full green `npm run check`. Where the build differs from the plan above, and why:
+
+- **Notes are kept on the document, not in a new slice.** `SettlementNote` has no `documentId` or `advocateId`: it belongs to the document and to whoever holds it. That makes release one assignment with the sign-off (atomic by construction), avoids a cycle between the notes API and `signOffDocument`, and persists with the documents slice. The stored shape gained an optional field, so `SCHEMA_VERSION` went from 3 to 4. The API functions take the document's id.
+- **No new client-only component, so no fence list entry.** The note view (`components/document/settlement-note-view.tsx`) is shared by the advocate's sign-off page and the client's reader. The fence's completeness test therefore had nothing to add, and the only lint edit the batch needs is the one below.
+- **The release scan names its exceptions.** A test reads the source and allows `releasedAt` to be set to a value in one place (`releaseMarked`), plus the type declarations and the read-only copies for a client; any other writer fails it.
+- **Notes are on the sign-off page,** between what the advocate is signing and the confirmations, not in the clause margin, so that writing one and sharing one is a different place and a different act from a working note.
+- **The check takes a `forbidden` list,** as planned, but client code has nothing to put in it: the client types cannot hold a working note. The tests pass one.
+- **A released note's reach is three places:** the client's reader (beside its clause), the delivery, and the data export. Nothing else, and a leak test over every client read holds it to that.
+- **The metrics row for withdrawn replies is a constant `no_source`.** The counter is in the client's tab and no screen reports it.
+
+### Still owed
+
+- **The browser check of Task 7** (the chat page, the document companion and the metrics row). The machine ran out of memory (committed virtual memory at 31 of 32.5 GB) and the dev server died compiling. The full check and the tests that render the agent pass, so the logic is covered; the screens have not been looked at. Reboot, then open `/documents/doc-nda-settled/chat` and `/metrics`.
+- **The lint edit.** The new advocate-side module `lib/api/settlement-notes` belongs on the fence's blocked list. The agent does not edit `.eslintrc.json`; the exact edit is in the batch's report for the lead to apply, with its matching line in `lib/clientFence.test.ts`.
+- **Counsel:** a correction path for a released note (decision 2), and whether the agent may quote advice written inside one (decision 12).
