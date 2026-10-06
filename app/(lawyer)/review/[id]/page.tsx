@@ -9,6 +9,7 @@ import { DocumentWorkspace } from "@/components/document/workspace";
 import { ReviewAgent } from "@/components/document/review-agent";
 import type { PaletteCommand } from "@/components/shared/command-palette";
 import { AddFindingDialog } from "@/components/domain/add-finding-dialog";
+import { CitationSourceDialog } from "@/components/domain/citation-source-dialog";
 import { ClaimDialog } from "@/components/domain/claim-dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -352,6 +353,11 @@ export default function ReviewPage() {
       }
       commands={commands}
       initialFindingId={initialFindingId}
+      citationBadge={(findingId, citation, label) => (
+        <CitationSourceDialog documentId={doc.id} findingId={findingId} citation={citation}>
+          {label}
+        </CitationSourceDialog>
+      )}
       notes={marginNotes}
       scope={scope}
       revisions={revisionCycle(doc)}

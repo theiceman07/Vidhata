@@ -54,6 +54,33 @@ export function lookupCitation(input: string): CitationLookup {
 }
 
 /**
+ * What a citation on the record resolved to, for an advocate who asks.
+ *
+ * Verified carries the corpus entry it resolved to and nothing about what the
+ * provision says: the corpus holds names, and this invents no more. Blocked
+ * carries no entry, whatever else is on the citation. The record's own status
+ * is what is read, and a verified citation whose reference no longer resolves
+ * to an entry is shown blocked, never "probably fine".
+ */
+export type CitationSource =
+  | { status: "verified"; entry: CorpusEntry; reason: null }
+  | { status: "blocked"; entry: null; reason: BlockedReason };
+
+export function resolveCitationSource(
+  citation: Pick<Citation, "text" | "status" | "corpusRef">,
+): CitationSource {
+  if (citation.status === "verified") {
+    const entry = CORPUS.find((e) => e.ref === citation.corpusRef);
+    if (entry) return { status: "verified", entry, reason: null };
+  }
+  return {
+    status: "blocked",
+    entry: null,
+    reason: normaliseCitation(citation.text) === "" ? "empty" : "not_in_corpus",
+  };
+}
+
+/**
  * Run the gate again over a citation that is already on the record.
  *
  * What it says now is what the corpus holds now. A blocked citation becomes

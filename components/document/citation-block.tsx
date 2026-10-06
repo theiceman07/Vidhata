@@ -46,10 +46,16 @@ export function CitationBlock({
   citations,
   showWithdrawalNote,
   blockedActions,
+  badge,
 }: {
   citations: WorkspaceCitation[];
   /** The advocate's reasoning is advocate-facing, like the override note. */
   showWithdrawalNote: boolean;
+  /**
+   * Wraps a citation's state badge, so the advocate's side can make it open
+   * where the source resolved. Not passed on the client's side.
+   */
+  badge?: (citation: WorkspaceCitation, label: React.ReactNode) => React.ReactNode;
   /** Resolution controls for a blocked source, when the viewer can act. */
   blockedActions?: (citation: WorkspaceCitation) => React.ReactNode;
 }) {
@@ -70,6 +76,7 @@ export function CitationBlock({
         const { statute, provision } = splitReference(citation.text);
         const blocked = citation.status === "blocked";
         const withdrawn = citation.withdrawn;
+        const label = <StateLabel state={blocked ? "citation_blocked" : "citation_verified"} />;
 
         return (
           <div
@@ -77,7 +84,7 @@ export function CitationBlock({
             className={blocked && !withdrawn ? "border-l-2 border-flagged pl-3" : undefined}
           >
             <div className="flex flex-wrap items-center gap-2">
-              <StateLabel state={blocked ? "citation_blocked" : "citation_verified"} />
+              {badge ? badge(citation, label) : label}
               {withdrawn && <StateLabel state="citation_withdrawn" />}
             </div>
 

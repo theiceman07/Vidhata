@@ -4,7 +4,10 @@ import {
   normaliseCitation,
   recheckCitation,
   recheckFindings,
+  resolveCitationSource,
 } from "./citations";
+import { CORPUS } from "./mock/corpus.mock";
+import { mockDocuments } from "./mock/documents.mock";
 import type { Citation, Finding } from "./types";
 
 const S27 = "Indian Contract Act, 1872, s.27";
@@ -179,5 +182,55 @@ describe("running the gate again on the record", () => {
     expect(after.citations[0].status).toBe("verified");
     expect({ ...after, citations: [] }).toEqual({ ...finding, citations: [] });
     expect(finding).toEqual(before);
+  });
+});
+
+describe("what a citation on the record resolved to", () => {
+  const every = mockDocuments.flatMap((d) => d.findings.flatMap((f) => f.citations));
+
+  it("is read over real citations, to be meaningful", () => {
+    expect(every.some((c) => c.status === "verified")).toBe(true);
+    expect(every.some((c) => c.status === "blocked")).toBe(true);
+  });
+
+  it("gives a verified citation the corpus entry its reference names, and no reason", () => {
+    for (const c of every.filter((x) => x.status === "verified")) {
+      const source = resolveCitationSource(c);
+      expect(source.status, c.text).toBe("verified");
+      expect(source.entry).toEqual(CORPUS.find((e) => e.ref === c.corpusRef));
+      expect(source.reason).toBeNull();
+    }
+  });
+
+  it("gives a blocked citation no entry and a reason, whatever else is on it", () => {
+    for (const c of every.filter((x) => x.status === "blocked")) {
+      expect(resolveCitationSource(c), c.text).toMatchObject({
+        status: "blocked",
+        entry: null,
+        reason: "not_in_corpus",
+      });
+    }
+    // A blocked citation that carries a real reference is still blocked, with no entry.
+    expect(
+      resolveCitationSource({ text: S27, status: "blocked", corpusRef: "ica-1872-s27" }),
+    ).toEqual({ status: "blocked", entry: null, reason: "not_in_corpus" });
+  });
+
+  it("shows a verified citation whose reference resolves to nothing as blocked", () => {
+    for (const corpusRef of [null, "no-such-ref", "ICA-1872-S27"]) {
+      expect(resolveCitationSource({ text: S27, status: "verified", corpusRef })).toEqual({
+        status: "blocked",
+        entry: null,
+        reason: "not_in_corpus",
+      });
+    }
+  });
+
+  it("says an empty source is empty, and not that the corpus lacks it", () => {
+    expect(resolveCitationSource({ text: "  ", status: "blocked", corpusRef: null })).toEqual({
+      status: "blocked",
+      entry: null,
+      reason: "empty",
+    });
   });
 });

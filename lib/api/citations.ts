@@ -1,5 +1,12 @@
-import { lookupCitation, type BlockedReason, type CitationLookup } from "@/lib/citations";
+import {
+  lookupCitation,
+  resolveCitationSource,
+  type BlockedReason,
+  type CitationLookup,
+  type CitationSource,
+} from "@/lib/citations";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
+import { getDocumentForReview } from "./documents";
 import { register, restored } from "./state";
 
 /**
@@ -52,6 +59,27 @@ export async function checkCitation(args: {
     reason: result.reason,
   });
   return result;
+}
+
+/**
+ * What one citation on a document resolved to, for the advocate reading it.
+ *
+ * Read through getDocumentForReview, so a missing document and one still
+ * awaiting payment are the same "Document not found." and nothing is told
+ * about either. Reading it records nothing: it is not an attempt.
+ */
+export async function getCitationSource(args: {
+  documentId: string;
+  findingId: string;
+  citationId: string;
+}): Promise<CitationSource> {
+  const doc = await getDocumentForReview(args.documentId);
+  if (!doc) throw new MockApiError("Document not found.");
+  const finding = doc.findings.find((f) => f.findingId === args.findingId);
+  if (!finding) throw new MockApiError("Finding not found.");
+  const citation = finding.citations.find((c) => c.id === args.citationId);
+  if (!citation) throw new MockApiError("Citation not found.");
+  return resolveCitationSource(citation);
 }
 
 /** What the fabrication-rate metric reads. Oldest first. */

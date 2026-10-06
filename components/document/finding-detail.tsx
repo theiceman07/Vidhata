@@ -83,6 +83,7 @@ export function FindingDetail({
   onRequestChange,
   onWithdrawSource,
   requestBlockedReason = null,
+  citationBadge,
   busy = false,
   trail,
 }: {
@@ -104,6 +105,15 @@ export function FindingDetail({
    * Settling and sign-off are unaffected.
    */
   requestBlockedReason?: string | null;
+  /**
+   * Wraps a source's state badge so it opens where the source resolved.
+   * The advocate's side only; the client's badge stays a plain label.
+   */
+  citationBadge?: (
+    findingId: string,
+    citation: WorkspaceFinding["citations"][number],
+    label: React.ReactNode,
+  ) => React.ReactNode;
   busy?: boolean;
   /** The record to draw the history from. Each portal brings its own. */
   trail: TrailEntry[];
@@ -187,6 +197,11 @@ export function FindingDetail({
           <CitationBlock
             citations={finding.citations}
             showWithdrawalNote={role === "advocate"}
+            badge={
+              role === "advocate" && citationBadge
+                ? (citation, label) => citationBadge(finding.findingId, citation, label)
+                : undefined
+            }
             blockedActions={
               canAdjudicate && !settled
                 ? (citation) =>
