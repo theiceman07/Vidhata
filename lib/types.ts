@@ -705,6 +705,30 @@ export type AdvocateConsultation = Omit<Consultation, "fee" | "paidAt"> & { paid
 export type ConsultationSummary = Omit<AdvocateConsultation, "question" | "answer">;
 
 /**
+ * One consultation the advocate answered, as their payout statement lists it:
+ * the document it was about, the day it was answered, and the flat fee they
+ * set for it, in rupees before GST. Nothing here comes from what the platform
+ * charges for the document, and there is no split. It has no question, no
+ * answer and no client, and no time or detail of the client's payment.
+ */
+export interface PayoutLine {
+  consultationId: string;
+  documentId: string;
+  documentTitle: string;
+  /** ISO 8601. */
+  answeredAt: string;
+  /** Rupees before GST. */
+  amount: number;
+}
+
+/** An advocate's own lines, newest first, and their sum. Nobody else's. */
+export interface PayoutStatement {
+  lines: PayoutLine[];
+  /** Rupees before GST, the sum of the lines. */
+  total: number;
+}
+
+/**
  * What an advocate confirmed at onboarding about their enrolment. It is
  * private to the advocate and the platform: nothing public, ranked, rated or
  * searchable by a client is built from it.
