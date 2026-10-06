@@ -814,6 +814,12 @@ export interface DataExport {
     signedOff: { advocate: string; enrolment: string; at: string } | null;
     /** The settled text, only once signed off. */
     clauses: { number: string; heading: string; body: string }[];
+    /**
+     * The advocate's notes to the client that were released at sign-off, and none
+     * before it. Always present, and empty until then, so its absence or its
+     * length says nothing about what the advocate has written.
+     */
+    settlementNotes: { clauseNumber: string; text: string; releasedAt: string }[];
     /** Before sign-off, only findings with a request addressed to the client. */
     findings: {
       number: string;
@@ -923,7 +929,10 @@ export interface SettlementNote {
  * was released. Not whether it was ever a draft, and nothing of the advocate: the
  * byline is the sign-off record's, which already names them.
  */
-export type ClientSettlementNote = Pick<SettlementNote, "id" | "clauseNumber" | "text" | "releasedAt">;
+export type ClientSettlementNote = Pick<SettlementNote, "id" | "clauseNumber" | "text"> & {
+  /** When it was released with the sign-off. A client is handed no note that was not. */
+  releasedAt: string;
+};
 
 /**
  * An advocate's own note, stuck in the margin of a clause.

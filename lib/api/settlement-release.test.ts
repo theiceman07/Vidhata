@@ -151,8 +151,15 @@ describe("what can set the time a note was released", () => {
       const sets = [...source.matchAll(/\breleasedAt\s*(?::|=)(?!\s*(?:null\b|=|string \| null))\s*([^,;\n}]+)/g)].map(
         (m) => m[0],
       );
-      const allowed = f === "lib/settlementNotes.ts" ? ["releasedAt: at"] : [];
-      expect(sets.filter((s) => !allowed.includes(s.trim())), f).toEqual([]);
+      // The release itself, the type declarations, and the two places a released note is copied
+      // for a client (the shaper and the export). None of them sets a stored note's time.
+      const allowed: Record<string, string[]> = {
+        "lib/settlementNotes.ts": ["releasedAt: at"],
+        "lib/types.ts": ["releasedAt: string"],
+        "lib/privacy.ts": ["releasedAt: n.releasedAt"],
+        "lib/api/client/shape-settlement-notes.ts": ["releasedAt: n.releasedAt as string"],
+      };
+      expect(sets.filter((s) => !(allowed[f] ?? []).includes(s.trim())), f).toEqual([]);
     }
   });
 });

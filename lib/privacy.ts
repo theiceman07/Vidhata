@@ -3,6 +3,7 @@ import type {
   BillingProfile,
   ClientConsultation,
   ClientDocument,
+  ClientSettlementNote,
   DataExport,
   Invoice,
   PrivacyState,
@@ -30,6 +31,11 @@ export function buildDataExport(input: {
   documents: ClientDocument[];
   invoices: Invoice[];
   consultations: ClientConsultation[];
+  /**
+   * The notes to the client released at sign-off, by document. Read through
+   * lib/api/client, so a note that was not released is not in it to be exported.
+   */
+  settlementNotes?: Record<string, ClientSettlementNote[]>;
   privacy: PrivacyState;
   now: Date;
 }): DataExport {
@@ -55,6 +61,15 @@ export function buildDataExport(input: {
         signedOff: doc.signOff,
         clauses: signedOff
           ? doc.clauses.map((c) => ({ number: c.number, heading: c.heading, body: c.body }))
+          : [],
+        // Only once signed off, whatever was handed in: before it the list is empty for every
+        // document, so it cannot show that the advocate has written anything.
+        settlementNotes: signedOff
+          ? (input.settlementNotes?.[doc.id] ?? []).map((n) => ({
+              clauseNumber: n.clauseNumber,
+              text: n.text,
+              releasedAt: n.releasedAt,
+            }))
           : [],
         findings: shown.map((f) => ({
           // The number the client was given, the same on every screen.
