@@ -28,6 +28,13 @@ describe("the metrics", () => {
     expect(m.corpusLag).toEqual({ state: "no_source" });
   });
 
+  it("say there is no source for the agent's withdrawn replies, which are counted in a client's tab only", async () => {
+    const m = await settle(getMetrics());
+    expect(m.withdrawnReplies).toEqual({ state: "no_source" });
+    // Nothing of a client's questions or replies is read: the metrics hold no figure from the agent.
+    expect(JSON.stringify(m)).not.toMatch(/withdrawnReplyCount|SENTINEL/);
+  });
+
   it("count the fixtures' findings from their own fields", async () => {
     const m = await settle(getMetrics());
     expect(m.documentsCounted).toBeGreaterThan(0);

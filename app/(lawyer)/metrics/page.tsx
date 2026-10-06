@@ -130,6 +130,10 @@ export default function MetricsPage() {
           why="No screen lets an advocate change a tier, so an override is not recorded. It has to be logged when that exists."
         />
         <NoSource
+          label="Agent replies withdrawn"
+          why="The check on the document agent withdraws a reply that advises or is not drawn from the document. It is counted in the client's own browser tab and nowhere else, so there is nothing to read a figure from until a backend records it."
+        />
+        <NoSource
           label="Corpus-currency lag"
           why="The corpus carries no effective dates yet, so how far it trails the law cannot be measured."
         />

@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { summaryResultFor } from "@/lib/api/summaries";
 import { shapeClientDocument } from "@/lib/api/client/shape-document";
-import { buildInitialMessages, getMockReply, SUGGESTED_QUESTIONS } from "./chat.mock";
+import { buildInitialMessages, chatSourceOf, getMockReply, SUGGESTED_QUESTIONS } from "./chat.mock";
 import { CORPUS } from "./corpus.mock";
 import { mockDocuments } from "./documents.mock";
 import type { ContractDocument, SettledSummary } from "@/lib/types";
@@ -63,8 +63,8 @@ function repliesFor(doc: ContractDocument): { question: string; text: string }[]
   ];
   // Both with the summary and without it: the agent still answers when it could not be read.
   return questions.flatMap((question) => [
-    { question, text: getMockReply(question, client, summary).text },
-    { question, text: getMockReply(question, client, null).text },
+    { question, text: getMockReply(question, chatSourceOf(client, summary, [])).text },
+    { question, text: getMockReply(question, chatSourceOf(client, null, [])).text },
   ]);
 }
 
@@ -106,7 +106,7 @@ describe("the agent's replies", () => {
     const doc = settled[0];
     const client = shapeClientDocument(doc);
     const clause = doc.clauses[0];
-    const reply = getMockReply(`What does clause ${clause.number} mean?`, client);
+    const reply = getMockReply(`What does clause ${clause.number} mean?`, chatSourceOf(client, null, []));
     expect(reply.text).toContain(clause.body.split("\n\n")[0]);
     expect(reply.citedClauseReference).toBe(`Clause ${clause.number}`);
     expect(reply.isEscalation).toBe(false);
@@ -119,7 +119,7 @@ describe("the agent's replies", () => {
       const client = shapeClientDocument(doc);
       for (const item of read.summary.items.filter((i) => i.clauses.length > 0)) {
         const number = item.clauses[0];
-        const reply = getMockReply(`clause ${number}`, client, read.summary);
+        const reply = getMockReply(`clause ${number}`, chatSourceOf(client, read.summary, []));
         expect(reply.text, `${doc.id} clause ${number}`).toContain(item.text);
       }
     }
@@ -129,7 +129,7 @@ describe("the agent's replies", () => {
     for (const doc of settled) {
       const read = summaryResultFor(doc);
       if (read.state !== "ready") continue;
-      const reply = getMockReply("What does this document cover?", shapeClientDocument(doc), read.summary);
+      const reply = getMockReply("What does this document cover?", chatSourceOf(shapeClientDocument(doc), read.summary, []));
       for (const item of read.summary.items) expect(reply.text).toContain(item.label);
       expect(reply.citedClauseReference).toBeNull();
     }
@@ -141,7 +141,7 @@ describe("the agent's replies", () => {
       const headings = client.clauses.map((c) => c.heading.toLowerCase());
       // A term that is neither a heading nor a word of one.
       expect(headings.some((h) => h.includes("zzz"))).toBe(false);
-      const reply = getMockReply("What is a zzz?", client, null);
+      const reply = getMockReply("What is a zzz?", chatSourceOf(client, null, []));
       expect(reply.text).toMatch(/only explain what this settled document says/);
       expect(reply.citedClauseReference).toBeNull();
     }
@@ -150,11 +150,43 @@ describe("the agent's replies", () => {
   it("send a question that asks what to do to the advocate, with no text of their own", () => {
     const client = shapeClientDocument(settled[0]);
     for (const q of ["Should I sue them?", "Can I win this?", "What should I do?"]) {
-      expect(getMockReply(q, client, null)).toEqual({
+      expect(getMockReply(q, chatSourceOf(client, null, []))).toEqual({
+        kind: "escalation",
         text: "",
         citedClauseReference: null,
         isEscalation: true,
       });
+    }
+  });
+
+  it("show the advocate's released note on the clause it is about, as theirs, and on no other", () => {
+    const client = shapeClientDocument(settled[0]);
+    const [a, b] = client.clauses;
+    const released = [
+      { id: "settlement-note-1", clauseNumber: a.number, text: "NOTE-FOR-THE-FIRST-CLAUSE", releasedAt: "2026-08-06T09:00:00.000Z" },
+    ];
+    const source = chatSourceOf(client, null, released);
+    const onFirst = getMockReply(`What does clause ${a.number} say?`, source);
+    expect(onFirst.text).toContain(`Your advocate's note on this clause: "NOTE-FOR-THE-FIRST-CLAUSE"`);
+    expect(getMockReply(`What does clause ${b.number} say?`, source).text).not.toContain("NOTE-FOR-THE-FIRST-CLAUSE");
+    expect(getMockReply("What does this document cover?", source).text).not.toContain("NOTE-FOR-THE-FIRST-CLAUSE");
+  });
+
+  it("have no note to show for a draft or one not released, because the agent is handed none", () => {
+    const client = shapeClientDocument(settled[0]);
+    const source = chatSourceOf(client, null, []);
+    for (const clause of client.clauses) {
+      expect(getMockReply(`What does clause ${clause.number} say?`, source).text).not.toContain("advocate's note");
+    }
+  });
+
+  it("ask an unclear question to be put again, and do not offer a consultation", () => {
+    const client = shapeClientDocument(settled[0]);
+    for (const q of ["hello", "ok", "kya mujhe sign karna chahiye"]) {
+      const reply = getMockReply(q, chatSourceOf(client, null, []));
+      expect(reply.kind, q).toBe("rephrase");
+      expect(reply.isEscalation, q).toBe(false);
+      expect(reply.text, q).not.toMatch(/consult|fee|book|pay/i);
     }
   });
 });

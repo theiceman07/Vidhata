@@ -988,6 +988,12 @@ export interface Metrics {
   blocked: BlockedAttemptRow[];
   triageOverride: { state: "no_source" };
   corpusLag: { state: "no_source" };
+  /**
+   * Replies the document agent's check withdrew. Counted in the client's own tab
+   * and nowhere else, so there is nothing to read a figure from until a backend
+   * records them.
+   */
+  withdrawnReplies: { state: "no_source" };
 }
 
 /**
