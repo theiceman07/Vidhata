@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status: a plan, nothing built. Not ready to execute until the open questions at the end are answered.** Their answers change type shapes and one rule in CLAUDE.md, so the tasks below name files, interfaces and tests, and the code bodies are written when the questions are closed (the writing-plans "no placeholders" rule is deliberately not met for the code steps, and this is why).
+**Status: the open questions were answered on 6 October (see "Decisions" at the end). The tasks below are built in order, one commit each, each gated on a full green `npm run check` run unpiped and a browser check after each screen.** The code bodies are written task by task, against the decisions, rather than copied here.
 
 **Goal:** Give the client's document agent a grounded, checkable way to explain a settled document, and let an advocate deliberately release a note per clause at sign-off for it to ground on, without any private working note ever reaching a client.
 
@@ -65,7 +65,7 @@ The inputs and conditions the spec implies but no task would otherwise exercise,
 |---|---|---|
 | Settlement notes | Nothing. Not the notes, not their number, not that any are being written | Each released note, read-only, beside its clause, labelled "Your advocate's note" |
 | Working notes | Never | Never |
-| Advocate's name | Never ("your advocate") | Only where the sign-off record already names them |
+| Advocate's name | Never ("your advocate") | The settling advocate's name may appear on a released note, taken from the sign-off record that already names them, never from the note itself |
 | A decision on a finding | Not shown (as now) | The disposition in a word (as now). The advocate's override note on a finding stays unshown: settlement notes are the one sanctioned channel |
 | The agent | See open question 8 | Explains the settled clauses and the released notes, and nothing else |
 
@@ -77,7 +77,7 @@ Three pure stages in `lib/chat/`, each behind a signature the real service repla
 
 1. **Gate: `classifyQuestion(text): "explain" | "advise" | "unclear"`.** Before any reply exists. Mocked as a rule table (first-person situation plus a decision verb: "should I", "can I win", "is it safe to", "do I have to", "will they", "my case"; any advice part of a mixed question makes the whole question `advise`). Fails closed: `advise` shows the escalation prompt (a consultation, as now); `unclear` asks the client to rephrase as a question about the document, with no answer and no sales prompt (open question 6). The rule table is tested against a **labelled question set** (`lib/chat/questions.fixtures.ts`: explain, advise, mixed, indirect, other-language, injection-attempt). That same set is the evaluation set the real classifier must pass.
 2. **Generate: `generateReply(question, source): GeneratedReply`.** Mocked as grounded retrieval, not text invented from knowledge. The source is only client types: `Pick<ClientDocument, "title" | "clauses" | "findingList">` plus released `ClientSettlementNote[]`. Every reply carries `grounds: Ground[]`, each a clause number, a settlement note id or a finding number it was drawn from. A reply with no grounds is not a reply (stage 3 refuses it).
-3. **Check: `checkReply(reply, source): { ok: true } | { ok: false; reason: CheckFailure }`.** After generation, fail closed. A reply is withdrawn and replaced by one fixed safe message if any of these hold: it has no grounds; a grounded clause or note is not in the source; a quoted string is not a substring of the text it is grounded on; it names a section, Act or case that does not pass the citation gate (`lookupCitation`: verified or blocked); it contains advice phrasing of its own ("you should", "I recommend", "I advise", "your best option"); it contains text from a working note or any string on the leak markers (`markersFor`). Advice phrasing inside a verbatim quote of an advocate's released note is the advocate's words, shown as such (open question 12).
+3. **Check: `checkReply(reply, source): { ok: true } | { ok: false; reason: CheckFailure }`.** After generation, fail closed. A reply is withdrawn and replaced by one fixed safe message if any of these hold: it has no grounds; a grounded clause or note is not in the source; a quoted string is not a substring of the text it is grounded on; it names a section, Act or case that does not pass the citation gate (`lookupCitation`: verified or blocked); it contains advice phrasing of its own ("you should", "I recommend", "I advise", "your best option"); it contains any string in the `forbidden` list its caller passes (the tests pass a working note's text and the leak markers from `markersFor`; client code has no working note to pass, because the client types cannot hold one). Advice phrasing inside a verbatim quote of an advocate's released note is the advocate's words, shown as such (open question 12).
 
 The test strategy is adversarial, not happy-path: `checkReply` is run against **stub generators that misbehave** (one that advises, one that invents a clause, one that quotes text that is not in the source, one that echoes a working note, one that obeys an instruction hidden in a note) and every one must be withdrawn. A real generator can then be dropped in behind `generateReply` and held to the same tests.
 
@@ -99,7 +99,7 @@ The test strategy is adversarial, not happy-path: `checkReply` is run against **
 - `lib/mock/chat.mock.ts`: becomes the wiring over `lib/chat/*`; the hand-written glossary goes (open question 5).
 - `components/document/document-agent.tsx`, `app/(client)/documents/[id]/chat/page.tsx`: use the pipeline and show the withdrawn state.
 - `CLAUDE.md`, `docs/api-contract.md`: define both kinds, and change the "advocate notes never reach the client" bullet to "working notes never; settlement notes only at sign-off".
-- `.eslintrc.json` and `lib/clientFence.test.ts`: only after the lead agrees (open question 9).
+- `.eslintrc.json` and the matching line in `lib/clientFence.test.ts`: **the agent does not edit these.** It prints the exact edit for the lead to apply (decision 9). Nothing here needs a new client-only file: the note view is shared by both portals (the advocate's sign-off list and the client's reader use it), so the fence's completeness test has nothing to add, and the one advocate-side module, `lib/api/settlement-notes`, is the printed edit.
 
 **Types, as proposed** (final shapes wait on questions 1 to 3):
 
@@ -174,19 +174,19 @@ Each task ends green on `npm run check`, unpiped, with its own commit.
 
 Any real model call; persistence beyond the tab (as for every other mock store); a notification when notes are released (C9's rules would apply and the text would carry no count); the advocate's review agent, which is unchanged and never reads client chat; corpus-review logging from the chat.
 
-## Open questions
+## Decisions
 
-Each has a recommendation, so a bare "yes" is an answer.
+The twelve questions this plan first asked, answered on 6 October.
 
-1. **Editing before sign-off.** Can an advocate edit, un-mark or delete a settlement note up to sign-off? *Recommend yes, and immutable once released.*
-2. **Correcting a released note.** There is no advocate action after sign-off today. Is that right for notes too? *Recommend no correction path in this batch; a mistake is a matter for counsel and the backend.*
-3. **Granularity.** One settlement note per clause, or several? Per finding as well? *Recommend one per clause, and none per finding, which keeps "per-clause" as decided.*
-4. **Export and delivery.** Do released notes appear in the client's data export and in the delivery view? *Recommend yes to both: they are the client's own record after sign-off.*
-5. **The agent's glossary.** `lib/mock/chat.mock.ts` today holds hand-written explanations of non-compete and MSME that cite a section and an Act. That is statute text we wrote, which CLAUDE.md forbids without a fixture. Remove it so the agent answers only from the document and released notes, or move it into the corpus fixtures for counsel to review? *Recommend remove.*
-6. **An unclear question.** Rephrase prompt with no upsell, or treat as advice and show the consultation prompt? *Recommend rephrase: an unclear question is not necessarily advice, and an upsell on every fumble reads as a funnel.*
-7. **Withdrawn replies.** Where is a withdrawn reply recorded, and who sees it? *Recommend a tab-local counter only, and "No data source yet" in metrics until a backend exists, as for the other figures without a source.*
-8. **The agent before sign-off.** The document page appears to mount the agent for every status (`app/(client)/documents/[id]/page.tsx`, the `companion` prop; to be confirmed), and the chat page does not check sign-off. CLAUDE.md says it explains the settled document. Gate it to signed-off documents, with the same "not available" and nothing else that delivery gives? *Recommend yes.*
-9. **Lint config.** A new advocate-side module (`lib/api/settlement-notes`) belongs on the fence's blocked list, and the new client-only component belongs on its file list. May I edit `.eslintrc.json` and the fence test for that? *I will not touch it without your yes.*
-10. **Naming and byline.** "Note to client" for the composer and "Your advocate's note" on the client side, with no name even after sign-off, for consistency with the C9 wording? *Recommend yes.*
-11. **CLAUDE.md.** May I rewrite the advocate-notes bullet and the agent bullet as in Task 8? It changes a non-negotiable-adjacent rule. *Recommend yes, in its own commit so the change is easy to review.*
-12. **Advice inside a released note.** If an advocate's own note says "negotiate this before signing", may the agent quote it? It is the advocate's explanation, quoted and labelled, but it reads as advice coming from the product. *This is a question for counsel; until answered, recommend the agent quotes notes only on the clause the client asked about, labelled as the advocate's, and the check's advice rule applies to everything the agent writes itself.*
+1. **Editing before sign-off.** An advocate can edit, un-mark or delete a settlement note until sign-off. Once released it is immutable.
+2. **Correcting a released note.** None in this batch. **Open item for counsel:** a wrong note released to a client needs some route, and what it is has not been decided.
+3. **Granularity.** One note per clause, and none per finding.
+4. **Export and delivery.** Released notes are in the client's export and in the delivery view. They are the client's own record of the document.
+5. **The agent's glossary.** Gone, and nothing replaces it. Done in the previous batch.
+6. **An unclear question.** A prompt to rephrase, with no offer of a consultation. Treating it as advice would push people into paid consultations, which reads as a commercial bias in the product.
+7. **Withdrawn replies.** A tab-local counter only, and "No data source yet" in the metrics until a backend exists.
+8. **The agent before sign-off.** Resolved. It exists only for a signed-off document (`agentAvailable`, held by a test), and the document page and chat page already refuse it before then.
+9. **Lint config.** The agent does not edit `.eslintrc.json`. It prints the exact edit for the lead to apply.
+10. **Naming and byline.** "Note to client" for the composer and "Your advocate's note" for the client. The settling advocate's name may appear on a released note: the sign-off record already names them, and a released note appears at sign-off. The name comes from the sign-off record, never from the note, and never appears before sign-off.
+11. **CLAUDE.md.** Rewritten in its own commit, with the consultations bullet corrected. Done.
+12. **Advice inside a released note.** For counsel. Until answered, the agent quotes a released note only on the clause the client asked about, labelled as the advocate's, and the check's advice rule applies to everything the agent writes itself.
