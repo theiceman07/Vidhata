@@ -360,6 +360,7 @@ describe("where the question may not go", () => {
     "lib/audit.ts",
     "lib/notifications.ts",
     "lib/api/notifications.ts",
+    "lib/api/client/notifications.ts",
     "lib/billing.ts",
     "lib/api/billing.ts",
   ]

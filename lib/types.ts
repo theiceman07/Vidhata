@@ -693,6 +693,31 @@ export type ClientConsultation = Pick<
 >;
 
 /**
+ * One update for the client, worked out from the state of their documents and
+ * consultation requests. It is derived on each read and not stored, so it
+ * cannot say more than what the client's own types hold: it carries no
+ * advocate's name, no count of findings, no decision, no clause, and nothing
+ * of what was asked or answered (lib/notifications.ts).
+ */
+export interface ClientNotification {
+  /** Stable for the same update, so a list can key on it. */
+  id: string;
+  kind:
+    | "awaiting_payment"
+    | "with_advocate"
+    | "advocate_asked"
+    | "settled"
+    | "consultation_accepted"
+    | "consultation_answered";
+  /** ISO 8601, when it happened. */
+  at: string;
+  documentId: string;
+  text: string;
+  /** Where it opens, inside the client's own portal. */
+  href: string;
+}
+
+/**
  * A consultation as the advocate reads it: the status, and only whether it is
  * paid. Never the fee, the time of payment or any card or payment detail.
  */

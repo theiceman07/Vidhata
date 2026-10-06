@@ -12,6 +12,7 @@ const SECTIONS: ShellSection[] = [
       // No "New document" here: a document starts from the prompt on
       // Documents, which drafts it or opens intake for what is missing.
       { href: "/documents", label: "Documents", icon: "description" },
+      { href: "/notifications", label: "Notifications", icon: "notifications" },
     ],
   },
   {
