@@ -169,6 +169,11 @@ export interface Delivery {
   signOff: SignOffRecord;
   summary: SettledSummary | null;
   checklist: { done: number; total: number };
+  /**
+   * The advocate's notes to the client, released with the sign-off. Empty when
+   * there are none, which a client cannot tell from there never having been any.
+   */
+  settlementNotes: ClientSettlementNote[];
 }
 
 /**

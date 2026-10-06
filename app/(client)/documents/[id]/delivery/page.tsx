@@ -10,6 +10,7 @@ import { BackButton } from "@/components/shared/back-button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { Icon } from "@/components/shared/icon";
+import { SettlementNoteView } from "@/components/document/settlement-note-view";
 import { StateLabel } from "@/components/document/state-label";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -157,6 +158,28 @@ export default function DeliveryPage() {
               )}
             </div>
           </section>
+
+          {/* The advocate's own notes to the client, released at sign-off. Nothing is said of
+              them when there are none, so nothing says that any were ever written. */}
+          {delivery.settlementNotes.length > 0 && (
+            <section aria-labelledby="notes-title">
+              <h2 id="notes-title" className="text-label font-medium text-muted-fg">
+                Your advocate&apos;s notes
+              </h2>
+              <ul className="mt-3 space-y-3">
+                {delivery.settlementNotes.map((n) => (
+                  <li key={n.id}>
+                    <SettlementNoteView
+                      label={`Your advocate's note · ${delivery.signOff.advocate}`}
+                      clauseNumber={n.clauseNumber}
+                      text={n.text}
+                      releasedAt={n.releasedAt}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
 
         <aside className="min-w-0 space-y-4 self-start">

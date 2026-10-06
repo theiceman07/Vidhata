@@ -2,11 +2,12 @@
 
 import { cn } from "@/lib/utils";
 import { findingState } from "@/lib/findings";
-import type { Clause, MarginNotes, WorkspaceFinding } from "@/lib/types";
+import type { ClientSettlementNote, Clause, MarginNotes, WorkspaceFinding } from "@/lib/types";
 import { Icon } from "@/components/shared/icon";
 import { FindingBar } from "./finding-bar";
 import { AddMarginNote, MarginNote } from "./margin-note";
 import { MarginMark } from "./margin-mark";
+import { SettlementNoteView } from "./settlement-note-view";
 import { useReviewScope } from "./review-scope-context";
 
 /**
@@ -106,6 +107,7 @@ export function ClauseBlock({
   onSelectFinding,
   onHoverFinding,
   notes,
+  settlementNotes,
 }: {
   clause: Clause;
   /** The findings raised against this clause, in pipeline order. */
@@ -117,6 +119,8 @@ export function ClauseBlock({
   onHoverFinding: (findingId: string | null) => void;
   /** The advocate's notes on this clause, and how to keep them. Advocate only. */
   notes?: MarginNotes;
+  /** The advocate's notes to the client on this clause, released at sign-off. Client's copy. */
+  settlementNotes?: { items: ClientSettlementNote[]; label: string };
 }) {
   const paragraphs = clause.body.split("\n\n");
   const revised = clause.revisedAt !== null;
@@ -177,7 +181,7 @@ export function ClauseBlock({
 
         {/* The margin. Empty for most clauses, which is what makes a
             note in it worth looking at. */}
-        {(findings.length > 0 || notes) && (
+        {(findings.length > 0 || notes || (settlementNotes?.items.length ?? 0) > 0) && (
           <div className="space-y-1 @3xl:pt-7">
             {findings.map((finding) => (
               <FindingBar
@@ -189,6 +193,22 @@ export function ClauseBlock({
                 onHover={(on) => onHoverFinding(on ? finding.findingId : null)}
               />
             ))}
+
+            {/* The advocate's note to the client, released at sign-off: read-only, in the
+                advocate's own words, under the findings. */}
+            {settlementNotes && settlementNotes.items.length > 0 && (
+              <div className={cn("space-y-2", findings.length > 0 && "pt-2")}>
+                {settlementNotes.items.map((n) => (
+                  <SettlementNoteView
+                    key={n.id}
+                    label={settlementNotes.label}
+                    clauseNumber={clause.number}
+                    text={n.text}
+                    releasedAt={n.releasedAt}
+                  />
+                ))}
+              </div>
+            )}
 
             {notes && (
               <div className={cn("space-y-2", findings.length > 0 && "pt-2")}>

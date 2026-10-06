@@ -160,6 +160,8 @@ describe("what can set the time a note was released", () => {
         "lib/api/client/shape-settlement-notes.ts": ["releasedAt: n.releasedAt as string"],
         // A prop handing a released note's stored time to the read-only view.
         "app/(lawyer)/review/[id]/sign-off/page.tsx": ["releasedAt={n.releasedAt"],
+        "app/(client)/documents/[id]/delivery/page.tsx": ["releasedAt={n.releasedAt"],
+        "components/document/clause-block.tsx": ["releasedAt={n.releasedAt"],
       };
       expect(sets.filter((s) => !(allowed[f] ?? []).includes(s.trim())), f).toEqual([]);
     }

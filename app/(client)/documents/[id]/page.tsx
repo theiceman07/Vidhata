@@ -32,10 +32,11 @@ import {
   respondToClientRequests,
   startClientAnalysis,
 } from "@/lib/api/client/documents";
+import { getClientSettlementNotes } from "@/lib/api/client/settlement-notes";
 import { getClientTrail } from "@/lib/api/client/trail";
 import { tierLabel } from "@/lib/config/pricing";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
-import type { ClientAuditEntry, ClientDocument } from "@/lib/types";
+import type { ClientAuditEntry, ClientDocument, ClientSettlementNote } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -61,19 +62,23 @@ export default function DocumentPage() {
   const params = useParams<{ id: string }>();
   const [doc, setDoc] = useState<ClientDocument | null>(null);
   const [trail, setTrail] = useState<ClientAuditEntry[]>([]);
+  const [notes, setNotes] = useState<ClientSettlementNote[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   /** The document and its trail, read together so they never disagree. */
   const read = useCallback(async () => {
-    const [result, entries] = await Promise.all([
+    const [result, entries, released] = await Promise.all([
       getClientDocument(ORG, params.id),
       getClientTrail(ORG, params.id),
+      // Empty before the recorded sign-off, whatever the advocate has written.
+      getClientSettlementNotes(ORG, params.id),
     ]);
     if (!result || !entries) throw new Error("Document not found.");
     setDoc(result);
     setTrail(entries);
+    setNotes(released);
   }, [params.id]);
 
   const load = useCallback(async () => {
@@ -175,7 +180,7 @@ export default function DocumentPage() {
   }
 
   if (doc.signOff && (doc.status === "settled" || doc.status === "executed")) {
-    return <SettledDocument doc={doc} trail={trail} />;
+    return <SettledDocument doc={doc} trail={trail} notes={notes} />;
   }
 
   // Screened and tiered, not yet paid. Only the tier, the fee and the deal
@@ -392,13 +397,22 @@ function WithAdvocate({ doc }: { doc: ClientDocument }) {
 }
 
 /** Signed off: the settled document itself, read only. */
-function SettledDocument({ doc, trail }: { doc: ClientDocument; trail: ClientAuditEntry[] }) {
+function SettledDocument({
+  doc,
+  trail,
+  notes,
+}: {
+  doc: ClientDocument;
+  trail: ClientAuditEntry[];
+  notes: ClientSettlementNote[];
+}) {
   const { done, total } = doc.checklist;
 
   return (
     <ClientReader
       doc={doc}
       trail={trail}
+      settlementNotes={notes}
       back={{ href: "/documents", label: "Documents" }}
       aside={
         <>

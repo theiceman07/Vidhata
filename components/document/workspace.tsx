@@ -29,7 +29,12 @@ import {
   revisionNotice,
   type RevisionCycle,
 } from "@/lib/revisions";
-import type { MarginNotes, WorkspaceDocument, WorkspaceFinding } from "@/lib/types";
+import type {
+  ClientSettlementNote,
+  MarginNotes,
+  WorkspaceDocument,
+  WorkspaceFinding,
+} from "@/lib/types";
 import { ReviewScopePanel } from "@/components/domain/review-scope-panel";
 import { ReviewScopeProvider } from "./review-scope-context";
 import { StateLabel } from "./state-label";
@@ -72,6 +77,7 @@ export function DocumentWorkspace({
   onWithdrawSource,
   citationBadge,
   notes,
+  settlementNotes,
   scope,
   revisions,
   busy = false,
@@ -118,6 +124,11 @@ export function DocumentWorkspace({
   ) => React.ReactNode;
   /** The advocate's own margin notes. Never passed on the client's side. */
   notes?: MarginNotes;
+  /**
+   * The advocate's notes to the client, released at sign-off, to be read beside their
+   * clauses. The client's reader passes them; the advocate's page does not.
+   */
+  settlementNotes?: { items: ClientSettlementNote[]; label: string };
   /**
    * What the last round changed, for an advocate re-reviewing a draft. Read
    * only on the advocate's side, whatever is passed; null on a first review.
@@ -638,6 +649,7 @@ export function DocumentWorkspace({
             onHoverFinding={setHoveredFindingId}
             onActiveClauseChange={setActiveClauseId}
             notes={role === "advocate" ? notes : undefined}
+            settlementNotes={settlementNotes}
           />
         </section>
 

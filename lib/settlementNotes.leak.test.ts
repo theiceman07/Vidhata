@@ -194,11 +194,14 @@ describe("the real client reads, against the store", () => {
     await seed(signed);
     const read = await handedOver(signed.id);
     expect(read.notes.map((n) => n.text)).toEqual([RELEASED]);
-    // Only the notes read and the export carry it; no other read does.
+    // Only the notes read, the delivery and the export carry it; no other read does.
     for (const [name, value] of Object.entries(read)) {
-      if (name === "notes") continue;
+      if (name === "notes" || name === "delivery") continue;
       expect(found(value, RELEASED), name).toBe(false);
     }
+    expect(read.delivery).toMatchObject({ state: "ready" });
+    const delivered = (read.delivery as { delivery: { settlementNotes: { text: string }[] } }).delivery;
+    expect(delivered.settlementNotes.map((n) => n.text)).toEqual([RELEASED]);
     const around = await handedOverAround();
     for (const [name, value] of Object.entries(around)) {
       if (name === "exported") continue;
