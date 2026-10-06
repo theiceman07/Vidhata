@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/shared/icon";
+import { agentAvailable } from "@/lib/chatAccess";
 import { CONSULTATION, PRICE_BASIS } from "@/lib/config/pricing";
 import { cn } from "@/lib/utils";
 import { getMockReply, type ChatSource } from "@/lib/mock/chat.mock";
@@ -25,7 +26,7 @@ export function DocumentAgent({
   doc,
   onCite,
 }: {
-  doc: ChatSource & Pick<ClientDocument, "id" | "signOff">;
+  doc: ChatSource & Pick<ClientDocument, "id" | "status" | "signOff">;
   /** Carry the document to a clause the agent quoted. */
   onCite: (clauseNumber: string) => void;
 }) {
@@ -57,6 +58,10 @@ export function DocumentAgent({
     ]);
     setInput("");
   }
+
+  // Before sign-off there is no settled document to explain. The pages do not mount
+  // this then, and it refuses as well, so a new place to put it cannot show it early.
+  if (!agentAvailable(doc)) return null;
 
   const empty = messages.length === 0;
 
