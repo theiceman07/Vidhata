@@ -25,7 +25,7 @@ export type NotifiableDocument = Pick<
 /** A consultation request as a notification reads it: where it stands, and when. */
 export type NotifiableConsultation = Pick<
   ClientConsultation,
-  "id" | "documentId" | "documentTitle" | "status" | "acceptedAt" | "paidAt" | "answeredAt"
+  "id" | "documentId" | "documentTitle" | "status" | "acceptedAt" | "declinedAt" | "paidAt" | "answeredAt"
 >;
 
 function ofDocument(doc: NotifiableDocument): ClientNotification[] {
@@ -110,6 +110,20 @@ function ofConsultation(c: NotifiableConsultation): ClientNotification[] {
       },
     ];
   }
+  // Declined: the outcome of the client's own request, said in neutral words. It does not say
+  // who declined it or why, and a decline is never charged, so it says so. Without this a
+  // request would sit as requested for ever.
+  if (c.status === "declined" && c.declinedAt !== null) {
+    return [
+      {
+        ...base,
+        id: `consultation_declined:${c.id}`,
+        kind: "consultation_declined",
+        at: c.declinedAt,
+        text: `Your consultation request on ${c.documentTitle} was declined. Nothing was charged.`,
+      },
+    ];
+  }
   // An answer is the client's to read only once it is paid for.
   if (c.status === "answered" && c.paidAt !== null && c.answeredAt !== null) {
     return [
@@ -122,7 +136,7 @@ function ofConsultation(c: NotifiableConsultation): ClientNotification[] {
       },
     ];
   }
-  // Requested, declined, or paid and waiting: no notification.
+  // Requested, or paid and still waiting to be responded to, there is nothing to say.
   return [];
 }
 

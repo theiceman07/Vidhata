@@ -149,7 +149,7 @@ describe("the notifications built from every fixture, at every status", () => {
     // And the request's own fields are not what the builder is given.
     for (const r of requests) {
       expect(Object.keys(r).sort()).toEqual(
-        ["acceptedAt", "answeredAt", "documentId", "documentTitle", "id", "paidAt", "status"].sort(),
+        ["acceptedAt", "answeredAt", "declinedAt", "documentId", "documentTitle", "id", "paidAt", "status"].sort(),
       );
     }
   });
@@ -234,11 +234,12 @@ describe("what each state says", () => {
     expect(kinds([notifiableDocument(summary("doc-nda-executed"))])).toEqual([]);
   });
 
-  it("says that a consultation request was accepted, or answered, and nothing else of it", () => {
+  it("says that a consultation request was accepted, declined or answered, and nothing else of it", () => {
     const built = buildClientNotifications([], requests);
     expect(built.map((n) => [n.kind, n.id])).toEqual([
       ["consultation_answered", "consultation_answered:c-answered"],
       ["consultation_accepted", "consultation_accepted:c-accepted"],
+      ["consultation_declined", "consultation_declined:c-declined"],
     ]);
     expect(built[1].text).toBe(
       `Your advocate accepted your consultation request on ${CONSULTED_TITLE}. Pay the fee to go ahead.`,
@@ -246,8 +247,52 @@ describe("what each state says", () => {
     expect(built.every((n) => n.href === "/documents/doc-nda-settled/consultation")).toBe(true);
   });
 
-  it("is silent on a request that is open, declined, or paid and waiting for its answer", () => {
-    const quiet = ["c-requested", "c-declined", "c-paid"];
+  it("says a declined request was declined, in neutral words, so it does not sit as requested for ever", () => {
+    const declined = notifiableConsultation(
+      shapeClientConsultation(CONSULTATIONS.find((c) => c.id === "c-declined")!),
+    );
+    const [n] = buildClientNotifications([], [declined]);
+    expect(n).toMatchObject({
+      kind: "consultation_declined",
+      at: "2026-10-02T09:00:00.000Z",
+      text: `Your consultation request on ${CONSULTED_TITLE} was declined. Nothing was charged.`,
+      href: "/documents/doc-nda-settled/consultation",
+    });
+    // Neutral: no one is said to have declined it, and no reason is given.
+    expect(n.text).not.toMatch(/\badvocate\b|\bbecause\b|\bunable\b|\bregret/i);
+  });
+
+  it("carries no advocate's name and none of the client's own question in a declined notice", () => {
+    // Read from every fixture advocate as well as the one on the request.
+    const names = [ADVOCATE, ...mockDocuments.flatMap((d) => (d.advocate ? [d.advocate.name] : []))];
+    for (const status of ["declined", "requested", "accepted", "answered"] as const) {
+      const request = notifiableConsultation(
+        shapeClientConsultation(
+          consultation({
+            id: `c-${status}`,
+            status,
+            declinedAt: "2026-10-02T09:00:00.000Z",
+            acceptedAt: "2026-10-02T09:00:00.000Z",
+            paidAt: "2026-10-03T09:00:00.000Z",
+            answeredAt: "2026-10-04T09:00:00.000Z",
+            answer: ANSWER,
+          }),
+        ),
+      );
+      const built = buildClientNotifications([], [request]);
+      expect(leaked(built, [...names, QUESTION, ANSWER, "SENTINEL"]), status).toEqual([]);
+    }
+  });
+
+  it("says nothing of a request marked declined that has no time for it on record", () => {
+    const odd = notifiableConsultation(
+      shapeClientConsultation(consultation({ id: "c-odd-declined", status: "declined", declinedAt: null })),
+    );
+    expect(buildClientNotifications([], [odd])).toEqual([]);
+  });
+
+  it("is silent on a request that is open, or paid and waiting for its answer", () => {
+    const quiet = ["c-requested", "c-paid"];
     const built = buildClientNotifications([], requests.filter((r) => quiet.includes(r.id)));
     expect(built).toEqual([]);
   });

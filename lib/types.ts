@@ -708,6 +708,7 @@ export interface ClientNotification {
     | "advocate_asked"
     | "settled"
     | "consultation_accepted"
+    | "consultation_declined"
     | "consultation_answered";
   /** ISO 8601, when it happened. */
   at: string;

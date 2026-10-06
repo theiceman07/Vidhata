@@ -16,8 +16,9 @@ type LoadState = "loading" | "error" | "loaded";
  * What has happened on the client's documents, newest first.
  *
  * Each line says that something happened, to which document, and opens it. It
- * is worked out from the document's state on every visit and is not kept, so
- * there is no unread count: a line goes when the move it names is made. None of
+ * is worked out from the state of the documents and requests on every visit and is
+ * not kept, so there is no unread count and nothing to dismiss. A real notification
+ * needs a read state the backend keeps (docs/api-contract.md). None of
  * it names an advocate before sign-off, counts findings, repeats a decision,
  * quotes a question or points at a clause.
  */
@@ -63,7 +64,7 @@ export default function NotificationsPage() {
       <header className="max-w-measure">
         <h1 className="font-display text-h1 text-ink">Notifications</h1>
         <p className="mt-2 text-lead text-muted-fg">
-          What has happened on your documents. Each one goes when the move it names is made.
+          What has happened on your documents and consultation requests, newest first.
         </p>
       </header>
 

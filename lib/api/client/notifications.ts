@@ -40,6 +40,7 @@ export function notifiableConsultation(c: ClientConsultation): NotifiableConsult
     documentTitle: c.documentTitle,
     status: c.status,
     acceptedAt: c.acceptedAt,
+    declinedAt: c.declinedAt,
     paidAt: c.paidAt,
     answeredAt: c.answeredAt,
   };
