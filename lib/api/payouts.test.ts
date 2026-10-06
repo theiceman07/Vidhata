@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CONSULTATION, TIER_PRICING } from "@/lib/config/pricing";
+import { mockConsultations } from "@/lib/mock/consultations.mock";
 import {
   acceptConsultation,
   answerConsultation,
@@ -24,6 +25,10 @@ async function settle<T>(promise: Promise<T>): Promise<T> {
   return promise;
 }
 
+/** The answered requests the preview starts an advocate with, read from the fixtures. */
+const seeded = (advocateId: string) =>
+  mockConsultations.filter((c) => c.advocateId === advocateId && c.status === "answered");
+
 // Settled by Rhea Kapoor (adv-1) and by Ananya Rao (adv-current).
 const rheaDoc = "doc-nda-settled";
 const ananyaDoc = "doc-nda-settled-2";
@@ -40,8 +45,21 @@ async function earn(documentId: string, advocateId: string, question: string) {
 }
 
 describe("an advocate's payout statement", () => {
-  it("is empty, with a total of nothing, before any consultation is answered", async () => {
+  it("starts as the preview's own answered requests, and no other: nothing for an advocate who has none", async () => {
+    expect(seeded(rhea)).toEqual([]);
     expect(await settle(getPayoutStatement(rhea))).toEqual({ lines: [], total: 0 });
+  });
+
+  it("lists the preview's answered request for the advocate who answered it, at its fee, before GST", async () => {
+    const mine = seeded(ananya);
+    expect(mine.length).toBeGreaterThan(0);
+    const statement = await settle(getPayoutStatement(ananya));
+    expect(statement.lines.map((l) => [l.consultationId, l.documentId, l.documentTitle, l.answeredAt, l.amount])).toEqual(
+      [...mine]
+        .sort((a, b) => b.answeredAt!.localeCompare(a.answeredAt!))
+        .map((c) => [c.id, c.documentId, c.documentTitle, c.answeredAt, c.fee]),
+    );
+    expect(statement.total).toBe(mine.reduce((sum, c) => sum + c.fee!, 0));
   });
 
   it("lists the fee on each answered consultation, with its document and the day", async () => {
@@ -96,8 +114,10 @@ describe("an advocate's payout statement", () => {
     const hers = await earn(ananyaDoc, ananya, "A question for Ananya.");
     const mine = (await settle(getPayoutStatement(rhea))).lines.map((l) => l.consultationId);
     const theirs = (await settle(getPayoutStatement(ananya))).lines.map((l) => l.consultationId);
-    expect(theirs).toEqual([hers.id]);
+    // Hers: the one just earned, beside any the preview starts her with.
+    expect([...theirs].sort()).toEqual([hers.id, ...seeded(ananya).map((c) => c.id)].sort());
     expect(mine).not.toContain(hers.id);
+    for (const c of seeded(ananya)) expect(mine).not.toContain(c.id);
     expect(await settle(getPayoutStatement("adv-nobody"))).toEqual({ lines: [], total: 0 });
   });
 

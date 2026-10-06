@@ -15,7 +15,9 @@ type LoadState = "loading" | "error" | "loaded";
 
 /**
  * What the advocate has earned from consultations, one line for each they
- * answered: the document, the day and the fee they set, before GST.
+ * answered: the document, the day and the consultation fee, before GST. The fee is
+ * the configured one (lib/config/pricing.ts); who sets it and who receives it is for
+ * counsel to confirm, and this page claims neither.
  *
  * It is the advocate's alone. It lists consultation fees and nothing else: no
  * share of anything, no figure from what the document cost the client, and no
@@ -63,8 +65,8 @@ export default function PayoutsPage() {
       <header className="max-w-measure">
         <h1 className="font-display text-h1 text-ink">Payout statement</h1>
         <p className="mt-2 text-lead text-muted-fg">
-          The fees you set on consultations you have answered, each {PRICE_BASIS}. Only you see
-          this.
+          The configured consultation fee for each consultation you have answered, {PRICE_BASIS}. In
+          this preview it is one amount for every consultation. Only you see this.
         </p>
       </header>
 

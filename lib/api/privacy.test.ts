@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { mockConsultations } from "@/lib/mock/consultations.mock";
 import { getClientDocument } from "./client/documents";
 import { requestConsultation } from "./consultations";
 import {
@@ -93,6 +94,25 @@ describe("the export", () => {
       "A question only the client wrote.",
     );
     expect(Array.isArray(file.consentLog)).toBe(true);
+  });
+
+  it("holds every request the preview starts with, as the client's own record, question and answer", async () => {
+    const own = mockConsultations.filter((c) => c.orgId === org);
+    expect(own.length).toBeGreaterThan(0);
+    const file = JSON.parse((await settle(requestDataExport(org))).contents);
+    for (const c of own) {
+      expect(file.consultationRequests).toContainEqual({
+        document: c.documentTitle,
+        advocate: c.advocateName,
+        requestedAt: c.requestedAt,
+        status: c.status,
+        question: c.question,
+        answer: c.answer,
+      });
+    }
+    // Another organisation's requests are not in it.
+    const others = mockConsultations.filter((c) => c.orgId !== org);
+    for (const c of others) expect(JSON.stringify(file)).not.toContain(c.question);
   });
 
   it("holds nothing of an unsigned document's review beyond what is addressed", async () => {

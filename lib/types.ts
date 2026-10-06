@@ -731,8 +731,9 @@ export type ConsultationSummary = Omit<AdvocateConsultation, "question" | "answe
 
 /**
  * One consultation the advocate answered, as their payout statement lists it:
- * the document it was about, the day it was answered, and the flat fee they
- * set for it, in rupees before GST. Nothing here comes from what the platform
+ * the document it was about, the day it was answered, and the consultation fee,
+ * in rupees before GST. In the preview that is the one configured fee; who sets
+ * it and who receives it is for counsel to confirm. Nothing here comes from what the platform
  * charges for the document, and there is no split. It has no question, no
  * answer and no client, and no time or detail of the client's payment.
  */

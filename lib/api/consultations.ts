@@ -192,11 +192,12 @@ export async function listAdvocateConsultations(
 }
 
 /**
- * What this advocate has earned from consultations: the flat fee on each one
- * they answered, newest first, with the document and the day. Only their own
- * are read, so another advocate's lines are not in it for anyone to ask for.
- * It is built from the fee the advocate set at acceptance and nothing else:
- * not from the platform's fee for the document, and there is no split. A
+ * What this advocate's answered consultations come to: the consultation fee on
+ * each one they answered, newest first, with the document and the day. Only their
+ * own are read, so another advocate's lines are not in it for anyone to ask for.
+ * The fee is the one configured (CONSULTATION in lib/config/pricing.ts), recorded
+ * when the request was accepted, and nothing else: not the platform's fee for the
+ * document, and there is no split. Who sets it and who receives it is for counsel. A
  * request that is open or declined has earned nothing and is not listed, and
  * neither the question, the answer nor the client's payment is in a line.
  */

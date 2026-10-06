@@ -2,6 +2,7 @@ import { CONSULTATION, TIER_PRICING } from "@/lib/config/pricing";
 import { CORPUS } from "@/lib/mock/corpus.mock";
 import { accountSeed } from "@/lib/mock/account.mock";
 import { advocateProfileSeed } from "@/lib/mock/advocate.mock";
+import { mockConsultations } from "@/lib/mock/consultations.mock";
 import { mockDocuments } from "@/lib/mock/documents.mock";
 import { mockVersions } from "@/lib/mock/versions.mock";
 import type {
@@ -76,7 +77,16 @@ let fingerprintCache: string | null = null;
 /** What the stored state was built from. A change to any of it discards the state. */
 export function fingerprint(): string {
   fingerprintCache ??= hash(
-    JSON.stringify([mockDocuments, mockVersions, advocateProfileSeed, accountSeed, CORPUS, TIER_PRICING, CONSULTATION]),
+    JSON.stringify([
+      mockDocuments,
+      mockVersions,
+      mockConsultations,
+      advocateProfileSeed,
+      accountSeed,
+      CORPUS,
+      TIER_PRICING,
+      CONSULTATION,
+    ]),
   );
   return `${SCHEMA_VERSION}:${fingerprintCache}`;
 }
@@ -148,7 +158,7 @@ function readStored(): DemoState | null {
 const SEEDS: { [K in Slice]: () => DemoState[K] } = {
   documents: () => structuredClone(mockDocuments),
   versions: () => structuredClone(mockVersions),
-  consultations: () => [],
+  consultations: () => structuredClone(mockConsultations),
   citationAttempts: () => [],
   privacy: () => [],
   billing: () => [],
