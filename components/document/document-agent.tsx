@@ -7,7 +7,9 @@ import { agentAvailable } from "@/lib/chatAccess";
 import { CONSULTATION, PRICE_BASIS } from "@/lib/config/pricing";
 import { cn } from "@/lib/utils";
 import { getMockReply, type ChatSource } from "@/lib/mock/chat.mock";
-import type { ChatMessage, ClientDocument } from "@/lib/types";
+import { getClientSummary } from "@/lib/api/client/delivery";
+import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
+import type { ChatMessage, ClientDocument, SettledSummary } from "@/lib/types";
 import { clauseNumberFromReference } from "@/lib/types";
 
 /**
@@ -33,8 +35,28 @@ export function DocumentAgent({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const threadRef = useRef<HTMLDivElement>(null);
+  const [summary, setSummary] = useState<SettledSummary | null>(null);
   // Named by the sign-off record, which this agent only ever has: it explains a settled document.
   const advocate = doc.signOff?.advocate ?? "your advocate";
+
+  // The summary is a reading of the settled text, held to its clauses, and what the agent
+  // answers an overview question from. Without it the agent still quotes the clauses.
+  const available = agentAvailable(doc);
+  const docId = doc.id;
+  useEffect(() => {
+    if (!available) return;
+    let live = true;
+    getClientSummary(MOCK_CLIENT_ORG.id, docId)
+      .then(({ result }) => {
+        if (live) setSummary(result.state === "ready" ? result.summary : null);
+      })
+      .catch(() => {
+        if (live) setSummary(null);
+      });
+    return () => {
+      live = false;
+    };
+  }, [available, docId]);
 
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" });
@@ -43,7 +65,7 @@ export function DocumentAgent({
   function send(text: string) {
     const question = text.trim();
     if (!question) return;
-    const reply = getMockReply(question, doc);
+    const reply = getMockReply(question, doc, summary);
     const now = Date.now();
     setMessages((prev) => [
       ...prev,
@@ -61,7 +83,7 @@ export function DocumentAgent({
 
   // Before sign-off there is no settled document to explain. The pages do not mount
   // this then, and it refuses as well, so a new place to put it cannot show it early.
-  if (!agentAvailable(doc)) return null;
+  if (!available) return null;
 
   const empty = messages.length === 0;
 
