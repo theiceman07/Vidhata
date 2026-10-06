@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { Icon } from "@/components/shared/icon";
+import { agentAvailable } from "@/lib/chatAccess";
 import { PageHeader } from "@/components/shared/page-header";
 import { ErrorState } from "@/components/shared/error-state";
 import { ChatMessage } from "@/components/domain/chat-message";
@@ -11,13 +12,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getClientDocument } from "@/lib/api/client/documents";
+import { getClientSummary } from "@/lib/api/client/delivery";
 import {
   buildInitialMessages,
   getMockReply,
   SUGGESTED_QUESTIONS,
 } from "@/lib/mock/chat.mock";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
-import type { ChatMessage as ChatMessageType, ClientDocument } from "@/lib/types";
+import type {
+  ChatMessage as ChatMessageType,
+  ClientDocument,
+  SettledSummary,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type LoadState = "loading" | "error" | "loaded";
@@ -30,6 +36,7 @@ type LoadState = "loading" | "error" | "loaded";
 export default function ChatPage() {
   const params = useParams<{ id: string }>();
   const [doc, setDoc] = useState<ClientDocument | null>(null);
+  const [summary, setSummary] = useState<SettledSummary | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
@@ -46,6 +53,13 @@ export default function ChatPage() {
       if (!result) throw new Error("Document not found.");
       setDoc(result);
       setMessages(buildInitialMessages(result));
+      // The summary is asked for only once the document is signed off, and what it says is
+      // the API's to give. Without one the agent still quotes the clauses.
+      setSummary(null);
+      if (agentAvailable(result)) {
+        const read = await getClientSummary(MOCK_CLIENT_ORG.id, params.id).catch(() => null);
+        if (read && read.result.state === "ready") setSummary(read.result.summary);
+      }
       setState("loaded");
     } catch (err) {
       setErrorMessage(
@@ -72,7 +86,7 @@ export default function ChatPage() {
       citedClauseReference: null,
       isEscalation: false,
     };
-    const reply = getMockReply(text, doc);
+    const reply = getMockReply(text, doc, summary);
     const agentMessage: ChatMessageType = {
       id: `agent-${Date.now()}`,
       role: "agent",
@@ -110,14 +124,15 @@ export default function ChatPage() {
   // is no settled document to explain, and nothing reaches the client
   // until there is a recorded sign-off.
   const signOff = doc.signOff;
-  if (!signOff) {
+  if (!agentAvailable(doc) || !signOff) {
+    // Says only that it is not open yet: the document is not named, as the
+    // delivery and the summary do not name one that is not signed off.
     return (
       <div className="mx-auto w-full max-w-2xl">
         <PageHeader
           title="Ask about this document"
-          description={doc.title}
           backHref={`/documents/${doc.id}`}
-          backLabel={doc.title}
+          backLabel="Document"
         />
         <p className="border-l-2 border-line pl-4 text-body text-ink">
           Questions open once an advocate has settled and signed off this

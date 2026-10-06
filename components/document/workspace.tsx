@@ -29,7 +29,7 @@ import {
   revisionNotice,
   type RevisionCycle,
 } from "@/lib/revisions";
-import type { MarginNotes, WorkspaceDocument } from "@/lib/types";
+import type { MarginNotes, WorkspaceDocument, WorkspaceFinding } from "@/lib/types";
 import { ReviewScopePanel } from "@/components/domain/review-scope-panel";
 import { ReviewScopeProvider } from "./review-scope-context";
 import { StateLabel } from "./state-label";
@@ -70,6 +70,7 @@ export function DocumentWorkspace({
   onReopen,
   onRequestChange,
   onWithdrawSource,
+  citationBadge,
   notes,
   scope,
   revisions,
@@ -106,6 +107,15 @@ export function DocumentWorkspace({
   onReopen?: (findingId: string) => void | Promise<void>;
   onRequestChange?: (findingId: string, request: string) => void | Promise<void>;
   onWithdrawSource?: (findingId: string, citationId: string, note: string) => void | Promise<void>;
+  /**
+   * Wraps a source's state badge so it opens where the source resolved. Passed
+   * by the advocate's page only, which keeps the corpus read out of the client's.
+   */
+  citationBadge?: (
+    findingId: string,
+    citation: WorkspaceFinding["citations"][number],
+    label: React.ReactNode,
+  ) => React.ReactNode;
   /** The advocate's own margin notes. Never passed on the client's side. */
   notes?: MarginNotes;
   /**
@@ -697,6 +707,7 @@ export function DocumentWorkspace({
                   onWithdrawSource?.(selectedFinding.findingId, citationId, note)
                 }
                 requestBlockedReason={cycle ? revisionBlockedReason(cycle) : null}
+                citationBadge={citationBadge}
                 busy={busy}
                 trail={trail}
               />

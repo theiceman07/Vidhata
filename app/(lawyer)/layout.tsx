@@ -11,6 +11,7 @@ const SECTIONS: ShellSection[] = [
     links: [
       { href: "/queue", label: "Queue", icon: "description" },
       { href: "/consultations", label: "Consultations", icon: "mail" },
+      { href: "/payouts", label: "Payouts", icon: "receipt_long" },
       { href: "/metrics", label: "Metrics", icon: "monitoring" },
     ],
   },

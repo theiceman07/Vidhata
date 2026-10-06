@@ -3,6 +3,8 @@ import type {
   AdvocateConsultation,
   Consultation,
   ConsultationSummary,
+  PayoutLine,
+  PayoutStatement,
 } from "@/lib/types";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { getDocument } from "./documents";
@@ -187,6 +189,40 @@ export async function listAdvocateConsultations(
       const { question, answer, ...summary } = forAdvocate(c);
       return summary;
     });
+}
+
+/**
+ * What this advocate's answered consultations come to: the consultation fee on
+ * each one they answered, newest first, with the document and the day. Only their
+ * own are read, so another advocate's lines are not in it for anyone to ask for.
+ * The fee is the one configured (CONSULTATION in lib/config/pricing.ts), recorded
+ * when the request was accepted, and nothing else: not the platform's fee for the
+ * document, and there is no split. Who sets it and who receives it is for counsel. A
+ * request that is open or declined has earned nothing and is not listed, and
+ * neither the question, the answer nor the client's payment is in a line.
+ */
+export async function getPayoutStatement(advocateId: string): Promise<PayoutStatement> {
+  await randomDelay(150, 300);
+  if (shouldSimulateFailure()) {
+    throw new MockApiError("Could not load your payout statement.");
+  }
+  const lines: PayoutLine[] = store
+    .filter(
+      (c) =>
+        c.advocateId === advocateId &&
+        c.status === "answered" &&
+        c.fee !== null &&
+        c.answeredAt !== null,
+    )
+    .map((c) => ({
+      consultationId: c.id,
+      documentId: c.documentId,
+      documentTitle: c.documentTitle,
+      answeredAt: c.answeredAt as string,
+      amount: c.fee as number,
+    }))
+    .sort((a, b) => b.answeredAt.localeCompare(a.answeredAt));
+  return { lines, total: lines.reduce((sum, l) => sum + l.amount, 0) };
 }
 
 /** One request, with its question, or null if it is not this advocate's or not there. */

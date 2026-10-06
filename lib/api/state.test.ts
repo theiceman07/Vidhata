@@ -1,4 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { mockConsultations } from "@/lib/mock/consultations.mock";
+
+/** How many requests the preview starts with that match, so a count is read from the fixtures. */
+function seededFor(match: { orgId?: string; documentId?: string; paid?: boolean }): number {
+  return mockConsultations.filter(
+    (c) =>
+      (match.orgId === undefined || c.orgId === match.orgId) &&
+      (match.documentId === undefined || c.documentId === match.documentId) &&
+      (match.paid === undefined || (c.paidAt !== null) === match.paid),
+  ).length;
+}
 
 // The mock layer's failure switch is the real one: ?fail=1 in the URL, with the
 // preview-mode variable on. A test turns it on here, and the window it loads
@@ -200,7 +211,10 @@ describe("a refresh", () => {
     await vi.runAllTimersAsync();
 
     const third = await load(storage);
-    expect(await settle(third.consultations.listOrgConsultations("org-anaya-textiles"))).toHaveLength(1);
+    // The one just made, beside whatever the preview starts with.
+    expect(await settle(third.consultations.listOrgConsultations("org-anaya-textiles"))).toHaveLength(
+      seededFor({ orgId: "org-anaya-textiles" }) + 1,
+    );
   });
 });
 
@@ -232,7 +246,10 @@ describe("payments and requests, after a refresh", () => {
     const second = await load(storage);
     const again = await settle(second.consultations.requestConsultation("doc-nda-settled-2", question));
     expect(again.id).toBe(asked.id);
-    expect(await settle(second.consultations.listConsultations("doc-nda-settled-2"))).toHaveLength(1);
+    // Made once: the preview's own request on this document, and this one.
+    expect(await settle(second.consultations.listConsultations("doc-nda-settled-2"))).toHaveLength(
+      seededFor({ documentId: "doc-nda-settled-2" }) + 1,
+    );
 
     await settle(second.consultations.acceptConsultation("adv-current", asked.id));
     const paid = await settle(second.consultations.payConsultation(asked.id));
@@ -244,13 +261,18 @@ describe("payments and requests, after a refresh", () => {
     const paidAgain = await settle(third.consultations.payConsultation(asked.id));
     expect(paidAgain.paidAt).toBe(paid.paidAt);
     const invoices = await settle(third.billing.listInvoices("org-anaya-textiles"));
-    expect(invoices.filter((i) => i.kind === "consultation_fee")).toHaveLength(1);
+    // One payment for this request, beside the invoices for the ones the preview starts with, paid.
+    expect(invoices.filter((i) => i.kind === "consultation_fee")).toHaveLength(
+      seededFor({ orgId: "org-anaya-textiles", paid: true }) + 1,
+    );
 
     // The answer, once paid, is written once and read back as written.
     await settle(third.consultations.answerConsultation("adv-current", asked.id, "Yes, on thirty days' notice."));
     await vi.runAllTimersAsync();
     const fourth = await load(storage);
-    const [read] = await settle(fourth.consultations.listConsultations("doc-nda-settled-2"));
+    const read = (await settle(fourth.consultations.listConsultations("doc-nda-settled-2"))).find(
+      (c) => c.id === asked.id,
+    );
     expect(read).toMatchObject({ status: "answered", answer: "Yes, on thirty days' notice." });
   });
 

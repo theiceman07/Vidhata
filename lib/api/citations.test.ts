@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { checkCitation, listCitationAttempts } from "./citations";
+import { checkCitation, getCitationSource, listCitationAttempts } from "./citations";
+import { withdrawCitation } from "./documents";
+import { advocate, claimedDocument, refusal, screenedDocument } from "./testing";
 
 // The mock layer waits a little, as a network would; fake timers skip it.
 beforeEach(() => {
@@ -78,5 +80,63 @@ describe("checking a typed citation", () => {
       Number(first.id.replace("attempt-", "")),
     );
     expect(second.at >= first.at).toBe(true);
+  });
+});
+
+describe("what a citation on a document resolved to", () => {
+  it("gives a verified source its corpus entry, and a blocked one none", async () => {
+    const claimed = await claimedDocument();
+    const verified = claimed.findings.find((f) => f.citations.some((c) => c.status === "verified"))!;
+    const blocked = claimed.findings.find((f) => f.citations.some((c) => c.status === "blocked"))!;
+    const v = verified.citations.find((c) => c.status === "verified")!;
+    const b = blocked.citations.find((c) => c.status === "blocked")!;
+
+    const got = await settle(
+      getCitationSource({ documentId: claimed.id, findingId: verified.findingId, citationId: v.id }),
+    );
+    expect(got).toMatchObject({ status: "verified", entry: { ref: v.corpusRef, label: v.text } });
+
+    expect(
+      await settle(
+        getCitationSource({ documentId: claimed.id, findingId: blocked.findingId, citationId: b.id }),
+      ),
+    ).toEqual({ status: "blocked", entry: null, reason: "not_in_corpus" });
+  });
+
+  it("keeps a withdrawn source blocked, with no entry", async () => {
+    const claimed = await claimedDocument();
+    const finding = claimed.findings.find((f) => f.citations.some((c) => c.status === "blocked"))!;
+    const c = finding.citations.find((x) => x.status === "blocked")!;
+    await settle(withdrawCitation(claimed.id, finding.findingId, c.id, "Not in the corpus.", advocate));
+    expect(
+      await settle(getCitationSource({ documentId: claimed.id, findingId: finding.findingId, citationId: c.id })),
+    ).toMatchObject({ status: "blocked", entry: null });
+  });
+
+  it("is the same not-found for an unpaid document as for one that does not exist", async () => {
+    const unpaid = await screenedDocument();
+    const finding = unpaid.findings[0];
+    const citation = finding.citations[0];
+    const unpaidRefusal = await refusal(
+      getCitationSource({ documentId: unpaid.id, findingId: finding.findingId, citationId: citation.id }),
+    );
+    const missingRefusal = await refusal(
+      getCitationSource({ documentId: "no-such-document", findingId: finding.findingId, citationId: citation.id }),
+    );
+    expect(unpaidRefusal).toBe("Document not found.");
+    expect(missingRefusal).toBe(unpaidRefusal);
+  });
+
+  it("refuses a finding or a citation that is not on the document, and records no attempt", async () => {
+    const claimed = await claimedDocument();
+    const finding = claimed.findings[0];
+    const before = (await settle(listCitationAttempts())).length;
+    expect(
+      await refusal(getCitationSource({ documentId: claimed.id, findingId: "no-such", citationId: "c" })),
+    ).toBe("Finding not found.");
+    expect(
+      await refusal(getCitationSource({ documentId: claimed.id, findingId: finding.findingId, citationId: "no-such" })),
+    ).toBe("Citation not found.");
+    expect((await settle(listCitationAttempts())).length).toBe(before);
   });
 });

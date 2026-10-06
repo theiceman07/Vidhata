@@ -3,6 +3,7 @@ import { MockApiError } from "../delay";
 import {
   consultationOrg,
   listConsultations,
+  listOrgConsultations,
   payConsultation,
   requestConsultation,
 } from "../consultations";
@@ -58,6 +59,11 @@ export async function listClientConsultations(
 ): Promise<ClientConsultation[]> {
   await ownDocument(orgId, documentId);
   return (await listConsultations(documentId)).map(shapeClientConsultation);
+}
+
+/** Every request the organisation has made, newest first, for what reads across its documents. */
+export async function listClientOrgConsultations(orgId: string): Promise<ClientConsultation[]> {
+  return (await listOrgConsultations(orgId)).map(shapeClientConsultation);
 }
 
 /** Pay the fee on the organisation's own accepted request. Paying twice makes one payment. */

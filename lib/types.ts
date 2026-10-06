@@ -693,6 +693,32 @@ export type ClientConsultation = Pick<
 >;
 
 /**
+ * One update for the client, worked out from the state of their documents and
+ * consultation requests. It is derived on each read and not stored, so it
+ * cannot say more than what the client's own types hold: it carries no
+ * advocate's name, no count of findings, no decision, no clause, and nothing
+ * of what was asked or answered (lib/notifications.ts).
+ */
+export interface ClientNotification {
+  /** Stable for the same update, so a list can key on it. */
+  id: string;
+  kind:
+    | "awaiting_payment"
+    | "with_advocate"
+    | "advocate_asked"
+    | "settled"
+    | "consultation_accepted"
+    | "consultation_declined"
+    | "consultation_answered";
+  /** ISO 8601, when it happened. */
+  at: string;
+  documentId: string;
+  text: string;
+  /** Where it opens, inside the client's own portal. */
+  href: string;
+}
+
+/**
  * A consultation as the advocate reads it: the status, and only whether it is
  * paid. Never the fee, the time of payment or any card or payment detail.
  */
@@ -703,6 +729,31 @@ export type AdvocateConsultation = Omit<Consultation, "fee" | "paidAt"> & { paid
  * one: the question is read inside the request.
  */
 export type ConsultationSummary = Omit<AdvocateConsultation, "question" | "answer">;
+
+/**
+ * One consultation the advocate answered, as their payout statement lists it:
+ * the document it was about, the day it was answered, and the consultation fee,
+ * in rupees before GST. In the preview that is the one configured fee; who sets
+ * it and who receives it is for counsel to confirm. Nothing here comes from what the platform
+ * charges for the document, and there is no split. It has no question, no
+ * answer and no client, and no time or detail of the client's payment.
+ */
+export interface PayoutLine {
+  consultationId: string;
+  documentId: string;
+  documentTitle: string;
+  /** ISO 8601. */
+  answeredAt: string;
+  /** Rupees before GST. */
+  amount: number;
+}
+
+/** An advocate's own lines, newest first, and their sum. Nobody else's. */
+export interface PayoutStatement {
+  lines: PayoutLine[];
+  /** Rupees before GST, the sum of the lines. */
+  total: number;
+}
 
 /**
  * What an advocate confirmed at onboarding about their enrolment. It is

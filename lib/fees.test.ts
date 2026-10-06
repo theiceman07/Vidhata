@@ -86,6 +86,7 @@ describe("the money files", () => {
     .map((f) => path.join(root, f))
     .concat(filesUnder(path.join(root, "app", "(client)", "billing")))
     .concat(filesUnder(path.join(root, "app", "(lawyer)", "consultations")))
+    .concat(filesUnder(path.join(root, "app", "(lawyer)", "payouts")))
     .filter((f) => existsSync(f) && /\.(ts|tsx)$/.test(f));
 
   it("lists the files it guards", () => {

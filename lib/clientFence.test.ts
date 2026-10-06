@@ -186,6 +186,8 @@ describe("the rule the fence enforces", () => {
       "lib/api/client/trail",
       "lib/api/client/delivery",
       "lib/api/client/consultations",
+      "lib/api/client/notifications",
+      "lib/notifications",
       "lib/api/billing",
       "lib/api/account",
       "lib/api/privacy",
