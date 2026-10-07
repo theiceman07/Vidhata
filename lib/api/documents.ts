@@ -852,6 +852,16 @@ export async function signOffDocument(
 }
 
 /**
+ * The execution checklist is worked only on a document with a recorded sign-off:
+ * settled or executed, with the advocate and the date on record. The client's own
+ * functions check this too; it is held here so no caller can reach the write without it.
+ */
+function requireSignOff(doc: ContractDocument): void {
+  const signedOff = (doc.status === "settled" || doc.status === "executed") && doc.advocate && doc.settledAt;
+  if (!signedOff) throw new MockApiError("The execution checklist is not available yet.");
+}
+
+/**
  * A tick on a legal execution step says who and when, and can be taken
  * back. Undoing it clears both rather than leaving a stale name behind.
  */
@@ -867,13 +877,17 @@ export async function toggleExecutionStep(
   }
   const doc = store.find((d) => d.id === docId);
   if (!doc) throw new MockApiError("Document not found.");
+  requireSignOff(doc);
+  const applicable = doc.executionSteps.filter((s) => s.applicable);
+  // With nothing applicable, "every step is done" is true of nothing, and a tick
+  // would execute the document. Sign-off always builds steps, so this is refused.
+  if (applicable.length === 0) throw new MockApiError("This document has no execution steps to work.");
   const step = doc.executionSteps.find((s) => s.kind === kind);
   if (step) {
     step.complete = complete;
     step.completedAt = complete ? new Date().toISOString() : null;
     step.completedBy = complete ? actorName : null;
   }
-  const applicable = doc.executionSteps.filter((s) => s.applicable);
   if (doc.status === "settled" && applicable.every((s) => s.complete)) {
     doc.status = "executed";
     doc.executedAt = new Date().toISOString();
@@ -896,6 +910,7 @@ export async function attachEvidence(
   }
   const doc = store.find((d) => d.id === docId);
   if (!doc) throw new MockApiError("Document not found.");
+  requireSignOff(doc);
   const step = doc.executionSteps.find((s) => s.kind === kind);
   if (step) {
     step.evidence = fileName
