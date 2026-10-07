@@ -456,12 +456,15 @@ export async function startAnalysis(id: string): Promise<ContractDocument> {
   await randomDelay(200, 400);
   const doc = store.find((d) => d.id === id);
   if (!doc) throw new MockApiError("Document not found.");
-  if (doc.status === "draft") {
-    doc.status = "analysing";
-    doc.analysisCompletesAt = new Date(
-      Date.now() + PIPELINE_DURATION_MS,
-    ).toISOString();
+  // Only a draft starts. One already being analysed comes back as it is, so a
+  // repeat press does not move the time; anything past that is refused, not
+  // returned as if it had been started.
+  if (doc.status === "analysing") return structuredClone(doc);
+  if (doc.status !== "draft") {
+    throw new MockApiError("This document has already been screened, so analysis cannot be started again.");
   }
+  doc.status = "analysing";
+  doc.analysisCompletesAt = new Date(Date.now() + PIPELINE_DURATION_MS).toISOString();
   return structuredClone(doc);
 }
 
