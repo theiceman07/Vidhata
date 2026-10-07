@@ -252,11 +252,10 @@ Four systems, each with its own state. Never fold them into one label.
   request or a list they see whether it is paid, never the fee, the time or any
   payment detail. They see the configured consultation fee on their own payout
   statement (/payouts, before GST), and never any payment time, card detail or
-  platform fee. The
-  question (and the answer) appear only inside the request: not in a list, a
-  tab title, a tooltip, the audit trail, a notification, billing or a metric.
-  The client's own export carries them, deliberately. Who issues the
-  consultation invoice is for counsel to confirm and is marked so.
+  platform fee. The question (and the answer) appear only inside the request:
+  not in a list, a tab title, a tooltip, the audit trail, a notification,
+  billing or a metric. The client's own export carries them, deliberately. Who
+  issues the consultation invoice is for counsel to confirm and is marked so.
 - Delivery (lib/api/delivery.ts, lib/api/summaries.ts): after sign-off only,
   and held in the API, not the page. A document that is not signed off, or
   has no advocate and date on record, gets "not available" and nothing else:
