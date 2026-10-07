@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { Icon } from "@/components/shared/icon";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import type { AdvocateNote, MarginNotes } from "@/lib/types";
+import type { AdvocateNote, NoteAccess } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /**
@@ -24,7 +24,7 @@ export function MarginNote({
 }: {
   note: AdvocateNote;
   /** Whether the advocate may change this note, and why not. Absent means they may. */
-  access?: MarginNotes["access"];
+  access?: NoteAccess;
   onUpdate: (text: string) => void | boolean | Promise<void | boolean>;
   onDelete: () => void | Promise<void>;
 }) {
@@ -103,7 +103,7 @@ export function AddMarginNote({
   /** Shown at rest when the clause already carries notes or findings. */
   visible: boolean;
   /** Whether the advocate may add a note, and why not. Absent means they may. */
-  access?: MarginNotes["access"];
+  access?: NoteAccess;
 }) {
   const [open, setOpen] = useState(false);
   const reasonId = useId();

@@ -1,5 +1,6 @@
 import type { AdvocateNote } from "@/lib/types";
 import { MockApiError, randomDelay } from "./delay";
+import { NOTES_SIGNED_OFF } from "@/lib/noteAccess";
 import { heldDocument } from "./documents";
 import { register, restored } from "./state";
 
@@ -14,7 +15,17 @@ import { register, restored } from "./state";
  * Every write goes through the one gate the other advocate writes use
  * (`heldDocument`): an unpaid or missing document is the same "Document not
  * found.", and only the advocate who holds the claim may write.
+ *
+ * After sign-off the notes are append-only: a new one may be added, and one
+ * already written can be neither changed nor removed. They are the advocate's
+ * own record of how they settled the document.
  */
+
+/** A note already written is the advocate's record once the document is signed off. */
+function unchangeable(documentId: string, advocateId: string): void {
+  const doc = heldDocument(documentId, advocateId);
+  if (doc.status === "settled" || doc.status === "executed") throw new MockApiError(NOTES_SIGNED_OFF);
+}
 // Held for this browser tab with the rest of the preview's data (lib/api/state),
 // so they survive a refresh and die with the tab. They used to be in
 // localStorage, which kept them for days and across tabs.
@@ -67,7 +78,7 @@ export async function updateNote(
   const all = readAll();
   const note = all.find((n) => n.id === noteId && n.advocateId === advocateId);
   if (!note) throw new MockApiError("Note not found.");
-  heldDocument(note.documentId, advocateId);
+  unchangeable(note.documentId, advocateId);
   if (!text.trim()) throw new MockApiError("A note needs some text.");
   note.text = text.trim();
   note.updatedAt = new Date().toISOString();
@@ -80,6 +91,6 @@ export async function deleteNote(noteId: string, advocateId: string): Promise<vo
   const note = readAll().find((n) => n.id === noteId && n.advocateId === advocateId);
   // A note that is not there is already gone, so removing it again changes nothing.
   if (!note) return;
-  heldDocument(note.documentId, advocateId);
+  unchangeable(note.documentId, advocateId);
   writeAll(readAll().filter((n) => n !== note));
 }

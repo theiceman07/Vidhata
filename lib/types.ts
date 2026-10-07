@@ -1019,15 +1019,19 @@ export interface Account {
   members: TeamMember[];
 }
 
+/** Whether a thing is allowed, and if not, the words that say why. */
+export type NoteAccess = { allowed: true } | { allowed: false; reason: string };
+
 /** What the document surface needs to show and keep an advocate's notes. */
 export interface MarginNotes {
   items: AdvocateNote[];
   /**
-   * Whether the advocate may write notes here, and the words that say why not
-   * (`canWriteNotes`). Absent means they may. The controls are disabled with the
-   * reason beside them, so a refusal is told before typing and not after.
+   * Whether the advocate may add a note, and whether they may change one already
+   * written, each with the words that say why not (`canWriteNotes`). Absent means
+   * they may. The controls are disabled with the reason beside them, so a refusal
+   * is told before typing and not after.
    */
-  access?: { allowed: true } | { allowed: false; reason: string };
+  access?: { add: NoteAccess; change: NoteAccess };
   /** `false` says the note was not kept, so the composer stays open with its text. */
   onAdd: (clauseId: string, text: string) => void | boolean | Promise<void | boolean>;
   onUpdate: (noteId: string, text: string) => void | boolean | Promise<void | boolean>;
