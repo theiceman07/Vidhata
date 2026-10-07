@@ -646,6 +646,19 @@ export async function respondToChanges(
   }
   const doc = store.find((d) => d.id === docId);
   if (!doc) throw new MockApiError("Document not found.");
+  // An answer is taken only while the document is waiting on one: sent back to
+  // the client (`revision`), with a request still unanswered, and at least one
+  // real answer to it. Anything else would move a document the client has no
+  // business moving, a signed-off one included.
+  const unanswered = doc.findings.filter(
+    (f) => f.disposition === "pending" && f.changeRequest && !f.changeRequest.response,
+  );
+  if (doc.status !== "revision" || unanswered.length === 0) {
+    throw new MockApiError("Nothing on this document is waiting for your answer.");
+  }
+  if (!unanswered.some((f) => responses[f.findingId]?.trim())) {
+    throw new MockApiError("Write an answer to at least one request.");
+  }
   const now = new Date().toISOString();
   doc.findings.forEach((f) => {
     const answer = responses[f.findingId]?.trim();

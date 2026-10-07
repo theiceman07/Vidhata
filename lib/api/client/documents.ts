@@ -87,6 +87,10 @@ export async function respondToClientRequests(
     if (findingId === undefined) throw new MockApiError("Request not found.");
     responses[findingId] = answer;
   }
+  // Nothing written is nothing answered: it never reaches the document.
+  if (!Object.values(responses).some((answer) => answer.trim())) {
+    throw new MockApiError("Write an answer to at least one request.");
+  }
   return shapeClientDocument(await respondToChanges(id, responses));
 }
 
