@@ -39,6 +39,9 @@ export async function getPrivacy(orgId: string): Promise<PrivacyState> {
  */
 export async function setTrainingOptIn(orgId: string, granted: boolean): Promise<PrivacyState> {
   await randomDelay(200, 400);
+  // A consent is a real yes or no. The type says so, and a caller that skips it must not
+  // write "true" or 1 into the consent log, which is the proof a revocation happened.
+  if (typeof granted !== "boolean") throw new MockApiError("Say whether training use is allowed.");
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not save your choice. Nothing was changed.");
   }

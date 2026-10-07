@@ -181,3 +181,24 @@ describe("a deletion request", () => {
     expect((await settle(withdrawDeletion(org))).deletionRequestedAt).toBeNull();
   });
 });
+
+describe("the training choice is a real yes or no", () => {
+  it("refuses anything that is not a boolean, and logs and changes nothing", async () => {
+    const before = await settle(getPrivacy(org));
+    for (const bad of ["true", "yes", 1, 0, null, undefined]) {
+      expect(await refusal(setTrainingOptIn(org, bad as never))).toBe("Say whether training use is allowed.");
+    }
+    expect(await settle(getPrivacy(org))).toEqual(before);
+  });
+
+  it("still takes a real yes and a real no, and logs each change once", async () => {
+    await settle(setTrainingOptIn(org, false));
+    const before = await settle(getPrivacy(org));
+    await settle(setTrainingOptIn(org, true));
+    await settle(setTrainingOptIn(org, true));
+    await settle(setTrainingOptIn(org, false));
+    const after = await settle(getPrivacy(org));
+    expect(after.trainingOptIn).toBe(false);
+    expect(after.consentLog.slice(before.consentLog.length).map((e) => e.granted)).toEqual([true, false]);
+  });
+});
