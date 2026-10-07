@@ -1,5 +1,6 @@
 import type { AdvocateNote } from "@/lib/types";
 import { MockApiError, randomDelay } from "./delay";
+import { heldDocument } from "./documents";
 import { register, restored } from "./state";
 
 /**
@@ -9,6 +10,10 @@ import { register, restored } from "./state";
  * advocate, and nothing here is ever read on the client side. A real backend
  * must scope them by the authenticated advocate, never by an id the page
  * supplies.
+ *
+ * Every write goes through the one gate the other advocate writes use
+ * (`heldDocument`): an unpaid or missing document is the same "Document not
+ * found.", and only the advocate who holds the claim may write.
  */
 // Held for this browser tab with the rest of the preview's data (lib/api/state),
 // so they survive a refresh and die with the tab. They used to be in
@@ -38,6 +43,7 @@ export async function addNote(input: {
   text: string;
 }): Promise<AdvocateNote> {
   await randomDelay(80, 160);
+  heldDocument(input.documentId, input.advocateId);
   const text = input.text.trim();
   if (!text) throw new MockApiError("A note needs some text.");
   const now = new Date().toISOString();
@@ -61,6 +67,7 @@ export async function updateNote(
   const all = readAll();
   const note = all.find((n) => n.id === noteId && n.advocateId === advocateId);
   if (!note) throw new MockApiError("Note not found.");
+  heldDocument(note.documentId, advocateId);
   if (!text.trim()) throw new MockApiError("A note needs some text.");
   note.text = text.trim();
   note.updatedAt = new Date().toISOString();
@@ -70,5 +77,9 @@ export async function updateNote(
 
 export async function deleteNote(noteId: string, advocateId: string): Promise<void> {
   await randomDelay(80, 160);
-  writeAll(readAll().filter((n) => !(n.id === noteId && n.advocateId === advocateId)));
+  const note = readAll().find((n) => n.id === noteId && n.advocateId === advocateId);
+  // A note that is not there is already gone, so removing it again changes nothing.
+  if (!note) return;
+  heldDocument(note.documentId, advocateId);
+  writeAll(readAll().filter((n) => n !== note));
 }

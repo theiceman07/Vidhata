@@ -108,20 +108,29 @@ export default function ReviewPage() {
       },
       onDelete: async (noteId) => {
         const removed = notes.find((n) => n.id === noteId);
-        await deleteNote(noteId, CURRENT_ADVOCATE.id);
+        try {
+          await deleteNote(noteId, CURRENT_ADVOCATE.id);
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : "Could not remove this note.");
+          return;
+        }
         setNotes((prev) => prev.filter((n) => n.id !== noteId));
         if (removed) {
           toast("Note removed", {
             action: {
               label: "Undo",
               onClick: async () => {
-                const restored = await addNote({
-                  documentId: removed.documentId,
-                  clauseId: removed.clauseId,
-                  advocateId: removed.advocateId,
-                  text: removed.text,
-                });
-                setNotes((prev) => [...prev, restored]);
+                try {
+                  const restored = await addNote({
+                    documentId: removed.documentId,
+                    clauseId: removed.clauseId,
+                    advocateId: removed.advocateId,
+                    text: removed.text,
+                  });
+                  setNotes((prev) => [...prev, restored]);
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : "Could not keep this note.");
+                }
               },
             },
           });

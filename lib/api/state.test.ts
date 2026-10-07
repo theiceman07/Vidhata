@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import { mockConsultations } from "@/lib/mock/consultations.mock";
 
 /** How many requests the preview starts with that match, so a count is read from the fixtures. */
@@ -150,6 +151,8 @@ describe("a refresh", () => {
     await settle(
       app.consultations.requestConsultation("doc-nda-settled", "Does clause 4.1 let either side end early?"),
     );
+    // A working note is written by the advocate who holds the document.
+    await settle(app.documents.claimDocument(doc.id, CURRENT_ADVOCATE, { noConflictWithEitherParty: true }));
     await settle(app.notes.addNote({ documentId: doc.id, clauseId: "cl-1", advocateId: "adv-current", text: "A note." }));
     await settle(app.privacy.setTrainingOptIn("org-anaya-textiles", true));
     await settle(app.billing.saveBillingProfile("org-anaya-textiles", { name: "Anaya", gstin: "22AAAAA0000A1Z5" }));
@@ -297,6 +300,7 @@ describe("payments and requests, after a refresh", () => {
   it("keeps an advocate's notes and the client's choices", async () => {
     const storage = fakeStorage();
     const first = await load(storage);
+    await settle(first.documents.claimDocument("doc-msa-pending", CURRENT_ADVOCATE, { noConflictWithEitherParty: true }));
     await settle(first.notes.addNote({ documentId: "doc-msa-pending", clauseId: "cl-1", advocateId: "adv-current", text: "Check this." }));
     await settle(first.privacy.setTrainingOptIn("org-anaya-textiles", true));
     await vi.runAllTimersAsync();
