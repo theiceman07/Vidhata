@@ -13,11 +13,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { SettlementNoteView } from "@/components/document/settlement-note-view";
+import { SettlementNotesPanel } from "@/components/domain/settlement-notes-panel";
 import { getDocumentForReview, signOffDocument } from "@/lib/api/documents";
+import { listSettlementNotes } from "@/lib/api/settlement-notes";
 import { signOffBlockers } from "@/lib/findings";
 import { buildAuditTrail } from "@/lib/audit";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
-import type { ContractDocument } from "@/lib/types";
+import type { ContractDocument, SettlementNote } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -135,13 +138,18 @@ export default function SignOffPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [notes, setNotes] = useState<SettlementNote[]>([]);
 
   const load = useCallback(async () => {
     setState("loading");
     try {
-      const result = await getDocumentForReview(params.id);
+      const [result, own] = await Promise.all([
+        getDocumentForReview(params.id),
+        listSettlementNotes(CURRENT_ADVOCATE.id, params.id),
+      ]);
       if (!result) throw new Error("Document not found.");
       setDoc(result);
+      setNotes(own);
       setState("loaded");
     } catch (err) {
       setErrorMessage(
@@ -173,6 +181,8 @@ export default function SignOffPage() {
   // Signed off, whether just now or before: the record, with the seal.
   // This is the one place the mark appears inside the product.
   if ((doc.status === "settled" || doc.status === "executed") && doc.advocate && doc.settledAt) {
+    // What was released to the client, read back from the record, as written.
+    const released = (doc.settlementNotes ?? []).filter((n) => n.releasedAt !== null);
     return (
       <div className="mx-auto w-full max-w-3xl">
         <Link
@@ -211,6 +221,25 @@ export default function SignOffPage() {
           <Seal className="h-16 w-16 sm:h-20 sm:w-20" />
         </section>
 
+        {released.length > 0 && (
+          <section className="mt-8">
+            <h2 className="text-label font-medium text-muted-fg">Shared with the client at sign-off</h2>
+            <ul className="mt-2 space-y-3">
+              {released.map((n) => (
+                <li key={n.id}>
+                  <SettlementNoteView
+                    label="Note to client"
+                    clauseNumber={n.clauseNumber}
+                    clauseHeading={doc.clauses.find((c) => c.number === n.clauseNumber)?.heading}
+                    text={n.text}
+                    releasedAt={n.releasedAt}
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <section className="mt-8">
           <AuditTrail entries={buildAuditTrail(doc)} title="Activity" />
         </section>
@@ -230,6 +259,8 @@ export default function SignOffPage() {
   const blockers = signOffBlockers(doc, CURRENT_ADVOCATE.id);
   const allChecked = CONFIRMATIONS.every((c) => checked[c.id]);
   const canSignOff = blockers.length === 0 && allChecked && !submitting;
+  // What signing off will also hand to the client: the notes marked to share, and no draft.
+  const sharing = notes.filter((n) => n.shareWithClient && n.releasedAt === null).length;
 
   async function submit() {
     if (!doc) return;
@@ -301,6 +332,17 @@ export default function SignOffPage() {
         </section>
       )}
 
+      {/* Only the advocate who holds the document writes notes to its client. */}
+      {doc.advocate?.id === CURRENT_ADVOCATE.id && (
+        <SettlementNotesPanel
+          documentId={doc.id}
+          advocateId={CURRENT_ADVOCATE.id}
+          clauses={doc.clauses}
+          notes={notes}
+          onNotes={setNotes}
+        />
+      )}
+
       <section className="mt-8">
         <h2 className="text-label font-medium text-muted-fg">Confirmations</h2>
         <ul className="mt-2 border-t border-line">
@@ -334,7 +376,11 @@ export default function SignOffPage() {
 
       <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
         <Button disabled={!canSignOff} onClick={submit}>
-          {submitting ? "Signing off" : "Sign off as advocate"}
+          {submitting
+            ? "Signing off"
+            : sharing > 0
+              ? `Sign off and share ${plural(sharing, "note", "notes")}`
+              : "Sign off as advocate"}
         </Button>
         <p className="text-meta text-muted-fg">
           {blockers.length > 0

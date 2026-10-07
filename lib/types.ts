@@ -169,6 +169,11 @@ export interface Delivery {
   signOff: SignOffRecord;
   summary: SettledSummary | null;
   checklist: { done: number; total: number };
+  /**
+   * The advocate's notes to the client, released with the sign-off. Empty when
+   * there are none, which a client cannot tell from there never having been any.
+   */
+  settlementNotes: ClientSettlementNote[];
 }
 
 /**
@@ -256,6 +261,15 @@ export interface ContractDocument {
    * (lib/revisions.ts), and this is the record that it was logged.
    */
   corpusReviewLoggedAt?: string | null;
+  /**
+   * The advocate's notes to the client, one per clause at most. Held by the
+   * advocate who holds the document, and the advocate's alone until sign-off
+   * releases the ones marked to share. Not the working notes in the margin
+   * (AdvocateNote), which are a different kind and never leave the advocate
+   * portal. No client type names this field, so nothing hands it to a client:
+   * the client reads what was released through lib/api/client only.
+   */
+  settlementNotes?: SettlementNote[];
   settledAt: string | null;
   /**
    * When the client confirmed the last applicable execution step, so the
@@ -805,6 +819,12 @@ export interface DataExport {
     signedOff: { advocate: string; enrolment: string; at: string } | null;
     /** The settled text, only once signed off. */
     clauses: { number: string; heading: string; body: string }[];
+    /**
+     * The advocate's notes to the client that were released at sign-off, and none
+     * before it. Always present, and empty until then, so its absence or its
+     * length says nothing about what the advocate has written.
+     */
+    settlementNotes: { clauseNumber: string; text: string; releasedAt: string }[];
     /** Before sign-off, only findings with a request addressed to the client. */
     findings: {
       number: string;
@@ -887,6 +907,39 @@ export const PIPELINE_LAYERS: Record<
 };
 
 /**
+ * A deliberate note from the advocate to the client about one clause, the one
+ * way an advocate's own words reach a client (decided 3 October).
+ *
+ * It is written in a composer of its own and starts as a draft. Marking it
+ * (`shareWithClient`) is a second, explicit act. Only sign-off releases a note,
+ * and only a marked one: `releasedAt` is set by `signOffDocument` and by nothing
+ * else, and a released note can no longer be changed. A working note
+ * (AdvocateNote) has no control that turns it into one of these.
+ */
+export interface SettlementNote {
+  id: string;
+  /** Joins to Clause.number, as a finding's clause reference does. */
+  clauseNumber: string;
+  text: string;
+  /** False is a draft: written, and not to be shared. */
+  shareWithClient: boolean;
+  createdAt: string;
+  updatedAt: string;
+  /** Set at sign-off for a marked note, never before. Null for a draft, always. */
+  releasedAt: string | null;
+}
+
+/**
+ * A released note as the client reads it: where it is, what it says and when it
+ * was released. Not whether it was ever a draft, and nothing of the advocate: the
+ * byline is the sign-off record's, which already names them.
+ */
+export type ClientSettlementNote = Pick<SettlementNote, "id" | "clauseNumber" | "text"> & {
+  /** When it was released with the sign-off. A client is handed no note that was not. */
+  releasedAt: string;
+};
+
+/**
  * An advocate's own note, stuck in the margin of a clause.
  *
  * Private working paper: only the advocate who wrote it sees it, it never
@@ -935,6 +988,12 @@ export interface Metrics {
   blocked: BlockedAttemptRow[];
   triageOverride: { state: "no_source" };
   corpusLag: { state: "no_source" };
+  /**
+   * Replies the document agent's check withdrew. Counted in the client's own tab
+   * and nowhere else, so there is nothing to read a figure from until a backend
+   * records them.
+   */
+  withdrawnReplies: { state: "no_source" };
 }
 
 /**

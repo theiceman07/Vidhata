@@ -15,13 +15,16 @@ import { getClientDocument } from "@/lib/api/client/documents";
 import { getClientSummary } from "@/lib/api/client/delivery";
 import {
   buildInitialMessages,
+  chatSourceOf,
   getMockReply,
   SUGGESTED_QUESTIONS,
 } from "@/lib/mock/chat.mock";
+import { getClientSettlementNotes } from "@/lib/api/client/settlement-notes";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type {
   ChatMessage as ChatMessageType,
   ClientDocument,
+  ClientSettlementNote,
   SettledSummary,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -37,6 +40,7 @@ export default function ChatPage() {
   const params = useParams<{ id: string }>();
   const [doc, setDoc] = useState<ClientDocument | null>(null);
   const [summary, setSummary] = useState<SettledSummary | null>(null);
+  const [notes, setNotes] = useState<ClientSettlementNote[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
@@ -56,9 +60,14 @@ export default function ChatPage() {
       // The summary is asked for only once the document is signed off, and what it says is
       // the API's to give. Without one the agent still quotes the clauses.
       setSummary(null);
+      setNotes([]);
       if (agentAvailable(result)) {
-        const read = await getClientSummary(MOCK_CLIENT_ORG.id, params.id).catch(() => null);
+        const [read, released] = await Promise.all([
+          getClientSummary(MOCK_CLIENT_ORG.id, params.id).catch(() => null),
+          getClientSettlementNotes(MOCK_CLIENT_ORG.id, params.id).catch((): ClientSettlementNote[] => []),
+        ]);
         if (read && read.result.state === "ready") setSummary(read.result.summary);
+        setNotes(released);
       }
       setState("loaded");
     } catch (err) {
@@ -86,7 +95,7 @@ export default function ChatPage() {
       citedClauseReference: null,
       isEscalation: false,
     };
-    const reply = getMockReply(text, doc, summary);
+    const reply = getMockReply(text, chatSourceOf(doc, summary, notes));
     const agentMessage: ChatMessageType = {
       id: `agent-${Date.now()}`,
       role: "agent",

@@ -6,10 +6,11 @@ import { Icon } from "@/components/shared/icon";
 import { agentAvailable } from "@/lib/chatAccess";
 import { CONSULTATION, PRICE_BASIS } from "@/lib/config/pricing";
 import { cn } from "@/lib/utils";
-import { getMockReply, type ChatSource } from "@/lib/mock/chat.mock";
+import { chatSourceOf, getMockReply, type ChatDocument } from "@/lib/mock/chat.mock";
 import { getClientSummary } from "@/lib/api/client/delivery";
+import { getClientSettlementNotes } from "@/lib/api/client/settlement-notes";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
-import type { ChatMessage, ClientDocument, SettledSummary } from "@/lib/types";
+import type { ChatMessage, ClientDocument, ClientSettlementNote, SettledSummary } from "@/lib/types";
 import { clauseNumberFromReference } from "@/lib/types";
 
 /**
@@ -18,8 +19,11 @@ import { clauseNumberFromReference } from "@/lib/types";
  *
  * It explains the settled document and never advises. A question that
  * asks what to do is answered with a referral to the advocate who
- * settled it. The agent itself is still being built; until it lands,
- * replies come from lib/mock/chat.mock, which quotes the fixture text.
+ * settled it, an unclear one is asked to be put again, and a reply the
+ * check refuses is replaced by a fixed message (lib/chat). The agent
+ * itself is still being built; until it lands, replies come from
+ * lib/mock/chat.mock, which quotes the settled text, its summary and the
+ * advocate's released notes, and nothing else.
  *
  * It fills the height of its pane and keeps its own scroll, so it stays
  * beside the reader however far down the document they go.
@@ -28,7 +32,7 @@ export function DocumentAgent({
   doc,
   onCite,
 }: {
-  doc: ChatSource & Pick<ClientDocument, "id" | "status" | "signOff">;
+  doc: ChatDocument & Pick<ClientDocument, "id" | "status" | "signOff">;
   /** Carry the document to a clause the agent quoted. */
   onCite: (clauseNumber: string) => void;
 }) {
@@ -36,6 +40,7 @@ export function DocumentAgent({
   const [input, setInput] = useState("");
   const threadRef = useRef<HTMLDivElement>(null);
   const [summary, setSummary] = useState<SettledSummary | null>(null);
+  const [notes, setNotes] = useState<ClientSettlementNote[]>([]);
   // Named by the sign-off record, which this agent only ever has: it explains a settled document.
   const advocate = doc.signOff?.advocate ?? "your advocate";
 
@@ -46,13 +51,16 @@ export function DocumentAgent({
   useEffect(() => {
     if (!available) return;
     let live = true;
-    getClientSummary(MOCK_CLIENT_ORG.id, docId)
-      .then(({ result }) => {
-        if (live) setSummary(result.state === "ready" ? result.summary : null);
-      })
-      .catch(() => {
-        if (live) setSummary(null);
-      });
+    // Each is read through the client layer, and either failing leaves the agent answering from
+    // the clauses alone, which it can always do.
+    Promise.all([
+      getClientSummary(MOCK_CLIENT_ORG.id, docId).catch(() => null),
+      getClientSettlementNotes(MOCK_CLIENT_ORG.id, docId).catch((): ClientSettlementNote[] => []),
+    ]).then(([summaryRead, released]) => {
+      if (!live) return;
+      setSummary(summaryRead && summaryRead.result.state === "ready" ? summaryRead.result.summary : null);
+      setNotes(released);
+    });
     return () => {
       live = false;
     };
@@ -65,7 +73,7 @@ export function DocumentAgent({
   function send(text: string) {
     const question = text.trim();
     if (!question) return;
-    const reply = getMockReply(question, doc, summary);
+    const reply = getMockReply(question, chatSourceOf(doc, summary, notes));
     const now = Date.now();
     setMessages((prev) => [
       ...prev,

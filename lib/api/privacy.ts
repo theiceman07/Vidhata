@@ -4,6 +4,7 @@ import type { PrivacyState } from "@/lib/types";
 import { getBillingProfile } from "./billing";
 import { shapeClientConsultation } from "./client/consultations";
 import { shapeClientDocument } from "./client/shape-document";
+import { shapeClientSettlementNotes } from "./client/shape-settlement-notes";
 import { listOrgConsultations } from "./consultations";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { listDocuments } from "./documents";
@@ -73,6 +74,8 @@ export async function requestDataExport(
     documents: documents.map((d) => shapeClientDocument(d)),
     invoices: invoicesFor(documents, consultations),
     consultations: consultations.map(shapeClientConsultation),
+    // Released notes only, by the one shaper: a note that was not released is not read here.
+    settlementNotes: Object.fromEntries(documents.map((d) => [d.id, shapeClientSettlementNotes(d)])),
     privacy: stateOf(orgId),
     now: new Date(),
   });

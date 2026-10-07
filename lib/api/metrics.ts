@@ -46,5 +46,6 @@ export async function getMetrics(): Promise<Metrics> {
     })),
     triageOverride: { state: "no_source" },
     corpusLag: { state: "no_source" },
+    withdrawnReplies: { state: "no_source" },
   };
 }

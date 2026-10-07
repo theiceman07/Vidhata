@@ -142,17 +142,51 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
 - The client dashboard opens on a greeting and a DealPrompt; a brief typed
   on the landing page survives sign-in and reappears there.
 - A settled document carries the document agent in the right pane
-  (DocumentWorkspace companion). It explains the settled text and never
-  advises; replies are mocked until the real agent lands.
+  (DocumentWorkspace companion), and on /documents/[id]/chat. It exists
+  only for a signed-off document: agentAvailable (lib/chatAccess.ts) is the
+  one rule, the agent refuses to render without it, and a test renders it
+  for every fixture at every status. It explains the settled text and never
+  advises, in three stages (lib/chat, wired by lib/mock/chat.mock.ts), all
+  mocked: a gate before the reply (classifyQuestion: explain, advise or
+  unclear), a reply drawn only from the settled clauses, quoted as written, the
+  summary fixtures, whose every line is held to the clauses it cites, and the
+  notes released to the client, and a check after it (checkReply) that
+  withdraws a reply with no grounds, an invented ground, a misquote, text it may
+  not hold, advice in its own words or a law nothing vouches for, and shows a
+  fixed message instead. All three fail closed. It holds no explanation of its
+  own: no glossary and no statute, and a test fails on any section number, Act
+  or case in a reply that is not in a fixture. Any advice in a question makes
+  the whole question advice, and a question that asks what to do is sent to the
+  advocate who settled the document, with no text of the agent's own. An
+  unclear question gets a prompt to rephrase and never an offer of a
+  consultation. The classifier is held to a labelled question set
+  (lib/chat/questions.fixtures.ts) and the check to generators that advise,
+  invent, misquote, echo and obey. The agent quotes a released note only on
+  the clause asked about, labelled as the advocate's; whether it may quote
+  advice inside one is for counsel.
 - The advocate's review page carries the review agent in the same pane.
   It reads the first pass back (blockers, findings with their sources,
   blocked citations, clauses) and links to each finding. It never
   decides: settle, override and sign-off questions are handed back with
   the evidence. Mocked in lib/mock/review-agent.mock.ts.
-- Advocate notes: an advocate can stick private notes in a clause's
-  margin, under its findings (MarginNote, lib/api/notes.ts). They are
-  the advocate's alone, never reach the client, are not findings, carry
-  no state and play no part in sign-off.
+- Advocate notes come in two kinds, and are never merged.
+  Working notes (MarginNote, lib/api/notes.ts) are private notes in a clause's
+  margin, under its findings. They are the advocate's alone, never in any
+  client type, export, trail or chat, are not findings, carry no state and play
+  no part in sign-off. Settlement notes (lib/api/settlement-notes.ts, kept on
+  the document) are a deliberate note about one clause, at most one per clause,
+  that the advocate writes in a composer of its own on the sign-off page and
+  marks "share with client". Only sign-off releases one, in the same step that
+  records it, and only the marked ones, so an advocate cannot release one by
+  accident and no control on a working note can turn it into one. A released
+  note is immutable, and there is no correction path yet (for counsel). After
+  sign-off the client reads the released notes, read-only, beside their clause
+  as "your advocate's note". The settling advocate's name may appear on one,
+  because the sign-off record already names them; it never appears before
+  sign-off. Before sign-off the client sees nothing of them, not even that any
+  exist. They are the one exception to the client not reading
+  an advocate's notes, and the document agent may ground on them once released.
+  An advocate's override note on a finding stays unshown to the client.
 - The client rail has no "New document": a document starts from the
   DealPrompt on Documents.
 - Avoid: purple/violet/indigo, gradients, glassmorphism, heavy shadows,
@@ -214,12 +248,14 @@ Four systems, each with its own state. Never fold them into one label.
   pays an accepted request ("Pay (preview)", idempotent, a failure leaves it
   accepted and unpaid). The advocate answers once it is paid, and the client
   reads the answer only then. An advocate sees only requests on documents they
-  settled; another's request and a made-up id are the same not-found. They
-  see whether it is paid, never the fee, the time or any payment detail. The
-  question (and the answer) appear only inside the request: not in a list, a
-  tab title, a tooltip, the audit trail, a notification, billing or a metric.
-  The client's own export carries them, deliberately. Who issues the
-  consultation invoice is for counsel to confirm and is marked so.
+  settled; another's request and a made-up id are the same not-found. In a
+  request or a list they see whether it is paid, never the fee, the time or any
+  payment detail. They see the configured consultation fee on their own payout
+  statement (/payouts, before GST), and never any payment time, card detail or
+  platform fee. The question (and the answer) appear only inside the request:
+  not in a list, a tab title, a tooltip, the audit trail, a notification,
+  billing or a metric. The client's own export carries them, deliberately. Who
+  issues the consultation invoice is for counsel to confirm and is marked so.
 - Delivery (lib/api/delivery.ts, lib/api/summaries.ts): after sign-off only,
   and held in the API, not the page. A document that is not signed off, or
   has no advocate and date on record, gets "not available" and nothing else:

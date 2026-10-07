@@ -12,6 +12,7 @@ import { PIPELINE_DURATION_MS, clauseNumberFromReference } from "@/lib/types";
 import { mockDocuments } from "@/lib/mock/documents.mock";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { recheckCitation, recheckFindings } from "@/lib/citations";
+import { partitionForRelease, releaseMarked } from "@/lib/settlementNotes";
 import { declaredConflictWith } from "@/lib/conflicts";
 import { blockingCitations, settleNeedsNote } from "@/lib/findings";
 import { esignatureStep } from "@/lib/config/esign";
@@ -558,7 +559,7 @@ export async function claimDocument(
  * the claim: the screen shows decision controls only to the holder, and that
  * is not a guard, so it is held here as well.
  */
-function heldDocument(docId: string, advocateId: string): ContractDocument {
+export function heldDocument(docId: string, advocateId: string): ContractDocument {
   const doc = store.find((d) => d.id === docId);
   if (!doc || !isReleased(doc)) throw new MockApiError("Document not found.");
   if (!doc.advocate) {
@@ -808,14 +809,26 @@ export async function signOffDocument(
       "A citation on this document is blocked. Resolve the source before sign-off.",
     );
   }
+  // A note to the client on a clause this draft does not have would speak of text
+  // the client will not see. Sign-off stops and names it, before anything changes.
+  const { orphaned } = partitionForRelease(doc, doc.settlementNotes ?? []);
+  if (orphaned.length > 0) {
+    throw new MockApiError(
+      `A note to the client is on clause ${orphaned[0].clauseNumber}, which is not in this draft. Move or remove it before sign-off.`,
+    );
+  }
   // After sign-off the record is the client's to read, so what the advocate
   // added and the client has not yet been shown is shown now, in the order it
   // was raised, if the switch has it so. Nothing already numbered changes.
   if (SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF) {
     doc.findings.forEach((f) => showToClient(doc, f));
   }
+  const signedOffAt = new Date().toISOString();
   doc.status = "settled";
-  doc.settledAt = new Date().toISOString();
+  doc.settledAt = signedOffAt;
+  // The one place a settlement note is released: every note marked to share, at the
+  // moment of sign-off, in this same step. A draft is never released.
+  if (doc.settlementNotes) doc.settlementNotes = releaseMarked(doc.settlementNotes, signedOffAt);
   if (doc.executionSteps.length === 0) {
     doc.executionSteps = buildExecutionSteps(doc);
   }

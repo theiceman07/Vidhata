@@ -1,5 +1,6 @@
 import type { DeliveryResult } from "@/lib/types";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
+import { shapeClientSettlementNotes } from "./client/shape-settlement-notes";
 import { getDocument } from "./documents";
 import { summaryResultFor } from "./summaries";
 
@@ -36,6 +37,8 @@ export async function getDelivery(documentId: string): Promise<DeliveryResult> {
       signOff: { advocate: doc.advocate.name, enrolment: doc.advocate.bar, at: doc.settledAt },
       summary: summary.state === "ready" ? summary.summary : null,
       checklist: { done: steps.filter((s) => s.complete).length, total: steps.length },
+      // Released notes only, through the one shaper that names their fields.
+      settlementNotes: shapeClientSettlementNotes(doc),
     },
   };
 }

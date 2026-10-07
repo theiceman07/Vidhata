@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { MarginNotes, WorkspaceDocument, WorkspaceFinding } from "@/lib/types";
+import type {
+  ClientSettlementNote,
+  MarginNotes,
+  WorkspaceDocument,
+  WorkspaceFinding,
+} from "@/lib/types";
 import { ClauseBlock } from "./clause-block";
 import { FindingBar } from "./finding-bar";
 
@@ -26,6 +31,7 @@ export function DocumentSurface({
   onHoverFinding,
   onActiveClauseChange,
   notes,
+  settlementNotes,
 }: {
   doc: WorkspaceDocument;
   findingNumbers: Record<string, string>;
@@ -36,6 +42,8 @@ export function DocumentSurface({
   onActiveClauseChange: (clauseId: string) => void;
   /** The advocate's margin notes. Absent on the client's copy. */
   notes?: MarginNotes;
+  /** The advocate's notes to the client, released at sign-off. Present on the client's copy. */
+  settlementNotes?: { items: ClientSettlementNote[]; label: string };
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -109,6 +117,12 @@ export function DocumentSurface({
               notes && {
                 ...notes,
                 items: notes.items.filter((n) => n.clauseId === clause.id),
+              }
+            }
+            settlementNotes={
+              settlementNotes && {
+                ...settlementNotes,
+                items: settlementNotes.items.filter((n) => n.clauseNumber === clause.number),
               }
             }
           />
