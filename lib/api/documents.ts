@@ -856,6 +856,8 @@ export async function signOffDocument(
  * settled or executed, with the advocate and the date on record. The client's own
  * functions check this too; it is held here so no caller can reach the write without it.
  */
+const NOT_A_STEP = "That is not a step of this document's checklist.";
+
 function requireSignOff(doc: ContractDocument): void {
   const signedOff = (doc.status === "settled" || doc.status === "executed") && doc.advocate && doc.settledAt;
   if (!signedOff) throw new MockApiError("The execution checklist is not available yet.");
@@ -883,11 +885,10 @@ export async function toggleExecutionStep(
   // would execute the document. Sign-off always builds steps, so this is refused.
   if (applicable.length === 0) throw new MockApiError("This document has no execution steps to work.");
   const step = doc.executionSteps.find((s) => s.kind === kind);
-  if (step) {
-    step.complete = complete;
-    step.completedAt = complete ? new Date().toISOString() : null;
-    step.completedBy = complete ? actorName : null;
-  }
+  if (!step) throw new MockApiError(NOT_A_STEP);
+  step.complete = complete;
+  step.completedAt = complete ? new Date().toISOString() : null;
+  step.completedBy = complete ? actorName : null;
   if (doc.status === "settled" && applicable.every((s) => s.complete)) {
     doc.status = "executed";
     doc.executedAt = new Date().toISOString();
@@ -912,10 +913,9 @@ export async function attachEvidence(
   if (!doc) throw new MockApiError("Document not found.");
   requireSignOff(doc);
   const step = doc.executionSteps.find((s) => s.kind === kind);
-  if (step) {
-    step.evidence = fileName
-      ? { name: fileName, attachedAt: new Date().toISOString() }
-      : null;
-  }
+  if (!step) throw new MockApiError(NOT_A_STEP);
+  step.evidence = fileName
+    ? { name: fileName, attachedAt: new Date().toISOString() }
+    : null;
   return structuredClone(doc);
 }
