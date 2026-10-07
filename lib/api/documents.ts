@@ -456,12 +456,15 @@ export async function startAnalysis(id: string): Promise<ContractDocument> {
   await randomDelay(200, 400);
   const doc = store.find((d) => d.id === id);
   if (!doc) throw new MockApiError("Document not found.");
-  if (doc.status === "draft") {
-    doc.status = "analysing";
-    doc.analysisCompletesAt = new Date(
-      Date.now() + PIPELINE_DURATION_MS,
-    ).toISOString();
+  // Only a draft starts. One already being analysed comes back as it is, so a
+  // repeat press does not move the time; anything past that is refused, not
+  // returned as if it had been started.
+  if (doc.status === "analysing") return structuredClone(doc);
+  if (doc.status !== "draft") {
+    throw new MockApiError("This document has already been screened, so analysis cannot be started again.");
   }
+  doc.status = "analysing";
+  doc.analysisCompletesAt = new Date(Date.now() + PIPELINE_DURATION_MS).toISOString();
   return structuredClone(doc);
 }
 
@@ -849,6 +852,18 @@ export async function signOffDocument(
 }
 
 /**
+ * The execution checklist is worked only on a document with a recorded sign-off:
+ * settled or executed, with the advocate and the date on record. The client's own
+ * functions check this too; it is held here so no caller can reach the write without it.
+ */
+const NOT_A_STEP = "That is not a step of this document's checklist.";
+
+function requireSignOff(doc: ContractDocument): void {
+  const signedOff = (doc.status === "settled" || doc.status === "executed") && doc.advocate && doc.settledAt;
+  if (!signedOff) throw new MockApiError("The execution checklist is not available yet.");
+}
+
+/**
  * A tick on a legal execution step says who and when, and can be taken
  * back. Undoing it clears both rather than leaving a stale name behind.
  */
@@ -864,13 +879,16 @@ export async function toggleExecutionStep(
   }
   const doc = store.find((d) => d.id === docId);
   if (!doc) throw new MockApiError("Document not found.");
-  const step = doc.executionSteps.find((s) => s.kind === kind);
-  if (step) {
-    step.complete = complete;
-    step.completedAt = complete ? new Date().toISOString() : null;
-    step.completedBy = complete ? actorName : null;
-  }
+  requireSignOff(doc);
   const applicable = doc.executionSteps.filter((s) => s.applicable);
+  // With nothing applicable, "every step is done" is true of nothing, and a tick
+  // would execute the document. Sign-off always builds steps, so this is refused.
+  if (applicable.length === 0) throw new MockApiError("This document has no execution steps to work.");
+  const step = doc.executionSteps.find((s) => s.kind === kind);
+  if (!step) throw new MockApiError(NOT_A_STEP);
+  step.complete = complete;
+  step.completedAt = complete ? new Date().toISOString() : null;
+  step.completedBy = complete ? actorName : null;
   if (doc.status === "settled" && applicable.every((s) => s.complete)) {
     doc.status = "executed";
     doc.executedAt = new Date().toISOString();
@@ -893,11 +911,11 @@ export async function attachEvidence(
   }
   const doc = store.find((d) => d.id === docId);
   if (!doc) throw new MockApiError("Document not found.");
+  requireSignOff(doc);
   const step = doc.executionSteps.find((s) => s.kind === kind);
-  if (step) {
-    step.evidence = fileName
-      ? { name: fileName, attachedAt: new Date().toISOString() }
-      : null;
-  }
+  if (!step) throw new MockApiError(NOT_A_STEP);
+  step.evidence = fileName
+    ? { name: fileName, attachedAt: new Date().toISOString() }
+    : null;
   return structuredClone(doc);
 }

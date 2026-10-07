@@ -153,9 +153,12 @@ describe("executing a settled document", () => {
     expect((await sign(true)).status).toBe("executed");
   });
 
-  it("does not execute a document that is not signed off", async () => {
-    // Nothing to execute before sign-off: the document has no steps to confirm.
-    const doc = await settle(toggleExecutionStep("doc-vendor-revision", "esignature", true, client));
+  it("does not execute a document that is not signed off, and refuses the tick itself", async () => {
+    // The write checks for a recorded sign-off: it is not left to the document having no steps.
+    expect(await refusal(toggleExecutionStep("doc-vendor-revision", "esignature", true, client))).toBe(
+      "The execution checklist is not available yet.",
+    );
+    const doc = (await settle(getDocument("doc-vendor-revision")))!;
     expect(doc.status).toBe("revision");
     expect(doc.executedAt ?? null).toBeNull();
   });

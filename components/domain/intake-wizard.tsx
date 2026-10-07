@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,27 +27,10 @@ import {
   rupees,
   tierRange,
 } from "@/lib/config/pricing";
+import { intakeSchema, type IntakeFormValues } from "@/lib/intakeSchema";
 import { INDIAN_STATES } from "@/lib/mock/intake-options.mock";
 import { cn } from "@/lib/utils";
 
-const intakeSchema = z.object({
-  title: z.string().min(3, "Give this deal a short name."),
-  type: z.enum(["nda", "vendor", "msa", "employment"], {
-    required_error: "Choose a contract type.",
-  }),
-  clientName: z.string().min(2, "Enter your company name."),
-  counterpartyName: z.string().min(2, "Enter the counterparty's name."),
-  counterpartyIsMsme: z.boolean(),
-  transactionValue: z.coerce
-    .number()
-    .min(0, "Transaction value cannot be negative."),
-  durationMonths: z.coerce.number().min(1, "Enter the contract duration."),
-  stateOfExecution: z.string().min(1, "Choose the state of execution."),
-  governingLaw: z.string().min(2, "Enter the governing law."),
-  keyTerms: z.string().optional(),
-});
-
-type IntakeFormValues = z.infer<typeof intakeSchema>;
 
 const STEP_FIELDS: (keyof IntakeFormValues)[][] = [
   ["type"],
