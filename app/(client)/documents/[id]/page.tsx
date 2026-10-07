@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { BackButton } from "@/components/shared/back-button";
@@ -66,6 +66,7 @@ export default function DocumentPage() {
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const sending = useRef(false);
 
   /** The document and its trail, read together so they never disagree. */
   const read = useCallback(async () => {
@@ -135,7 +136,11 @@ export default function DocumentPage() {
   }, [docId, docStatus, state, failWith, read]);
 
   async function handleRespond(responses: Record<string, string>) {
-    if (!doc) return;
+    // A second press while the first is in flight is dropped: no request, no toast.
+    // State would not do it: two presses in one tick both see `submitting` as false.
+    // The API refuses a repeat as well, and that is the guard; this only keeps the screen quiet.
+    if (!doc || sending.current) return;
+    sending.current = true;
     setSubmitting(true);
     try {
       const updated = await respondToClientRequests(ORG, doc.id, responses);
@@ -145,6 +150,7 @@ export default function DocumentPage() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not send your responses.");
     } finally {
+      sending.current = false;
       setSubmitting(false);
     }
   }
