@@ -113,8 +113,9 @@ still `pending`, and no citation that is blocked and not withdrawn. It sets
 Nothing reaches a client without a recorded advocate sign-off, so `settledAt`
 and `advocate` are the record.
 It also refuses anyone but the advocate who holds the claim, re-runs the citation gate first (section 3.3), and is idempotent: signing off a document that is already settled changes nothing, and `settledAt` stays.
+In the same step, and the same transaction, it does three more things. It releases every settlement note the advocate marked to share, at the sign-off time and never a draft, and it stops before anything changes, naming the clause, when a marked note is on a clause the signed draft does not have (`lib/settlementNotes.ts` › `partitionForRelease`, `releaseMarked`; section 9, settlement notes). When `SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF` is on, it gives the client a number for each advocate-added finding they have not been shown, in the order raised, changing none already given (section 4).
 Mock: `documents.ts` › `signOffDocument`; the same blockers, as the screen reads them, in `lib/findings.ts` › `signOffBlockers`.
-Test: `lib/api/advocate-gates.test.ts` › "signing off › …" (four tests: open finding refused, blocked source refused, another advocate refused, recorded once and idempotent); `lib/api/signoff-recheck.test.ts` (the gate runs again at sign-off); `lib/api/checklist.test.ts` (through to the checklist).
+Test: `lib/api/advocate-gates.test.ts` › "signing off › …" (four tests: open finding refused, blocked source refused, another advocate refused, recorded once and idempotent); `lib/api/signoff-recheck.test.ts` (the gate runs again at sign-off); `lib/api/checklist.test.ts` (through to the checklist); `lib/api/settlement-release.test.ts` (the notes); `lib/api/finding-numbers.test.ts` › "gives the rest theirs at sign-off, in the order they were raised, and changes none already given".
 
 **2.2 The summary is unavailable until sign-off, and the gate is in the API.**
 `getSettledSummary` returns `{ state: "not_available" }` for any document that is
@@ -219,8 +220,8 @@ This is the section the backend most needs to own.
 > the organisation, and each returns a type from `lib/types.ts` that is built field
 > by field and has no place for what a client may not see: `ClientDocument`,
 > `ClientDocumentSummary`, `ClientFinding`, `ClientVersionList`, `ClientDiff`,
-> `ClientAuditEntry`, `Delivery`, `SettledSummary`, `ClientConsultation` and the
-> export `DataExport`. They are never the internal `ContractDocument`. The narrowing
+> `ClientAuditEntry`, `Delivery`, `SettledSummary`, `ClientConsultation`,
+> `ClientSettlementNote`, `ClientNotification` and the export `DataExport`. They are never the internal `ContractDocument`. The narrowing
 > code (`lib/findings.ts`, `lib/clientVersions.ts`, `lib/audit.ts`, the shapers in
 > `lib/api/client`, `lib/privacy.ts`) runs **inside that layer**, over the in-memory
 > store, and not in a screen. Those types are the response shapes a real backend
@@ -393,7 +394,7 @@ Further rules:
 
 Mock: `lib/api/consultations.ts` (all of it).
 Test: `consultations.test.ts` (29 tests), grouped as "requesting a consultation", "the advocate's inbox", "another advocate's request", "accepting", "declining", "paying", "answering", "where the question may not go".
-**Gap:** `requestConsultation`, `payConsultation`, `listConsultations` and `listOrgConsultations` take a document or request id with no organisation check on the client side. Appendix B, item 6.
+**Gap, in the layer below the client:** `requestConsultation`, `payConsultation`, `listConsultations` and `listOrgConsultations` in `lib/api/consultations.ts` take a document or request id with no organisation check. That is right for the advocate's screens and for the client layer, and is not for a client to call. The client layer, `lib/api/client/consultations.ts`, does check the organisation, and returns the same "Document not found." or "Request not found." for another organisation's as for one that is not there, so a client screen is covered. Appendix B, item 6, says the same of the whole client surface.
 
 ## 9. What the mock fakes that a backend must persist
 
@@ -514,11 +515,14 @@ client layer itself.
 | `requestClientConsultation` | `orgId`, `documentId`, `question` | `ClientConsultation` | "Document not found."; not signed off; empty or too long |
 | `listClientConsultations` | `orgId`, `documentId` | `ClientConsultation[]`, newest first, the answer only once paid | "Document not found." |
 | `payClientConsultation` | `orgId`, `id` | `ClientConsultation` | "Request not found."; declined; not accepted; the payment failure |
+| `getClientSettlementNotes` | `orgId`, `id` | `ClientSettlementNote[]`: the notes released with the sign-off, and nothing before it. Before a recorded sign-off the list is empty for every document alike, so nothing says a note exists. | "Document not found." |
+| `getClientNotifications` | `orgId` | `ClientNotification[]`, worked out on each visit from the client's own document summaries and consultation requests. No read state (section 9). | |
 
 Tests: `lib/api/client/documents.test.ts`, `actions.test.ts`, `checklist.test.ts`,
 `draft.test.ts`, `versions.test.ts`, `trail.test.ts`, `requests.test.ts`,
 `delivery.test.ts`, `consultations.test.ts`, `numbers.test.ts` and
-`shape-findings.test.ts`. Each organisation check has a test that fails without it,
+`shape-findings.test.ts`. The settlement-note reads are held by
+`lib/settlementNotes.leak.test.ts`, and the notifications by `lib/notifications.test.ts`. Each organisation check has a test that fails without it,
 and the leak tests search every fixture's output for what must not be in it.
 
 ### `lib/api/documents.ts`
@@ -568,6 +572,7 @@ the full record. A client screen does not call them.
 | `acceptConsultation` | `advocateId`, `id` | the request | "Request not found." (also for another advocate's); declined |
 | `declineConsultation` | `advocateId`, `id` | the request | not found; accepted or answered |
 | `answerConsultation` | `advocateId`, `id`, `answer` | the request, `answered` | not found; declined; not accepted; unpaid; empty or too long |
+| `getPayoutStatement` | `advocateId` | `PayoutStatement`: one line per consultation this advocate answered, newest first, each with the document, the day answered and the fee before GST, and a `total` that is the sum of the lines. Nothing for a request that is open, declined, accepted or unanswered, and never a question, an answer, a payment time or the platform's fee. | "Could not load your payout statement." |
 
 ### `lib/api/billing.ts`, `lib/api/privacy.ts`, `lib/api/citations.ts`
 
@@ -601,6 +606,19 @@ It counts over released documents only (what an advocate may read), reads findin
 | `saveProfile` | `orgId`, `{ name, email }` | the account; the owner's line follows | blank name; not an email address; an address that is someone else's on the team |
 | `inviteMember` | `orgId`, `email` | the account. The same address again is the one invitation. | not an email address; an address already on the team |
 | `removeMember` | `orgId`, `memberId` | the account. Someone already gone changes nothing. | the owner |
+
+### `lib/api/settlement-notes.ts`
+
+An advocate's notes to the client, kept on the document they hold. Every write goes through `heldDocument` (an unpaid or missing document is "Document not found.", and only the holder writes), and none can release a note: only `signOffDocument` sets `releasedAt`.
+
+| Function | Inputs | Returns | Refuses |
+|---|---|---|---|
+| `listSettlementNotes` | `advocateId`, `documentId` | the advocate's notes on it, drafts and marked; empty for an advocate who does not hold it | "Document not found." |
+| `addSettlementNote` | `advocateId`, `documentId`, `clauseNumber`, `text` | the note, a draft, not marked, not released | not found; not the holder; signed off; clause not in the document; blank or too long; the clause already has a note |
+| `updateSettlementNote` | `advocateId`, `documentId`, `noteId`, `{ text?, shareWithClient? }` | the note. Marking it to share releases nothing. | as above; note not found; released; `shareWithClient` not a boolean |
+| `deleteSettlementNote` | `advocateId`, `documentId`, `noteId` | nothing | as above; note not found; released |
+
+Tests: `lib/api/settlement-notes.test.ts`, `lib/api/settlement-release.test.ts`, `lib/settlementNotes.leak.test.ts`.
 
 ### Advocate and public
 
