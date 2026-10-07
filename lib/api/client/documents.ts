@@ -1,3 +1,4 @@
+import { intakeSchema } from "@/lib/intakeSchema";
 import type { ClientDocument, ClientDocumentSummary, ContractDocument, ExecutionStep } from "@/lib/types";
 import { MockApiError } from "../delay";
 import {
@@ -42,7 +43,13 @@ export async function listClientDocuments(orgId: string): Promise<ClientDocument
  * and what comes back is what a client reads of it.
  */
 export async function createClientDraft(orgId: string, input: IntakeInput): Promise<ClientDocument> {
-  return shapeClientDocument(await createDraftDocument(input, orgId));
+  // The rules the intake form holds, held again here: a draft made by anything but the form
+  // is refused the same way, and is made from what the schema read, numbers as numbers.
+  const parsed = intakeSchema.safeParse(input);
+  if (!parsed.success) throw new MockApiError(parsed.error.issues[0]?.message ?? "Check the details of this deal.");
+  return shapeClientDocument(
+    await createDraftDocument({ ...parsed.data, keyTerms: parsed.data.keyTerms ?? "" }, orgId),
+  );
 }
 
 /** Starts the first pass on the client's own draft. */

@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { getDocument, type IntakeInput } from "../documents";
-import { settle } from "../testing";
-import { createClientDraft, getClientDocument } from "./documents";
+import { refusal, settle } from "../testing";
+import { createClientDraft, getClientDocument, listClientDocuments } from "./documents";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -54,5 +54,44 @@ describe("starting a draft, as the client's own organisation", () => {
       settle(createClientDraft(ORG, { ...intake, title: "Second" })),
     ]);
     expect(a.id).not.toBe(b.id);
+  });
+});
+
+describe("a draft is refused when it breaks the rules the intake form holds", () => {
+  const count = async () => (await settle(listClientDocuments(ORG))).length;
+  const bad = (change: Record<string, unknown>) => ({ ...intake, ...change }) as unknown as IntakeInput;
+
+  it("refuses a title that is too short, naming it, and creates nothing", async () => {
+    const before = await count();
+    expect(await refusal(createClientDraft(ORG, bad({ title: "ab" })))).toBe("Give this deal a short name.");
+    expect(await count()).toBe(before);
+  });
+
+  it("refuses a negative value, and a duration under a month", async () => {
+    const before = await count();
+    expect(await refusal(createClientDraft(ORG, bad({ transactionValue: -1 })))).toBe("Transaction value cannot be negative.");
+    expect(await refusal(createClientDraft(ORG, bad({ durationMonths: 0 })))).toBe("Enter the contract duration.");
+    expect(await count()).toBe(before);
+  });
+
+  it("refuses a contract type that is not one the product drafts", async () => {
+    const before = await count();
+    expect(await refusal(createClientDraft(ORG, bad({ type: "will" })))).not.toBe("");
+    expect(await refusal(createClientDraft(ORG, bad({ type: undefined })))).not.toBe("");
+    expect(await count()).toBe(before);
+  });
+
+  it("refuses a missing counterparty, and a value that is not a number", async () => {
+    const before = await count();
+    expect(await refusal(createClientDraft(ORG, bad({ counterpartyName: "" })))).toBe("Enter the counterparty's name.");
+    expect(await refusal(createClientDraft(ORG, bad({ transactionValue: "plenty" })))).not.toBe("");
+    expect(await count()).toBe(before);
+  });
+
+  it("still makes a draft of what the form sends, and keeps the numbers as numbers", async () => {
+    const doc = await settle(createClientDraft(ORG, bad({ transactionValue: "250000", durationMonths: "18" })));
+    const stored = (await settle(getDocument(doc.id)))!;
+    expect(stored.transactionValue).toBe(250_000);
+    expect(stored.durationMonths).toBe(18);
   });
 });
