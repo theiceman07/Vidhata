@@ -216,12 +216,14 @@ export function ClauseBlock({
                   <MarginNote
                     key={note.id}
                     note={note}
+                    access={notes.access}
                     onUpdate={(text) => notes.onUpdate(note.id, text)}
                     onDelete={() => notes.onDelete(note.id)}
                   />
                 ))}
                 <AddMarginNote
                   onAdd={(text) => notes.onAdd(clause.id, text)}
+                  access={notes.access}
                   visible={notes.items.length > 0}
                 />
               </div>

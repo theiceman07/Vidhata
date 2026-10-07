@@ -1022,8 +1022,15 @@ export interface Account {
 /** What the document surface needs to show and keep an advocate's notes. */
 export interface MarginNotes {
   items: AdvocateNote[];
-  onAdd: (clauseId: string, text: string) => void | Promise<void>;
-  onUpdate: (noteId: string, text: string) => void | Promise<void>;
+  /**
+   * Whether the advocate may write notes here, and the words that say why not
+   * (`canWriteNotes`). Absent means they may. The controls are disabled with the
+   * reason beside them, so a refusal is told before typing and not after.
+   */
+  access?: { allowed: true } | { allowed: false; reason: string };
+  /** `false` says the note was not kept, so the composer stays open with its text. */
+  onAdd: (clauseId: string, text: string) => void | boolean | Promise<void | boolean>;
+  onUpdate: (noteId: string, text: string) => void | boolean | Promise<void | boolean>;
   onDelete: (noteId: string) => void | Promise<void>;
 }
 

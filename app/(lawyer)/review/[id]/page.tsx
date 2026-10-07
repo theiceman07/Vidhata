@@ -24,6 +24,7 @@ import {
 } from "@/lib/api/documents";
 import { getAdvocateProfile } from "@/lib/api/advocate";
 import { addNote, deleteNote, listNotes, updateNote } from "@/lib/api/notes";
+import { canWriteNotes } from "@/lib/noteAccess";
 import { buildAuditTrail } from "@/lib/audit";
 import { findingNumbers, signOffBlockers } from "@/lib/findings";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
@@ -85,6 +86,8 @@ export default function ReviewPage() {
   const marginNotes = useMemo<MarginNotes>(
     () => ({
       items: notes,
+      access: doc ? canWriteNotes(doc, CURRENT_ADVOCATE.id) : undefined,
+      // A refusal is stated and returns false, so the composer stays open with the text.
       onAdd: async (clauseId, text) => {
         try {
           const note = await addNote({
@@ -94,16 +97,20 @@ export default function ReviewPage() {
             text,
           });
           setNotes((prev) => [...prev, note]);
+          return true;
         } catch (err) {
           toast.error(err instanceof Error ? err.message : "Could not keep this note.");
+          return false;
         }
       },
       onUpdate: async (noteId, text) => {
         try {
           const note = await updateNote(noteId, CURRENT_ADVOCATE.id, text);
           setNotes((prev) => prev.map((n) => (n.id === noteId ? note : n)));
+          return true;
         } catch (err) {
           toast.error(err instanceof Error ? err.message : "Could not save this note.");
+          return false;
         }
       },
       onDelete: async (noteId) => {
@@ -137,7 +144,7 @@ export default function ReviewPage() {
         }
       },
     }),
-    [notes, params.id],
+    [notes, params.id, doc],
   );
 
   /** Every mutation goes through here: busy while it runs, errors stated. */
