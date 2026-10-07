@@ -29,6 +29,7 @@ import {
   tierRange,
 } from "@/lib/config/pricing";
 import { INDIAN_STATES } from "@/lib/mock/intake-options.mock";
+import { createReentryGuard, runExclusive } from "@/lib/reentry";
 import { cn } from "@/lib/utils";
 
 const intakeSchema = z.object({
@@ -163,30 +164,36 @@ export function IntakeWizard() {
     setStep((s) => Math.max(s - 1, 0));
   }
 
-  const onSubmit = handleSubmit(async (data) => {
-    setSubmitting(true);
-    setSubmitError("");
-    try {
-      const doc = await createClientDraft(MOCK_CLIENT_ORG.id, {
-        title: data.title,
-        type: data.type,
-        clientName: data.clientName,
-        counterpartyName: data.counterpartyName,
-        stateOfExecution: data.stateOfExecution,
-        transactionValue: data.transactionValue,
-        counterpartyIsMsme: data.counterpartyIsMsme,
-        durationMonths: data.durationMonths,
-        governingLaw: data.governingLaw,
-        keyTerms: data.keyTerms ?? "",
-      });
-      router.push(`/documents/${doc.id}`);
-    } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : "Could not create the draft.",
-      );
-      setSubmitting(false);
-    }
-  });
+  // One draft per press. The button is disabled by `submitting`, which is state, and two presses
+  // in the same tick both read it as false, so the guard is a ref: the second is dropped.
+  const entry = useRef(createReentryGuard());
+
+  const onSubmit = handleSubmit((data) =>
+    runExclusive(entry.current, async () => {
+      setSubmitting(true);
+      setSubmitError("");
+      try {
+        const doc = await createClientDraft(MOCK_CLIENT_ORG.id, {
+          title: data.title,
+          type: data.type,
+          clientName: data.clientName,
+          counterpartyName: data.counterpartyName,
+          stateOfExecution: data.stateOfExecution,
+          transactionValue: data.transactionValue,
+          counterpartyIsMsme: data.counterpartyIsMsme,
+          durationMonths: data.durationMonths,
+          governingLaw: data.governingLaw,
+          keyTerms: data.keyTerms ?? "",
+        });
+        router.push(`/documents/${doc.id}`);
+      } catch (err) {
+        setSubmitError(
+          err instanceof Error ? err.message : "Could not create the draft.",
+        );
+        setSubmitting(false);
+      }
+    }),
+  );
 
   const isLastStep = step === STEP_LABELS.length - 1;
 
