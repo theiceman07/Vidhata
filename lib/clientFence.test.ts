@@ -173,6 +173,7 @@ describe("the rule the fence enforces", () => {
       "lib/api/metrics",
       "lib/api/onboarding",
       "lib/api/advocate-invite",
+      "lib/api/settlement-notes",
     ];
     expect(internal.filter((m) => naming(m).length === 0)).toEqual([]);
   });
