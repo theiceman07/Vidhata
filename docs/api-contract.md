@@ -148,7 +148,8 @@ apply (for example an e-signature step for a class that cannot be signed
 electronically) never holds execution up.
 Mock: `documents.ts` › `toggleExecutionStep`, `attachEvidence`.
 Test: `execution.test.ts` (nine tests), including "is one record however many times the last step is confirmed".
-**Gap:** the mock does not refuse the call on a document that is not signed off. `execution.test.ts` › "does not execute a document that is not signed off" passes only because such a document has no steps yet. Refuse it explicitly.
+`toggleExecutionStep` and `attachEvidence` check for a recorded sign-off themselves, as the client functions do, and refuse a step that is not on the checklist ("That is not a step of this document's checklist."). `toggleExecutionStep` also refuses when no step applies, because "every step is done" is true of nothing and a tick would have executed the document.
+Test: `lib/api/execution-guard.test.ts` (6 tests); `execution.test.ts` › "does not execute a document that is not signed off, and refuses the tick itself".
 
 **2.6 A generated checklist states no figure and no rule.** It says "Stamp duty
 depends on the state of execution and the instrument. Your advocate confirms the
@@ -656,7 +657,7 @@ they were once open and why.
    - **The advocate's modules are on the list too.** `lib/api/citations`, `metrics`, `onboarding` and `advocate-invite` are blocked, though no client file imports them today, because a fence is cheaper to widen before something uses them. The day a client screen needs part of one (a source shown as verified, say), that part is exposed through `lib/api/client` and the module stays blocked. A backend does not rely on any of this: it returns client types and nothing else.
    - The shared document workspace reads a `WorkspaceDocument`, which the advocate's record satisfies and a client's is built to (`lib/client-workspace.ts`). It has no place for the organisation, the advocate's id, the rule or layer behind a finding, the override note, when it was decided, who asked for a change, or who withdrew a source. It builds no trail and works out no numbers itself: each portal gives its own.
    - `lib/privacy.ts` is no longer narrowing code. It builds the export from client types inside `requestDataExport`.
-8. **Execution on an unsigned document. Closed for the client.** `toggleClientStep` and `attachClientEvidence` refuse a document with no recorded sign-off. The internal `toggleExecutionStep` and `attachEvidence` still do not, and a backend refuses at the write.
+8. **Execution on an unsigned document. Closed.** `toggleClientStep` and `attachClientEvidence` refuse a document with no recorded sign-off, and so do the internal `toggleExecutionStep` and `attachEvidence`, at the write. Tests: `lib/api/execution-guard.test.ts` › "the execution checklist is worked only on a signed-off document, by the write itself", `lib/api/client/checklist.test.ts`.
 9. **Consultation requests are keyed by question text.** Use a client-supplied idempotency key.
 10. **No length cap on change requests, notes or findings.** Consultations have caps; these do not.
 11. **Invoice numbers are derived**, not allocated (section 7).
