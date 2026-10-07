@@ -1,6 +1,7 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { addSettlementNote, listSettlementNotes, updateSettlementNote } from "./settlement-notes";
 import { getDocument, heldDocument, signOffDocument } from "./documents";
 import { advocate, claimedDocument, refusal, settle, settleEverything } from "./testing";
@@ -126,19 +127,33 @@ describe("signing off, and the notes to the client", () => {
 describe("what can set the time a note was released", () => {
   const root = path.resolve(__dirname, "..", "..");
 
+  // The scan reads about 230 files. On a cold disk cache, or with the rest of the suite running,
+  // each read is slow, and this test used to read every file twice (once per test) and stat each
+  // entry as well. It now lists with the directory entries it already has, and reads each file
+  // once, in parallel, before either test runs. Both tests share what was read.
   function sources(dir: string): string[] {
-    return readdirSync(path.join(root, dir)).flatMap((name) => {
-      const full = path.join(dir, name);
-      if (statSync(path.join(root, full)).isDirectory()) return sources(full);
-      return /\.(ts|tsx)$/.test(name) && !/\.test\.tsx?$/.test(name) ? [full.split(path.sep).join("/")] : [];
+    return readdirSync(path.join(root, dir), { withFileTypes: true }).flatMap((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) return sources(full);
+      return /\.(ts|tsx)$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)
+        ? [full.split(path.sep).join("/")]
+        : [];
     });
   }
   const all = [...sources("app"), ...sources("components"), ...sources("lib")];
+  const contents = new Map<string, string>();
+  const source = (f: string) => contents.get(f) ?? "";
+
+  // 30 s, not the default 5: the work is already one parallel read of the files, so what is left
+  // is the disk, which is not this test's to control.
+  beforeAll(async () => {
+    await Promise.all(all.map(async (f) => contents.set(f, await readFile(path.join(root, f), "utf8"))));
+  }, 30_000);
 
   it("is one function, called from one place: signing off", () => {
-    const callers = all.filter((f) => /\breleaseMarked\(/.test(readFileSync(path.join(root, f), "utf8")));
+    const callers = all.filter((f) => /\breleaseMarked\(/.test(source(f)));
     expect(callers.sort()).toEqual(["lib/api/documents.ts", "lib/settlementNotes.ts"]);
-    const documents = readFileSync(path.join(root, "lib/api/documents.ts"), "utf8");
+    const documents = source("lib/api/documents.ts");
     const at = documents.indexOf("releaseMarked(doc.settlementNotes");
     const inFunction = documents.lastIndexOf("export async function", at);
     expect(documents.slice(inFunction, inFunction + 60)).toContain("signOffDocument");
@@ -146,9 +161,9 @@ describe("what can set the time a note was released", () => {
 
   it("is written nowhere else as a value but null", () => {
     for (const f of all) {
-      const source = readFileSync(path.join(root, f), "utf8");
+      const text = source(f);
       // A releasedAt that is assigned or set to anything but null: only the release itself does it.
-      const sets = [...source.matchAll(/\breleasedAt\s*(?::|=)(?!\s*(?:null\b|=|string \| null))\s*([^,;\n}]+)/g)].map(
+      const sets = [...text.matchAll(/\breleasedAt\s*(?::|=)(?!\s*(?:null\b|=|string \| null))\s*([^,;\n}]+)/g)].map(
         (m) => m[0],
       );
       // The release itself, the type declarations, and the two places a released note is copied

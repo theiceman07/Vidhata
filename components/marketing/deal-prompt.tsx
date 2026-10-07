@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createReentryGuard, runExclusive } from "@/lib/reentry";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Icon } from "@/components/shared/icon";
@@ -64,6 +65,8 @@ export function DealPrompt({
     }
   }, [restore]);
 
+  const entry = useRef(createReentryGuard());
+
   function keep(text: string) {
     try {
       window.sessionStorage.setItem(BRIEF_KEY, text);
@@ -87,25 +90,29 @@ export function DealPrompt({
       return;
     }
 
-    setDrafting(true);
-    try {
-      const intake = intakeFromReading(await readBrief(text));
-      if (!intake) {
-        keep(text);
-        router.push("/new");
-        return;
-      }
-      const doc = await createClientDraft(MOCK_CLIENT_ORG.id, intake);
+    // One draft per press. `drafting` is state and two presses in the same tick both read it as
+    // false, so the guard is a ref: the second press is dropped, with no request and no draft.
+    await runExclusive(entry.current, async () => {
+      setDrafting(true);
       try {
-        window.sessionStorage.removeItem(BRIEF_KEY);
-      } catch {
-        // Nothing to clear.
+        const intake = intakeFromReading(await readBrief(text));
+        if (!intake) {
+          keep(text);
+          router.push("/new");
+          return;
+        }
+        const doc = await createClientDraft(MOCK_CLIENT_ORG.id, intake);
+        try {
+          window.sessionStorage.removeItem(BRIEF_KEY);
+        } catch {
+          // Nothing to clear.
+        }
+        router.push(`/documents/${doc.id}`);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not start the draft.");
+        setDrafting(false);
       }
-      router.push(`/documents/${doc.id}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not start the draft.");
-      setDrafting(false);
-    }
+    });
   }
 
   return (
