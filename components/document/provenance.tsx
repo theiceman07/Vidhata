@@ -347,7 +347,7 @@ export function Provenance({
         return (
           <li
             key={stage.key}
-            className="relative grid grid-cols-[1.75rem_minmax(0,1fr)] gap-x-3.5 pb-6 last:pb-0"
+            className="relative grid grid-cols-[1.75rem_minmax(0,1fr)] gap-x-3.5 pb-4 last:pb-0"
           >
             {line && (
               <span

@@ -212,7 +212,7 @@ export function AuditTrail({
 
             const frame = large
               ? "flex h-full flex-col rounded-card bg-paper p-5"
-              : "rounded-control px-2 py-2.5";
+              : "rounded-control px-2 py-1.5";
 
             return (
               <li key={`${entry.at}-${i}`} className="min-w-0">

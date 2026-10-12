@@ -38,12 +38,12 @@ export function ContextPanel({
   compact?: boolean;
 }) {
   return (
-    <section className={cn("rounded-card bg-parchment", compact ? "p-5" : "p-6", className)}>
+    <section className={cn("rounded-card bg-parchment", compact ? "p-4 md:p-5" : "p-5 md:p-6", className)}>
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-h3 text-ink">{title}</h2>
         {aside}
       </div>
-      <div className={compact ? "mt-4" : "mt-6"}>{children}</div>
+      <div className={compact ? "mt-3" : "mt-4"}>{children}</div>
     </section>
   );
 }
@@ -77,18 +77,18 @@ export function DealOnFile({
 
   return (
     <ContextPanel title="The deal on file" className={className} compact={compact}>
-      <dl className={cn("grid gap-x-8 sm:grid-cols-2", compact ? "gap-y-4" : "gap-y-5")}>
+      <dl className="grid gap-x-8 gap-y-3 sm:grid-cols-2 xl:grid-cols-4">
         {rows.map(([term, value]) => (
-          <div key={term} className={term === "Parties" ? "min-w-0 sm:col-span-2" : "min-w-0"}>
-            <dt className="text-meta text-muted-fg">{term}</dt>
-            <dd className="mt-0.5 font-display text-h3 text-ink">{value}</dd>
+          <div key={term} className={term === "Parties" ? "min-w-0 sm:col-span-2 xl:col-span-4" : "min-w-0"}>
+            <dt className="text-label text-muted-fg">{term}</dt>
+            <dd className="mt-0.5 text-body font-medium text-ink">{value}</dd>
           </div>
         ))}
       </dl>
       {deal.keyTerms && (
-        <div className={cn("rounded-control bg-paper px-4 py-3", compact ? "mt-4" : "mt-5")}>
-          <p className="text-meta text-muted-fg">Key terms, as you stated them</p>
-          <p className="mt-1 font-display text-h3 text-ink">{deal.keyTerms}</p>
+        <div className={cn("rounded-control bg-paper px-4 py-3", "mt-3")}>
+          <p className="text-label text-muted-fg">Key terms, as you stated them</p>
+          <p className="mt-1 text-body font-medium text-ink">{deal.keyTerms}</p>
         </div>
       )}
     </ContextPanel>
@@ -259,34 +259,44 @@ export function WhatHappensNext({
   doc,
   className,
   compact = false,
+  wide = false,
+  footer,
 }: {
   doc: ClientDocument;
   className?: string;
   compact?: boolean;
+  /** Steps run left to right in one row at lg and up, for a panel the full width of the page. */
+  wide?: boolean;
+  /** Further context set under the steps, inside the same panel. */
+  footer?: React.ReactNode;
 }) {
   const stations = stationsFor(doc);
 
   return (
     <ContextPanel title="What happens next" className={className} compact={compact}>
-      <ol>
+      <ol className={cn(wide && "lg:grid lg:grid-cols-[repeat(4,minmax(0,1fr))] lg:gap-x-5")}>
         {stations.map((station, i) => (
           <li
             key={station.title}
             className={cn(
               "relative grid grid-cols-[1.75rem_minmax(0,1fr)] gap-x-3.5 last:pb-0",
-              compact ? "pb-4" : "pb-5",
+              compact ? "pb-3.5" : "pb-4",
+              wide && "lg:grid-cols-1 lg:gap-y-3 lg:pb-0",
             )}
           >
             {i < stations.length - 1 && (
               <span
                 aria-hidden
-                className="absolute bottom-0.5 left-[12.5px] top-9 w-[3px] rounded-full bg-line"
+                className={cn(
+                  "absolute bottom-0.5 left-[11px] top-8 w-0.5 rounded-full bg-line",
+                  wide && "lg:bottom-auto lg:left-8 lg:right-2 lg:top-[11px] lg:h-0.5 lg:w-auto",
+                )}
               />
             )}
             <span
               aria-hidden
               className={cn(
-                "flex h-7 w-7 items-center justify-center rounded-full font-mono text-label",
+                "flex h-6 w-6 items-center justify-center rounded-full font-mono text-label",
                 station.current
                   ? "bg-ink text-paper"
                   : "bg-paper text-muted-fg ring-1 ring-inset ring-line",
@@ -303,11 +313,12 @@ export function WhatHappensNext({
                   </span>
                 )}
               </p>
-              <p className="mt-0.5 text-meta text-muted-fg">{station.body}</p>
+              <p className="mt-0.5 text-meta leading-[1.45] text-muted-fg">{station.body}</p>
             </div>
           </li>
         ))}
       </ol>
+      {footer}
     </ContextPanel>
   );
 }
@@ -376,17 +387,17 @@ export function OnYourDesk({ currentId, className }: { currentId: string; classN
             ` ${withAdvocate} ${withAdvocate === 1 ? "document is" : "documents are"} with an advocate.`}
         </p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-1">
           {waiting.map((d) => {
             const move = yourMove(d);
             return (
               <li key={d.id}>
                 <Link
                   href={move?.href ?? `/documents/${d.id}`}
-                  className="group flex items-center gap-3 rounded-control bg-paper px-4 py-3 transition-colors hover:bg-paper/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="group flex items-center gap-3 rounded-control px-3 py-2 transition-colors hover:bg-paper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-display text-[16px] text-ink">
+                    <span className="block truncate text-meta font-medium text-ink">
                       {d.title}
                     </span>
                     {move && (

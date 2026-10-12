@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -204,7 +205,7 @@ export default function DocumentPage() {
           </div>
         </header>
 
-        <div className="mt-10 grid gap-x-8 gap-y-8 lg:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem]">
+        <div className="mt-10 grid items-start gap-x-8 gap-y-6 lg:grid-cols-[minmax(0,13fr)_minmax(0,7fr)]">
           <PaymentPanel
             doc={doc}
             onPaid={(paid) => {
@@ -213,12 +214,27 @@ export default function DocumentPage() {
               toast.success("Fee paid. Your document is in the advocate queue.");
             }}
           />
-          <aside className="min-w-0 space-y-4">
-            <WhatHappensNext doc={doc} />
-            <ContextPanel title="Where it is">
-              <Provenance doc={doc} />
-            </ContextPanel>
-          </aside>
+          <ContextPanel title="Where it is" compact>
+            <Provenance doc={doc} />
+          </ContextPanel>
+          <div className="min-w-0 lg:col-span-2">
+            <WhatHappensNext
+              doc={doc}
+              wide
+              compact
+              footer={
+                <div className="mt-4 rounded-control bg-paper px-4 py-3">
+                  <h3 className="text-label font-medium text-muted-fg">What you receive at the end</h3>
+                  <ul className="mt-2 grid gap-x-8 gap-y-1.5 text-meta leading-[1.45] text-muted-fg md:grid-cols-2">
+                    <li>The settled document, with your advocate&apos;s sign-off recorded on it.</li>
+                    <li>A summary that explains the settled clauses in plain words.</li>
+                    <li>An execution checklist: stamping, registration and e-signature validity.</li>
+                    <li>The version history, with your advocate&apos;s dispositions, read-only.</li>
+                  </ul>
+                </div>
+              }
+            />
+          </div>
         </div>
       </Frame>
     );
@@ -260,27 +276,32 @@ export default function DocumentPage() {
       {/* Everything on this view is before sign-off, so say so up front. */}
       <DraftBanner className="mt-4" />
 
+      {/* With an advocate, the summary and the client's responses lead at the
+          full width of the page; the record and the rest sit below it. */}
+      {doc.status !== "revision" && (
+        <div className="mt-5">
+          <WithAdvocate doc={doc} />
+        </div>
+      )}
+
       {/* The move in hand and everything that explains it on the left;
           the record the document carries on the right. */}
-      <div className="mt-5 grid gap-x-8 gap-y-6 lg:grid-cols-[minmax(0,1fr)_20rem] 2xl:grid-cols-[minmax(0,1fr)_21.25rem]">
+      <div className="mt-5 grid items-start gap-x-6 gap-y-5 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
         <div className="min-w-0">
-          {doc.status === "revision" ? (
+          {doc.status === "revision" && (
             <>
               <MoveSummary doc={doc} />
               <div className="mt-4">
                 <ChangeRequests doc={doc} onSubmit={handleRespond} submitting={submitting} />
               </div>
             </>
-          ) : (
-            <WithAdvocate doc={doc} />
           )}
 
-          <div className="mt-6 grid gap-4 xl:grid-cols-2">
-            <WhatHappensNext doc={doc} compact />
+          <div className={cn("space-y-4", doc.status === "revision" && "mt-5")}>
+            <WhatHappensNext doc={doc} wide compact />
             <DealOnFile doc={doc} compact />
+            <CoveragePanel doc={doc} />
           </div>
-
-          <CoveragePanel doc={doc} className="mt-4" />
         </div>
 
         {/* Plain flow: the record is taller than the screen, so holding it
@@ -349,8 +370,8 @@ function WithAdvocate({ doc }: { doc: ClientDocument }) {
   const answered = doc.findingList.filter((f) => f.request?.response);
 
   return (
-    <div className="max-w-3xl space-y-8">
-      <p className="text-lead text-ink">
+    <div className="space-y-5">
+      <p className="max-w-measure text-lead text-ink">
         {doc.status === "pending_review"
           ? "The first pass has drafted and screened this document. It is in the advocate queue, and an empanelled advocate will claim it for review."
           : "An advocate is reviewing the findings the first pass raised."}{" "}
@@ -363,15 +384,23 @@ function WithAdvocate({ doc }: { doc: ClientDocument }) {
           <h2 className="text-label font-medium text-muted-fg">Your responses</h2>
           <ul className="mt-3 space-y-2">
             {answered.map((f) => (
-              <li key={f.number} className="rounded-control bg-parchment px-4 py-3">
+              <li key={f.number} className="rounded-card bg-parchment p-4">
                 <p className="text-label text-muted-fg">
                   <span className="font-mono">{f.clauseReference}</span>
                   {f.request?.respondedAt && (
                     <> · {format(new Date(f.request.respondedAt), "d MMM yyyy")}</>
                   )}
                 </p>
-                <p className="mt-0.5 text-meta text-muted-fg">{f.request?.request}</p>
-                <p className="mt-1 text-meta text-ink">{f.request?.response}</p>
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  <div className="min-w-0">
+                    <p className="text-label font-medium text-muted-fg">Your advocate asked</p>
+                    <p className="mt-1 text-meta text-ink">{f.request?.request}</p>
+                  </div>
+                  <div className="min-w-0 rounded-control bg-paper px-4 py-3">
+                    <p className="text-label font-medium text-muted-fg">Your answer</p>
+                    <p className="mt-1 text-meta text-ink">{f.request?.response}</p>
+                  </div>
+                </div>
               </li>
             ))}
           </ul>

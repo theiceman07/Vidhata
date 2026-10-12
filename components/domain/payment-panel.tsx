@@ -54,7 +54,7 @@ export function PaymentPanel({
   return (
     <section
       aria-labelledby="pay-title"
-      className="grid gap-x-10 gap-y-8 rounded-card bg-parchment p-6 md:p-8 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)]"
+      className="grid items-start gap-x-8 gap-y-6 self-start rounded-card bg-parchment p-5 md:px-6 md:py-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]"
     >
       <div className="min-w-0">
         <p className="text-label font-medium text-muted-fg">Screened</p>
@@ -68,7 +68,7 @@ export function PaymentPanel({
           Nothing reaches an advocate until the fee is paid.
         </p>
 
-        <h3 className="mt-8 text-label font-medium text-muted-fg">The deal facts behind the tier</h3>
+        <h3 className="mt-5 text-label font-medium text-muted-fg">The deal facts behind the tier</h3>
         <dl className="mt-3 grid max-w-md grid-cols-[10rem_minmax(0,1fr)] gap-x-4 gap-y-2.5 text-meta">
           <dt className="text-muted-fg">Agreement</dt>
           <dd className="text-ink">{typeLabel}</dd>
@@ -85,7 +85,7 @@ export function PaymentPanel({
         </dl>
       </div>
 
-      <div className="min-w-0 self-start rounded-card bg-paper p-6">
+      <div className="min-w-0 rounded-card bg-paper p-5">
         <p className="text-label font-medium text-muted-fg">{tier?.label ?? "Review"} · fixed fee</p>
         {tier ? (
           <>

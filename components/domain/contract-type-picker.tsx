@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { Icon } from "@/components/shared/icon";
+import { Input } from "@/components/ui/input";
 import {
   CONTRACT_CATALOGUE,
   CONTRACT_GROUPS,
@@ -28,20 +30,62 @@ export function ContractTypePicker({
   onChange: (type: DraftType) => void;
   error?: string;
 }) {
+  const [query, setQuery] = useState("");
+  const [availableOnly, setAvailableOnly] = useState(false);
+  const needle = query.trim().toLowerCase();
+  const shown = CONTRACT_CATALOGUE.filter(
+    (e) =>
+      (!availableOnly || e.available) && (needle === "" || e.label.toLowerCase().includes(needle)),
+  );
+
   return (
-    <div role="group" aria-labelledby="contract-type-heading" className="space-y-8">
-      <div>
-        <h2 id="contract-type-heading" className="font-display text-h3 text-ink">
-          Contract type
-        </h2>
-        <p className="mt-1 text-meta text-muted-fg">
-          Choose what you are drafting. Types marked coming soon are not
-          available yet.
-        </p>
+    <div role="group" aria-label="Contract type" className="space-y-6">
+      <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
+        <div className="relative min-w-0 basis-full sm:basis-auto sm:flex-[3]">
+          <Icon
+            name="search"
+            size={18}
+            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-fg"
+          />
+          <Input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search agreement types"
+            aria-label="Search agreement types"
+            className="h-12 pl-10"
+          />
+        </div>
+        <div className="flex h-12 min-w-0 basis-full gap-1 rounded-full bg-parchment p-1 sm:flex-1 sm:basis-auto" role="group" aria-label="Show">
+          {[
+            { label: "All types", only: false },
+            { label: "Available now", only: true },
+          ].map((f) => (
+            <button
+              key={f.label}
+              type="button"
+              aria-pressed={availableOnly === f.only}
+              onClick={() => setAvailableOnly(f.only)}
+              className={cn(
+                "flex-1 whitespace-nowrap rounded-full px-3.5 text-meta transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                availableOnly === f.only ? "bg-paper font-medium text-ink" : "text-muted-fg hover:text-ink",
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
+      {shown.length === 0 && (
+        <p className="rounded-control bg-parchment px-4 py-3 text-meta text-muted-fg">
+          No agreement type matches that search.
+        </p>
+      )}
+
       {CONTRACT_GROUPS.map((group) => {
-        const entries = CONTRACT_CATALOGUE.filter((e) => e.group === group.id);
+        const entries = shown.filter((e) => e.group === group.id);
+        if (entries.length === 0) return null;
         return (
           <section key={group.id} aria-labelledby={`contract-group-${group.id}`}>
             <h3
@@ -50,7 +94,7 @@ export function ContractTypePicker({
             >
               {group.label}
             </h3>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {entries.map((entry) => {
                 const selected = entry.available && entry.draftType === value;
                 return (
@@ -63,15 +107,15 @@ export function ContractTypePicker({
                       if (entry.available) onChange(entry.draftType);
                     }}
                     className={cn(
-                      "flex min-h-12 w-full items-center justify-between gap-3 rounded-control border px-4 py-3 text-left text-body transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                      "flex min-h-16 w-full items-center justify-between gap-3 rounded-control border px-5 py-3 text-left text-body transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                       selected
-                        ? "border-accent bg-parchment text-ink"
+                        ? "border-accent bg-accent/10 font-medium text-ink"
                         : entry.available
-                          ? "border-line bg-paper text-ink hover:bg-parchment"
-                          : "cursor-not-allowed border-line bg-parchment text-muted-fg",
+                          ? "border-line bg-paper text-ink hover:border-accent/50 hover:bg-accent/5"
+                          : "cursor-not-allowed border-transparent bg-parchment text-muted-fg",
                     )}
                   >
-                    <span>{entry.label}</span>
+                    <span className="min-w-0">{entry.label}</span>
                     {selected && (
                       <Icon name="check" size={18} className="shrink-0 text-accent" />
                     )}

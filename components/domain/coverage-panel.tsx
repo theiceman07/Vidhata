@@ -33,10 +33,10 @@ export function CoveragePanel({
 
       {/* Three sections, set apart by tint and space. A tick means a layer
           ran on this draft, not that a clause passed it. */}
-      <div className="mt-4 space-y-3">
+      <div className="mt-3 space-y-3">
         {ran.length > 0 && (
           <Section number="01" title="Layers that ran" note="A tick means the layer ran on this draft.">
-            <ol className="grid gap-x-8 gap-y-1 md:grid-cols-2">
+            <ol className="grid gap-x-8 gap-y-1 md:grid-cols-2 xl:grid-cols-3">
               {ran.map((layer) => (
                 <li key={layer} className="flex items-baseline gap-2.5 text-meta">
                   <Icon name="check" size={16} className="shrink-0 translate-y-0.5 text-verified" />
@@ -90,13 +90,13 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-control bg-paper px-4 py-4">
+    <section className="rounded-control bg-paper px-4 py-3">
       <h3 className="flex flex-wrap items-baseline gap-x-2.5 text-meta font-semibold text-ink">
         <span className="tabular-nums text-muted-fg">{number}</span>
         {title}
         <span className="text-small font-normal text-muted-fg">{note}</span>
       </h3>
-      <div className="mt-3">{children}</div>
+      <div className="mt-2.5">{children}</div>
     </section>
   );
 }
