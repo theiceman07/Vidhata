@@ -28,13 +28,13 @@ const AccordionTrigger = React.forwardRef<
     <AccordionPrimitive.Trigger
       ref={ref}
       className={cn(
-        "flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180",
+        "group flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline",
         className
       )}
       {...props}
     >
       {children}
-      <Icon name="expand_more" size={18} className="shrink-0 transition-transform duration-200" />
+      <Icon name="expand_more" size={18} className="shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
     </AccordionPrimitive.Trigger>
   </AccordionPrimitive.Header>
 ))

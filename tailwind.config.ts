@@ -55,7 +55,12 @@ const config: Config = {
           "clamp(44px, 6.2vw, 84px)",
           { lineHeight: "1.02", fontWeight: "500", letterSpacing: "-0.025em" },
         ],
-        h1: ["clamp(32px, 3.6vw, 48px)", { lineHeight: "1.08", fontWeight: "500", letterSpacing: "-0.02em" }],
+        // The landing headline: one step above display, as a named size so the scale stays honest.
+        "display-hero": [
+          "clamp(44px, 6.4vw, 92px)",
+          { lineHeight: "1", fontWeight: "500", letterSpacing: "-0.03em" },
+        ],
+        h1: ["clamp(30px, 3vw, 40px)", { lineHeight: "1.08", fontWeight: "500", letterSpacing: "-0.02em" }],
         h2: ["clamp(24px, 2.2vw, 30px)", { lineHeight: "1.15", fontWeight: "500", letterSpacing: "-0.015em" }],
         h3: ["19px", { lineHeight: "1.3", fontWeight: "500", letterSpacing: "-0.01em" }],
         lead: ["19px", { lineHeight: "1.55", fontWeight: "400" }],

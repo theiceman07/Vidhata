@@ -8,17 +8,13 @@ import { toast } from "sonner";
 import { Icon } from "@/components/shared/icon";
 import { BackButton } from "@/components/shared/back-button";
 import { ErrorState } from "@/components/shared/error-state";
-import { AuditTrail } from "@/components/document/audit-trail";
 import {
   ExecutionChecklist,
   STEP_TITLE,
   nextStep,
 } from "@/components/domain/execution-checklist";
-import {
-  ContextPanel,
-  DealOnFile,
-  OnYourDesk,
-} from "@/components/domain/document-context";
+import { ContextPanel, DealOnFile } from "@/components/domain/document-context";
+import { AuditTrail } from "@/components/document/audit-trail";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -28,12 +24,18 @@ import {
 } from "@/lib/api/client/documents";
 import { getClientTrail } from "@/lib/api/client/trail";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
-import type { ClientAuditEntry, ClientDocument, ExecutionStep } from "@/lib/types";
+import type {
+  ClientAuditEntry,
+  ClientDocument,
+  ExecutionStep,
+} from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
 type Kind = ExecutionStep["kind"];
 
 const ORG = MOCK_CLIENT_ORG.id;
+
+/** How many of the latest activity entries show before "Show all". */
 
 /**
  * The execution checklist, from what a client is handed: the document, its
@@ -72,7 +74,11 @@ export default function ChecklistPage() {
     load();
   }, [load]);
 
-  async function save(kind: Kind, action: () => Promise<ClientDocument>, failure: string) {
+  async function save(
+    kind: Kind,
+    action: () => Promise<ClientDocument>,
+    failure: string,
+  ) {
     setBusyKind(kind);
     try {
       const changed = await action();
@@ -88,12 +94,20 @@ export default function ChecklistPage() {
 
   function handleToggle(kind: Kind, complete: boolean) {
     if (!doc) return;
-    save(kind, () => toggleClientStep(ORG, doc.id, kind, complete), "Could not update the checklist.");
+    save(
+      kind,
+      () => toggleClientStep(ORG, doc.id, kind, complete),
+      "Could not update the checklist.",
+    );
   }
 
   function handleAttach(kind: Kind, fileName: string | null) {
     if (!doc) return;
-    save(kind, () => attachClientEvidence(ORG, doc.id, kind, fileName), "Could not attach this file.");
+    save(
+      kind,
+      () => attachClientEvidence(ORG, doc.id, kind, fileName),
+      "Could not attach this file.",
+    );
   }
 
   if (state === "loading") {
@@ -137,7 +151,9 @@ export default function ChecklistPage() {
           <BackButton fallbackHref={`/documents/${doc.id}`} label="Back" />
           <div className="min-w-0">
             <p className="truncate text-meta text-muted-fg">{doc.title}</p>
-            <h1 className="mt-1 font-display text-h1 text-ink">Execution checklist</h1>
+            <h1 className="mt-1 font-display text-h1 text-ink">
+              Execution checklist
+            </h1>
             <p className="mt-2 text-body text-muted-fg">
               What remains before the settled document takes effect.
             </p>
@@ -164,8 +180,8 @@ export default function ChecklistPage() {
       <div className="hidden print:mb-6 print:block">
         <h1 className="font-display text-h1 text-ink">{doc.title}</h1>
         <p className="text-body text-muted-fg">
-          {doc.deal.clientName} and {doc.deal.counterpartyName} · Execution checklist ·
-          Generated {format(new Date(), "d MMM yyyy, HH:mm")}
+          {doc.deal.clientName} and {doc.deal.counterpartyName} · Execution
+          checklist · Generated {format(new Date(), "d MMM yyyy, HH:mm")}
         </p>
       </div>
 
@@ -198,45 +214,66 @@ export default function ChecklistPage() {
             )}
           </div>
 
-          <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3 print:hidden">
-            <ContextPanel title="Activity" className="md:col-span-2 xl:col-span-1">
-              <AuditTrail entries={trail} title={null} />
+          <div className="mt-10 space-y-4 print:hidden">
+            <ContextPanel title="Activity">
+              <AuditTrail entries={trail} title={null} timeline />
             </ContextPanel>
-            <DealOnFile doc={doc} />
-            <div className="flex min-w-0 flex-col gap-4">
-              <ContextPanel title="The settled document">
-                <p className="text-meta text-ink">
-                  Read the text {doc.signOff?.advocate ?? "the advocate"} signed
-                  off, and ask its agent what any clause means.
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <DealOnFile doc={doc} />
+              <ContextPanel
+                title="The settled document"
+                className="flex flex-col [&>div:last-child]:flex [&>div:last-child]:flex-1 [&>div:last-child]:flex-col"
+              >
+                <p className="text-body text-muted-fg">
+                  Read the text {doc.signOff?.advocate ?? "the advocate"} signed off, and ask its
+                  agent what any clause means.
                 </p>
-                <div className="mt-4 flex flex-col gap-2">
+                <div className="mt-5 grid flex-1 auto-rows-fr gap-3 sm:grid-cols-2">
                   <Link
                     href={`/documents/${doc.id}`}
-                    className="group flex items-center gap-3 rounded-control bg-paper px-4 py-3 text-meta text-ink transition-colors hover:bg-paper/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    className="group flex h-full flex-col gap-6 rounded-control bg-paper p-5 transition-colors hover:bg-paper/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   >
-                    <Icon name="description" size={18} className="text-muted-fg" />
-                    <span className="flex-1">Read the settled document</span>
-                    <Icon
-                      name="arrow_forward"
-                      size={18}
-                      className="text-muted-fg transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
-                    />
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-parchment text-ink">
+                      <Icon name="description" size={24} />
+                    </span>
+                    <span className="mt-auto block">
+                      <span className="flex items-end justify-between gap-3">
+                        <span className="font-display text-h3 text-ink">Read the settled document</span>
+                        <Icon
+                          name="arrow_forward"
+                          size={20}
+                          className="shrink-0 text-muted-fg transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+                        />
+                      </span>
+                      <span className="mt-2 block text-meta text-muted-fg">
+                        The full text, clause by clause, as signed off.
+                      </span>
+                    </span>
                   </Link>
                   <Link
                     href={`/documents/${doc.id}/chat`}
-                    className="group flex items-center gap-3 rounded-control bg-paper px-4 py-3 text-meta text-ink transition-colors hover:bg-paper/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    className="group flex h-full flex-col gap-6 rounded-control bg-paper p-5 transition-colors hover:bg-paper/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   >
-                    <Icon name="send" size={18} className="text-muted-fg" />
-                    <span className="flex-1">Ask about a clause</span>
-                    <Icon
-                      name="arrow_forward"
-                      size={18}
-                      className="text-muted-fg transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
-                    />
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-parchment text-ink">
+                      <Icon name="send" size={24} />
+                    </span>
+                    <span className="mt-auto block">
+                      <span className="flex items-end justify-between gap-3">
+                        <span className="font-display text-h3 text-ink">Ask about a clause</span>
+                        <Icon
+                          name="arrow_forward"
+                          size={20}
+                          className="shrink-0 text-muted-fg transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+                        />
+                      </span>
+                      <span className="mt-2 block text-meta text-muted-fg">
+                        The agent explains what a clause says. It never advises.
+                      </span>
+                    </span>
                   </Link>
                 </div>
               </ContextPanel>
-              <OnYourDesk currentId={doc.id} className="flex-1" />
             </div>
           </div>
         </>
@@ -308,8 +345,12 @@ function ExecutionSummary({
         <p className="text-label font-medium text-muted-fg">Up next</p>
         {next ? (
           <div>
-            <p className="font-display text-h3 text-ink">{STEP_TITLE[next.kind]}</p>
-            <p className="mt-1 text-meta text-muted-fg">Owner · {owners[next.kind]}</p>
+            <p className="font-display text-h3 text-ink">
+              {STEP_TITLE[next.kind]}
+            </p>
+            <p className="mt-1 text-meta text-muted-fg">
+              Owner · {owners[next.kind]}
+            </p>
             <a
               href={`#step-${next.kind}`}
               className="mt-4 inline-flex items-center gap-1 text-meta font-medium text-ink underline-offset-2 hover:underline"
@@ -351,7 +392,10 @@ function ExecutionSummary({
         {proof.length > 0 ? (
           <ul className="space-y-1.5">
             {proof.map((step) => (
-              <li key={step.kind} className="flex min-w-0 items-center gap-2 text-meta text-ink">
+              <li
+                key={step.kind}
+                className="flex min-w-0 items-center gap-2 text-meta text-ink"
+              >
                 <Icon name="attach_file" size={16} className="text-muted-fg" />
                 <span className="truncate">{step.evidence?.name}</span>
               </li>

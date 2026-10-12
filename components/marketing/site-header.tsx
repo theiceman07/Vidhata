@@ -72,11 +72,11 @@ export function SiteHeader() {
           <BrandLogo size="md" />
         </Link>
 
-        <nav aria-label="Main" className="flex items-center gap-8">
+        <nav aria-label="Main" className="flex items-center gap-4">
           <Link
             href="/pricing"
             className={cn(
-              "text-body font-medium transition-colors",
+              "inline-flex h-11 items-center rounded-full px-4 text-body font-medium transition-colors",
               inked ? "text-paper/75 hover:text-paper" : "text-muted-fg hover:text-ink",
             )}
           >

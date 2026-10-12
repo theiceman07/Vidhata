@@ -19,9 +19,10 @@ import { getClientDiff } from "@/lib/api/client/versions";
 import {
   defaultComparison,
   dispositionText,
-  findingsSummary,
+  findingFigures,
   type ClientVersionDiffResult,
 } from "@/lib/clientVersions";
+import { cn } from "@/lib/utils";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type {
   ClientClauseRow,
@@ -107,21 +108,60 @@ export function VersionHistory({
   }
 
   return (
-    <div className="grid gap-x-8 gap-y-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-      <ContextPanel title="Drafts" className="self-start">
-        <ol className="space-y-5">
-          {rows.map((row) => (
-            <li key={row.number}>
-              <p className="text-body font-medium text-ink">{row.label}</p>
-              <p className="mt-0.5 text-meta text-muted-fg">
-                {row.madeBy} · {day(row.createdAt)}
-              </p>
-              <p className="mt-0.5 text-label tabular-nums text-muted-fg">
-                {row.clauseCount} {row.clauseCount === 1 ? "clause" : "clauses"} ·{" "}
-                {row.findingCount} {row.findingCount === 1 ? "finding" : "findings"}
-              </p>
-            </li>
-          ))}
+    <div className="grid gap-x-7 gap-y-6 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
+      {/* Stretches to the foot of the comparison beside it, so the rail is a
+          full-height panel rather than a short one with a gap beneath. */}
+      <ContextPanel title="Drafts" className="lg:self-stretch">
+        {/* A row of drafts to pick from on a narrow screen, a column in the
+            rail from lg up. */}
+        <ol className="-mx-2 flex gap-2 overflow-x-auto lg:block lg:space-y-1 lg:overflow-visible">
+          {rows.map((row) => {
+            // The draft this one is compared from: the one before it, or the
+            // next one when this is the first and there is nothing earlier.
+            // The list is newest first, so the nearest draft is found by number.
+            const earlier = rows
+              .filter((r) => r.number < row.number)
+              .sort((a, b) => b.number - a.number)[0];
+            const later = rows
+              .filter((r) => r.number > row.number)
+              .sort((a, b) => a.number - b.number)[0];
+            const selected = row.number === to;
+            const choose = () => {
+              if (earlier) {
+                setFrom(earlier.number);
+                setTo(row.number);
+              } else if (later) {
+                setFrom(row.number);
+                setTo(later.number);
+              }
+            };
+
+            return (
+              <li key={row.number} className="min-w-[11rem] shrink-0 lg:min-w-0">
+                <button
+                  type="button"
+                  onClick={choose}
+                  disabled={rows.length < 2}
+                  aria-pressed={selected}
+                  className={cn(
+                    "block w-full rounded-control border-l-2 px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                    selected
+                      ? "border-ink bg-paper"
+                      : "border-transparent hover:bg-paper/60 disabled:hover:bg-transparent",
+                  )}
+                >
+                  <span className="block text-body font-medium text-ink">{row.label}</span>
+                  <span className="mt-0.5 block text-small text-muted-fg">
+                    {row.madeBy} · {day(row.createdAt)}
+                  </span>
+                  <span className="mt-0.5 block text-small tabular-nums text-muted-fg">
+                    {row.clauseCount} {row.clauseCount === 1 ? "clause" : "clauses"} ·{" "}
+                    {row.findingCount} {row.findingCount === 1 ? "finding" : "findings"}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
         </ol>
       </ContextPanel>
 
@@ -133,7 +173,11 @@ export function VersionHistory({
           </p>
         ) : (
           <>
-            <div className="flex flex-wrap items-end gap-4">
+            {/* One toolbar: the two drafts chosen and what comparing them
+                found, on a single baseline. The count sits beside the
+                selectors rather than at the far edge, because it belongs
+                to them. */}
+            <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
               <DraftPicker
                 id="compare-from"
                 label="From"
@@ -150,9 +194,14 @@ export function VersionHistory({
                 rows={rows}
                 onChange={setTo}
               />
+              {load.phase === "loaded" && load.result.ok && (
+                <p className="flex h-10 items-center pl-2 text-meta tabular-nums text-muted-fg">
+                  {comparisonSummary(load.result.diff)}
+                </p>
+              )}
             </div>
 
-            <div className="mt-8" aria-live="polite">
+            <div className="mt-6" aria-live="polite">
               {load.phase === "loading" ? (
                 <div className="space-y-4" aria-busy="true">
                   <Skeleton className="h-8 w-1/2" />
@@ -194,7 +243,7 @@ function DraftPicker({
   onChange: (n: number) => void;
 }) {
   return (
-    <div className="w-56">
+    <div className="w-60">
       <Label htmlFor={id}>{label}</Label>
       <Select
         value={value === null ? undefined : String(value)}
@@ -220,7 +269,7 @@ function DraftPicker({
 function ChangeWord({ kind }: { kind: ClientClauseRow["kind"] }) {
   const { word, icon } = CLAUSE_CHANGE[kind];
   return (
-    <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-line bg-paper px-2.5 py-0.5 text-label font-medium text-ink">
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-line bg-paper px-2.5 py-0.5 text-small font-medium text-ink">
       {icon && <Icon name={icon} size={16} />}
       {word}
     </span>
@@ -243,6 +292,15 @@ function plural(n: number, one: string, many: string) {
   return `${n} ${n === 1 ? one : many}`;
 }
 
+/** "9 clauses compared · 1 changed", over every clause, shown or only counted. */
+function comparisonSummary(diff: ClientDiff): string {
+  const o = diff.otherClauses;
+  const total = diff.clauses.length + o.added + o.removed + o.changed + o.unchanged;
+  const changed =
+    diff.clauses.filter((c) => c.kind !== "unchanged").length + o.added + o.removed + o.changed;
+  return `${plural(total, "clause", "clauses")} compared · ${changed} changed`;
+}
+
 function DiffView({ diff }: { diff: ClientDiff }) {
   const shown = diff.clauses.filter((c) => c.kind !== "unchanged" || !diff.signedOff);
   const quiet = diff.clauses.filter((c) => c.kind === "unchanged" && diff.signedOff);
@@ -250,26 +308,60 @@ function DiffView({ diff }: { diff: ClientDiff }) {
   const otherCount = others.added + others.removed + others.changed + others.unchanged;
 
   return (
-    <section aria-labelledby="diff-title" className="space-y-8">
-      <div>
-        <h2 id="diff-title" className="font-display text-h3 text-ink">
+    <section aria-labelledby="diff-title" className="space-y-6">
+      {/* One summary surface: which drafts, the three finding counts, and
+          what is and is not shown of the clauses. */}
+      <div className="rounded-card bg-parchment p-5">
+        <h2 id="diff-title" className="font-display text-[21px] font-medium leading-[1.2] text-ink">
           {diff.fromLabel} to {diff.toLabel}
         </h2>
-        <p className="mt-2 text-meta text-muted-fg">{findingsSummary(diff)}</p>
-        {!diff.signedOff && (
-          <p className="mt-2 max-w-measure text-meta text-muted-fg">
-            Until this document is signed off you see the wording of the clauses your advocate has
-            asked you about. Every other clause is only counted.
+        <dl className="mt-3 flex flex-wrap gap-2">
+          {findingFigures(diff).map((figure) => (
+            <div
+              key={figure.label}
+              className="flex min-w-[8.5rem] items-baseline gap-2.5 rounded-control bg-paper px-4 py-2.5"
+            >
+              <dd className="font-display text-h3 tabular-nums text-ink">{figure.value}</dd>
+              <dt className="text-meta text-muted-fg">{figure.label}</dt>
+            </div>
+          ))}
+        </dl>
+        {(!diff.signedOff || otherCount > 0) && (
+          <p className="mt-3 max-w-measure text-meta text-muted-fg">
+            {otherCount > 0 && (
+              <>
+                <span className="font-medium text-ink">
+                  {[
+                    others.changed > 0 &&
+                      `${plural(others.changed, "other clause", "other clauses")} changed`,
+                    others.added > 0 && `${plural(others.added, "clause", "clauses")} added`,
+                    others.removed > 0 && `${plural(others.removed, "clause", "clauses")} removed`,
+                    `${others.unchanged} unchanged`,
+                  ]
+                    .filter(Boolean)
+                    .join(", ")}
+                </span>
+                {diff.signedOff
+                  ? ". Their wording is not shown."
+                  : ". Until this document is signed off you see the wording only of the clauses your advocate has asked you about."}
+              </>
+            )}
+            {otherCount === 0 &&
+              !diff.signedOff &&
+              "Until this document is signed off you see the wording only of the clauses your advocate has asked you about. Every other clause is only counted."}
           </p>
         )}
       </div>
 
       <div>
-        <h3 className="text-label font-medium text-muted-fg">Clauses</h3>
+        <h3 className="text-meta font-medium text-ink">Clauses</h3>
         <div className="mt-3 space-y-3">
-          {shown.map((clause) => (
-            <ClauseDiff key={clause.number} clause={clause} diff={diff} />
-          ))}
+          {/* What changed first, then what did not. */}
+          {[...shown]
+            .sort((a, b) => Number(a.kind === "unchanged") - Number(b.kind === "unchanged"))
+            .map((clause) => (
+              <ClauseDiff key={clause.number} clause={clause} diff={diff} />
+            ))}
 
           {shown.length === 0 && otherCount === 0 && (
             <p className="rounded-card bg-parchment p-5 text-meta text-ink">
@@ -285,31 +377,18 @@ function DiffView({ diff }: { diff: ClientDiff }) {
           </p>
         )}
 
-        {otherCount > 0 && (
-          <p className="mt-4 max-w-measure rounded-card bg-parchment p-5 text-meta text-ink">
-            {[
-              others.changed > 0 && `${plural(others.changed, "other clause", "other clauses")} changed`,
-              others.added > 0 && `${plural(others.added, "clause", "clauses")} added`,
-              others.removed > 0 && `${plural(others.removed, "clause", "clauses")} removed`,
-              `${others.unchanged} unchanged`,
-            ]
-              .filter(Boolean)
-              .join(", ")}
-            . Their wording is not shown until the document is signed off.
-          </p>
-        )}
       </div>
 
       <div>
-        <h3 className="text-label font-medium text-muted-fg">Findings</h3>
+        <h3 className="text-meta font-medium text-ink">Findings</h3>
         {diff.findingRows.length > 0 ? (
-          <ul className="mt-3 space-y-3">
+          <ul className="mt-3 space-y-2">
             {diff.findingRows.map((finding) => (
               <FindingChange key={`${finding.number}-${finding.clauseReference}`} finding={finding} />
             ))}
           </ul>
         ) : (
-          <p className="mt-3 max-w-measure rounded-card bg-parchment p-5 text-meta text-ink">
+          <p className="mt-3 max-w-measure rounded-control bg-parchment px-4 py-3 text-meta text-ink">
             {diff.signedOff
               ? "Neither draft has any findings."
               : "No finding behind a request to you changed between these drafts."}
@@ -321,8 +400,12 @@ function DiffView({ diff }: { diff: ClientDiff }) {
 }
 
 function ClauseDiff({ clause, diff }: { clause: ClientClauseRow; diff: ClientDiff }) {
+  const quiet = clause.kind === "unchanged";
+
   return (
-    <article className="rounded-card bg-parchment p-5">
+    // A changed clause is a full parchment sheet; an unchanged one is set back,
+    // half the tint and its wording muted, so what moved reads first.
+    <article className={cn("rounded-card", quiet ? "bg-parchment/50 p-4" : "bg-parchment p-5")}>
       <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className="font-mono text-label text-muted-fg">Clause {clause.number}</span>
         <h4 className="text-meta font-medium text-ink">{clause.heading}</h4>
@@ -330,9 +413,9 @@ function ClauseDiff({ clause, diff }: { clause: ClientClauseRow; diff: ClientDif
       </header>
 
       {clause.kind === "unchanged" ? (
-        <div className="mt-3 max-w-measure font-clause text-body text-ink">
+        <div className="mt-2 max-w-measure font-clause text-body text-muted-fg">
           <Paragraphs text={clause.after ?? ""} />
-          <p className="mt-3 font-sans text-label text-muted-fg">The same in both drafts.</p>
+          <p className="mt-2 font-sans text-small text-muted-fg">The same in both drafts.</p>
         </div>
       ) : (
         <div className="mt-3 grid gap-4 md:grid-cols-2">
@@ -369,19 +452,19 @@ function DraftText({
 
 function FindingChange({ finding }: { finding: ClientFindingRow }) {
   return (
-    <li className="rounded-card bg-parchment p-5">
+    <li className="rounded-control bg-parchment px-4 py-3">
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="font-mono text-label text-muted-fg">
+        <span className="font-mono text-small text-muted-fg">
           Finding {finding.number} · {finding.clauseReference}
         </span>
         <span className="text-meta font-medium text-ink">{finding.change}</span>
         {finding.advocateAdded && <AddedByLabel />}
       </p>
       {finding.description && (
-        <p className="mt-2 max-w-measure text-meta text-ink">{finding.description}</p>
+        <p className="mt-1 max-w-measure text-meta text-ink">{finding.description}</p>
       )}
       {finding.disposition && (
-        <p className="mt-2 text-label text-muted-fg">{dispositionText(finding.disposition)}</p>
+        <p className="mt-1 text-small text-muted-fg">{dispositionText(finding.disposition)}</p>
       )}
     </li>
   );

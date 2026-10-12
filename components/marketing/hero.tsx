@@ -12,7 +12,7 @@ export function Hero() {
   return (
     <section className="mx-auto w-full max-w-6xl px-6">
       <div className="flex min-h-[calc(100svh-6rem)] flex-col items-center justify-center py-20 text-center">
-        <h1 className="max-w-4xl font-display text-[clamp(44px,6.4vw,92px)] font-medium leading-[1] tracking-[-0.03em] text-ink">
+        <h1 className="max-w-4xl font-display text-display-hero text-ink">
           AI drafts. <em className="italic">Advocates</em> decide.
         </h1>
         <p className="mt-5 max-w-2xl text-balance text-lead text-ink/70">

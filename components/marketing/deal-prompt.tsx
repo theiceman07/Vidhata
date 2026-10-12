@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createReentryGuard, runExclusive } from "@/lib/reentry";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -51,6 +51,8 @@ export function DealPrompt({
 }) {
   const router = useRouter();
   const fieldRef = useRef<HTMLTextAreaElement>(null);
+
+  const fieldId = useId();
   const [brief, setBrief] = useState("");
   const [drafting, setDrafting] = useState(false);
   const ready = brief.trim().length > 0;
@@ -130,11 +132,11 @@ export function DealPrompt({
         }}
         className="relative rounded-modal border border-ink/15 bg-paper p-3 pl-6 text-left transition-[transform,border-color] duration-300 ease-out group-focus-within:-translate-y-0.5 group-focus-within:border-transparent"
       >
-        <label htmlFor="deal-brief" className="sr-only">
+        <label htmlFor={fieldId} className="sr-only">
           Describe the deal
         </label>
         <textarea
-          id="deal-brief"
+          id={fieldId}
           ref={fieldRef}
           rows={2}
           autoFocus={autoFocus}

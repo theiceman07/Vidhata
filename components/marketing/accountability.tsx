@@ -92,7 +92,7 @@ export function Accountability() {
                 Bar {DOC.advocate.bar}
                 {DOC.settledAt && (
                   <>
-                    <span className="mx-2 text-line">·</span>
+                    <span aria-hidden className="mx-2 text-muted-fg">·</span>
                     Signed off {format(new Date(DOC.settledAt), "d MMM yyyy")}
                   </>
                 )}

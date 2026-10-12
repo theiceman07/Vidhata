@@ -51,59 +51,67 @@ export function SiteFooter() {
         data-nav-tone="dark"
         className="tile-grain tile-grain-ink overflow-hidden rounded-modal bg-ink text-paper"
       >
-        <div className="mx-auto w-full max-w-6xl px-6 pt-16 md:pt-20">
-          <div className="grid gap-x-16 gap-y-12 lg:grid-cols-[minmax(0,1fr)_auto]">
-            <div>
-              <p className="max-w-md font-display text-h2 text-paper">
+        <div className="mx-auto w-full max-w-6xl px-6 pt-14 md:pt-16">
+          {/* One grid: the brand column and the three link groups share a
+              top edge, so every column starts on the same line. */}
+          <div className="grid gap-x-8 gap-y-12 sm:grid-cols-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]">
+            <div className="sm:col-span-3 lg:col-span-1">
+              <p className="font-display text-[clamp(20px,1.6vw,22px)] font-medium leading-[1.15] tracking-[-0.015em] text-paper sm:whitespace-nowrap">
                 AI drafts. Advocates decide.
               </p>
-              <p className="mt-4 max-w-sm text-meta text-paper/60">
+              <p className="mt-4 max-w-sm text-meta text-paper/90">
                 Contracts for Indian startups and MSMEs, drafted from a
                 curated clause corpus, checked against Indian statute and
                 signed off by an empanelled advocate.
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-x-12 gap-y-10 sm:grid-cols-3">
-              {GROUPS.map((group) => (
-                <nav key={group.label} aria-label={group.label}>
-                  <p className="text-label text-paper/45">{group.label}</p>
-                  <ul className="mt-3 space-y-2">
-                    {group.links.map((link) => (
-                      <li key={link.href}>
-                        <Link
-                          href={link.href}
-                          className="rounded-full text-meta text-paper/80 transition-colors hover:text-paper focus-visible:ring-offset-ink"
-                        >
-                          {link.label}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </nav>
-              ))}
-            </div>
+            {GROUPS.map((group) => (
+              <nav key={group.label} aria-label={group.label}>
+                <p className="text-label font-semibold text-paper">
+                  {group.label}
+                </p>
+                <ul className="mt-3 space-y-0.5">
+                  {group.links.map((link) => (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className="inline-flex min-h-11 items-center rounded-full text-meta text-paper/95 transition-colors hover:text-paper hover:underline hover:underline-offset-4 focus-visible:text-paper focus-visible:underline focus-visible:underline-offset-4 focus-visible:ring-offset-ink active:text-paper/70"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            ))}
           </div>
 
-          <div className="mt-16 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-paper/15 pt-6 text-label text-paper/50">
+          {/* The promise is the differentiator, so it sits as a line of its
+              own above the legal row rather than inside it. */}
+          <p className="mt-12 font-display text-h3 text-paper">
+            No document reaches a client without an advocate&rsquo;s sign-off.
+          </p>
+
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-paper/20 pt-5 text-meta text-paper/85">
             <p>
               © {new Date().getFullYear()} Vidhata
-              <span className="mx-1.5 text-paper/25">·</span>
+              <span aria-hidden className="mx-1.5 text-paper/60">·</span>
               India
-              <span className="mx-1.5 text-paper/25">·</span>
-              A technology provider to advocate-owned professional entities
             </p>
-            <p>No document reaches a client without an advocate&rsquo;s sign-off</p>
+            <p>A technology provider to advocate-owned professional entities</p>
           </div>
         </div>
 
-        {/* The name, set to the width of the panel and cut by its edge. */}
-        <p
+        {/* The name is a signature, cropped on purpose: the box is 0.56em
+            tall and holds the top of the letters, so the cut is the same
+            at every width and never depends on the panel edge. */}
+        <div
           aria-hidden
-          className="-mb-[0.2em] mt-10 select-none text-center font-wordmark text-[clamp(88px,24vw,380px)] leading-[0.8] tracking-[-0.04em] text-paper"
+          className="mt-8 h-[0.56em] select-none overflow-hidden text-center font-wordmark text-[clamp(72px,15vw,230px)] leading-[0.8] tracking-[0.02em] text-paper"
         >
           Vidhata
-        </p>
+        </div>
       </div>
     </footer>
   );

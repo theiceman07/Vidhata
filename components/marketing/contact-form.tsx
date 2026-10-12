@@ -43,27 +43,29 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-5 rounded-card bg-parchment p-6">
-      <div>
-        <Label htmlFor="contact-name">Your name</Label>
-        <Input
-          id="contact-name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          autoComplete="name"
-          required
-        />
-      </div>
-      <div>
-        <Label htmlFor="contact-email">Email</Label>
-        <Input
-          id="contact-email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-          required
-        />
+    <form onSubmit={onSubmit} className="space-y-5 rounded-card bg-parchment p-8">
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="contact-name">Your name</Label>
+          <Input
+            id="contact-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoComplete="name"
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="contact-email">Email</Label>
+          <Input
+            id="contact-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            required
+          />
+        </div>
       </div>
       <div>
         <Label htmlFor="contact-message">Message</Label>
@@ -86,7 +88,7 @@ export function ContactForm() {
         <p className="text-label text-muted-fg">
           Preview. Messages are not sent and nothing is saved.
         </p>
-        <Button type="submit" disabled={state === "sending"}>
+        <Button type="submit" className="h-11" disabled={state === "sending"}>
           {state === "sending" ? "Sending…" : "Send message"}
         </Button>
       </div>

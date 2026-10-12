@@ -37,7 +37,7 @@ export function Dateline({
     >
       {parts.map((part, i) => (
         <span key={`${part}-${i}`}>
-          {i > 0 && <span className="mx-2 text-line">·</span>}
+          {i > 0 && <span aria-hidden className="mx-2 text-muted-fg">·</span>}
           {part}
         </span>
       ))}

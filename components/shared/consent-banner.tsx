@@ -57,7 +57,7 @@ export function ConsentBanner() {
       <div className="mt-4 flex flex-wrap gap-2">
         <Button
           size="sm"
-          className="bg-paper text-ink hover:bg-parchment"
+          className="h-11 bg-paper px-5 text-ink hover:bg-parchment"
           onClick={() => answer("declined")}
         >
           Decline non-essential
@@ -65,7 +65,7 @@ export function ConsentBanner() {
         <Button
           size="sm"
           variant="ghost"
-          className="text-paper hover:bg-paper/10 hover:text-paper"
+          className="h-11 px-5 text-paper hover:bg-paper/10 hover:text-paper"
           onClick={() => answer("accepted")}
         >
           Accept non-essential

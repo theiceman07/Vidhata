@@ -58,7 +58,7 @@ export function PipelineProgress() {
         </p>
         <p aria-hidden className="mt-4 font-mono text-notation text-muted-fg">
           {minutes}:{seconds.toString().padStart(2, "0")} elapsed
-          <span className="mx-2 text-line">·</span>
+          <span aria-hidden className="mx-2 text-muted-fg">·</span>
           usually under two minutes
         </p>
         {/* The tier is set by this very screening, so say so while it runs

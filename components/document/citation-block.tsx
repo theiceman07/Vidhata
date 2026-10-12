@@ -33,11 +33,29 @@ function splitReference(text: string): {
   };
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function Row({
+  label,
+  large,
+  children,
+}: {
+  label: string;
+  large?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex gap-4 border-b border-line py-1.5 last:border-b-0">
-      <dt className="w-24 shrink-0 text-label text-muted-fg">{label}</dt>
-      <dd className="min-w-0 flex-1 text-meta text-ink">{children}</dd>
+    <div
+      className={
+        large
+          ? "flex items-baseline gap-5 border-b border-line py-3 last:border-b-0"
+          : "flex gap-4 border-b border-line py-1.5 last:border-b-0"
+      }
+    >
+      <dt className={large ? "w-28 shrink-0 text-meta text-muted-fg" : "w-24 shrink-0 text-label text-muted-fg"}>
+        {label}
+      </dt>
+      <dd className={large ? "min-w-0 flex-1 text-body text-ink" : "min-w-0 flex-1 text-meta text-ink"}>
+        {children}
+      </dd>
     </div>
   );
 }
@@ -47,7 +65,10 @@ export function CitationBlock({
   showWithdrawalNote,
   blockedActions,
   badge,
+  large = false,
 }: {
+  /** Reading size, for a source shown as the subject rather than beside a finding. */
+  large?: boolean;
   citations: WorkspaceCitation[];
   /** The advocate's reasoning is advocate-facing, like the override note. */
   showWithdrawalNote: boolean;
@@ -81,7 +102,13 @@ export function CitationBlock({
         return (
           <div
             key={citation.id}
-            className={blocked && !withdrawn ? "border-l-2 border-flagged pl-3" : undefined}
+            className={
+              blocked && !withdrawn
+                ? "border-l-2 border-flagged pl-3"
+                : large
+                  ? "border-l-2 border-transparent pl-3"
+                  : undefined
+            }
           >
             <div className="flex flex-wrap items-center gap-2">
               {badge ? badge(citation, label) : label}
@@ -89,13 +116,17 @@ export function CitationBlock({
             </div>
 
             <dl className="mt-2">
-              <Row label="Source">
+              <Row label="Source" large={large}>
                 <span className={withdrawn ? "text-muted-fg line-through" : undefined}>
                   {statute}
                 </span>
               </Row>
-              {provision && <Row label="Provision">{provision}</Row>}
-              <Row label="Checked">
+              {provision && (
+                <Row label="Provision" large={large}>
+                  {provision}
+                </Row>
+              )}
+              <Row label="Checked" large={large}>
                 {blocked ? (
                   <span className="text-flagged">
                     No match in the approved corpus
@@ -113,7 +144,7 @@ export function CitationBlock({
 
             {blocked && !withdrawn && (
               <>
-                <p className="mt-2 text-meta text-ink">
+                <p className={large ? "mt-3 text-body text-ink" : "mt-2 text-meta text-ink"}>
                   The pipeline could not verify this source. The finding
                   cannot be settled while it relies on it.
                 </p>

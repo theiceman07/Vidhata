@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = { title: "Page not found" };
 
 // QA 10.7: "dead-end screens" applies most sharply to error states — a 404
 // with no way home is the purest example. Next.js renders this

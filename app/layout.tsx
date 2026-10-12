@@ -25,6 +25,14 @@ export const metadata: Metadata = {
     siteName: "Vidhata",
     type: "website",
   },
+  // The card image itself comes from app/opengraph-image.tsx and
+  // app/twitter-image.tsx.
+  twitter: {
+    card: "summary_large_image",
+    title: "Vidhata · AI drafts. Advocates decide.",
+    description:
+      "AI-drafted, advocate-settled contracts for Indian startups and MSMEs. Every finding carries its source and a named advocate signs off.",
+  },
 };
 
 // The browser chrome takes the accent: the one colour the product uses,
@@ -39,9 +47,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
+    // Browser extensions write attributes onto <html> (the screenshot shows
+    // data-qb-installed) before React hydrates. Suppress the mismatch on this
+    // element only; it does not reach the children.
     <html
       lang="en"
       className={`${FONT_VARIABLES} h-full antialiased`}
+      suppressHydrationWarning
     >
       <head>
         {/* Material Symbols Outlined, subset to the names the product
@@ -59,7 +71,7 @@ export default function RootLayout({
           The rule sits on an inner column, not on body: menus, popovers
           and tooltips mount straight into body, and a full-width
           positioning wrapper throws them to the left edge. */}
-      <body className="flex min-h-full flex-col">
+      <body className="relative flex min-h-full flex-col">
         <SessionProvider>
           <div className="flex flex-1 flex-col [&>*]:w-full">{children}</div>
           {/* Top centre, below the preview banner: a toast sits over the

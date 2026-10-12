@@ -184,13 +184,13 @@ function Sheet({ stage, reduced }: { stage: number; reduced: boolean }) {
                 >
                   <p className="text-label text-muted-fg">
                     <span className="font-mono">Finding 02</span>
-                    <span className="mx-1.5 text-line">·</span>
+                    <span aria-hidden className="mx-1.5 text-muted-fg">·</span>
                     {settled ? "Settled" : "Open"}
                   </p>
                   <p className="mt-1 text-meta text-ink">{FINDING.description}</p>
                   <p className="mt-2 text-label text-muted-fg">
                     <span className="font-mono text-ink">{CITATION.text}</span>
-                    <span className="mx-1.5 text-line">·</span>
+                    <span aria-hidden className="mx-1.5 text-muted-fg">·</span>
                     <span className="text-verified">Verified</span>
                   </p>
                 </div>
@@ -202,7 +202,7 @@ function Sheet({ stage, reduced }: { stage: number; reduced: boolean }) {
                 <div className="border-l-2 border-accent pl-3">
                   <p className="text-label text-muted-fg">
                     Advocate note
-                    <span className="mx-1.5 text-line">·</span>
+                    <span aria-hidden className="mx-1.5 text-muted-fg">·</span>
                     {ADVOCATE?.name ?? "Advocate"}
                   </p>
                   <p className="mt-1 text-meta text-ink">{FINDING.remedySuggested}</p>

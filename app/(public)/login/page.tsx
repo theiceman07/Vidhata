@@ -116,7 +116,7 @@ export default function ClientLoginPage() {
               onClick={() =>
                 toast.info("Password reset isn't available in this preview.")
               }
-              className="inline-flex min-h-6 items-center text-meta text-muted-fg transition-colors hover:text-ink"
+              className="inline-flex min-h-11 items-center text-meta text-muted-fg transition-colors hover:text-ink"
             >
               Forgot password?
             </button>

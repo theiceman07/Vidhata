@@ -171,7 +171,7 @@ export function FindingDetail({
         <header>
           <p className="font-mono text-label text-muted-fg">
             Finding {number}
-            <span className="mx-1.5 text-line">·</span>
+            <span aria-hidden className="mx-1.5 text-muted-fg">·</span>
             Clause {clauseNumber}
           </p>
           <h2 className="mt-0.5 font-display text-h3 text-ink">
@@ -296,7 +296,7 @@ export function FindingDetail({
                 {finding.ruleApplied}
                 {finding.layer !== undefined && (
                   <>
-                    <span className="mx-1.5 text-line">·</span>
+                    <span aria-hidden className="mx-1.5 text-muted-fg">·</span>
                     Layer {finding.layer} · {PIPELINE_LAYERS[finding.layer].name}
                   </>
                 )}

@@ -199,7 +199,7 @@ export default function SignOffPage() {
         <h1 className="mt-2 font-display text-h1 text-ink">{doc.title}</h1>
         <p className="mt-1 text-meta text-muted-fg">
           {doc.clientName}
-          <span className="mx-1.5 text-line">·</span>
+          <span aria-hidden className="mx-1.5 text-muted-fg">·</span>
           {doc.counterpartyName}
         </p>
 
@@ -209,7 +209,7 @@ export default function SignOffPage() {
             <p className="mt-1 font-display text-h2 text-ink">{doc.advocate.name}</p>
             <p className="mt-1 text-meta text-muted-fg">
               Enrolment <span className="font-mono text-label text-ink">{doc.advocate.bar}</span>
-              <span className="mx-1.5 text-line">·</span>
+              <span aria-hidden className="mx-1.5 text-muted-fg">·</span>
               Empanelled advocate
             </p>
             <p className="mt-1 font-mono text-label text-ink">{ist(doc.settledAt)}</p>
@@ -292,7 +292,7 @@ export default function SignOffPage() {
       <h1 className="mt-1 font-display text-h1 text-ink">{doc.title}</h1>
       <p className="mt-1 text-meta text-muted-fg">
         {doc.clientName}
-        <span className="mx-1.5 text-line">·</span>
+        <span aria-hidden className="mx-1.5 text-muted-fg">·</span>
         {doc.counterpartyName}
       </p>
 

@@ -134,6 +134,27 @@ export function findingsSummary(diff: ClientVersionDiff): string {
     : `Findings: ${c.new} new · ${c.stillOpen} still raised · ${c.resolved} no longer raised after a clause changed`;
 }
 
+/**
+ * The same three counts as findingsSummary, as figures with their labels, for
+ * a place that sets them out one by one. The wording is the summary's: before
+ * sign-off a finding is "raised" or "no longer raised", never "open" or
+ * "settled", because those would tell the client a decision had been made.
+ */
+export function findingFigures(diff: ClientVersionDiff): { value: number; label: string }[] {
+  const c = diff.findingCounts;
+  return diff.signedOff
+    ? [
+        { value: c.new, label: "New" },
+        { value: c.stillOpen, label: "Still open" },
+        { value: c.resolved, label: "Settled or no longer raised" },
+      ]
+    : [
+        { value: c.new, label: "New" },
+        { value: c.stillOpen, label: "Still raised" },
+        { value: c.resolved, label: "No longer raised" },
+      ];
+}
+
 export function dispositionText(disposition: Finding["disposition"]): string {
   if (disposition === "confirmed") return "Confirmed by the advocate";
   if (disposition === "overridden") return "Overridden by the advocate";

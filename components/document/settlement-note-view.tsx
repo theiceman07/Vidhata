@@ -28,7 +28,7 @@ export function SettlementNoteView({
     <article className="rounded-card bg-parchment p-4">
       <p className="text-label font-medium text-muted-fg">
         {label}
-        <span className="mx-1.5 text-line">·</span>
+        <span aria-hidden className="mx-1.5 text-muted-fg">·</span>
         Clause {clauseNumber}
         {clauseHeading ? ` · ${clauseHeading}` : ""}
         {releasedAt ? ` · ${format(new Date(releasedAt), "d MMM yyyy")}` : ""}

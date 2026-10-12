@@ -94,154 +94,211 @@ export default function SamplePage() {
     (s): s is ExecutionStep => Boolean(s),
   );
   const settledCount = findings.filter((f) => findingState(f) === "settled").length;
+  const record = clientAuditTrail(doc);
 
   return (
     <div>
       <SiteHeader />
       <main>
-        <section className="mx-auto w-full max-w-6xl px-6 pb-12 pt-24 md:pt-32">
-          <p className="inline-flex rounded-full bg-parchment px-4 py-1.5 text-meta font-medium text-ink">
-            Sample document
-          </p>
-          <h1 className="mt-6 max-w-4xl font-display text-display text-ink">{doc.title}</h1>
-          <p className="mt-4 max-w-measure text-lead text-muted-fg">
-            This is a settled document as a client receives it. The parties and the advocate are
-            fictional, and nothing on this page can be changed.
-          </p>
-          <dl className="mt-8 grid max-w-4xl gap-x-10 gap-y-4 text-meta sm:grid-cols-2 lg:grid-cols-4">
+        <section className="mx-auto w-full max-w-6xl px-6 pb-10 pt-20 md:pt-24">
+          <div className="grid items-end gap-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
             <div>
-              <dt className="text-label font-medium text-muted-fg">Parties</dt>
-              <dd className="mt-1 text-ink">
-                {doc.clientName} and {doc.counterpartyName}
-              </dd>
+              <p className="inline-flex rounded-full bg-parchment px-4 py-1.5 text-meta font-medium text-ink">
+                Sample document
+              </p>
+              <h1 className="mt-6 font-display text-display text-ink">{doc.title}</h1>
+              <p className="mt-4 max-w-measure text-lead text-muted-fg">
+                This is a settled document as a client receives it. The parties and the advocate
+                are fictional, and nothing on this page can be changed.
+              </p>
             </div>
-            <div>
-              <dt className="text-label font-medium text-muted-fg">Status</dt>
-              <dd className="mt-1">
-                <StateLabel state={doc.status} />
-              </dd>
-            </div>
-            <div>
-              <dt className="text-label font-medium text-muted-fg">Draft</dt>
-              <dd className="mt-1 text-ink">Draft {doc.version}</dd>
-            </div>
-            <div>
-              <dt className="text-label font-medium text-muted-fg">Findings</dt>
-              <dd className="mt-1 text-ink">
-                {findings.length} raised · {settledCount} settled
-              </dd>
-            </div>
-          </dl>
+            <dl className="space-y-5 rounded-card bg-parchment p-6 text-body">
+              <div>
+                <dt className="text-meta font-medium text-muted-fg">Parties</dt>
+                <dd className="mt-1 text-ink">
+                  {doc.clientName} and {doc.counterpartyName}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-meta font-medium text-muted-fg">Status</dt>
+                <dd className="mt-1">
+                  <StateLabel state={doc.status} />
+                </dd>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <dt className="text-meta font-medium text-muted-fg">Draft</dt>
+                  <dd className="mt-1 text-ink">Draft {doc.version}</dd>
+                </div>
+                <div>
+                  <dt className="text-meta font-medium text-muted-fg">Findings</dt>
+                  <dd className="mt-1 text-ink">
+                    {findings.length} raised · {settledCount} settled
+                  </dd>
+                </div>
+              </div>
+            </dl>
+          </div>
         </section>
 
         <section className="tile-grain w-full bg-parchment">
-          <div className="mx-auto w-full max-w-6xl px-6 py-20 md:py-24">
-            <h2 className="font-display text-h1 text-ink">The text, with its findings in the margin</h2>
+          <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-16">
+            <h2 className="font-display text-h1 text-ink">The text and its findings</h2>
             <p className="mt-3 max-w-measure text-body text-muted-fg">
-              Each finding sits beside the clause it is about, with the source it rests on shown
-              at once. A source is either verified against the approved corpus or blocked.
+              The settled text is on the left. A clause an advocate raised a finding on is ruled
+              in green and carries its finding number; the findings stay in view on the right,
+              each with the source it rests on. A source is either verified against the approved
+              corpus or blocked.
             </p>
 
-            <div className="mt-10">
-              {doc.clauses.map((clause) => {
-                const notes = clause.findingIds
-                  .map((id) => byId.get(id))
-                  .filter((f): f is NonNullable<typeof f> => Boolean(f));
-                return (
-                  <article
-                    key={clause.id}
-                    className="grid gap-x-10 gap-y-4 py-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]"
-                  >
-                    <div className="min-w-0">
-                      <h3 className="flex items-baseline gap-3 font-display text-h3 text-ink">
+            <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+              <div className="min-w-0">
+                {doc.clauses.map((clause) => {
+                  const notes = clause.findingIds
+                    .map((id) => byId.get(id))
+                    .filter((f): f is NonNullable<typeof f> => Boolean(f));
+                  return (
+                    <article
+                      key={clause.id}
+                      id={`clause-${clause.id}`}
+                      className={
+                        notes.length > 0
+                          ? "scroll-mt-32 border-l-2 border-accent pb-8 pl-5"
+                          : "scroll-mt-32 border-l-2 border-transparent pb-8 pl-5"
+                      }
+                    >
+                      <h3 className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-display text-h3 text-ink">
                         <span className="font-mono text-label text-muted-fg">{clause.number}</span>
                         {clause.heading}
+                        {notes.map((finding) => (
+                          <a
+                            key={finding.findingId}
+                            href={`#finding-${finding.findingId}`}
+                            className="rounded-full bg-paper px-2.5 py-0.5 font-sans text-label font-medium text-accent transition-colors hover:bg-accent hover:text-paper"
+                          >
+                            Finding {numbers[finding.findingId]}
+                          </a>
+                        ))}
                       </h3>
-                      <div className="mt-2 max-w-measure font-clause text-body leading-relaxed text-ink">
+                      <div className="mt-2 font-clause text-body leading-relaxed text-ink">
                         <Paragraphs text={clause.body} />
                       </div>
-                    </div>
+                    </article>
+                  );
+                })}
+              </div>
 
-                    {notes.length > 0 && (
-                      <div className="space-y-4 lg:pt-8">
-                        {notes.map((finding) => (
-                          <div key={finding.findingId} className="rounded-card bg-paper p-5">
-                            <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                              <span className="font-mono text-label text-muted-fg">
-                                Finding {numbers[finding.findingId]}
-                              </span>
-                              <SeverityMark severity={finding.severity} />
-                              <StateLabel state={findingState(finding)} />
-                            </p>
-                            <p className="mt-3 text-meta text-ink">{finding.description}</p>
-                            <div className="mt-4">
-                              <CitationBlock citations={finding.citations} showWithdrawalNote={false} />
-                            </div>
-                            <p className="mt-4 text-label text-muted-fg">
-                              {dispositionText(finding.disposition)}
-                            </p>
-                          </div>
-                        ))}
+              <aside className="min-w-0 space-y-4 lg:sticky lg:top-28">
+                <h3 className="text-meta font-medium text-muted-fg">
+                  Findings · {findings.length}
+                </h3>
+                {findings.map((finding) => {
+                  const clause = doc.clauses.find((c) => c.findingIds.includes(finding.findingId));
+                  return (
+                    <div
+                      key={finding.findingId}
+                      id={`finding-${finding.findingId}`}
+                      className="scroll-mt-32 rounded-card bg-paper p-6"
+                    >
+                      <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                        <span className="font-mono text-label text-muted-fg">
+                          Finding {numbers[finding.findingId]}
+                        </span>
+                        <SeverityMark severity={finding.severity} />
+                        <StateLabel state={findingState(finding)} />
+                      </p>
+                      <p className="mt-3 text-body text-ink">{finding.description}</p>
+                      <div className="mt-4">
+                        <CitationBlock citations={finding.citations} showWithdrawalNote={false} />
                       </div>
-                    )}
-                  </article>
-                );
-              })}
+                      <p className="mt-4 text-meta text-muted-fg">
+                        {dispositionText(finding.disposition)}
+                        {clause && (
+                          <>
+                            {" · "}
+                            <a
+                              href={`#clause-${clause.id}`}
+                              className="text-ink underline underline-offset-2"
+                            >
+                              Clause {clause.number}
+                            </a>
+                          </>
+                        )}
+                      </p>
+                    </div>
+                  );
+                })}
+              </aside>
             </div>
           </div>
         </section>
 
         {verifiedExample && blockedExample && (
-          <section className="mx-auto w-full max-w-6xl px-6 pt-20 md:pt-24">
-            <h2 className="font-display text-h1 text-ink">How a source is shown</h2>
-            <p className="mt-3 max-w-measure text-body text-muted-fg">
-              The findings above rest on the advocate&apos;s judgment, so they carry no statutory
-              source. Where a finding does cite one, it is checked against the approved corpus by
-              exact match, and shown as one or the other. These two come from a different sample
-              document.
-            </p>
+          <section className="mx-auto w-full max-w-6xl px-6 pt-14 md:pt-16">
+            <div className="grid items-center gap-x-14 gap-y-3 lg:grid-cols-2">
+              <h2 className="font-display text-h1 text-ink">How a source is shown</h2>
+              <p className="text-body text-muted-fg">
+                The findings above rest on the advocate&apos;s judgment, so they carry no
+                statutory source. Where a finding does cite one, it is checked against the approved
+                corpus by exact match, and shown as one or the other. These two come from a
+                different sample document.
+              </p>
+            </div>
             <div className="mt-8 grid gap-6 md:grid-cols-2">
-              <div className="rounded-card bg-parchment p-6">
-                <CitationBlock citations={[verifiedExample]} showWithdrawalNote={false} />
+              <div className="rounded-card bg-parchment p-8">
+                <CitationBlock citations={[verifiedExample]} showWithdrawalNote={false} large />
               </div>
-              <div className="rounded-card bg-parchment p-6">
-                <CitationBlock citations={[blockedExample]} showWithdrawalNote={false} />
+              <div className="rounded-card bg-parchment p-8">
+                <CitationBlock citations={[blockedExample]} showWithdrawalNote={false} large />
               </div>
             </div>
           </section>
         )}
 
-        <section className="mx-auto w-full max-w-6xl px-6 py-20 md:py-24">
-          <div className="grid gap-x-16 gap-y-12 lg:grid-cols-2">
-            <div>
-              <h2 className="font-display text-h1 text-ink">The sign-off</h2>
-              {doc.advocate && doc.settledAt && (
-                <dl className="mt-6 max-w-md space-y-3 text-body">
-                  <div className="flex gap-6">
-                    <dt className="w-32 shrink-0 text-meta text-muted-fg">Signed off by</dt>
-                    <dd className="text-ink">{doc.advocate.name}, advocate</dd>
-                  </div>
-                  <div className="flex gap-6">
-                    <dt className="w-32 shrink-0 text-meta text-muted-fg">Bar enrolment</dt>
-                    <dd className="text-ink">{doc.advocate.bar}</dd>
-                  </div>
-                  <div className="flex gap-6">
-                    <dt className="w-32 shrink-0 text-meta text-muted-fg">Date</dt>
-                    <dd className="text-ink">{signedAt(doc.settledAt)}</dd>
-                  </div>
-                </dl>
-              )}
-              <p className="mt-6 max-w-measure text-meta text-muted-fg">
-                Nothing reaches a client without a recorded advocate sign-off. The record beside this
-                is kept with the document.
+        <section className="mx-auto w-full max-w-6xl px-6 py-14 md:py-16">
+          <h2 className="font-display text-h1 text-ink">The sign-off</h2>
+          <p className="mt-3 max-w-measure text-body text-muted-fg">
+            Nothing reaches a client without a recorded advocate sign-off. The record is kept with
+            the document.
+          </p>
+          {doc.advocate && doc.settledAt && (
+            <dl className="mt-8 grid gap-6 rounded-card bg-parchment p-8 sm:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <dt className="text-meta font-medium text-muted-fg">Signed off by</dt>
+                <dd className="mt-1 font-display text-h2 text-ink">{doc.advocate.name}, advocate</dd>
+              </div>
+              <div>
+                <dt className="text-meta font-medium text-muted-fg">Bar enrolment</dt>
+                <dd className="mt-1 font-display text-h2 text-ink">{doc.advocate.bar}</dd>
+              </div>
+              <div>
+                <dt className="text-meta font-medium text-muted-fg">Date</dt>
+                <dd className="mt-1 font-display text-h2 text-ink">{signedAt(doc.settledAt)}</dd>
+              </div>
+            </dl>
+          )}
+          <div className="mt-6 rounded-card bg-parchment p-8">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2">
+              <h3 className="text-meta font-medium text-muted-fg">The record</h3>
+              <p className="flex flex-wrap items-center gap-x-5 gap-y-1 text-meta text-muted-fg">
+                <span className="inline-flex items-center gap-2">
+                  <span aria-hidden className="h-2 w-2 rounded-full border border-accent bg-accent" />
+                  A decision by the advocate
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <span aria-hidden className="h-2 w-2 rounded-full border border-muted-fg bg-paper" />
+                  An event
+                </span>
               </p>
             </div>
-            <AuditTrail entries={clientAuditTrail(doc)} title="The record" />
+            <div className="mt-6">
+              <AuditTrail entries={record} title={null} large />
+            </div>
           </div>
         </section>
 
         <section className="tile-grain w-full bg-parchment">
-          <div className="mx-auto w-full max-w-6xl px-6 py-20 md:py-24">
+          <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-16">
             <h2 className="font-display text-h1 text-ink">The execution checklist</h2>
             <p className="mt-3 max-w-measure text-body text-muted-fg">
               What remains before a settled document takes effect. The entries below are a sample:

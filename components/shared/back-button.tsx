@@ -1,5 +1,6 @@
 "use client";
 
+import { useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/icon";
@@ -24,9 +25,37 @@ export function BackButton({
   className?: string;
 }) {
   const router = useRouter();
+  const ref = useRef<HTMLAnchorElement>(null);
+
+  // Sits level with the first line of the page's title. Headers differ in what
+  // comes above the h1 (a state label, the document's name, nothing), so the
+  // offset is measured from the h1 beside it rather than assumed per page.
+  useLayoutEffect(() => {
+    const button = ref.current;
+    const row = button?.parentElement;
+    const heading = row?.querySelector("h1");
+    if (!button || !heading) return;
+
+    const align = () => {
+      const lineHeight = parseFloat(getComputedStyle(heading).lineHeight);
+      const line = Number.isFinite(lineHeight) ? lineHeight : heading.getBoundingClientRect().height;
+      const current = parseFloat(button.style.marginTop) || 0;
+      const naturalTop = button.getBoundingClientRect().top - current;
+      const headingMid = heading.getBoundingClientRect().top + line / 2;
+      const offset = Math.max(0, headingMid - naturalTop - button.offsetHeight / 2);
+      button.style.marginTop = `${offset}px`;
+    };
+
+    align();
+    const observer = new ResizeObserver(align);
+    observer.observe(heading);
+    if (row) observer.observe(row);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <Link
+      ref={ref}
       href={fallbackHref}
       aria-label={label}
       title={label}

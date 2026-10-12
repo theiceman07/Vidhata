@@ -234,7 +234,7 @@ export default function DocumentPage() {
           <div className="min-w-0">
             <StateLabel state={doc.status} />
             {/* The one display moment on this screen. */}
-            <h1 className="mt-2 font-display text-h1 text-ink">{doc.title}</h1>
+            <h1 className="mt-1.5 font-display text-h1 text-ink">{doc.title}</h1>
             <p className="mt-1 text-meta text-muted-fg">
               {doc.deal.counterpartyName}
               <span className="mx-1.5 text-muted-fg/50">·</span>
@@ -258,16 +258,16 @@ export default function DocumentPage() {
       </header>
 
       {/* Everything on this view is before sign-off, so say so up front. */}
-      <DraftBanner className="mt-6" />
+      <DraftBanner className="mt-4" />
 
       {/* The move in hand and everything that explains it on the left;
           the record the document carries on the right. */}
-      <div className="mt-10 grid gap-x-8 gap-y-8 lg:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem]">
+      <div className="mt-5 grid gap-x-8 gap-y-6 lg:grid-cols-[minmax(0,1fr)_20rem] 2xl:grid-cols-[minmax(0,1fr)_21.25rem]">
         <div className="min-w-0">
           {doc.status === "revision" ? (
             <>
               <MoveSummary doc={doc} />
-              <div className="mt-8">
+              <div className="mt-4">
                 <ChangeRequests doc={doc} onSubmit={handleRespond} submitting={submitting} />
               </div>
             </>
@@ -275,14 +275,16 @@ export default function DocumentPage() {
             <WithAdvocate doc={doc} />
           )}
 
-          <div className="mt-10 grid gap-4 xl:grid-cols-2">
-            <WhatHappensNext doc={doc} />
-            <DealOnFile doc={doc} />
+          <div className="mt-6 grid gap-4 xl:grid-cols-2">
+            <WhatHappensNext doc={doc} compact />
+            <DealOnFile doc={doc} compact />
           </div>
 
           <CoveragePanel doc={doc} className="mt-4" />
         </div>
 
+        {/* Plain flow: the record is taller than the screen, so holding it
+            in place would add a second scroll inside the page's own. */}
         <aside className="min-w-0 space-y-4">
           <ContextPanel title="Where it is">
             <Provenance doc={doc} />
@@ -299,8 +301,8 @@ export default function DocumentPage() {
 }
 
 /**
- * The move, stated once in a sentence and then in three figures: how many
- * requests are open, how long they have waited, and what the document
+ * The move, stated once in a sentence and then in one line of facts: how
+ * many requests are open, how long they have waited, and what the document
  * becomes once they are answered.
  */
 function MoveSummary({ doc }: { doc: ClientDocument }) {
@@ -310,44 +312,21 @@ function MoveSummary({ doc }: { doc: ClientDocument }) {
     .filter((d): d is string => Boolean(d))
     .sort()[0];
 
-  const figures: { label: string; value: string; note: string }[] = [
-    {
-      label: open.length === 1 ? "Request open" : "Requests open",
-      value: String(open.length),
-      note: "From your advocate",
-    },
-    {
-      label: "Waiting",
-      value: asked ? formatDistanceToNowStrict(new Date(asked)) : "Today",
-      note: asked ? `Asked ${format(new Date(asked), "d MMM yyyy")}` : "Asked today",
-    },
-    {
-      label: "After you answer",
-      value: `Draft ${doc.version + 1}`,
-      note: "Then sign-off",
-    },
-  ];
+  const waiting = asked ? formatDistanceToNowStrict(new Date(asked)) : "today";
 
   return (
-    <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
-      <p className="max-w-2xl text-lead text-ink">
+    <section className="flex flex-wrap items-baseline justify-between gap-x-10 gap-y-2">
+      <p className="max-w-2xl text-lead text-muted-fg">
         Your advocate asked for your answer before this document can be settled. The
         rest of the review continues in the meantime.
       </p>
-      <dl className="grid grid-cols-3 gap-2">
-        {figures.map((figure) => (
-          <div
-            key={figure.label}
-            className="min-w-0 rounded-control bg-parchment px-4 py-3 xl:min-w-[9.5rem]"
-          >
-            <dt className="truncate text-label text-muted-fg">{figure.label}</dt>
-            <dd className="mt-1 truncate font-display text-h3 tabular-nums text-ink">
-              {figure.value}
-            </dd>
-            <dd className="truncate text-label text-muted-fg">{figure.note}</dd>
-          </div>
-        ))}
-      </dl>
+      <p className="text-meta text-muted-fg">
+        {open.length} {open.length === 1 ? "request" : "requests"} open
+        <span aria-hidden className="mx-1.5">·</span>
+        Waiting {waiting}
+        <span aria-hidden className="mx-1.5">·</span>
+        Then Draft {doc.version + 1}, then sign-off
+      </p>
     </section>
   );
 }
@@ -359,7 +338,7 @@ function MoveSummary({ doc }: { doc: ClientDocument }) {
  */
 function Frame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="h-full overflow-y-auto px-4 py-6 md:px-8 md:py-8">
+    <div className="h-full overflow-y-auto px-4 py-5 md:px-8 md:py-6">
       <div className="w-full">{children}</div>
     </div>
   );
