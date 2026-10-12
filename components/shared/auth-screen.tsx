@@ -47,7 +47,10 @@ export function AuthScreen({
         </Link>
       </header>
 
-      <main className="flex flex-1 items-center justify-center px-6 pb-16 pt-12">
+      {/* Top-aligned, not centred: the two portals carry different amounts
+          of content, and centring moved the toggle and the fields when
+          switching between them. */}
+      <main className="flex flex-1 items-start justify-center px-6 pb-16 pt-12">
         <div className="w-full max-w-[26rem]">
           <nav
             aria-label="Choose portal"

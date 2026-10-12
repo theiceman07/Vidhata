@@ -13,8 +13,8 @@ const config: Config = {
     extend: {
       colors: {
         accent: {
-          DEFAULT: "#F61C24",
-          hover: "#DB141B",
+          DEFAULT: "#1B4332",
+          hover: "#265E4A",
           fg: "#FFFFFF",
         },
         ink: "#141414",
