@@ -13,8 +13,8 @@ const config: Config = {
     extend: {
       colors: {
         accent: {
-          DEFAULT: "#1B4332",
-          hover: "#265E4A",
+          DEFAULT: "#F61C24",
+          hover: "#DB141B",
           fg: "#FFFFFF",
         },
         ink: "#141414",
@@ -23,7 +23,7 @@ const config: Config = {
         // The page is white. Panels are told apart by hairlines, not tint.
         canvas: "#FFFFFF",
         paper: "#FFFFFF",
-        parchment: "#F8F5EE",
+        parchment: "#F0F0F0",
 
         // Semantic tokens · citation and review status only.
         verified: "#2D6A4F", // citation resolved, advocate approved (6.3:1)

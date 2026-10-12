@@ -38,7 +38,7 @@ export const metadata: Metadata = {
 // The browser chrome takes the accent: the one colour the product uses,
 // shown where the product meets the operating system.
 export const viewport: Viewport = {
-  themeColor: "#1B4332",
+  themeColor: "#F61C24",
 };
 
 export default function RootLayout({

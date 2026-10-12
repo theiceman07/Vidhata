@@ -5,7 +5,7 @@ import { IntakeWizard } from "@/components/domain/intake-wizard";
 
 export default function NewDealPage() {
   return (
-    <div className="mx-auto max-w-[90rem]">
+    <div className="mx-auto flex min-h-full w-full max-w-[90rem] flex-col">
       <Link
         href="/documents"
         className="inline-flex items-center gap-1 text-meta font-medium text-muted-fg transition-colors hover:text-ink"
@@ -14,13 +14,13 @@ export default function NewDealPage() {
         Documents
       </Link>
 
-      <h1 className="mt-3 font-display text-h1 text-ink">Draft a document</h1>
-      <p className="mt-2 max-w-xl text-body text-muted-fg">
+      <h1 className="mt-2 font-display text-h1 text-ink">Draft a document</h1>
+      <p className="mt-1 max-w-xl text-body text-muted-fg">
         Describe the deal. Vidhata drafts and screens it, then routes it to an
         advocate.
       </p>
 
-      <div className="mt-8">
+      <div className="mt-5 flex flex-1 flex-col">
         <DraftPaths>
           <IntakeWizard />
         </DraftPaths>

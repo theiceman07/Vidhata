@@ -5,7 +5,7 @@ export const SOCIAL_CARD_SIZE = { width: 1200, height: 630 };
 /**
  * The link preview for the site: the promise, in the board's ink and paper.
  * An image route cannot read Tailwind tokens, so the three board colours are
- * written out here (ink #141414, paper #FFFFFF, accent #1B4332). The wordmark
+ * written out here (ink #141414, paper #FFFFFF, accent #F61C24). The wordmark
  * face is not loaded: the image renderer takes no woff2, so the word is set in
  * its default sans.
  */

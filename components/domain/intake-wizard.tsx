@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,6 +31,8 @@ import {
 import { intakeSchema, type IntakeFormValues } from "@/lib/intakeSchema";
 import { INDIAN_STATES } from "@/lib/mock/intake-options.mock";
 import { createReentryGuard, runExclusive } from "@/lib/reentry";
+import { Icon } from "@/components/shared/icon";
+import { DRAFT_STEPS_SLOT } from "@/components/domain/draft-paths";
 import { cn } from "@/lib/utils";
 
 
@@ -201,49 +204,79 @@ export function IntakeWizard() {
     void goNext();
   }
 
-  return (
-    <div
-      className={cn(
-        "grid max-w-5xl gap-y-8 xl:gap-x-16",
-        // The picker lists the whole catalogue, so its step gets more room.
-        step === 0
-          ? "xl:grid-cols-[minmax(0,14rem)_minmax(0,44rem)]"
-          : "xl:grid-cols-[minmax(0,14rem)_minmax(0,32rem)]",
-      )}
-    >
-      {/* The steps are a schedule down the margin, not a row of numbered
-          discs: the same notation the rest of the product uses to say
-          where you are. */}
-      {/* Below a wide screen the steps lie in a row above the form, so the form
-          keeps the width the page has. */}
-      <ol className="flex flex-wrap gap-x-6 gap-y-2 xl:block xl:space-y-3 xl:sticky xl:top-10 xl:self-start">
-        {STEP_LABELS.map((label, i) => (
-          <li
-            key={label}
-            aria-current={i === step ? "step" : undefined}
+  // What a draft needs, read from the form as it is filled, so the indicator
+  // moves with the person and not only with the brief.
+  const have: Record<string, boolean> = {
+    type: Boolean(values.type),
+    counterpartyName: Boolean(values.counterpartyName?.trim()),
+    transactionValue: Number(values.transactionValue) > 0,
+    durationMonths: Number(values.durationMonths) > 0,
+    stateOfExecution: Boolean(values.stateOfExecution),
+  };
+  const ready = DRAFT_NEEDS.filter((key) => have[key as string]).length;
+  const stillNeeded = DRAFT_NEEDS.length - ready;
+  // "Ready to draft" is said only when the form itself would accept the draft:
+  // the five facts can all be in while the deal name or governing law is not.
+  const formComplete = intakeSchema.safeParse(values).success;
+  const readinessText =
+    stillNeeded > 0
+      ? `${stillNeeded} to go`
+      : formComplete
+        ? "Ready to draft"
+        : "Complete the form";
+
+  // Steps after the first sit in one column, so the heading, the card and the
+  // bar share their edges; the contract picker uses the full width.
+  const columnWidth = step === 0 ? "max-w-[90rem]" : "max-w-4xl";
+
+  const stepper = (
+    <ol aria-label="Progress" className="flex w-full items-center lg:ml-auto lg:max-w-2xl">
+      {STEP_LABELS.map((label, i) => (
+        <li
+          key={label}
+          aria-current={i === step ? "step" : undefined}
+          className={cn("flex items-center", i < STEP_LABELS.length - 1 && "flex-1")}
+        >
+          <span
             className={cn(
-              "flex items-baseline gap-3 border-l-2 py-1 pl-4",
-              i === step
-                ? "border-ink"
-                : i < step
-                  ? "border-verified"
-                  : "border-line",
+              "flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-meta",
+              i === step ? "bg-accent/10 font-medium text-ink" : "text-muted-fg",
             )}
           >
-            <span className="font-mono text-notation tracking-notation text-muted-fg">
-              {String(i + 1).padStart(2, "0")}
-            </span>
             <span
+              aria-hidden
               className={cn(
-                "text-meta",
-                i === step ? "font-medium text-ink" : "text-muted-fg",
+                "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-label",
+                i < step
+                  ? "bg-accent text-accent-fg"
+                  : i === step
+                    ? "bg-accent text-accent-fg"
+                    : "bg-paper text-muted-fg ring-1 ring-inset ring-line",
               )}
             >
-              {label}
+              {i < step ? <Icon name="check" size={16} /> : i + 1}
             </span>
-          </li>
-        ))}
-      </ol>
+            <span className="whitespace-nowrap max-sm:sr-only">{label}</span>
+            {i === step && <span className="sr-only sm:hidden">{label}</span>}
+          </span>
+          {i < STEP_LABELS.length - 1 && (
+            <span aria-hidden className="mx-3 h-px min-w-4 flex-1 bg-line" />
+          )}
+        </li>
+      ))}
+    </ol>
+  );
+
+  // Seated beside the mode control, once it has mounted; until then, and if
+  // there is no slot, it lies above the form.
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    setSlot(document.getElementById(DRAFT_STEPS_SLOT));
+  }, []);
+
+  return (
+    <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col">
+      {slot ? createPortal(stepper, slot) : <div className="mb-6">{stepper}</div>}
 
       <form
         onSubmit={onFormSubmit}
@@ -251,16 +284,46 @@ export function IntakeWizard() {
         onChange={() => {
           touched.current = true;
         }}
-        className="space-y-5"
+        className="flex min-w-0 flex-1 flex-col"
       >
-        {fromBrief && (
-          <p className="rounded-control bg-parchment px-4 py-3 text-meta text-ink">
-            Your brief gave {fromBrief.found} of the {DRAFT_NEEDS.length} details a draft needs.
-            {fromBrief.missing > 0
-              ? ` ${fromBrief.missing === 1 ? "One more is" : `${fromBrief.missing} more are`} needed before the draft can start.`
-              : " Check them, then draft."}
-          </p>
-        )}
+        <div className={cn("mx-auto w-full pb-8", columnWidth)}>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
+          <div className="min-w-0">
+            <h2 className="text-h3 text-ink">{STEP_LABELS[step]}</h2>
+            {step === 0 && (
+              <p className="mt-0.5 text-meta text-muted-fg">
+                Choose what you are drafting. Types marked coming soon are not available yet.
+              </p>
+            )}
+            {fromBrief && (
+              <p className="mt-0.5 text-meta text-muted-fg">
+                Your brief gave {fromBrief.found} of the {DRAFT_NEEDS.length} details a draft needs.
+              </p>
+            )}
+          </div>
+          {/* Readiness: how many of the details a draft needs are in. */}
+          <div className="w-full shrink-0 sm:w-72" role="status">
+            <p className="flex items-baseline justify-between gap-3 text-label text-muted-fg">
+              <span>
+                {ready} of {DRAFT_NEEDS.length} details a draft needs
+              </span>
+              <span className="whitespace-nowrap text-ink">{readinessText}</span>
+            </p>
+            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-line">
+              <div
+                className="h-full rounded-full bg-accent transition-[width] motion-reduce:transition-none"
+                style={{ width: `${(ready / DRAFT_NEEDS.length) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+        <div
+          className={cn(
+            "space-y-5",
+            step !== 0 &&
+              "rounded-card border border-line bg-parchment p-5 sm:p-7 lg:p-8",
+          )}
+        >
         {step === 0 && (
           <ContractTypePicker
             value={values.type}
@@ -277,6 +340,7 @@ export function IntakeWizard() {
             <div>
               <Label htmlFor="title">Deal name</Label>
               <Input
+                className="h-12"
                 id="title"
                 {...register("title")}
                 placeholder="Vendor agreement · packaging supply"
@@ -287,9 +351,10 @@ export function IntakeWizard() {
                 </p>
               )}
             </div>
+            <div className="grid gap-5 md:grid-cols-2">
             <div>
               <Label htmlFor="clientName">Your company name</Label>
-              <Input id="clientName" {...register("clientName")} />
+              <Input className="h-12" id="clientName" {...register("clientName")} />
               {errors.clientName && (
                 <p className="mt-1 text-small text-flagged">
                   {errors.clientName.message}
@@ -298,12 +363,13 @@ export function IntakeWizard() {
             </div>
             <div>
               <Label htmlFor="counterpartyName">Counterparty name</Label>
-              <Input id="counterpartyName" {...register("counterpartyName")} />
+              <Input className="h-12" id="counterpartyName" {...register("counterpartyName")} />
               {errors.counterpartyName && (
                 <p className="mt-1 text-small text-flagged">
                   {errors.counterpartyName.message}
                 </p>
               )}
+            </div>
             </div>
             <div className="flex items-center gap-2">
               <Checkbox
@@ -328,12 +394,13 @@ export function IntakeWizard() {
         )}
 
         {step === 2 && (
-          <>
+          <div className="grid gap-5 md:grid-cols-2">
             <div>
               <Label htmlFor="transactionValue">
                 Transaction value (INR)
               </Label>
               <Input
+                className="h-12"
                 id="transactionValue"
                 type="number"
                 {...register("transactionValue")}
@@ -347,6 +414,7 @@ export function IntakeWizard() {
             <div>
               <Label htmlFor="durationMonths">Duration (months)</Label>
               <Input
+                className="h-12"
                 id="durationMonths"
                 type="number"
                 {...register("durationMonths")}
@@ -363,7 +431,7 @@ export function IntakeWizard() {
                 value={values.stateOfExecution}
                 onValueChange={(v) => setValue("stateOfExecution", v)}
               >
-                <SelectTrigger id="stateOfExecution">
+                <SelectTrigger id="stateOfExecution" className="h-12">
                   <SelectValue placeholder="Choose a state" />
                 </SelectTrigger>
                 <SelectContent>
@@ -383,6 +451,7 @@ export function IntakeWizard() {
             <div>
               <Label htmlFor="governingLaw">Governing law</Label>
               <Input
+                className="h-12"
                 id="governingLaw"
                 {...register("governingLaw")}
                 placeholder="Laws of India"
@@ -393,7 +462,7 @@ export function IntakeWizard() {
                 </p>
               )}
             </div>
-          </>
+          </div>
         )}
 
         {step === 3 && (
@@ -403,9 +472,10 @@ export function IntakeWizard() {
               id="keyTerms"
               {...register("keyTerms")}
               placeholder="Anything specific the draft should account for?"
-              rows={6}
+              rows={8}
+              className="min-h-[12rem]"
             />
-            <p className="mt-5 max-w-measure rounded-card bg-parchment p-4 text-meta text-ink">
+            <p className="mt-4 max-w-measure text-meta text-muted-fg">
               One fixed fee per document, set by the review tier screening assigns after the
               first pass: from {rupees(tierRange().low)} to {rupees(tierRange().high)}{" "}
               {PRICE_BASIS}
@@ -418,8 +488,22 @@ export function IntakeWizard() {
         {submitError && (
           <p className="text-small text-flagged">{submitError}</p>
         )}
+        </div>
+        </div>
 
-        <div className="flex justify-between pt-2">
+        {/* A bar of its own, solid, in the flow after the fields, so the last
+            row of options always clears it. mt-auto seats it at the end of
+            the available height when the form is short; sticky keeps it in
+            reach when the form is long. The page's bottom padding sits below
+            where a sticky bar stops, so the ::after fills that strip, or
+            tiles would show beneath it. */}
+        <div className="sticky bottom-0 z-10 mt-auto border-t border-line bg-paper pt-0 after:absolute after:inset-x-0 after:top-full after:h-16 after:bg-paper">
+        <div
+          className={cn(
+            "mx-auto flex min-h-[4.5rem] w-full items-center justify-between gap-3 py-4",
+            columnWidth,
+          )}
+        >
           <Button
             type="button"
             variant="ghost"
@@ -433,7 +517,7 @@ export function IntakeWizard() {
               click, and a button that turns into type="submit" mid-click
               submits the form. */}
           {!isLastStep ? (
-            <Button key="continue" type="button" onClick={goNext}>
+            <Button key="continue" type="button" onClick={goNext} disabled={step === 0 && !values.type}>
               Continue
             </Button>
           ) : (
@@ -441,6 +525,7 @@ export function IntakeWizard() {
               {submitting ? "Drafting…" : "Draft the document"}
             </Button>
           )}
+        </div>
         </div>
       </form>
     </div>

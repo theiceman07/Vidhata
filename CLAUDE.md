@@ -60,10 +60,10 @@ Brand Board V2.0 (22 Sep 2026). This supersedes the earlier warm rust
 palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
 
 - Product name: Vidhata. "AI drafts. Advocates decide."
-- One accent, earned: accent #1B4332 (hover #265E4A). Colour appears
+- One accent, earned: accent #F61C24 (hover #DB141B). Colour appears
   where a decision has been made, and nowhere else.
 - Ink #141414, muted-fg #5A5A5A, line #E5E5E0, paper #FFFFFF,
-  parchment #F8F5EE. The page is white: canvas is #FFFFFF too.
+  parchment #F0F0F0. The page is white: canvas is #FFFFFF too.
 - Board V3 (23 Sep 2026), reference 7shifts.com. The wordmark is the
   word "Vidhata" in Apfel Grotezk (font-wordmark, self-hosted in
   app/fonts), with no symbol. Brygada 1918 (font-display and

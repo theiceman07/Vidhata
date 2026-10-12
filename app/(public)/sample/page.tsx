@@ -174,7 +174,7 @@ export default function SamplePage() {
                           <a
                             key={finding.findingId}
                             href={`#finding-${finding.findingId}`}
-                            className="rounded-full bg-paper px-2.5 py-0.5 font-sans text-label font-medium text-accent transition-colors hover:bg-accent hover:text-paper"
+                            className="rounded-full bg-paper px-2.5 py-0.5 font-sans text-label font-medium text-accent transition-colors hover:bg-accent hover:text-accent-fg"
                           >
                             Finding {numbers[finding.findingId]}
                           </a>
