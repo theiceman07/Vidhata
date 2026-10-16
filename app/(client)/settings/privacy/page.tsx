@@ -69,10 +69,10 @@ export default function PrivacyPage() {
     return (
       <div className="w-full">
         <Skeleton className="h-10 w-56" />
-        <div className="mt-10 grid gap-6 xl:grid-cols-3">
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-72 w-full rounded-card" />
-          ))}
+        <div className="mt-10 grid gap-6 md:grid-cols-2">
+          <Skeleton className="h-64 w-full rounded-card" />
+          <Skeleton className="h-64 w-full rounded-card" />
+          <Skeleton className="h-72 w-full rounded-card md:col-span-2" />
         </div>
       </div>
     );
@@ -95,10 +95,12 @@ export default function PrivacyPage() {
         </div>
       </div>
 
-      <div className="mt-10 grid items-start gap-6 xl:grid-cols-3">
+      <div className="mt-10 grid gap-6 md:grid-cols-2">
         <TrainingPanel privacy={privacy} onChange={setPrivacy} />
         <ExportPanel />
-        <DeletionPanel privacy={privacy} onChange={setPrivacy} />
+        <div className="min-w-0 md:col-span-2">
+          <DeletionPanel privacy={privacy} onChange={setPrivacy} />
+        </div>
       </div>
     </div>
   );
@@ -301,25 +303,29 @@ function DeletionPanel({
     }
   }
 
-  const scope = (
-    <div className="space-y-5">
+  const scope = (columns: boolean) => (
+    <div className={columns ? "grid gap-6 md:grid-cols-2" : "space-y-5"}>
       <List title="Would be removed" items={DELETION_SCOPE.removed} />
-      <List title="Would be kept" items={DELETION_SCOPE.kept} />
-      <List title="Not yet decided" items={DELETION_SCOPE.undecided} />
+      <div className="space-y-5">
+        <List title="Would be kept" items={DELETION_SCOPE.kept} />
+        <List title="Not yet decided" items={DELETION_SCOPE.undecided} />
+      </div>
     </div>
   );
 
   return (
     <Panel id="delete-title" title="Delete your data">
-      <p className="mt-2 inline-flex rounded-full border border-caution/40 px-2.5 py-0.5 text-label font-medium text-caution-fg">
-        {DELETION_STATUS}
-      </p>
-      <p className="mt-3 text-meta text-ink">
-        You can ask for your data to be deleted. This is a request. What it would and would not
-        remove is below, and the wording is waiting for counsel to confirm it.
-      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <p className="inline-flex rounded-full border border-caution/40 px-2.5 py-0.5 text-label font-medium text-caution-fg">
+          {DELETION_STATUS}
+        </p>
+        <p className="min-w-0 max-w-measure text-meta text-ink">
+          You can ask for your data to be deleted. This is a request. What it would and would not
+          remove is below, and the wording is waiting for counsel to confirm it.
+        </p>
+      </div>
 
-      <div className="mt-5">{scope}</div>
+      <div className="mt-6">{scope(true)}</div>
 
       {failed && !open && (
         <p role="alert" className="mt-4 text-meta text-flagged">
@@ -361,7 +367,7 @@ function DeletionPanel({
             </DialogDescription>
           </DialogHeader>
 
-          {scope}
+          {scope(false)}
 
           <div className="flex items-start gap-3">
             <Checkbox
@@ -371,7 +377,7 @@ function DeletionPanel({
               disabled={busy}
               className="mt-1"
             />
-            <label htmlFor="deletion-understood" className="text-body text-ink">
+            <label htmlFor="deletion-understood" className="text-meta font-medium text-ink">
               I have read what would be removed and what would be kept, and I understand the
               wording is pending counsel confirmation.
             </label>
@@ -400,10 +406,10 @@ function DeletionPanel({
 function List({ title, items }: { title: string; items: readonly string[] }) {
   return (
     <div>
-      <h3 className="text-label font-medium text-muted-fg">{title}</h3>
-      <ul className="mt-2 space-y-1.5">
+      <h3 className="text-meta font-medium text-ink">{title}</h3>
+      <ul className="mt-2 space-y-2">
         {items.map((item) => (
-          <li key={item} className="text-meta text-ink">
+          <li key={item} className="text-meta text-muted-fg">
             {item}
           </li>
         ))}

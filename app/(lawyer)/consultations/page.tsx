@@ -9,10 +9,19 @@ import { ErrorState } from "@/components/shared/error-state";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listAdvocateConsultations } from "@/lib/api/consultations";
+import { cn } from "@/lib/utils";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import type { ConsultationSummary } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
+type Filter = "all" | "waiting" | "answered" | "declined";
+
+const FILTERS: { id: Filter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "waiting", label: "Needs your move" },
+  { id: "answered", label: "Answered" },
+  { id: "declined", label: "Declined" },
+];
 
 /**
  * What the advocate is asked, on documents they settled and no others.
@@ -25,6 +34,8 @@ export default function ConsultationsPage() {
   const [requests, setRequests] = useState<ConsultationSummary[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [query, setQuery] = useState("");
 
   const load = useCallback(async () => {
     setState("loading");
@@ -58,17 +69,32 @@ export default function ConsultationsPage() {
     return <ErrorState message={errorMessage} onRetry={load} />;
   }
 
-  const waiting = requests.filter(
-    (r) => r.status === "requested" || (r.status === "accepted" && r.paid),
-  ).length;
+  const isWaiting = (r: ConsultationSummary) =>
+    r.status === "requested" || (r.status === "accepted" && r.paid);
+  const counts: Record<Filter, number> = {
+    all: requests.length,
+    waiting: requests.filter(isWaiting).length,
+    answered: requests.filter((r) => r.status === "answered").length,
+    declined: requests.filter((r) => r.status === "declined").length,
+  };
+  const waiting = counts.waiting;
+  const needle = query.trim().toLowerCase();
+  const visible = requests.filter(
+    (r) =>
+      (filter === "all" ||
+        (filter === "waiting" ? isWaiting(r) : r.status === filter)) &&
+      (needle === "" ||
+        r.documentTitle.toLowerCase().includes(needle) ||
+        r.clientName.toLowerCase().includes(needle)),
+  );
 
   return (
     <div className="w-full">
       <header className="max-w-measure">
         <h1 className="font-display text-h1 text-ink">Consultations</h1>
         <p className="mt-2 text-lead text-muted-fg">
-          Requests from clients whose documents you settled. Only you see them. Declining is free
-          and never chargeable.
+          Follow-up requests from clients whose documents you settled. Only you see them. Declining
+          is free and never chargeable.
         </p>
       </header>
 
@@ -81,13 +107,62 @@ export default function ConsultationsPage() {
         </div>
       ) : (
         <>
-          <p className="mt-8 text-meta text-muted-fg">
+          <dl className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {(
+              [
+                ["Needs your move", counts.waiting],
+                ["Answered", counts.answered],
+                ["Declined", counts.declined],
+              ] as const
+            ).map(([label, n]) => (
+              <div key={label} className="rounded-card bg-parchment/50 px-6 py-4">
+                <dt className="text-label text-muted-fg">{label}</dt>
+                <dd className="mt-1 font-display text-h2 text-ink">{n}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Filter requests">
+              {FILTERS.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setFilter(f.id)}
+                  aria-pressed={filter === f.id}
+                  className={cn(
+                    "rounded-full px-4 py-1.5 text-label transition-colors",
+                    filter === f.id
+                      ? "bg-ink text-paper"
+                      : "bg-parchment/50 text-ink hover:bg-parchment",
+                  )}
+                >
+                  {f.label} · {counts[f.id]}
+                </button>
+              ))}
+            </div>
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search document or client"
+              aria-label="Search requests by document or client"
+              className="w-full rounded-full border border-line bg-paper px-4 py-2 text-meta text-ink placeholder:text-muted-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:w-72"
+            />
+          </div>
+
+          <p className="mt-6 text-meta text-muted-fg">
             {waiting > 0
               ? `${waiting} ${waiting === 1 ? "request needs" : "requests need"} your move.`
-              : "Nothing needs your move."}
+              : "No action required right now."}
           </p>
+          {visible.length === 0 && (
+            <p className="mt-4 rounded-card bg-parchment/50 px-6 py-5 text-meta text-muted-fg">
+              No requests match. Clear the search or choose another filter.
+            </p>
+          )}
           <ul className="mt-4 space-y-2">
-            {requests.map((r) => (
+            {visible.map((r) => (
               <li
                 key={r.id}
                 className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-6 gap-y-3 rounded-card bg-parchment/50 px-6 py-5 transition-colors hover:bg-parchment"

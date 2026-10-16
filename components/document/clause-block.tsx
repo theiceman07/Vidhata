@@ -134,7 +134,7 @@ export function ClauseBlock({
       id={`clause-${clause.id}`}
       data-clause={clause.id}
       aria-labelledby={`clause-heading-${clause.id}`}
-      className="group/clause relative scroll-mt-12 py-6"
+      className="group/clause relative scroll-mt-12 py-5"
     >
       {/* The clause in hand carries an ink rule in the gutter, so the
           reader's eye finds it after a jump. */}

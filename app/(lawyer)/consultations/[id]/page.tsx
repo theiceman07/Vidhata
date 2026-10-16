@@ -9,6 +9,7 @@ import { ConsultationStatus } from "@/components/domain/consultation-status";
 import { BackButton } from "@/components/shared/back-button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
+import { Icon } from "@/components/shared/icon";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -141,20 +142,22 @@ export default function ConsultationRequestPage() {
         </div>
       </div>
 
-      <div className="mt-10 grid gap-x-10 gap-y-10 lg:grid-cols-[minmax(0,1fr)_24rem]">
-        <section className="min-w-0">
-          <div className="flex items-center gap-3">
-            <h2 className="text-label font-medium text-muted-fg">The question</h2>
-            <ConsultationStatus consultation={request} audience="advocate" />
+      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-8">
+        <section className="min-w-0 space-y-6">
+          <div className="rounded-card bg-parchment/50 p-6">
+            <div className="flex items-center gap-3">
+              <h2 className="text-label font-medium text-muted-fg">Client&apos;s question</h2>
+              <ConsultationStatus consultation={request} audience="advocate" />
+            </div>
+            <p className="mt-3 max-w-measure whitespace-pre-line break-words text-body text-ink">
+              {request.question}
+            </p>
           </div>
-          <p className="mt-3 max-w-measure whitespace-pre-line text-body text-ink">
-            {request.question}
-          </p>
 
           {request.status === "answered" && request.answer && (
-            <div className="mt-10">
-              <h2 className="text-label font-medium text-muted-fg">Your answer</h2>
-              <p className="mt-3 max-w-measure whitespace-pre-line text-body text-ink">
+            <div className="rounded-card bg-parchment p-6">
+              <h2 className="text-label font-medium text-muted-fg">Your response</h2>
+              <p className="mt-3 max-w-measure whitespace-pre-line break-words text-body leading-relaxed text-ink">
                 {request.answer}
               </p>
               {request.answeredAt && (
@@ -167,7 +170,7 @@ export default function ConsultationRequestPage() {
 
           {request.status === "accepted" && request.paid && (
             <form
-              className="mt-10 max-w-2xl"
+              className="rounded-card bg-parchment p-6"
               noValidate
               onSubmit={(e) => {
                 e.preventDefault();
@@ -297,14 +300,31 @@ export default function ConsultationRequestPage() {
             )}
 
             {request.status === "answered" && (
-              <p className="mt-4 text-meta text-ink">Answered. There is nothing more to do.</p>
+              <p className="mt-4 text-meta text-ink">Answered. No further action required.</p>
             )}
           </div>
 
-          <p className="text-label text-muted-fg">
-            This request is yours alone. It is not in the document&apos;s audit trail and not in
-            any notification.
-          </p>
+          <div className="rounded-card bg-parchment/50 p-6">
+            <h2 className="flex items-center gap-2 text-label font-medium text-muted-fg">
+              <Icon name="lock" size={16} />
+              Private consultation
+            </h2>
+            <p className="mt-2 text-meta text-muted-fg">
+              Visible only to you. This consultation is separate from the document audit trail and
+              notifications.
+            </p>
+          </div>
+
+          <div className="rounded-card bg-parchment/50 p-6">
+            <h2 className="text-label font-medium text-muted-fg">Related document</h2>
+            <p className="mt-2 text-meta text-ink">{request.documentTitle}</p>
+            <Link
+              href={`/review/${request.documentId}`}
+              className="mt-1 inline-block text-meta text-ink underline"
+            >
+              Open the settled document
+            </Link>
+          </div>
         </aside>
       </div>
     </div>

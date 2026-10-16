@@ -63,9 +63,12 @@ export function SeverityMark({
 export function SeverityCounts({
   counts,
   className,
+  labelled = false,
 }: {
   counts: Record<Severity, number>;
   className?: string;
+  /** Say the word beside each count, as the legend does. */
+  labelled?: boolean;
 }) {
   const order: Severity[] = ["high", "medium", "low"];
   const summary = order
@@ -93,6 +96,7 @@ export function SeverityCounts({
             severity={s}
             className={counts[s] === 0 ? "opacity-30" : undefined}
           />
+          {labelled && <span>{WORD[s]}</span>}
           {counts[s]}
         </span>
       ))}
