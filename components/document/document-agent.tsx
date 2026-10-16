@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/shared/icon";
+import { ChatCitations } from "@/components/domain/chat-message";
 import { ChatPending, ChatSendError } from "@/components/domain/chat-status";
 import { agentAvailable } from "@/lib/chatAccess";
 import { CONSULTATION, PRICE_BASIS } from "@/lib/config/pricing";
+import { scrollBehavior } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { MAX_QUESTION_LENGTH, mockTransport, unavailableTransport } from "@/lib/api/chat";
 import { useDocumentChat } from "@/lib/chat-session/useDocumentChat";
@@ -41,6 +43,7 @@ export function DocumentAgent({
 }) {
   const [input, setInput] = useState("");
   const threadRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [summary, setSummary] = useState<SettledSummary | null>(null);
   const [notes, setNotes] = useState<ClientSettlementNote[]>([]);
   // Questions go through the C1 boundary (lib/api/chat), which waits like a network call and can fail.
@@ -76,7 +79,7 @@ export function DocumentAgent({
   }, [available, docId]);
 
   useEffect(() => {
-    threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" });
+    threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: scrollBehavior() });
   }, [messages, chat.pending, chat.failed]);
 
   function send(text: string) {
@@ -99,7 +102,16 @@ export function DocumentAgent({
         </span>
       </div>
 
-      <div ref={threadRef} className="min-h-0 flex-1 overflow-y-auto px-6">
+      {/* A log that is always mounted, so what is added to it (the question, the wait, the answer,
+          a failure) is announced. It is focusable so the keyboard can scroll it. */}
+      <div
+        ref={threadRef}
+        role="log"
+        aria-live="polite"
+        aria-label="Conversation about this document"
+        tabIndex={0}
+        className="min-h-0 flex-1 overflow-y-auto px-6 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+      >
         {empty ? (
           <div className="flex h-full flex-col justify-center pb-6 pt-10">
             <h2 className="font-display text-[30px] font-medium leading-tight tracking-[-0.015em] text-ink">
@@ -145,28 +157,17 @@ export function DocumentAgent({
                     <p className="mb-1 text-label font-medium text-muted-fg">Not something this document answers</p>
                   )}
                   <p>{m.text}</p>
-                  {(m.citations?.length ? m.citations : m.citedClauseReference ? [{ clauseReference: m.citedClauseReference, quote: "" }] : []).map(
-                    (c, i) =>
-                      /\d/.test(c.clauseReference) ? (
-                        <button
-                          key={`${c.clauseReference}-${i}`}
-                          type="button"
-                          title={c.quote || undefined}
-                          onClick={() => onCite(clauseNumberFromReference(c.clauseReference))}
-                          className="mr-2 mt-2 inline-flex items-center gap-1 rounded-full border border-line px-3 py-1 text-meta text-ink transition-colors hover:border-ink/40"
-                        >
-                          {c.clauseReference}
-                          <Icon name="arrow_forward" size={16} />
-                        </button>
-                      ) : (
-                        <span
-                          key={`${c.clauseReference}-${i}`}
-                          className="mr-2 mt-2 inline-flex items-center rounded-full border border-line px-3 py-1 text-meta text-muted-fg"
-                        >
-                          {c.clauseReference}
-                        </span>
-                      ),
-                  )}
+                  <ChatCitations
+                    variant="docked"
+                    citations={
+                      m.citations?.length
+                        ? m.citations
+                        : m.citedClauseReference
+                          ? [{ clauseReference: m.citedClauseReference, quote: "" }]
+                          : []
+                    }
+                    onCite={(reference) => onCite(clauseNumberFromReference(reference))}
+                  />
                 </li>
               ),
             )}
@@ -177,7 +178,14 @@ export function DocumentAgent({
             )}
             {chat.failed && (
               <li>
-                <ChatSendError message={chat.failed.message} onRetry={chat.retry} />
+                <ChatSendError
+                  message={chat.failed.message}
+                  onRetry={() => {
+                    chat.retry();
+                    // The button leaves the page when it is pressed; keep the keyboard in the conversation.
+                    inputRef.current?.focus();
+                  }}
+                />
               </li>
             )}
           </ol>
@@ -197,6 +205,7 @@ export function DocumentAgent({
         />
         <div className="relative rounded-card border border-ink/15 bg-paper p-2 pl-4 transition-colors group-focus-within:border-transparent">
           <textarea
+            ref={inputRef}
             id="agent-input"
             aria-label="Ask about this document"
             rows={2}

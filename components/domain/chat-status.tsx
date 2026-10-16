@@ -1,9 +1,13 @@
 import { Button } from "@/components/ui/button";
 
-/** Shown while the agent reads the settled document for an answer. */
+/**
+ * Shown while the agent reads the settled document for an answer. It carries no live role of
+ * its own: a region that is mounted with its text is not reliably announced, so it is placed
+ * inside the thread's persistent log, which announces it as it is added.
+ */
 export function ChatPending() {
   return (
-    <div role="status" aria-live="polite" className="flex justify-start">
+    <div className="flex justify-start">
       <div className="flex items-center gap-2 rounded-card border border-line bg-paper px-4 py-3 text-small text-muted-fg">
         <span aria-hidden className="flex gap-1">
           {[0, 150, 300].map((delay) => (

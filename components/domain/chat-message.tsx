@@ -1,5 +1,5 @@
 import { Icon } from "@/components/shared/icon";
-import type { ChatMessage as ChatMessageType } from "@/lib/types";
+import type { ChatCitationView, ChatMessage as ChatMessageType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface ChatMessageProps {
@@ -9,6 +9,73 @@ interface ChatMessageProps {
 
 /** A citation to a numbered clause can be followed; "Summary" and the like are labels only. */
 const isClause = (reference: string) => /\d/.test(reference);
+
+const CITATION_STYLES = {
+  page: {
+    chip: "inline-flex items-center gap-1 rounded-full bg-canvas px-2.5 py-0.5 text-small font-medium text-muted-fg",
+    link: "transition-colors hover:bg-line",
+  },
+  docked: {
+    chip: "inline-flex items-center gap-1 rounded-full border border-line px-3 py-1 text-meta text-ink",
+    link: "transition-colors hover:border-ink/40",
+  },
+} as const;
+
+/**
+ * The clauses an answer rests on, and what it quotes from them. The quotes sit in a native
+ * disclosure, so they can be opened by keyboard, by tap and by a screen reader; they are
+ * never only in a hover tooltip. Used by this page's messages and by the docked agent.
+ */
+export function ChatCitations({
+  citations,
+  variant,
+  onCite,
+}: {
+  citations: ChatCitationView[];
+  variant: keyof typeof CITATION_STYLES;
+  /** Carry the reader to the clause. Called with the reference as the reply gave it. */
+  onCite?: (clauseReference: string) => void;
+}) {
+  if (citations.length === 0) return null;
+  const style = CITATION_STYLES[variant];
+  const quoted = citations.filter((c) => c.quote.trim() !== "");
+
+  return (
+    <div className="mt-2">
+      <ul aria-label="Clauses this answer rests on" className="flex flex-wrap gap-2">
+        {citations.map((c, i) => (
+          <li key={`${c.clauseReference}-${i}`}>
+            {isClause(c.clauseReference) ? (
+              <button type="button" onClick={() => onCite?.(c.clauseReference)} className={cn(style.chip, style.link)}>
+                <Icon name="description" size={16} />
+                {c.clauseReference}
+              </button>
+            ) : (
+              <span className={style.chip}>
+                <Icon name="description" size={16} />
+                {c.clauseReference}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+      {quoted.length > 0 && (
+        <details className="mt-2 text-small text-muted-fg">
+          <summary className="w-fit cursor-pointer rounded-control py-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent">
+            What it quotes
+          </summary>
+          <ul className="mt-1 space-y-1 border-l-2 border-line pl-3">
+            {quoted.map((c, i) => (
+              <li key={`${c.clauseReference}-${i}`}>
+                <span className="font-medium text-ink">{c.clauseReference}</span>: &ldquo;{c.quote}&rdquo;
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+}
 
 export function ChatMessage({ message, onCiteClick }: ChatMessageProps) {
   const isUser = message.role === "user";
@@ -36,30 +103,7 @@ export function ChatMessage({ message, onCiteClick }: ChatMessageProps) {
       >
         {refused && <p className="mb-1 text-label font-medium text-muted-fg">Not something this document answers</p>}
         <p className="whitespace-pre-wrap">{message.text}</p>
-        {citations.length > 0 && (
-          <ul aria-label="Clauses this answer rests on" className="mt-2 flex flex-wrap gap-2">
-            {citations.map((c, i) => (
-              <li key={`${c.clauseReference}-${i}`}>
-                {isClause(c.clauseReference) ? (
-                  <button
-                    type="button"
-                    title={c.quote || undefined}
-                    onClick={() => onCiteClick?.(c.clauseReference)}
-                    className="inline-flex items-center gap-1 rounded-full bg-canvas px-2.5 py-0.5 text-small font-medium text-muted-fg transition-colors hover:bg-line"
-                  >
-                    <Icon name="description" size={16} />
-                    {c.clauseReference}
-                  </button>
-                ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-canvas px-2.5 py-0.5 text-small font-medium text-muted-fg">
-                    <Icon name="description" size={16} />
-                    {c.clauseReference}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
+        <ChatCitations citations={citations} variant="page" onCite={onCiteClick} />
       </div>
     </div>
   );

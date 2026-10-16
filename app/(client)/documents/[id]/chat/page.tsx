@@ -28,6 +28,7 @@ import type {
   ClientSettlementNote,
   SettledSummary,
 } from "@/lib/types";
+import { scrollBehavior } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 type LoadState = "loading" | "error" | "loaded";
@@ -57,11 +58,18 @@ export default function ChatPage() {
     null,
   );
   const threadEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // Each load takes a number; one that is no longer the latest (a new id, a retry, leaving the page) drops its result.
+  const loadId = useRef(0);
+  const citeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const load = useCallback(async () => {
+    const mine = ++loadId.current;
+    const stale = () => mine !== loadId.current;
     setState("loading");
     try {
       const result = await getClientDocument(MOCK_CLIENT_ORG.id, params.id);
+      if (stale()) return;
       if (!result) throw new Error("Document not found.");
       setDoc(result);
       resetChat(buildInitialMessages(result));
@@ -74,11 +82,13 @@ export default function ChatPage() {
           getClientSummary(MOCK_CLIENT_ORG.id, params.id).catch(() => null),
           getClientSettlementNotes(MOCK_CLIENT_ORG.id, params.id).catch((): ClientSettlementNote[] => []),
         ]);
+        if (stale()) return;
         if (read && read.result.state === "ready") setSummary(read.result.summary);
         setNotes(released);
       }
       setState("loaded");
     } catch (err) {
+      if (stale()) return;
       setErrorMessage(
         err instanceof Error ? err.message : "Could not load this document.",
       );
@@ -88,10 +98,15 @@ export default function ChatPage() {
 
   useEffect(() => {
     load();
+    return () => {
+      loadId.current += 1;
+    };
   }, [load]);
 
+  useEffect(() => () => clearTimeout(citeTimer.current), []);
+
   useEffect(() => {
-    threadEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    threadEndRef.current?.scrollIntoView({ behavior: scrollBehavior() });
   }, [messages, chat.pending, chat.failed]);
 
   function sendMessage(text: string) {
@@ -105,8 +120,9 @@ export default function ChatPage() {
     const el = document.getElementById(
       `sidebar-${clauseReference.replace(/\s+/g, "-")}`,
     );
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    setTimeout(() => setHighlightedClause(null), 1500);
+    el?.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
+    clearTimeout(citeTimer.current);
+    citeTimer.current = setTimeout(() => setHighlightedClause(null), 1500);
   }
 
   if (state === "loading") {
@@ -193,7 +209,16 @@ export default function ChatPage() {
         </aside>
 
         <div className="flex flex-col rounded-card border border-line bg-paper shadow-card">
-          <div className="flex-1 space-y-3 overflow-y-auto p-4" style={{ maxHeight: 480 }}>
+          {/* A log that is always mounted, so what is added to it (the question, the wait, the answer,
+              a failure) is announced. It is focusable so the keyboard can scroll it. */}
+          <div
+            role="log"
+            aria-live="polite"
+            aria-label="Conversation about this document"
+            tabIndex={0}
+            className="flex-1 space-y-3 overflow-y-auto p-4 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+            style={{ maxHeight: 480 }}
+          >
             {messages.map((m) =>
               m.isEscalation ? (
                 <EscalationPrompt
@@ -210,7 +235,16 @@ export default function ChatPage() {
               ),
             )}
             {chat.pending && <ChatPending />}
-            {chat.failed && <ChatSendError message={chat.failed.message} onRetry={chat.retry} />}
+            {chat.failed && (
+              <ChatSendError
+                message={chat.failed.message}
+                onRetry={() => {
+                  chat.retry();
+                  // The button leaves the page when it is pressed; keep the keyboard in the conversation.
+                  inputRef.current?.focus();
+                }}
+              />
+            )}
             <div ref={threadEndRef} />
           </div>
 
@@ -221,7 +255,8 @@ export default function ChatPage() {
                   key={q}
                   type="button"
                   onClick={() => sendMessage(q)}
-                  className="rounded-control border border-line px-3 py-1 text-small text-muted-fg transition-colors hover:bg-canvas"
+                  disabled={chat.pending}
+                  className="rounded-control border border-line px-3 py-1 text-small text-muted-fg transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
                 >
                   {q}
                 </button>
@@ -235,6 +270,7 @@ export default function ChatPage() {
               className="flex gap-2"
             >
               <Input
+                ref={inputRef}
                 value={input}
                 maxLength={MAX_QUESTION_LENGTH}
                 onChange={(e) => setInput(e.target.value)}
