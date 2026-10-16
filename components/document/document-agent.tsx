@@ -228,7 +228,7 @@ export function DocumentAgent({
               aria-label="Send"
               disabled={!input.trim() || chat.pending}
               className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300",
+                "flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300",
                 input.trim()
                   ? "bg-accent text-accent-fg hover:bg-accent-hover"
                   : "bg-ink/[0.06] text-muted-fg",

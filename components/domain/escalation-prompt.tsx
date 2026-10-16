@@ -11,7 +11,7 @@ interface EscalationPromptProps {
 export function EscalationPrompt({ advocateName, href }: EscalationPromptProps) {
   return (
     <div className="flex justify-start">
-      <div className="max-w-[80%] rounded-card border border-caution/30 bg-caution/10 p-4">
+      <div className="max-w-[92%] rounded-card border border-caution/30 bg-caution/10 p-4 sm:max-w-[80%]">
         <p className="mb-2 text-label font-medium text-caution-fg">
           This needs legal judgment
         </p>
@@ -20,7 +20,8 @@ export function EscalationPrompt({ advocateName, href }: EscalationPromptProps) 
           I can only explain the settled document. I can&apos;t advise on
           your situation.
         </p>
-        <Button asChild size="sm" className="mt-3">
+        {/* The button's label is long and its base style does not wrap: on a phone it must wrap inside the card, and be tall enough to tap. */}
+        <Button asChild size="sm" className="mt-3 h-auto min-h-11 w-full whitespace-normal py-2 text-center sm:w-auto">
           <Link href={href}>Request a consultation with {advocateName}</Link>
         </Button>
         <p className="mt-2 text-label text-muted-fg">

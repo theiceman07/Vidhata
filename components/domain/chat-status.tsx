@@ -29,7 +29,7 @@ export function ChatSendError({ message, onRetry }: { message: string; onRetry: 
   return (
     <div role="alert" className="border-l-2 border-flagged py-1 pl-4">
       <p className="text-body text-ink">{message}</p>
-      <Button type="button" variant="outline" size="sm" className="mt-2" onClick={onRetry}>
+      <Button type="button" variant="outline" size="sm" className="mt-2 min-h-11 sm:min-h-0" onClick={onRetry}>
         Try again
       </Button>
     </div>

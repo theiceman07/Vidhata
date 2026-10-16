@@ -27,7 +27,7 @@ export function PageHeader({
       {backHref && (
         <Link
           href={backHref}
-          className="mb-3 inline-flex items-center gap-1 text-small text-muted-fg hover:text-ink"
+          className="mb-3 inline-flex min-h-11 items-center gap-1 text-small text-muted-fg hover:text-ink sm:min-h-0"
         >
           <Icon name="chevron_left" size={16} />
           {backLabel}

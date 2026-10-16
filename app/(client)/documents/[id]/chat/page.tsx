@@ -256,7 +256,7 @@ export default function ChatPage() {
                   type="button"
                   onClick={() => sendMessage(q)}
                   disabled={chat.pending}
-                  className="rounded-control border border-line px-3 py-1 text-small text-muted-fg transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+                  className="min-h-11 rounded-control border border-line px-4 py-1 text-small text-muted-fg transition-colors hover:bg-canvas sm:min-h-0 sm:px-3 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
                 >
                   {q}
                 </button>
@@ -274,10 +274,10 @@ export default function ChatPage() {
                 value={input}
                 maxLength={MAX_QUESTION_LENGTH}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about any clause in this document"
+                placeholder="Ask about any clause"
                 aria-label="Ask about a clause in this document"
               />
-              <Button type="submit" size="icon" aria-label="Send" disabled={chat.pending}>
+              <Button type="submit" size="icon" aria-label="Send" disabled={chat.pending} className="h-11 w-11 shrink-0">
                 <Icon name="send" size={18} />
               </Button>
             </form>

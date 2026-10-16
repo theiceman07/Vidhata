@@ -13,11 +13,11 @@ const isClause = (reference: string) => /\d/.test(reference);
 const CITATION_STYLES = {
   page: {
     chip: "inline-flex items-center gap-1 rounded-full bg-canvas px-2.5 py-0.5 text-small font-medium text-muted-fg",
-    link: "transition-colors hover:bg-line",
+    link: "min-h-11 transition-colors hover:bg-line sm:min-h-0",
   },
   docked: {
     chip: "inline-flex items-center gap-1 rounded-full border border-line px-3 py-1 text-meta text-ink",
-    link: "transition-colors hover:border-ink/40",
+    link: "min-h-11 transition-colors hover:border-ink/40 sm:min-h-0",
   },
 } as const;
 
@@ -42,7 +42,7 @@ export function ChatCitations({
 
   return (
     <div className="mt-2">
-      <ul aria-label="Clauses this answer rests on" className="flex flex-wrap gap-2">
+      <ul aria-label="Clauses this answer rests on" className="flex flex-wrap items-center gap-2">
         {citations.map((c, i) => (
           <li key={`${c.clauseReference}-${i}`}>
             {isClause(c.clauseReference) ? (
@@ -61,7 +61,7 @@ export function ChatCitations({
       </ul>
       {quoted.length > 0 && (
         <details className="mt-2 text-small text-muted-fg">
-          <summary className="w-fit cursor-pointer rounded-control py-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent">
+          <summary className="inline-flex min-h-11 w-fit cursor-pointer items-center rounded-control py-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent">
             What it quotes
           </summary>
           <ul className="mt-1 space-y-1 border-l-2 border-line pl-3">
@@ -93,7 +93,7 @@ export function ChatMessage({ message, onCiteClick }: ChatMessageProps) {
     <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "max-w-[80%] rounded-card px-4 py-3 text-body",
+          "max-w-[92%] rounded-card px-4 py-3 text-body sm:max-w-[80%]",
           isUser
             ? "bg-accent text-accent-fg"
             : refused
