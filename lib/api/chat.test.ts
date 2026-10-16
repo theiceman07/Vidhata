@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { shapeClientDocument } from "@/lib/api/client/shape-document";
 import { summaryResultFor } from "@/lib/api/summaries";
 import { answerQuestion } from "@/lib/chat/answer";
@@ -107,6 +107,20 @@ describe("httpTransport", () => {
     expect((init.headers as Record<string, string>).Authorization).toBe("Bearer tok");
     expect(JSON.parse(init.body as string)).toEqual(request);
   });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+  it("does not cut a request off before its deadline", async () => {
+    vi.useFakeTimers();
+    const slow = (_url: string, init: RequestInit) =>
+      new Promise<Response>((resolve, reject) => {
+        init.signal!.addEventListener("abort", () => reject(init.signal!.reason));
+        setTimeout(() => resolve(new Response(JSON.stringify({ status: "refused", reason: "x" }))), 29_000);
+      });
+    const pending = transportWith(slow)(request);
+    await vi.advanceTimersByTimeAsync(29_000);
+    expect(await pending).toEqual({ status: "refused", reason: "x" });
+  });
   const transportWith = (fetchImpl: unknown, timeoutMs?: number) =>
     httpTransport({ apiBase: "https://api.test", token: "t", timeoutMs, fetchImpl: fetchImpl as typeof fetch });
   const failWith = (fetchImpl: unknown, timeoutMs?: number) =>
@@ -147,7 +161,10 @@ describe("httpTransport", () => {
       new Promise<Response>((_resolve, reject) => {
         init.signal!.addEventListener("abort", () => reject(init.signal!.reason));
       });
-    const err = await failWith(hangs, 20);
+    vi.useFakeTimers();
+    const pending = failWith(hangs, 20);
+    await vi.advanceTimersByTimeAsync(20);
+    const err = await pending;
     expect(err).toBeInstanceOf(ChatError);
     expect(err.message).toBe(FAILURE_COPY.timeout);
     expect(err.kind).toBe("timeout");
@@ -162,7 +179,10 @@ describe("httpTransport", () => {
             init.signal!.addEventListener("abort", () => reject(init.signal!.reason));
           }),
       }) as unknown as Response;
-    const err = await failWith(stalls, 20);
+    vi.useFakeTimers();
+    const pending = failWith(stalls, 20);
+    await vi.advanceTimersByTimeAsync(20);
+    const err = await pending;
     expect(err.kind).toBe("timeout");
   });
   it("does not trust a 200 whose body is not JSON", async () => {

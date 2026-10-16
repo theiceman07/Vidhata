@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { FAILURE_COPY } from "@/lib/net/failure";
 import { StorageError, checkFile, getDownloadLink, uploadDocumentFile } from "./upload";
 
@@ -62,6 +62,9 @@ describe("uploadDocumentFile", () => {
 describe("when the upload goes wrong", () => {
   const fail = (fetchImpl: unknown, extra: object = {}) =>
     uploadDocumentFile({ ...base, file: pdf(), fetchImpl: fetchImpl as typeof fetch, ...extra }).catch((e) => e);
+  afterEach(() => {
+    vi.useRealTimers();
+  });
   const hangs = (_url: string, init: RequestInit) =>
     new Promise<Response>((_resolve, reject) => init.signal!.addEventListener("abort", () => reject(init.signal!.reason)));
 
@@ -111,12 +114,17 @@ describe("when the upload goes wrong", () => {
     expect(signals.every((s) => s instanceof AbortSignal)).toBe(true);
   });
   it("maps a timeout to 'took too long' on the backend call and on the S3 post", async () => {
-    const slowApi = await fail(hangs, { timeoutMs: 20 });
+    vi.useFakeTimers();
+    const slowApiPending = fail(hangs, { timeoutMs: 20 });
+    await vi.advanceTimersByTimeAsync(20);
+    const slowApi = await slowApiPending;
     expect(slowApi.message).toBe(FAILURE_COPY.timeout);
     expect(slowApi.kind).toBe("timeout");
 
     const slowS3 = (url: string, init: RequestInit) => (url.endsWith("/upload-url") ? Promise.resolve(json(startReply)) : hangs(url, init));
-    const err = await fail(slowS3, { uploadTimeoutMs: 20 });
+    const errPending = fail(slowS3, { uploadTimeoutMs: 20 });
+    await vi.advanceTimersByTimeAsync(20);
+    const err = await errPending;
     expect(err.kind).toBe("timeout");
     expect(err.message).toBe(FAILURE_COPY.timeout);
   });
@@ -129,8 +137,10 @@ describe("when the upload goes wrong", () => {
       }
       return json({ version_no: 4 });
     };
-    const out = await uploadDocumentFile({ ...base, file: pdf(), fetchImpl: slowS3 as unknown as typeof fetch, timeoutMs: 20, uploadTimeoutMs: 1000 });
-    expect(out.versionNo).toBe(4);
+    vi.useFakeTimers();
+    const pending = uploadDocumentFile({ ...base, file: pdf(), fetchImpl: slowS3 as unknown as typeof fetch, timeoutMs: 20, uploadTimeoutMs: 1000 });
+    await vi.advanceTimersByTimeAsync(60);
+    expect((await pending).versionNo).toBe(4);
   });
   it("tells a failed S3 post plainly, without S3's own body", async () => {
     const fetchImpl = async (url: string) => (url.endsWith("/upload-url") ? json(startReply) : new Response("<Error>SignatureDoesNotMatch</Error>", { status: 403 }));

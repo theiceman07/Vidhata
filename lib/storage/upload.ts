@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FAILURE_COPY, kindOfStatus, kindOfThrown, readDetail, type FailureKind } from "@/lib/net/failure";
+import { FAILURE_COPY, deadline, kindOfStatus, kindOfThrown, readDetail, type FailureKind } from "@/lib/net/failure";
 
 /**
  * Browser side of file storage: upload a file through the backend's presigned S3
@@ -61,14 +61,17 @@ async function call<T>(
   read: (res: Response) => Promise<T>,
   onStatus: (res: Response) => Promise<StorageError> = async (res) => failure(kindOfStatus(res.status), await readDetail(res)),
 ): Promise<T> {
+  const limit = deadline(timeoutMs);
   try {
-    const res = await f(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+    const res = await f(url, { ...init, signal: limit.signal });
     if (!res.ok) throw await onStatus(res);
     return await read(res);
   } catch (err) {
     if (err instanceof StorageError) throw err;
     if (err instanceof SyntaxError) throw badReply(err.message);
     throw failure(kindOfThrown(err), err instanceof Error ? err.message : undefined);
+  } finally {
+    limit.clear();
   }
 }
 

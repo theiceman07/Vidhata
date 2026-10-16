@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { FAILURE_COPY, kindOfStatus, kindOfThrown, readDetail } from "./failure";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { FAILURE_COPY, deadline, kindOfStatus, kindOfThrown, readDetail } from "./failure";
 
 describe("kindOfStatus", () => {
   it.each([
@@ -23,6 +23,28 @@ describe("kindOfThrown", () => {
     expect(kindOfThrown(new DOMException("aborted", "AbortError"))).toBe("timeout");
     expect(kindOfThrown(new TypeError("fetch failed"))).toBe("network");
     expect(kindOfThrown(null)).toBe("network");
+  });
+});
+
+describe("deadline", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+  it("aborts with a TimeoutError once the time is up, and not before", async () => {
+    vi.useFakeTimers();
+    const { signal } = deadline(1000);
+    await vi.advanceTimersByTimeAsync(999);
+    expect(signal.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(signal.aborted).toBe(true);
+    expect(kindOfThrown(signal.reason)).toBe("timeout");
+  });
+  it("does not abort once cleared", async () => {
+    vi.useFakeTimers();
+    const { signal, clear } = deadline(1000);
+    clear();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(signal.aborted).toBe(false);
   });
 });
 

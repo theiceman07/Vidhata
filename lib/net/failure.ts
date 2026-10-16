@@ -26,6 +26,17 @@ export function kindOfThrown(err: unknown): "timeout" | "network" {
   return name === "TimeoutError" || name === "AbortError" ? "timeout" : "network";
 }
 
+/**
+ * A deadline for one call: the signal aborts with a TimeoutError after `ms`. This is
+ * AbortSignal.timeout built on setTimeout, so tests can drive it with fake timers, and
+ * `clear` ends it once the call is over so no timer outlives the request.
+ */
+export function deadline(ms: number): { signal: AbortSignal; clear: () => void } {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new DOMException("The operation timed out.", "TimeoutError")), ms);
+  return { signal: controller.signal, clear: () => clearTimeout(timer) };
+}
+
 /** The server's own words for debugging. Never put this on screen. */
 export async function readDetail(res: Response): Promise<string | undefined> {
   try {

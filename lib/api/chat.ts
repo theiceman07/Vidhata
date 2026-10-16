@@ -2,7 +2,7 @@ import { chatReplySchema, type ChatReply as WireReply, type ChatRequest as WireR
 import { answerQuestion, type ChatReply } from "@/lib/chat/answer";
 import type { ChatSource } from "@/lib/chat/generate";
 import type { ChatAnswerStatus, ChatCitationView } from "@/lib/types";
-import { FAILURE_COPY, kindOfStatus, kindOfThrown, readDetail, type FailureKind } from "@/lib/net/failure";
+import { FAILURE_COPY, deadline, kindOfStatus, kindOfThrown, readDetail, type FailureKind } from "@/lib/net/failure";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 
 /**
@@ -103,7 +103,8 @@ export function httpTransport(options: {
   return async (request) => {
     const f = options.fetchImpl ?? fetch;
     // The deadline covers the whole exchange, body included, so a stalled reply cannot hold the thread.
-    const signal = AbortSignal.timeout(options.timeoutMs ?? CHAT_TIMEOUT_MS);
+    const limit = deadline(options.timeoutMs ?? CHAT_TIMEOUT_MS);
+    const signal = limit.signal;
     try {
       const res = await f(`${options.apiBase}${options.path ?? "/agents/chat"}`, {
         method: "POST",
@@ -118,6 +119,8 @@ export function httpTransport(options: {
       // A body that is not JSON comes through as a reply that fails C1, so only the wire can fail here.
       if (err instanceof SyntaxError) return null;
       throw failure(kindOfThrown(err), err instanceof Error ? err.message : undefined);
+    } finally {
+      limit.clear();
     }
   };
 }
