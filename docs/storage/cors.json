@@ -3,7 +3,7 @@
     {
       "AllowedOrigins": [
         "http://localhost:3000",
-        "https://app.vidhata.example"
+        "https://vidhata-pi.vercel.app"
       ],
       "AllowedMethods": ["POST", "GET"],
       "AllowedHeaders": ["*"],
