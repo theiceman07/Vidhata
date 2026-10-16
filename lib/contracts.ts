@@ -11,7 +11,7 @@
  */
 import { z } from "zod";
 
-export const SEVERITIES = ["low", "medium", "high", "critical"] as const;
+export const SEVERITIES = ["low", "medium", "high"] as const;
 export const FINDING_STATUSES = ["pending", "confirmed", "overridden", "added"] as const;
 export const CHAT_STATUSES = ["answered", "refused", "escalated"] as const;
 
@@ -35,12 +35,17 @@ export const reviewFindingSchema = z.object({
   finding_id: z.string().uuid(),
   layer: z.number().int().min(0).max(6),
   severity: z.enum(SEVERITIES),
-  rule_id: z.string().nullable().default(null),
+  rule_applied: z.string().nullable().default(null),
   clause_reference: z.string().nullable().default(null),
+  /** The quoted span of the clause the finding is about. */
+  clause_text: z.string().nullable().default(null),
   description: z.string().min(1),
   remedy_suggested: z.string().nullable().default(null),
-  citation: citationSchema.nullable().default(null),
+  /** Every source the finding rests on; empty when it rests on advocate judgment alone. */
+  citations: z.array(citationSchema).default([]),
   status: z.enum(FINDING_STATUSES).default("pending"),
+  /** The advocate's reasoning, when they settled or overrode the finding. */
+  override_note: z.string().nullable().default(null),
 });
 
 export const reviewResultSchema = z.object({

@@ -5,9 +5,36 @@ const id = "11111111-1111-4111-8111-111111111111";
 
 describe("R1 finding contract", () => {
   it("accepts a finding and fills the defaults", () => {
-    const f = reviewFindingSchema.parse({ finding_id: id, layer: 2, severity: "critical", description: "Void non-compete" });
+    const f = reviewFindingSchema.parse({ finding_id: id, layer: 2, severity: "high", description: "Void non-compete" });
     expect(f.status).toBe("pending");
-    expect(f.citation).toBeNull();
+    expect(f.citations).toEqual([]);
+    expect(f.rule_applied).toBeNull();
+    expect(f.clause_text).toBeNull();
+    expect(f.override_note).toBeNull();
+  });
+  it("names the rule rule_applied, as the database does", () => {
+    const f = reviewFindingSchema.parse({ finding_id: id, layer: 2, severity: "low", description: "x", rule_applied: "ICA-S27-NONCOMPETE-V2" });
+    expect(f.rule_applied).toBe("ICA-S27-NONCOMPETE-V2");
+    expect("rule_id" in f).toBe(false);
+  });
+  it.each(["low", "medium", "high"])("accepts severity %s", (severity) => {
+    expect(reviewFindingSchema.safeParse({ finding_id: id, layer: 1, severity, description: "x" }).success).toBe(true);
+  });
+  it("has no critical severity: the screens know three", () => {
+    expect(reviewFindingSchema.safeParse({ finding_id: id, layer: 2, severity: "critical", description: "x" }).success).toBe(false);
+  });
+  it.each(["pending", "confirmed", "overridden", "added"])("accepts status %s", (status) => {
+    expect(reviewFindingSchema.safeParse({ finding_id: id, layer: 1, severity: "low", description: "x", status }).success).toBe(true);
+  });
+  it("carries a list of citations, each held to verified-iff-corpus_ref", () => {
+    const base = { finding_id: id, layer: 2, severity: "high", description: "x" };
+    const two = [
+      { text: "ICA s.27", verified: true, corpus_ref: "ica-s27" },
+      { text: "Made-up s.9", verified: false },
+    ];
+    expect(reviewFindingSchema.parse({ ...base, citations: two }).citations).toHaveLength(2);
+    expect(reviewFindingSchema.safeParse({ ...base, citations: [{ text: "ICA s.27", verified: true }] }).success).toBe(false);
+    expect(reviewFindingSchema.safeParse({ ...base, citations: [two[0], { text: "x", verified: false, corpus_ref: "r" }] }).success).toBe(false);
   });
   it("rejects an out-of-range layer and an unknown severity", () => {
     expect(reviewFindingSchema.safeParse({ finding_id: id, layer: 7, severity: "low", description: "x" }).success).toBe(false);
