@@ -172,7 +172,8 @@ export function FindingDetail({
           <p className="font-mono text-label text-muted-fg">
             Finding {number}
             <span aria-hidden className="mx-1.5 text-muted-fg">·</span>
-            Clause {clauseNumber}
+            {/* A reference with no clause number ("Whole document") is said as it is, not as "Clause Whole document". */}
+            {/\d/.test(clauseNumber) ? `Clause ${clauseNumber}` : clauseNumber}
           </p>
           <h2 className="mt-0.5 font-display text-h3 text-ink">
             {clause?.heading ?? finding.clauseReference}
@@ -234,14 +235,21 @@ export function FindingDetail({
           />
         </Section>
 
-        <Section title="Passage">
-          <blockquote className="border-l-2 border-line pl-3 font-clause text-body text-ink">
-            {finding.clauseText}
-          </blockquote>
-        </Section>
+        {/* R1 may leave the quoted span and the remedy out; an empty section is not shown as a blank one. */}
+        {finding.clauseText.trim() && (
+          <Section title="Passage">
+            <blockquote className="border-l-2 border-line pl-3 font-clause text-body text-ink">
+              {finding.clauseText}
+            </blockquote>
+          </Section>
+        )}
 
         <Section title="Suggested remedy">
-          <p className="text-meta text-ink">{finding.remedySuggested}</p>
+          {finding.remedySuggested.trim() ? (
+            <p className="text-meta text-ink">{finding.remedySuggested}</p>
+          ) : (
+            <p className="text-meta text-muted-fg">No remedy was suggested.</p>
+          )}
         </Section>
 
         {request && (

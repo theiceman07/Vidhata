@@ -1,32 +1,34 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { Icon } from "@/components/shared/icon";
 import { agentAvailable } from "@/lib/chatAccess";
 import { PageHeader } from "@/components/shared/page-header";
 import { ErrorState } from "@/components/shared/error-state";
 import { ChatMessage } from "@/components/domain/chat-message";
+import { ChatPending, ChatSendError } from "@/components/domain/chat-status";
 import { EscalationPrompt } from "@/components/domain/escalation-prompt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MAX_QUESTION_LENGTH, mockTransport, unavailableTransport } from "@/lib/api/chat";
 import { getClientDocument } from "@/lib/api/client/documents";
+import { useDocumentChat } from "@/lib/chat-session/useDocumentChat";
 import { getClientSummary } from "@/lib/api/client/delivery";
 import {
   buildInitialMessages,
   chatSourceOf,
-  getMockReply,
   SUGGESTED_QUESTIONS,
 } from "@/lib/mock/chat.mock";
 import { getClientSettlementNotes } from "@/lib/api/client/settlement-notes";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type {
-  ChatMessage as ChatMessageType,
   ClientDocument,
   ClientSettlementNote,
   SettledSummary,
 } from "@/lib/types";
+import { scrollBehavior } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 type LoadState = "loading" | "error" | "loaded";
@@ -43,20 +45,34 @@ export default function ChatPage() {
   const [notes, setNotes] = useState<ClientSettlementNote[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
-  const [messages, setMessages] = useState<ChatMessageType[]>([]);
+  // Questions go through the C1 boundary (lib/api/chat), which waits like a network call and can fail.
+  const transport = useMemo(
+    () => (doc ? mockTransport(chatSourceOf(doc, summary, notes)) : unavailableTransport),
+    [doc, summary, notes],
+  );
+  const chat = useDocumentChat({ documentId: params.id, transport });
+  const messages = chat.messages;
+  const resetChat = chat.reset;
   const [input, setInput] = useState("");
   const [highlightedClause, setHighlightedClause] = useState<string | null>(
     null,
   );
   const threadEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // Each load takes a number; one that is no longer the latest (a new id, a retry, leaving the page) drops its result.
+  const loadId = useRef(0);
+  const citeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const load = useCallback(async () => {
+    const mine = ++loadId.current;
+    const stale = () => mine !== loadId.current;
     setState("loading");
     try {
       const result = await getClientDocument(MOCK_CLIENT_ORG.id, params.id);
+      if (stale()) return;
       if (!result) throw new Error("Document not found.");
       setDoc(result);
-      setMessages(buildInitialMessages(result));
+      resetChat(buildInitialMessages(result));
       // The summary is asked for only once the document is signed off, and what it says is
       // the API's to give. Without one the agent still quotes the clauses.
       setSummary(null);
@@ -66,45 +82,37 @@ export default function ChatPage() {
           getClientSummary(MOCK_CLIENT_ORG.id, params.id).catch(() => null),
           getClientSettlementNotes(MOCK_CLIENT_ORG.id, params.id).catch((): ClientSettlementNote[] => []),
         ]);
+        if (stale()) return;
         if (read && read.result.state === "ready") setSummary(read.result.summary);
         setNotes(released);
       }
       setState("loaded");
     } catch (err) {
+      if (stale()) return;
       setErrorMessage(
         err instanceof Error ? err.message : "Could not load this document.",
       );
       setState("error");
     }
-  }, [params.id]);
+  }, [params.id, resetChat]);
 
   useEffect(() => {
     load();
+    return () => {
+      loadId.current += 1;
+    };
   }, [load]);
 
+  useEffect(() => () => clearTimeout(citeTimer.current), []);
+
   useEffect(() => {
-    threadEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    threadEndRef.current?.scrollIntoView({ behavior: scrollBehavior() });
+  }, [messages, chat.pending, chat.failed]);
 
   function sendMessage(text: string) {
-    if (!doc || !text.trim()) return;
-    const userMessage: ChatMessageType = {
-      id: `user-${Date.now()}`,
-      role: "user",
-      text,
-      citedClauseReference: null,
-      isEscalation: false,
-    };
-    const reply = getMockReply(text, chatSourceOf(doc, summary, notes));
-    const agentMessage: ChatMessageType = {
-      id: `agent-${Date.now()}`,
-      role: "agent",
-      text: reply.text,
-      citedClauseReference: reply.citedClauseReference,
-      isEscalation: reply.isEscalation,
-    };
-    setMessages((prev) => [...prev, userMessage, agentMessage]);
-    setInput("");
+    if (!doc) return;
+    // Taken only if no other question is still being answered; the box is kept otherwise.
+    if (chat.send(text)) setInput("");
   }
 
   function handleCiteClick(clauseReference: string) {
@@ -112,8 +120,9 @@ export default function ChatPage() {
     const el = document.getElementById(
       `sidebar-${clauseReference.replace(/\s+/g, "-")}`,
     );
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    setTimeout(() => setHighlightedClause(null), 1500);
+    el?.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
+    clearTimeout(citeTimer.current);
+    citeTimer.current = setTimeout(() => setHighlightedClause(null), 1500);
   }
 
   if (state === "loading") {
@@ -200,7 +209,16 @@ export default function ChatPage() {
         </aside>
 
         <div className="flex flex-col rounded-card border border-line bg-paper shadow-card">
-          <div className="flex-1 space-y-3 overflow-y-auto p-4" style={{ maxHeight: 480 }}>
+          {/* A log that is always mounted, so what is added to it (the question, the wait, the answer,
+              a failure) is announced. It is focusable so the keyboard can scroll it. */}
+          <div
+            role="log"
+            aria-live="polite"
+            aria-label="Conversation about this document"
+            tabIndex={0}
+            className="flex-1 space-y-3 overflow-y-auto p-4 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+            style={{ maxHeight: 480 }}
+          >
             {messages.map((m) =>
               m.isEscalation ? (
                 <EscalationPrompt
@@ -216,6 +234,17 @@ export default function ChatPage() {
                 />
               ),
             )}
+            {chat.pending && <ChatPending />}
+            {chat.failed && (
+              <ChatSendError
+                message={chat.failed.message}
+                onRetry={() => {
+                  chat.retry();
+                  // The button leaves the page when it is pressed; keep the keyboard in the conversation.
+                  inputRef.current?.focus();
+                }}
+              />
+            )}
             <div ref={threadEndRef} />
           </div>
 
@@ -226,7 +255,8 @@ export default function ChatPage() {
                   key={q}
                   type="button"
                   onClick={() => sendMessage(q)}
-                  className="rounded-control border border-line px-3 py-1 text-small text-muted-fg transition-colors hover:bg-canvas"
+                  disabled={chat.pending}
+                  className="min-h-11 rounded-control border border-line px-4 py-1 text-small text-muted-fg transition-colors hover:bg-canvas sm:min-h-0 sm:px-3 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
                 >
                   {q}
                 </button>
@@ -240,12 +270,14 @@ export default function ChatPage() {
               className="flex gap-2"
             >
               <Input
+                ref={inputRef}
                 value={input}
+                maxLength={MAX_QUESTION_LENGTH}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about any clause in this document"
+                placeholder="Ask about any clause"
                 aria-label="Ask about a clause in this document"
               />
-              <Button type="submit" size="icon" aria-label="Send">
+              <Button type="submit" size="icon" aria-label="Send" disabled={chat.pending} className="h-11 w-11 shrink-0">
                 <Icon name="send" size={18} />
               </Button>
             </form>

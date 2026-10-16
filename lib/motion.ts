@@ -34,3 +34,10 @@ export const EASE = {
 export function duration(seconds: number, reduced: boolean | null): number {
   return reduced ? 0 : seconds;
 }
+
+/** For scrollIntoView and scrollTo: smooth, unless the reader has asked for less motion. */
+export function scrollBehavior(
+  win: Pick<Window, "matchMedia"> | undefined = typeof window === "undefined" ? undefined : window,
+): ScrollBehavior {
+  return win?.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+}

@@ -1,16 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/shared/icon";
+import { ChatCitations } from "@/components/domain/chat-message";
+import { ChatPending, ChatSendError } from "@/components/domain/chat-status";
 import { agentAvailable } from "@/lib/chatAccess";
 import { CONSULTATION, PRICE_BASIS } from "@/lib/config/pricing";
+import { scrollBehavior } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import { chatSourceOf, getMockReply, type ChatDocument } from "@/lib/mock/chat.mock";
+import { MAX_QUESTION_LENGTH, mockTransport, unavailableTransport } from "@/lib/api/chat";
+import { useDocumentChat } from "@/lib/chat-session/useDocumentChat";
+import { chatSourceOf, type ChatDocument } from "@/lib/mock/chat.mock";
 import { getClientSummary } from "@/lib/api/client/delivery";
 import { getClientSettlementNotes } from "@/lib/api/client/settlement-notes";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
-import type { ChatMessage, ClientDocument, ClientSettlementNote, SettledSummary } from "@/lib/types";
+import type { ClientDocument, ClientSettlementNote, SettledSummary } from "@/lib/types";
 import { clauseNumberFromReference } from "@/lib/types";
 
 /**
@@ -36,11 +41,18 @@ export function DocumentAgent({
   /** Carry the document to a clause the agent quoted. */
   onCite: (clauseNumber: string) => void;
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const threadRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [summary, setSummary] = useState<SettledSummary | null>(null);
   const [notes, setNotes] = useState<ClientSettlementNote[]>([]);
+  // Questions go through the C1 boundary (lib/api/chat), which waits like a network call and can fail.
+  const transport = useMemo(
+    () => (doc ? mockTransport(chatSourceOf(doc, summary, notes)) : unavailableTransport),
+    [doc, summary, notes],
+  );
+  const chat = useDocumentChat({ documentId: doc.id, transport });
+  const messages = chat.messages;
   // Named by the sign-off record, which this agent only ever has: it explains a settled document.
   const advocate = doc.signOff?.advocate ?? "your advocate";
 
@@ -67,26 +79,12 @@ export function DocumentAgent({
   }, [available, docId]);
 
   useEffect(() => {
-    threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+    threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: scrollBehavior() });
+  }, [messages, chat.pending, chat.failed]);
 
   function send(text: string) {
-    const question = text.trim();
-    if (!question) return;
-    const reply = getMockReply(question, chatSourceOf(doc, summary, notes));
-    const now = Date.now();
-    setMessages((prev) => [
-      ...prev,
-      { id: `u-${now}`, role: "user", text: question, citedClauseReference: null, isEscalation: false },
-      {
-        id: `a-${now}`,
-        role: "agent",
-        text: reply.text,
-        citedClauseReference: reply.citedClauseReference,
-        isEscalation: reply.isEscalation,
-      },
-    ]);
-    setInput("");
+    // Taken only if no other question is still being answered; the box is kept otherwise.
+    if (chat.send(text)) setInput("");
   }
 
   // Before sign-off there is no settled document to explain. The pages do not mount
@@ -104,7 +102,16 @@ export function DocumentAgent({
         </span>
       </div>
 
-      <div ref={threadRef} className="min-h-0 flex-1 overflow-y-auto px-6">
+      {/* A log that is always mounted, so what is added to it (the question, the wait, the answer,
+          a failure) is announced. It is focusable so the keyboard can scroll it. */}
+      <div
+        ref={threadRef}
+        role="log"
+        aria-live="polite"
+        aria-label="Conversation about this document"
+        tabIndex={0}
+        className="min-h-0 flex-1 overflow-y-auto px-6 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+      >
         {empty ? (
           <div className="flex h-full flex-col justify-center pb-6 pt-10">
             <h2 className="font-display text-[30px] font-medium leading-tight tracking-[-0.015em] text-ink">
@@ -146,19 +153,40 @@ export function DocumentAgent({
                 </li>
               ) : (
                 <li key={m.id} className="text-body leading-relaxed text-ink">
-                  <p>{m.text}</p>
-                  {m.citedClauseReference && (
-                    <button
-                      type="button"
-                      onClick={() => onCite(clauseNumberFromReference(m.citedClauseReference as string))}
-                      className="mt-2 inline-flex items-center gap-1 rounded-full border border-line px-3 py-1 text-meta text-ink transition-colors hover:border-ink/40"
-                    >
-                      {m.citedClauseReference}
-                      <Icon name="arrow_forward" size={16} />
-                    </button>
+                  {m.status === "refused" && (
+                    <p className="mb-1 text-label font-medium text-muted-fg">Not something this document answers</p>
                   )}
+                  <p>{m.text}</p>
+                  <ChatCitations
+                    variant="docked"
+                    citations={
+                      m.citations?.length
+                        ? m.citations
+                        : m.citedClauseReference
+                          ? [{ clauseReference: m.citedClauseReference, quote: "" }]
+                          : []
+                    }
+                    onCite={(reference) => onCite(clauseNumberFromReference(reference))}
+                  />
                 </li>
               ),
+            )}
+            {chat.pending && (
+              <li>
+                <ChatPending />
+              </li>
+            )}
+            {chat.failed && (
+              <li>
+                <ChatSendError
+                  message={chat.failed.message}
+                  onRetry={() => {
+                    chat.retry();
+                    // The button leaves the page when it is pressed; keep the keyboard in the conversation.
+                    inputRef.current?.focus();
+                  }}
+                />
+              </li>
             )}
           </ol>
         )}
@@ -177,9 +205,11 @@ export function DocumentAgent({
         />
         <div className="relative rounded-card border border-ink/15 bg-paper p-2 pl-4 transition-colors group-focus-within:border-transparent">
           <textarea
+            ref={inputRef}
             id="agent-input"
             aria-label="Ask about this document"
             rows={2}
+            maxLength={MAX_QUESTION_LENGTH}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -196,9 +226,9 @@ export function DocumentAgent({
             <button
               type="submit"
               aria-label="Send"
-              disabled={!input.trim()}
+              disabled={!input.trim() || chat.pending}
               className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300",
+                "flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300",
                 input.trim()
                   ? "bg-accent text-accent-fg hover:bg-accent-hover"
                   : "bg-ink/[0.06] text-muted-fg",
