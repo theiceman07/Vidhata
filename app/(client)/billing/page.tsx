@@ -77,7 +77,7 @@ export default function BillingPage() {
     return (
       <div className="w-full">
         <Skeleton className="h-10 w-48" />
-        <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
           <div className="space-y-3">
             {[0, 1, 2].map((i) => (
               <Skeleton key={i} className="h-20 w-full rounded-card" />
@@ -97,7 +97,7 @@ export default function BillingPage() {
     profile !== null && name.trim() === profile.name && gstin.trim() === (profile.gstin ?? "");
 
   return (
-    <div className="w-full">
+    <div className="w-full xl:px-4">
       <h1 className="font-display text-h1 text-ink">Billing</h1>
       <p className="mt-2 max-w-measure text-body text-muted-fg">
         One fixed fee per document, set by its review tier, covering every revision round. All
@@ -105,37 +105,38 @@ export default function BillingPage() {
         of this preview.
       </p>
 
-      <div className="mt-10 grid gap-x-10 gap-y-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <section aria-labelledby="invoices-title" className="min-w-0">
-          <h2 id="invoices-title" className="text-label font-medium text-muted-fg">
-            Invoices
-          </h2>
+      {/* One grid. The heading takes the first row of the list column; the
+          list and the panel share the second, so both start at one line and
+          the panel sticks within that row alone. */}
+      <div className="mt-8 grid gap-x-6 gap-y-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:gap-x-8">
+        <h2 id="invoices-title" className="min-w-0 font-display text-h3 text-ink">
+          Invoices
+        </h2>
 
+        <section aria-labelledby="invoices-title" className="min-w-0 lg:row-start-2">
           {invoices.length === 0 ? (
-            <div className="mt-3">
-              <EmptyState
-                title="No invoices yet"
-                description="A document fee is invoiced when you pay it, once the document has been screened."
-                action={
-                  <Button asChild variant="outline">
-                    <Link href="/documents">Your documents</Link>
-                  </Button>
-                }
-              />
-            </div>
+            <EmptyState
+              title="No invoices yet"
+              description="A document fee is invoiced when you pay it, once the document has been screened."
+              action={
+                <Button asChild variant="outline">
+                  <Link href="/documents">Your documents</Link>
+                </Button>
+              }
+            />
           ) : (
-            <ul className="mt-3 space-y-3">
+            <ul className="space-y-3">
               {invoices.map((invoice) => (
                 <li key={invoice.number}>
                   <Link
                     href={`/billing/${invoice.number}`}
-                    className="grid gap-x-6 gap-y-1 rounded-card bg-parchment p-5 transition-colors hover:bg-parchment/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:grid-cols-[minmax(0,1fr)_auto]"
+                    className="grid items-center gap-x-6 gap-y-2 rounded-card border border-line bg-paper px-6 py-4 transition-colors hover:border-ink/30 hover:bg-parchment/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:grid-cols-[minmax(0,1fr)_8rem]"
                   >
                     <span className="min-w-0">
                       <span className="block text-label text-muted-fg">
                         {invoice.number} · {format(new Date(invoice.issuedAt), "d MMM yyyy")}
                       </span>
-                      <span className="mt-1 block truncate text-body font-medium text-ink">
+                      <span className="mt-0.5 block text-body font-medium text-ink [overflow-wrap:anywhere]">
                         {invoice.description}
                       </span>
                       <span className="mt-0.5 block text-meta text-muted-fg">
@@ -146,7 +147,7 @@ export default function BillingPage() {
                       </span>
                     </span>
                     <span className="sm:text-right">
-                      <span className="block font-display text-h3 text-ink">
+                      <span className="block font-display text-h3 tabular-nums text-ink">
                         {rupees(invoice.amount)}
                       </span>
                       <span className="block text-label text-muted-fg">{PRICE_BASIS}</span>
@@ -157,15 +158,15 @@ export default function BillingPage() {
             </ul>
           )}
 
-          <p className="mt-6 max-w-measure text-meta text-muted-fg">
+          <p className="mt-4 max-w-measure text-meta text-muted-fg">
             Consultation fees are separate from the document fee. They are invoiced on their own
             line, and only if an advocate accepts a request.
           </p>
         </section>
 
-        <aside className="min-w-0 self-start rounded-card bg-parchment p-6">
+        <aside className="min-w-0 rounded-card border border-line bg-parchment/60 p-6 lg:sticky lg:top-0 lg:row-start-2 lg:self-start">
           <h2 className="font-display text-h3 text-ink">Billing details</h2>
-          <form onSubmit={save} className="mt-4 space-y-4" noValidate>
+          <form onSubmit={save} className="mt-5 space-y-5" noValidate>
             <div>
               <Label htmlFor="billing-name">Invoices made out to</Label>
               <Input
@@ -187,9 +188,16 @@ export default function BillingPage() {
                 Kept as you enter it. It is not checked against any register.
               </p>
             </div>
-            <Button type="submit" disabled={saving || unchanged || name.trim() === ""}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={saving || unchanged || name.trim() === ""}
+            >
               {saving ? "Saving" : "Save details"}
             </Button>
+            {unchanged && (
+              <p className="text-center text-label text-muted-fg">Your details are up to date.</p>
+            )}
           </form>
         </aside>
       </div>

@@ -60,7 +60,7 @@ export function ReviewAgent({
 
       <div ref={threadRef} className="min-h-0 flex-1 overflow-y-auto px-6">
         {thread.length === 0 ? (
-          <div className="flex h-full flex-col justify-center pb-6 pt-10">
+          <div className="flex min-h-full flex-col justify-center pb-6 pt-8">
             <h2 className="font-display text-[30px] font-medium leading-tight tracking-[-0.015em] text-ink">
               Where should we start?
             </h2>

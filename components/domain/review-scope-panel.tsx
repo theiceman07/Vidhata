@@ -5,11 +5,11 @@ import { Icon } from "@/components/shared/icon";
 import { Switch } from "@/components/ui/switch";
 import {
   noLongerRaisedLabel,
-  scopeShowing,
   scopeTagLabel,
   type ReviewScope,
 } from "@/lib/reviewScope";
 import type { WorkspaceFinding } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 /**
  * What the last round changed, for the advocate re-reviewing a draft.
@@ -20,6 +20,8 @@ import type { WorkspaceFinding } from "@/lib/types";
  * decision; one that is new or still open does. This panel says which is
  * which, and the numbers it gives are the ones sign-off checks.
  */
+
+type Metric = "changed" | "new" | "carried" | "resolved";
 
 function plural(n: number, one: string, many: string) {
   return `${n} ${n === 1 ? one : many}`;
@@ -42,168 +44,199 @@ export function ReviewScopePanel({
   onGoToClause: (clauseNumber: string) => void;
   onOpenFinding: (findingId: string) => void;
 }) {
-  // Collapsed to a line of counts at first: the document is the subject of
-  // the screen, and the groups open from the line when they are wanted.
+  // Collapsed to a line at first: the document is the subject of the screen,
+  // and the counts open from the line when they are wanted.
   const [open, setOpen] = useState(false);
+  // Which group's list shows beneath the counts; none until asked for.
+  const [detail, setDetail] = useState<Metric | null>(null);
 
   const withTag = (tag: "new" | "carried_over" | "resolved_settled") =>
     findings.filter((f) => scope.tags[f.findingId] === tag);
   const newly = withTag("new");
   const carriedOver = withTag("carried_over");
   const resolved = withTag("resolved_settled");
+  const resolvedCount = resolved.length + scope.noLongerRaised.length;
 
   const total = findings.length;
   const hidden = scope.carriedForward.length;
 
+  const metrics: { key: Metric; label: string; count: number }[] = [
+    { key: "changed", label: "Changed", count: scope.changedClauses.length },
+    { key: "new", label: "Newly flagged", count: newly.length },
+    { key: "carried", label: "Carried over", count: carriedOver.length },
+    { key: "resolved", label: "Resolved", count: resolvedCount },
+  ];
+
   return (
     <section
       aria-label={`Round ${scope.round} review scope`}
-      className="border-t border-line bg-parchment px-5 py-4 md:px-8"
+      className="border-t border-line bg-parchment px-5 py-2 md:px-8"
     >
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <div className="min-w-0">
-          <h2 className="text-meta font-medium text-ink">
-            Round {scope.round}
-            <span className="ml-2 font-normal text-muted-fg">
-              {scope.baselineLabel} against {scope.headLabel}
-            </span>
-          </h2>
-          <p className="mt-0.5 text-meta text-muted-fg">
-            {plural(scope.changedClauses.length, "clause", "clauses")} changed ·{" "}
-            {newly.length} newly flagged · {carriedOver.length} carried over ·{" "}
-            {resolved.length + scope.noLongerRaised.length} resolved
-          </p>
-          <p className="mt-0.5 text-meta text-ink">
-            {plural(scope.needsDecision.length, "finding needs", "findings need")} a fresh decision
-            {hidden > 0 &&
-              ` · ${hidden} decided in an earlier round ${hidden === 1 ? "carries" : "carry"} forward`}
-          </p>
-        </div>
+      {/* One slim row at rest: round, comparison, undecided count, chevron. */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-controls="review-scope-detail"
+          className="inline-flex min-w-0 items-center gap-2 rounded-full py-1 pr-2 text-left text-meta transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <span className="font-medium text-ink">Round {scope.round}</span>
+          <span className="hidden text-muted-fg sm:inline">
+            {scope.baselineLabel} against {scope.headLabel}
+          </span>
+          <span className="text-muted-fg">·</span>
+          <span className="truncate text-ink">
+            {plural(
+              scope.needsDecision.length,
+              "finding needs",
+              "findings need",
+            )}{" "}
+            a fresh decision
+          </span>
+          <Icon
+            name={open ? "expand_less" : "expand_more"}
+            size={18}
+            className="shrink-0 text-muted-fg"
+          />
+        </button>
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 md:ml-auto">
-          <label
-            htmlFor="show-all-findings"
-            className="flex cursor-pointer items-center gap-2.5 text-meta text-ink"
-          >
-            <Switch id="show-all-findings" checked={showAll} onCheckedChange={onShowAllChange} />
-            Show all findings
-          </label>
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            aria-controls="review-scope-detail"
-            className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-meta font-medium text-muted-fg transition-colors hover:bg-paper hover:text-ink"
-          >
-            <Icon name={open ? "expand_less" : "expand_more"} size={18} />
-            {open ? "Hide what changed" : "What changed"}
-          </button>
-        </div>
+        <label
+          htmlFor="show-all-findings"
+          className="flex cursor-pointer items-center gap-2.5 py-1 text-meta text-ink md:ml-auto"
+        >
+          <Switch
+            id="show-all-findings"
+            checked={showAll}
+            onCheckedChange={onShowAllChange}
+          />
+          Show all findings
+        </label>
       </div>
 
-      <p className="mt-2 max-w-measure text-label text-muted-fg" aria-live="polite">
-        {scopeShowing(scope, total, showAll)}
-      </p>
-
+      {/* In the flow: opening it pushes the panes down, never covers them. */}
       {open && (
-        <div
-          id="review-scope-detail"
-          className="mt-4 grid gap-x-8 gap-y-5 md:grid-cols-2 xl:grid-cols-4"
-        >
-          <Group title="Changed clauses" empty="No clause changed." count={scope.changedClauses.length}>
-            {scope.changedClauses.map((c) => (
-              <li key={c.number}>
-                <JumpButton onClick={() => onGoToClause(c.number)}>
-                  Clause {c.number} · {c.heading}
-                </JumpButton>
-                <span className="block text-label text-muted-fg">
-                  {c.kind === "added" ? "Added" : c.kind === "removed" ? "Removed" : "Changed"}
+        <div id="review-scope-detail" className="pt-1.5">
+          {/* Four separate status cards, one row from lg. */}
+          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+            {metrics.map((m) => (
+              <button
+                key={m.key}
+                type="button"
+                aria-pressed={detail === m.key}
+                onClick={() => setDetail((d) => (d === m.key ? null : m.key))}
+                className={cn(
+                  "flex flex-col items-start gap-1 rounded-control border px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                  detail === m.key
+                    ? "border-ink bg-paper"
+                    : "border-line bg-paper hover:border-muted-fg/50",
+                )}
+              >
+                <span className="text-label text-muted-fg">{m.label}</span>
+                <span className="font-display text-xl font-medium leading-none text-ink">
+                  {m.count}
                 </span>
-              </li>
+              </button>
             ))}
-          </Group>
+          </div>
 
-          <Group title="Newly flagged" empty="Nothing new was flagged." count={newly.length}>
-            {newly.map((f) => (
-              <FindingJump
-                key={f.findingId}
-                finding={f}
-                number={findingNumbers[f.findingId]}
-                onOpen={onOpenFinding}
-              />
-            ))}
-          </Group>
+          <p className="mt-1 text-label leading-snug text-muted-fg" aria-live="polite">
+            {showAll
+              ? `All ${plural(total, "finding", "findings")} shown`
+              : `${total - hidden} of ${plural(total, "finding", "findings")} shown`}
+            {!showAll && hidden > 0 && ` · ${hidden} hidden from an earlier round`}
+          </p>
 
-          <Group
-            title="Carried over, still open"
-            empty="Nothing carried over."
-            count={carriedOver.length}
-          >
-            {carriedOver.map((f) => (
-              <FindingJump
-                key={f.findingId}
-                finding={f}
-                number={findingNumbers[f.findingId]}
-                onOpen={onOpenFinding}
-              />
-            ))}
-          </Group>
-
-          <Group
-            title="Resolved"
-            empty="Nothing was resolved."
-            count={resolved.length + scope.noLongerRaised.length}
-          >
-            {resolved.map((f) => (
-              <FindingJump
-                key={f.findingId}
-                finding={f}
-                number={findingNumbers[f.findingId]}
-                note={scopeTagLabel("resolved_settled")}
-                onOpen={onOpenFinding}
-              />
-            ))}
-            {scope.noLongerRaised.map((r) => (
-              <li key={r.findingId} className="text-meta text-ink">
-                {r.clauseReference} · {r.description}
-                <span className="block text-label text-muted-fg">
-                  {noLongerRaisedLabel(r.reason)}
-                </span>
-              </li>
-            ))}
-          </Group>
+          {detail && (
+            <ul className="mt-2 flex max-h-24 flex-wrap gap-x-4 gap-y-1 overflow-y-auto rounded-control bg-paper px-3 py-2">
+              {detail === "changed" &&
+                (scope.changedClauses.length === 0 ? (
+                  <Empty>No clause changed.</Empty>
+                ) : (
+                  scope.changedClauses.map((c) => (
+                    <li key={c.number}>
+                      <JumpButton onClick={() => onGoToClause(c.number)}>
+                        Clause {c.number} · {c.heading}
+                      </JumpButton>
+                      <span className="ml-1.5 text-label text-muted-fg">
+                        {c.kind === "added"
+                          ? "Added"
+                          : c.kind === "removed"
+                            ? "Removed"
+                            : "Changed"}
+                      </span>
+                    </li>
+                  ))
+                ))}
+              {detail === "new" &&
+                (newly.length === 0 ? (
+                  <Empty>Nothing new was flagged.</Empty>
+                ) : (
+                  newly.map((f) => (
+                    <FindingJump
+                      key={f.findingId}
+                      finding={f}
+                      number={findingNumbers[f.findingId]}
+                      onOpen={onOpenFinding}
+                    />
+                  ))
+                ))}
+              {detail === "carried" &&
+                (carriedOver.length === 0 ? (
+                  <Empty>Nothing carried over.</Empty>
+                ) : (
+                  carriedOver.map((f) => (
+                    <FindingJump
+                      key={f.findingId}
+                      finding={f}
+                      number={findingNumbers[f.findingId]}
+                      onOpen={onOpenFinding}
+                    />
+                  ))
+                ))}
+              {detail === "resolved" &&
+                (resolvedCount === 0 ? (
+                  <Empty>Nothing was resolved.</Empty>
+                ) : (
+                  <>
+                    {resolved.map((f) => (
+                      <FindingJump
+                        key={f.findingId}
+                        finding={f}
+                        number={findingNumbers[f.findingId]}
+                        note={scopeTagLabel("resolved_settled")}
+                        onOpen={onOpenFinding}
+                      />
+                    ))}
+                    {scope.noLongerRaised.map((r) => (
+                      <li key={r.findingId} className="text-meta text-ink">
+                        {r.clauseReference} · {r.description}
+                        <span className="ml-1.5 text-label text-muted-fg">
+                          {noLongerRaisedLabel(r.reason)}
+                        </span>
+                      </li>
+                    ))}
+                  </>
+                ))}
+            </ul>
+          )}
         </div>
       )}
     </section>
   );
 }
 
-function Group({
-  title,
-  empty,
-  count,
-  children,
-}: {
-  title: string;
-  empty: string;
-  count: number;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="min-w-0">
-      <h3 className="text-label font-medium text-muted-fg">
-        {title} · {count}
-      </h3>
-      {count > 0 ? (
-        <ul className="mt-2 space-y-1.5">{children}</ul>
-      ) : (
-        <p className="mt-2 text-meta text-muted-fg">{empty}</p>
-      )}
-    </div>
-  );
+function Empty({ children }: { children: React.ReactNode }) {
+  return <li className="text-meta text-muted-fg">{children}</li>;
 }
 
-function JumpButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+function JumpButton({
+  onClick,
+  children,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <button
       type="button"
@@ -231,7 +264,9 @@ function FindingJump({
       <JumpButton onClick={() => onOpen(finding.findingId)}>
         Finding {number} · {finding.clauseReference}
       </JumpButton>
-      {note && <span className="block text-label text-muted-fg">{note}</span>}
+      {note && (
+        <span className="ml-1.5 text-label text-muted-fg">{note}</span>
+      )}
     </li>
   );
 }

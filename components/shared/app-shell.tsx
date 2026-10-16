@@ -428,7 +428,7 @@ function Rail({
   );
 }
 
-const ITEM_ON_INK = "rounded-full text-paper focus:bg-paper/10";
+const ITEM_ON_INK = "text-paper focus:bg-paper/10";
 
 function iconTone(onInk: boolean): string {
   return onInk ? "text-paper/55" : "text-muted-fg";
@@ -493,9 +493,9 @@ function IdentityMenu({
         align={inHeader ? "end" : "start"}
         sideOffset={8}
         className={cn(
-          "rounded-card p-1.5",
+          "rounded-card",
           onInk
-            ? "w-[var(--radix-dropdown-menu-trigger-width)] min-w-0 border-paper/15 bg-ink text-paper"
+            ? "rounded-control w-[var(--radix-dropdown-menu-trigger-width)] min-w-0 border-paper/15 bg-ink text-paper"
             : "w-64 shadow-float",
         )}
       >

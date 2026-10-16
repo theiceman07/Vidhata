@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import { BackButton } from "@/components/shared/back-button";
 import { ErrorState } from "@/components/shared/error-state";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getBillingProfile, getInvoice } from "@/lib/api/billing";
 import { INVOICE_KIND_LABEL, invoiceBasis } from "@/lib/billing";
@@ -51,9 +52,9 @@ export default function ReceiptPage() {
 
   if (state === "loading") {
     return (
-      <div className="w-full max-w-3xl">
+      <div className="w-full lg:px-[3%]">
         <Skeleton className="h-10 w-64" />
-        <Skeleton className="mt-8 h-72 w-full rounded-card" />
+        <Skeleton className="mt-6 h-64 w-full rounded-card" />
       </div>
     );
   }
@@ -63,50 +64,63 @@ export default function ReceiptPage() {
   }
 
   return (
-    <div className="w-full max-w-3xl">
-      <div className="flex items-start gap-4">
+    <div className="w-full lg:px-[3%]">
+      <p className="text-label font-medium text-muted-fg">Receipt · Preview</p>
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
         <BackButton fallbackHref="/billing" label="Billing" />
-        <div>
-          <p className="text-label font-medium text-muted-fg">Receipt</p>
-          <h1 className="mt-1 font-display text-h1 text-ink">{invoice.number}</h1>
-          <p className="mt-1 text-meta text-muted-fg">
-            {format(new Date(invoice.issuedAt), "d MMMM yyyy")}
-          </p>
-        </div>
+        <h1 className="min-w-0 font-display text-h1 text-ink">{invoice.number}</h1>
+        <p className="text-meta text-muted-fg md:ml-auto">
+          {format(new Date(invoice.issuedAt), "d MMMM yyyy")}
+        </p>
       </div>
 
-      <section className="mt-8 rounded-card bg-parchment p-6 md:p-8">
-        <dl className="grid grid-cols-[9rem_minmax(0,1fr)] gap-x-4 gap-y-3 text-meta">
-          <dt className="text-muted-fg">Made out to</dt>
-          <dd className="text-ink">{profile.name || MOCK_CLIENT_ORG.name}</dd>
-          {profile.gstin && (
-            <>
-              <dt className="text-muted-fg">GSTIN</dt>
-              <dd className="text-ink">{profile.gstin}</dd>
-            </>
-          )}
-          <dt className="text-muted-fg">For</dt>
-          <dd className="text-ink">{invoice.description}</dd>
-          <dt className="text-muted-fg">{INVOICE_KIND_LABEL[invoice.kind]}</dt>
-          <dd className="text-ink">{invoiceBasis(invoice)}</dd>
-        </dl>
+      <section className="mt-6 overflow-hidden rounded-card border border-line bg-paper">
+        <div className="grid md:grid-cols-[minmax(0,69fr)_minmax(0,31fr)]">
+          <dl className="grid grid-cols-[6.5rem_minmax(0,1fr)] content-center items-baseline gap-x-4 gap-y-3 p-6 text-meta md:grid-cols-[8rem_minmax(0,1fr)] md:p-8">
+            <dt className="text-muted-fg">Made out to</dt>
+            <dd className="text-ink">{profile.name || MOCK_CLIENT_ORG.name}</dd>
+            {profile.gstin && (
+              <>
+                <dt className="text-muted-fg">GSTIN</dt>
+                <dd className="text-ink">{profile.gstin}</dd>
+              </>
+            )}
+            <dt className="text-muted-fg">For</dt>
+            <dd className="text-base font-medium text-ink [overflow-wrap:anywhere]">
+              {invoice.description}
+            </dd>
+            <dt className="text-muted-fg">{INVOICE_KIND_LABEL[invoice.kind]}</dt>
+            <dd className="text-ink">{invoiceBasis(invoice)}</dd>
+          </dl>
 
-        <div className="mt-8 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-          <p className="text-label font-medium text-muted-fg">Amount</p>
-          <p className="text-right">
-            <span className="font-display text-h1 text-ink">{rupees(invoice.amount)}</span>
-            <span className="ml-2 text-meta text-muted-fg">{PRICE_BASIS}</span>
+          <div className="flex flex-col justify-center border-t border-line bg-parchment/60 p-6 md:border-l md:border-t-0 md:p-8">
+            <p className="text-label font-medium text-muted-fg">Amount</p>
+            <p className="mt-2 font-display text-[44px] font-medium leading-none tracking-tight tabular-nums text-ink md:text-[48px]">
+              {rupees(invoice.amount)}
+            </p>
+            <p className="mt-2 text-meta text-muted-fg">{PRICE_BASIS}</p>
+          </div>
+        </div>
+
+        <div className="border-t border-line px-6 py-4 md:px-8 md:py-5">
+          <p className="max-w-measure text-label text-muted-fg">
+            GST is added at the rate in force. A tax breakup is not part of this preview.{" "}
+            {invoice.kind === "consultation_fee"
+              ? "This is the consultation fee. It is separate from the document fee. Who issues an invoice for it is waiting for counsel to confirm, and the wording here is not final."
+              : "The fee covers every revision round of the document."}
           </p>
         </div>
-        <p className="mt-4 max-w-measure text-label text-muted-fg">
-          GST is added at the rate in force. A tax breakup is not part of this preview.{" "}
-          {invoice.kind === "consultation_fee"
-            ? "This is the consultation fee. It is separate from the document fee. Who issues an invoice for it is waiting for counsel to confirm, and the wording here is not final."
-            : "The fee covers every revision round of the document."}
-        </p>
       </section>
 
-      <p className="mt-4 text-label text-muted-fg">Preview receipt. No payment was taken.</p>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-label text-muted-fg">Preview receipt. No payment was taken.</p>
+        <div className="flex items-center gap-3">
+          <span className="text-label text-muted-fg">Downloads aren&apos;t enabled in this preview</span>
+          <Button variant="outline" disabled>
+            Download receipt
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

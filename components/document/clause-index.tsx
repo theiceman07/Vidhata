@@ -85,7 +85,10 @@ export function ClauseIndex({
                   <span className="w-8 shrink-0 font-mono text-label">
                     {clause.number}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-meta">
+                  <span
+                    className="min-w-0 flex-1 truncate text-meta"
+                    title={clause.heading}
+                  >
                     {clause.heading}
                   </span>
                   {pending.length > 0 && (
@@ -112,8 +115,10 @@ export function ClauseIndex({
         </ul>
       </nav>
 
-      <nav aria-label="Findings" className="max-h-[45%] shrink-0 overflow-y-auto border-t border-line px-2 pb-4">
-        <div className="flex items-center justify-between gap-2 px-2 pb-2 pt-3">
+      {/* Anchored: the header stays put and the list scrolls on its own, so
+          the clause list above keeps at least its share of the rail. */}
+      <nav aria-label="Findings" className="flex max-h-[40%] min-h-0 shrink-0 flex-col border-t border-line">
+        <div className="flex shrink-0 items-center justify-between gap-2 px-4 pb-2 pt-3">
           <p className="text-label font-medium text-muted-fg">
             Findings
             {findings.length > 0 && (
@@ -143,6 +148,7 @@ export function ClauseIndex({
           )}
         </div>
 
+        <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
         {findings.length === 0 ? (
           <p className="px-2 text-meta text-muted-fg">
             The first pass raised no findings against this document.
@@ -214,6 +220,7 @@ export function ClauseIndex({
             })}
           </ul>
         )}
+        </div>
       </nav>
     </div>
   );

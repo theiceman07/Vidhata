@@ -607,10 +607,10 @@ export function DocumentWorkspace({
         className={cn(
           "grid transition-[grid-template-columns] duration-200 ease-out motion-reduce:transition-none lg:min-h-0 lg:flex-1",
           panel
-            ? "lg:grid-cols-[240px_minmax(0,1fr)_minmax(340px,400px)]"
+            ? "lg:grid-cols-[272px_minmax(0,1fr)_minmax(340px,400px)]"
             : companion
-              ? "lg:grid-cols-[240px_minmax(0,1fr)_minmax(360px,440px)]"
-              : "lg:grid-cols-[240px_minmax(0,1fr)_0px]",
+              ? "lg:grid-cols-[272px_minmax(0,1fr)_minmax(360px,440px)]"
+              : "lg:grid-cols-[272px_minmax(0,1fr)_0px]",
         )}
       >
         {/* Left · the document's own structure, and the work on it. */}

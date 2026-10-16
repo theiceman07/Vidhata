@@ -22,7 +22,7 @@ export function consultationLabel(c: Reading, audience: "client" | "advocate"): 
   }
 }
 
-/** The state as a pill. Neutral: a state is not a verdict, so it carries no colour. */
+/** The state as a pill. Neutral, except answered: a settled request carries the accent. */
 export function ConsultationStatus({
   consultation,
   audience,
@@ -35,7 +35,10 @@ export function ConsultationStatus({
   return (
     <span
       className={cn(
-        "inline-flex rounded-full border border-line px-2.5 py-0.5 text-label font-medium text-ink",
+        "inline-flex rounded-full border px-2.5 py-0.5 text-label font-medium",
+        consultation.status === "answered"
+          ? "border-accent/30 bg-accent/10 text-accent"
+          : "border-line text-ink",
         className,
       )}
     >
