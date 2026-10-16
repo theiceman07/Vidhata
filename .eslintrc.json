@@ -10,6 +10,7 @@
         "components/document/document-agent.tsx",
         "components/document/provenance.tsx",
         "components/domain/chat-message.tsx",
+        "components/domain/chat-status.tsx",
         "components/domain/contract-type-picker.tsx",
         "components/domain/coverage-panel.tsx",
         "components/domain/document-context.tsx",

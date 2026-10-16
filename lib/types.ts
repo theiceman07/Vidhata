@@ -1051,10 +1051,23 @@ export interface ReviewAgentReply {
   decision: boolean;
 }
 
+/** How the agent answered, as C1 names it (lib/contracts.ts). */
+export type ChatAnswerStatus = "answered" | "refused" | "escalated";
+
+/** A clause an answer rests on, and the span of it the answer quotes. */
+export interface ChatCitationView {
+  clauseReference: string;
+  quote: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "agent";
   text: string;
   citedClauseReference: string | null;
   isEscalation: boolean;
+  /** Set on a reply from the chat service. A message without it is the welcome line or the user's own. */
+  status?: ChatAnswerStatus;
+  /** Every clause an answer rests on, shown under it. Empty for a refusal or an escalation. */
+  citations?: ChatCitationView[];
 }

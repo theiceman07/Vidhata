@@ -1,28 +1,29 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { Icon } from "@/components/shared/icon";
 import { agentAvailable } from "@/lib/chatAccess";
 import { PageHeader } from "@/components/shared/page-header";
 import { ErrorState } from "@/components/shared/error-state";
 import { ChatMessage } from "@/components/domain/chat-message";
+import { ChatPending, ChatSendError } from "@/components/domain/chat-status";
 import { EscalationPrompt } from "@/components/domain/escalation-prompt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MAX_QUESTION_LENGTH, mockTransport, unavailableTransport } from "@/lib/api/chat";
 import { getClientDocument } from "@/lib/api/client/documents";
+import { useDocumentChat } from "@/lib/chat-session/useDocumentChat";
 import { getClientSummary } from "@/lib/api/client/delivery";
 import {
   buildInitialMessages,
   chatSourceOf,
-  getMockReply,
   SUGGESTED_QUESTIONS,
 } from "@/lib/mock/chat.mock";
 import { getClientSettlementNotes } from "@/lib/api/client/settlement-notes";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type {
-  ChatMessage as ChatMessageType,
   ClientDocument,
   ClientSettlementNote,
   SettledSummary,
@@ -43,7 +44,14 @@ export default function ChatPage() {
   const [notes, setNotes] = useState<ClientSettlementNote[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
-  const [messages, setMessages] = useState<ChatMessageType[]>([]);
+  // Questions go through the C1 boundary (lib/api/chat), which waits like a network call and can fail.
+  const transport = useMemo(
+    () => (doc ? mockTransport(chatSourceOf(doc, summary, notes)) : unavailableTransport),
+    [doc, summary, notes],
+  );
+  const chat = useDocumentChat({ documentId: params.id, transport });
+  const messages = chat.messages;
+  const resetChat = chat.reset;
   const [input, setInput] = useState("");
   const [highlightedClause, setHighlightedClause] = useState<string | null>(
     null,
@@ -56,7 +64,7 @@ export default function ChatPage() {
       const result = await getClientDocument(MOCK_CLIENT_ORG.id, params.id);
       if (!result) throw new Error("Document not found.");
       setDoc(result);
-      setMessages(buildInitialMessages(result));
+      resetChat(buildInitialMessages(result));
       // The summary is asked for only once the document is signed off, and what it says is
       // the API's to give. Without one the agent still quotes the clauses.
       setSummary(null);
@@ -76,7 +84,7 @@ export default function ChatPage() {
       );
       setState("error");
     }
-  }, [params.id]);
+  }, [params.id, resetChat]);
 
   useEffect(() => {
     load();
@@ -84,27 +92,12 @@ export default function ChatPage() {
 
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, chat.pending, chat.failed]);
 
   function sendMessage(text: string) {
-    if (!doc || !text.trim()) return;
-    const userMessage: ChatMessageType = {
-      id: `user-${Date.now()}`,
-      role: "user",
-      text,
-      citedClauseReference: null,
-      isEscalation: false,
-    };
-    const reply = getMockReply(text, chatSourceOf(doc, summary, notes));
-    const agentMessage: ChatMessageType = {
-      id: `agent-${Date.now()}`,
-      role: "agent",
-      text: reply.text,
-      citedClauseReference: reply.citedClauseReference,
-      isEscalation: reply.isEscalation,
-    };
-    setMessages((prev) => [...prev, userMessage, agentMessage]);
-    setInput("");
+    if (!doc) return;
+    // Taken only if no other question is still being answered; the box is kept otherwise.
+    if (chat.send(text)) setInput("");
   }
 
   function handleCiteClick(clauseReference: string) {
@@ -216,6 +209,8 @@ export default function ChatPage() {
                 />
               ),
             )}
+            {chat.pending && <ChatPending />}
+            {chat.failed && <ChatSendError message={chat.failed.message} onRetry={chat.retry} />}
             <div ref={threadEndRef} />
           </div>
 
@@ -241,11 +236,12 @@ export default function ChatPage() {
             >
               <Input
                 value={input}
+                maxLength={MAX_QUESTION_LENGTH}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about any clause in this document"
                 aria-label="Ask about a clause in this document"
               />
-              <Button type="submit" size="icon" aria-label="Send">
+              <Button type="submit" size="icon" aria-label="Send" disabled={chat.pending}>
                 <Icon name="send" size={18} />
               </Button>
             </form>
