@@ -12,7 +12,9 @@ export type DocumentStatus =
   | "executed"; // client confirmed stamping and signature
 
 export type ReviewTier = "standard" | "enhanced" | "senior";
-export type Severity = "high" | "medium" | "low";
+/** Most serious first. The one order severities are ranked, counted and listed in. */
+export const SEVERITY_ORDER = ["critical", "high", "medium", "low"] as const;
+export type Severity = (typeof SEVERITY_ORDER)[number];
 export type FindingSource = "pipeline" | "advocate";
 export type PipelineLayer = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 

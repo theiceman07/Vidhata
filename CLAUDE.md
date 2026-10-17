@@ -75,7 +75,7 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
 - Headings are 500, never bold. Body never exceeds 600.
 - Status colors are semantic only, never decorative: verified #2D6A4F,
   flagged #9B2C2C, caution #B7791F (badge fills only; use caution-fg
-  #92600A for text), info #2C5282 (layer badges only).
+  #92600A for text), info #2C5282 (layer badges only). Critical severity is ink, drawn as a diamond (SeverityGlyph), so it never reads as a deeper high.
 - Shape: round everywhere, never square. Buttons and labels are pills;
   rounded-control 12px, rounded-card 20px, rounded-modal 28px. No
   shadows: shadow-float is an ink hairline, not elevation.

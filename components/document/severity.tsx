@@ -1,7 +1,10 @@
 import { cn } from "@/lib/utils";
-import type { Severity } from "@/lib/types";
+import { SEVERITY_ORDER, type Severity } from "@/lib/types";
 
 const FILL: Record<Severity, string> = {
+  // Critical is ink, and a diamond rather than a square (below): not a deeper red, so it
+  // never reads as high at a glance, and the word beside it always says which it is.
+  critical: "bg-ink border-ink rotate-45",
   high: "bg-flagged border-flagged",
   medium: "bg-caution border-caution",
   // Low carries no colour. Colour is spent where it changes a decision.
@@ -9,6 +12,7 @@ const FILL: Record<Severity, string> = {
 };
 
 const WORD: Record<Severity, string> = {
+  critical: "Critical",
   high: "High",
   medium: "Medium",
   low: "Low",
@@ -56,8 +60,8 @@ export function SeverityMark({
 }
 
 /**
- * The shape of the remaining work, read in a glance: three counts with
- * their glyphs, zeroes dimmed rather than dropped, so the columns line up
+ * The shape of the remaining work, read in a glance: a count per severity with
+ * its glyph, zeroes dimmed rather than dropped, so the columns line up
  * from one row to the next.
  */
 export function SeverityCounts({
@@ -70,7 +74,7 @@ export function SeverityCounts({
   /** Say the word beside each count, as the legend does. */
   labelled?: boolean;
 }) {
-  const order: Severity[] = ["high", "medium", "low"];
+  const order = SEVERITY_ORDER;
   const summary = order
     .filter((s) => counts[s] > 0)
     .map((s) => `${counts[s]} ${s}`)

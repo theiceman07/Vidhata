@@ -449,6 +449,7 @@ export default function QueuePage() {
         <div role="table" aria-label="Documents" className="mt-6 space-y-2">
           <p className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-meta text-muted-fg">
             <span>Undecided findings by severity</span>
+            <SeverityMark severity="critical" className="text-meta font-normal" />
             <SeverityMark severity="high" className="text-meta font-normal" />
             <SeverityMark severity="medium" className="text-meta font-normal" />
             <SeverityMark severity="low" className="text-meta font-normal" />
@@ -791,11 +792,12 @@ function TierMix({ docs }: { docs: ContractDocument[] }) {
   const max = Math.max(1, docs.length);
   const findings = severityCounts(docs.flatMap((d) => unsettledFindings(d)));
   const severities: { key: keyof typeof findings; label: string; fill: string }[] = [
+    { key: "critical", label: "Critical", fill: "bg-ink" },
     { key: "high", label: "High", fill: "bg-flagged" },
     { key: "medium", label: "Medium", fill: "bg-caution" },
     { key: "low", label: "Low", fill: "bg-muted-fg" },
   ];
-  const maxFinding = Math.max(1, findings.high + findings.medium + findings.low);
+  const maxFinding = Math.max(1, findings.critical + findings.high + findings.medium + findings.low);
 
   return (
     <SidePanel title="Shape of the queue">

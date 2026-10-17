@@ -1,9 +1,10 @@
 import { SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF } from "@/lib/config/visibility";
-import type {
-  ContractDocument,
-  Finding,
-  Severity,
-  WorkspaceCitation,
+import {
+  SEVERITY_ORDER,
+  type ContractDocument,
+  type Finding,
+  type Severity,
+  type WorkspaceCitation,
 } from "@/lib/types";
 
 /**
@@ -121,8 +122,13 @@ export function blockedCitationCount(doc: { findings: Cited[] }): number {
   return doc.findings.reduce((n, f) => n + blockingCitations(f).length, 0);
 }
 
+/** 0 is the most serious. Sort ascending to put the worst first. */
+export function severityRank(severity: Severity): number {
+  return SEVERITY_ORDER.indexOf(severity);
+}
+
 export function severityCounts(findings: Pick<Finding, "severity">[]): Record<Severity, number> {
-  const counts: Record<Severity, number> = { high: 0, medium: 0, low: 0 };
+  const counts: Record<Severity, number> = { critical: 0, high: 0, medium: 0, low: 0 };
   findings.forEach((f) => {
     counts[f.severity] += 1;
   });

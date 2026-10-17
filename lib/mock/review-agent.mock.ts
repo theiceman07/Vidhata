@@ -32,6 +32,7 @@ const SOURCES = /source|citation|cite|statute|verified|corpus|blocked/i;
 const FINDINGS = /finding|walk|through|summar|overview|issues|raised|first pass/i;
 
 const SEVERITY: Record<Finding["severity"], string> = {
+  critical: "Critical",
   high: "High",
   medium: "Medium",
   low: "Low",
