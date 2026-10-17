@@ -5,13 +5,14 @@ What the backend actually offers today, set against what the frontend assumes.
 - **Backend read:** `D:\agent_clause_be`, branch `arjun`, head `2fa5a15`, read-only. Read: `backend/app` (main, config, db, auth, documents, findings, lawyer_queue, users, drafting, clauses) and `supabase/migrations` 01 to 14.
 - **Frontend read:** `lib/contracts.ts` (R1, C1), `lib/types.ts`, `lib/api/findings.ts`, `lib/api/chat.ts`, `lib/api/documents.ts` (mock), `lib/storage/upload.ts`, `docs/api-contract.md`, `docs/storage/`, and the login pages and session code.
 - **Status:** no code was changed to produce this. Every claim about the backend is from reading its source. Nothing was run against a live database or Supabase project.
+- **Updated 17 Oct 2026:** the frontend now follows the backend's finished R1 schema (`backend/app/schemas/finding.py`, and the repo-root `example_finding.json`), read-only. Items that changed are marked **Resolved** below, and section 2.1a lists what is resolved and what is still open. The endpoint inventory (section 1) and the rest of section 2 are as first read (head `2fa5a15`) and were not re-checked.
 - **Tags** used in the gap tables: **FE change** (we adapt to what exists), **BE change** (the backend adds something), **Decision** (a product or contract choice has to be made first).
 
 ## Summary
 
 1. The backend is a thin state machine, a lawyer queue and a findings adjudication API. It has **no** upload or storage endpoints, **no** chat endpoint, **no** payment, **no** client-facing findings, **no** drafting HTTP route, and **no** pipeline trigger.
-2. The R1 finding contract we wrote does not match what the backend sends. The wire names differ (`id`, `advocate_action`, `advocate_notes`), `critical` severity exists only on the backend, `layer` can be `null` on the backend, and there are no `citations`, no `clause_text` and no `override_note` as such.
-3. One mismatch makes the whole findings screen fail: a lawyer-added finding comes back with `layer: null`, and `mapReviewFindings` throws for the entire list when any one finding fails R1 (`lib/api/findings.ts:79-86`, `lib/contracts.ts:36`).
+2. **Mostly resolved (17 Oct).** The R1 finding contract we wrote did not match the backend. The frontend now reads the backend's finished agent schema (`finding_id`, `layer` by name or integer, `critical`, one `citation` string, `status`). What the GET findings API returns beyond that schema is still open (section 2.1a).
+3. **Resolved (17 Oct).** One bad finding no longer fails the whole findings screen. `mapReviewFindings` skips a finding that fails R1, keeps the rest and says "N findings couldn't be shown". The `layer: null` case is still open: the finished schema has no null layer, but what the GET API sends for a lawyer-added finding was not re-checked (section 2.1a).
 4. Document states do not map one to one. Two frontend states have no backend home (`awaiting_payment`, `executed`), and `under_review` is not a backend state (it is `pending_lawyer_review` with `assigned_lawyer_id` set).
 5. `delivered` can never be reached through the API, because the only transition into it is system-only and no route acts as `system`. The same is true of every other system transition, so a document cannot leave `drafted` via the API either.
 6. No user can create a document by default. `POST /documents` accepts only `live` contract types, and the migrations set none to `live` (four are `in_build`).
@@ -108,22 +109,22 @@ The latest commit message (`2fa5a15`) says D6 to D8 were removed, so assembly, c
 
 ### 2.1 Findings (R1 against `FindingIn`, the findings table and the findings routes)
 
-Our R1 is `reviewFindingSchema` in `lib/contracts.ts`. "Backend" below is the list/adjudicate/add response, since `FindingIn` (`findings/schemas.py`) is the pipeline's input and is not a response shape.
+Our R1 is `reviewFindingSchema` in `lib/contracts.ts`. **The table below is the original comparison, kept for the record. The "R1 field (ours)" column describes the schema as it was before 17 Oct; section 2.1a says how it stands now.** "Backend" below is the list/adjudicate/add response, since `FindingIn` (`findings/schemas.py`) is the pipeline's input and is not a response shape.
 
 `FindingIn` fields: `layer 0..6, severity, clause_reference?, description, rule_applied?, remedy_suggested?`. It has no id, citations, clause text or status.
 
 | R1 field (ours) | Backend reality | Match? | Resolution |
 |---|---|---|---|
 | `finding_id` (uuid) | Column `id`. Sent as `id`. `finding_id` is never sent. | **No** (name) | FE change: read `id`. |
-| `layer` (int 0..6, required) | Column is nullable since migration 10. A lawyer-added finding has `layer = null`. | **No** (nullability) | FE change: accept `null`. It is a real break: one added finding fails R1 and the mapper throws for the whole list. `PipelineLayer` in `lib/types.ts` is `0..6`, so the screens need a value for "no layer" (the advocate-added source already exists). |
-| `severity` (`low\|medium\|high`) | `low\|medium\|high\|critical`, in the DB check, `Severity` literal and sort order. | **No** | FE change plus Decision. Add `critical` to `SEVERITIES`, `Severity`, and every severity table, colour, sort and filter. Decision: whether `critical` is shown as its own level or folded into `high`. Folding hides a real distinction the backend uses for sign-off blocking. |
+| `layer` (int 0..6, required) | Column is nullable since migration 10. A lawyer-added finding has `layer = null`. | **No** (nullability) | **Partly resolved:** R1 now takes the layer by name or integer (`INTAKE` to `TRIAGE`, 0 to 6) and still refuses `null`; a finding that fails is skipped, not fatal. Whether the GET API sends `null` for a lawyer-added finding is open (2.1a). Original note: FE change: accept `null`. It is a real break: one added finding fails R1 and the mapper throws for the whole list. `PipelineLayer` in `lib/types.ts` is `0..6`, so the screens need a value for "no layer" (the advocate-added source already exists). |
+| `severity` (`low\|medium\|high`) | `low\|medium\|high\|critical`, in the DB check, `Severity` literal and sort order. | **Resolved** | `critical` is its own level end to end (schema, `Severity`, glyph and tones, counts, sort, queue, add dialog). It is ink and a diamond, so it is not a deeper `high`. Decision taken: not folded into `high`. |
 | `rule_applied` (string, nullable) | Same name, nullable text. | Yes | None. |
 | `clause_reference` (nullable) | Same name, nullable free text. No format is enforced. | Yes (shape) | FE: the clause join depends on a `"Clause 7.2"` format (`clauseNumberFromReference`). Confirm the pipeline emits that format. |
 | `clause_text` (quoted span, nullable) | Not stored or returned. | **Missing** | R1 already defaults it to `null`, so nothing breaks, but the margin quote is empty. BE change if the quoted span matters, or the FE derives it from the document's clauses (which also do not exist, see 3.1). |
 | `description` | Same. | Yes | None. |
 | `remedy_suggested` | Same, nullable. | Yes | None. |
-| `citations[]` `{text, verified, corpus_ref}` | **No column, table or field anywhere.** No citation lookup in the backend (D7 removed). | **Missing** | BE change plus Decision. The whole citation gate (verified or blocked, withdraw with note, sign-off blocker, re-check at hand-off) has nothing behind it. The frontend would receive no `citations`, which the mapper accepts (default `[]`), but then no finding can ever show a source and the "settle without a verified source needs a note" rule fires on every finding. |
-| `status` (`pending\|confirmed\|overridden\|added`) | Not sent as `status`. Derived from `advocate_action`: `null`, `confirm`, `override`, `add`. | **No** (name and values) | FE change: map `null` to `pending`, `confirm` to `confirmed`, `override` to `overridden`, `add` to `added`. |
+| `citations[]` `{text, verified, corpus_ref}` | **No column, table or field anywhere.** No citation lookup in the backend (D7 removed). | **Resolved** | The backend schema has one `citation` string per finding (`findings.citation`, migration 11) and no verified state; the citation gate is layer 5. The frontend now carries `citation: string` and shows it as the source. The verified or blocked chip, withdraw-with-note, the sign-off hold on blocked sources, the re-check at hand-off, the citation attempt log and the fabrication metric were removed. Nothing says a citation was verified. |
+| `status` (`pending\|confirmed\|overridden\|added`) | Not sent as `status`. Derived from `advocate_action`: `null`, `confirm`, `override`, `add`. | **Resolved** for the agent schema | The finished schema sends `status` as `pending`, `confirmed`, `overridden` or `added`, which is the vocabulary R1 already used, and the mapper maps it (`added` shows as confirmed and advocate-added). The raw GET findings rows still carry `advocate_action` (`null`, `confirm`, `override`, `add`); that is open (2.1a). |
 | `override_note` | Column `advocate_notes`. It holds the note for **any** action (confirm, override, add), not only overrides. | **No** (name, meaning) | FE change: read `advocate_notes`. Decision: our UI shows the note as the "override" reasoning. For `confirm` and `add` the note is something else. Map it to `overrideNote` only when the action is `override`, and decide whether the others get a label. |
 | (not in R1) `resolvedAt` | `adjudicated_at` | Available | FE change: use it. `toScreenFinding` hard-codes `null`. |
 | (not in R1) who decided | `adjudicated_by` (uuid, no name) | Available | Decision: the screens show an advocate name. The backend returns an id only. |
@@ -135,11 +136,42 @@ Write side:
 | What we do | Backend reality | Resolution |
 |---|---|---|
 | `updateFinding` sets disposition `confirmed`, `overridden`, **or back to `pending`** (reopen). | Adjudicate accepts only `confirm` or `override`. No way to set `advocate_action` back to null. | Decision / BE change: reopen is not supported. Either drop reopen in the FE or add it. |
-| `updateFinding` refuses to settle when a citation is blocked, or when no source remains and no note is given. | Backend knows nothing of citations. It requires a note for `override` only. | Depends on the citation decision above. |
-| `addFinding` sends a full `Finding` (own `findingId`, `clauseText`, `citations`, `layer`, `source`). | `LawyerFindingIn` takes only `severity, description, clause_reference, rule_applied, remedy_suggested, notes`. The id is server-generated. | FE change: send the smaller body, take the id from the response. `clauseText` and `citations` have nowhere to go. |
+| `updateFinding` refused to settle when a citation was blocked, or when no source remained and no note was given. | Backend knows nothing of citations. It requires a note for `override` only. | **Resolved:** the frontend rule is gone, so settling no longer depends on a citation state. |
+| `addFinding` sends a full `Finding` (own `findingId`, `clauseText`, `citations`, `layer`, `source`). | `LawyerFindingIn` takes only `severity, description, clause_reference, rule_applied, remedy_suggested, notes`. The id is server-generated. | FE change: send the smaller body, take the id from the response. `clauseText` has nowhere to go, and neither has the citation: `LawyerFindingIn` carries no `citation`, while the finished schema requires one (2.1a). |
 | Every finding must be settled before sign-off. | Only `high` and `critical` findings without an `advocate_action` block sign-off. | Decision: which rule wins. The backend rule is looser than ours. |
 | Changing a request to the client (`requestChange`, per finding, with text) and the client's `respondToChanges`. | No per-finding change request, no client response, no client-facing findings. `lawyer_commented` and `revision_in_progress` are bare state moves. The `note` on `/transition` goes to the audit log only. | BE change plus Decision. The whole revision loop (api-contract section 5) has no data model. |
 | Client reads findings in a client-shaped view (`ClientFinding`). | Findings are lawyer-only at both the route and the RLS policy. | BE change: a client findings view with the visibility rules from api-contract section 4. |
+
+### 2.1a Findings: resolved and still open (17 Oct 2026)
+
+Read for this: `backend/app/schemas/finding.py` and `example_finding.json` (the repo-root one is current). Not re-read: the findings routes, the migrations and `lawyer_queue`.
+
+**Resolved on the frontend**
+
+| Item | What the frontend does now |
+|---|---|
+| Layer enum | `lib/layerNames.ts` maps `INTAKE`, `COMPLETENESS`, `STATUTORY`, `CONSISTENCY`, `RISK_ASYMMETRY`, `CITATION_GATE`, `TRIAGE` to 0 to 6. R1 accepts the name or the integer and normalises to the integer. A test keeps the table in step with `PIPELINE_LAYERS`. |
+| Critical severity | Its own level on every screen, with its own mark, count and sort position. Accepted by R1. |
+| Citation | One non-empty string, shown as the finding's source. No verified, blocked or withdrawn state anywhere. The one string may name more than one source; it is shown as written. |
+| Status vocabulary | `pending`, `confirmed`, `overridden`, `added`, read as sent. |
+| Unknown keys | Stripped, not errors. |
+| One bad finding | Skipped and counted, with "N findings couldn't be shown". A payload that is not a list is still refused. |
+| `clause_text`, `override_note` | Optional, and not in the agent schema. Read if the findings API sends them, empty if not. |
+
+**Still open**
+
+| Item | Detail | Tag |
+|---|---|---|
+| `id` or `finding_id` | The agent schema and `example_finding.json` use `finding_id`. The GET findings rows (section 1.4) were read as `id`. R1 reads `finding_id` only, so a list from the GET route would be skipped in full until one side agrees. | BE change or FE change |
+| `advocate_action` and `advocate_notes` | The GET rows carry `advocate_action` (`null`, `confirm`, `override`, `add`) and `advocate_notes`. The agent schema has `status` instead, and no notes field. The frontend reads neither, so an advocate's note would not reach the screen. | Decision |
+| `adjudicated_at` | Not in R1. `resolvedAt` stays `null`. | FE change |
+| Clause text | The quoted span is not in the agent schema or the findings table, so the margin quote and the passage are empty. | BE change, or the FE derives it from the document's clauses |
+| Finding numbers | Not stored. Findings are numbered by position in the list as sent, and a skipped finding leaves a gap. Stable numbers across drafts need the API (api-contract section 4). | BE change |
+| Lawyer-added findings | `POST /documents/{id}/findings` takes no `citation` and sets `layer = null`. The finished schema requires both. Either the route fills them or the schema allows them to be absent. The frontend add dialog now asks for a source. | BE change or Decision |
+| `rule_applied` format | The schema requires UPPER_SNAKE. The frontend's internal mock findings still use hyphenated rule ids (`ICA-S27-NONCOMPETE-V2`); only the wire fixtures use the new form. | FE tidy-up |
+| Reopen | Adjudicate accepts `confirm` or `override` only (2.1, write side). | Decision |
+| Sign-off rule | The backend blocks on `high` and `critical` only. The frontend blocks on any undecided finding. | Decision |
+| Citation gate output | Layer 5 may block a citation upstream, but no field or route tells the frontend. If the product wants to show that, the backend has to send it. | Decision |
 
 ### 2.2 Document status vocabulary (frontend `DocumentStatus` against `states.py`)
 
