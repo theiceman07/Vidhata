@@ -16,7 +16,7 @@ import { getMockDocumentById } from "@/lib/mock/documents.mock";
  *
  * Rendered against the real MSA fixture rather than invented props, so
  * what shows here is what the workspace shows: three findings at high,
- * medium and low severity, one of them carrying a blocked citation.
+ * medium and low severity, each with its single citation.
  */
 export default function ComponentsPage() {
   const doc = getMockDocumentById("doc-msa-pending");
@@ -58,8 +58,6 @@ export default function ComponentsPage() {
           <StateLabel state="revision" />
           <StateLabel state="settled" />
           <StateLabel state="open" />
-          <StateLabel state="citation_verified" />
-          <StateLabel state="citation_blocked" />
           <StateLabel state="settled" tone="solid" />
         </div>
       </Section>
@@ -95,16 +93,10 @@ export default function ComponentsPage() {
         </div>
       </Section>
 
-      <Section title="CitationBlock · verified and blocked">
+      <Section title="CitationBlock">
         <div className="space-y-8 bg-paper p-4">
-          <CitationBlock
-            citations={doc.findings[0].citations}
-            showWithdrawalNote
-          />
-          <CitationBlock
-            citations={doc.findings[2].citations}
-            showWithdrawalNote
-          />
+          <CitationBlock citation={doc.findings[0].citation} />
+          <CitationBlock citation={doc.findings[2].citation} />
         </div>
       </Section>
 
@@ -121,7 +113,6 @@ export default function ComponentsPage() {
               onSettle={() => undefined}
               onReopen={() => undefined}
               onRequestChange={() => undefined}
-              onWithdrawSource={() => undefined}
             />
           )}
         </div>
@@ -141,7 +132,6 @@ export default function ComponentsPage() {
               onSettle={() => undefined}
               onReopen={() => undefined}
               onRequestChange={() => undefined}
-              onWithdrawSource={() => undefined}
             />
           )}
         </div>

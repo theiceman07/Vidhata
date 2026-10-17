@@ -20,7 +20,7 @@ const FAQS = [
   {
     question: "What happens if a citation can't be verified?",
     answer:
-      "It's blocked, not guessed at. A blocked citation is shown clearly and routed to your advocate for judgment. It never reaches you disguised as settled.",
+      "It's held back, not guessed at. The citation gate, the fifth layer of the pipeline, stops it, and it goes to your advocate for judgment. It never reaches you disguised as settled.",
   },
   {
     // Screening assigns the tier; the client does not choose it, so there is

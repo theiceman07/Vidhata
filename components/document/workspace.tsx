@@ -13,11 +13,8 @@ import {
   type PaletteCommand,
 } from "@/components/shared/command-palette";
 import {
-  blockingCitations,
-  canSettle,
   findingState,
   findingsWithClient,
-  settleNeedsNote,
   severityCounts,
   unsettledFindings,
   type Blocker,
@@ -33,7 +30,6 @@ import type {
   ClientSettlementNote,
   MarginNotes,
   WorkspaceDocument,
-  WorkspaceFinding,
 } from "@/lib/types";
 import { ReviewScopePanel } from "@/components/domain/review-scope-panel";
 import { ReviewScopeProvider } from "./review-scope-context";
@@ -71,11 +67,10 @@ export function DocumentWorkspace({
   companion,
   commands,
   initialFindingId = null,
+  notice: callerNotice = null,
   onSettle,
   onReopen,
   onRequestChange,
-  onWithdrawSource,
-  citationBadge,
   notes,
   settlementNotes,
   scope,
@@ -109,19 +104,14 @@ export function DocumentWorkspace({
   commands?: PaletteCommand[];
   /** Open on this finding, e.g. when arriving from a sign-off blocker. */
   initialFindingId?: string | null;
+  /**
+   * A plain line for the status strip, e.g. that some findings could not be shown. It sits
+   * with the revision notice and reads the same way: said once, and not an alarm.
+   */
+  notice?: string | null;
   onSettle?: (findingId: string, note: string | null) => void | Promise<void>;
   onReopen?: (findingId: string) => void | Promise<void>;
   onRequestChange?: (findingId: string, request: string) => void | Promise<void>;
-  onWithdrawSource?: (findingId: string, citationId: string, note: string) => void | Promise<void>;
-  /**
-   * Wraps a source's state badge so it opens where the source resolved. Passed
-   * by the advocate's page only, which keeps the corpus read out of the client's.
-   */
-  citationBadge?: (
-    findingId: string,
-    citation: WorkspaceFinding["citations"][number],
-    label: React.ReactNode,
-  ) => React.ReactNode;
   /** The advocate's own margin notes. Never passed on the client's side. */
   notes?: MarginNotes;
   /**
@@ -174,7 +164,7 @@ export function DocumentWorkspace({
   // many rounds the advocate has left.
   const cycle = role === "advocate" ? (revisions ?? null) : null;
   const counter = cycle ? revisionCounter(cycle) : null;
-  const notice = cycle ? revisionNotice(cycle) : null;
+  const notices = [callerNotice, cycle ? revisionNotice(cycle) : null].filter((n): n is string => Boolean(n));
 
   // What the panes show. The counts below it are over the whole document
   // (what sign-off checks); every finding needing a decision is in scope, so
@@ -196,9 +186,6 @@ export function DocumentWorkspace({
     doc.findings.find((f) => f.findingId === selectedFindingId) ?? null;
   const unsettled = unsettledFindings(doc);
   const withClient = findingsWithClient(doc).length;
-  const blockedFindings = view.findings.filter(
-    (f) => blockingCitations(f).length > 0,
-  );
   const panel = selectedFinding ? "finding" : activityOpen ? "activity" : null;
   const panelOpenRef = useRef(false);
   panelOpenRef.current = panel !== null;
@@ -336,11 +323,9 @@ export function DocumentWorkspace({
         return;
       }
 
-      // Only the advocate holding the document settles, and never past a
-      // blocked source or a missing note.
+      // Only the advocate holding the document settles.
       if (key === "c" && canAdjudicate && selectedFinding && onSettle) {
         if (findingState(selectedFinding) === "settled") return;
-        if (!canSettle(selectedFinding) || settleNeedsNote(selectedFinding)) return;
         e.preventDefault();
         onSettle(selectedFinding.findingId, null);
       }
@@ -366,9 +351,7 @@ export function DocumentWorkspace({
       hint:
         findingState(f) === "settled"
           ? "Settled"
-          : blockingCitations(f).length > 0
-            ? "Blocked"
-            : f.severity,
+          : f.severity,
       searchText: f.clauseText,
       onSelect: () => selectFinding(f.findingId),
     }));
@@ -515,16 +498,6 @@ export function DocumentWorkspace({
             {unsettled.length > 0 && <SeverityCounts counts={counts} />}
           </span>
 
-          {blockedFindings.length > 0 && (
-            <button
-              type="button"
-              onClick={() => selectFinding(blockedFindings[0].findingId)}
-              className="inline-flex items-center gap-1 text-meta text-flagged underline-offset-2 hover:underline"
-            >
-              <Icon name="error" size={16} />
-              {blockedFindings.length} {blockedFindings.length === 1 ? "source" : "sources"} blocked
-            </button>
-          )}
           {withClient > 0 && (
             <span className="text-meta text-muted-fg">{withClient} with the client</span>
           )}
@@ -568,15 +541,16 @@ export function DocumentWorkspace({
           </div>
         </div>
 
-        {notice && (
+        {notices.map((text) => (
           <div
+            key={text}
             role="status"
             className="flex items-start gap-2 border-t border-line bg-parchment px-5 py-3 text-meta text-ink md:px-8"
           >
             <Icon name="info" size={18} />
-            <span className="max-w-measure">{notice}</span>
+            <span className="max-w-measure">{text}</span>
           </div>
-        )}
+        ))}
 
         {activeScope && (
           <ReviewScopePanel
@@ -715,11 +689,7 @@ export function DocumentWorkspace({
                 onRequestChange={(request) =>
                   onRequestChange?.(selectedFinding.findingId, request)
                 }
-                onWithdrawSource={(citationId, note) =>
-                  onWithdrawSource?.(selectedFinding.findingId, citationId, note)
-                }
                 requestBlockedReason={cycle ? revisionBlockedReason(cycle) : null}
-                citationBadge={citationBadge}
                 busy={busy}
                 trail={trail}
               />

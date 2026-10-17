@@ -9,7 +9,6 @@ import { DocumentWorkspace } from "@/components/document/workspace";
 import { ReviewAgent } from "@/components/document/review-agent";
 import type { PaletteCommand } from "@/components/shared/command-palette";
 import { AddFindingDialog } from "@/components/domain/add-finding-dialog";
-import { CitationSourceDialog } from "@/components/domain/citation-source-dialog";
 import { ClaimDialog } from "@/components/domain/claim-dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,7 +19,6 @@ import {
   getDocumentVersions,
   requestChange,
   updateFinding,
-  withdrawCitation,
 } from "@/lib/api/documents";
 import { getAdvocateProfile } from "@/lib/api/advocate";
 import { addNote, deleteNote, listNotes, updateNote } from "@/lib/api/notes";
@@ -235,18 +233,6 @@ export default function ReviewPage() {
     [doc, run],
   );
 
-  const handleWithdraw = useCallback(
-    async (findingId: string, citationId: string, note: string) => {
-      if (!doc) return;
-      const updated = await run(
-        () => withdrawCitation(doc.id, findingId, citationId, note, CURRENT_ADVOCATE),
-        "Could not withdraw this source.",
-      );
-      if (updated) toast.success("Source withdrawn. The finding now rests on your note.");
-    },
-    [doc, run],
-  );
-
   // Every Claim on this page asks for the conflict declaration first.
   const handleClaim = useCallback(() => setClaimOpen(true), []);
 
@@ -369,11 +355,6 @@ export default function ReviewPage() {
       }
       commands={commands}
       initialFindingId={initialFindingId}
-      citationBadge={(findingId, citation, label) => (
-        <CitationSourceDialog documentId={doc.id} findingId={findingId} citation={citation}>
-          {label}
-        </CitationSourceDialog>
-      )}
       notes={marginNotes}
       scope={scope}
       revisions={revisionCycle(doc)}
@@ -393,8 +374,6 @@ export default function ReviewPage() {
         ) : canAdjudicate ? (
           <>
             <AddFindingDialog
-              documentId={doc.id}
-              advocateId={CURRENT_ADVOCATE.id}
               clauses={doc.clauses}
               open={dialogOpen}
               onOpenChange={setDialogOpen}
@@ -424,7 +403,6 @@ export default function ReviewPage() {
       onSettle={handleSettle}
       onReopen={handleReopen}
       onRequestChange={handleRequestChange}
-      onWithdrawSource={handleWithdraw}
       busy={busy}
     />
     <ClaimDialog

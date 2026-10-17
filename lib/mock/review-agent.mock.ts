@@ -1,7 +1,6 @@
 import type { ContractDocument, Finding, ReviewAgentReply } from "@/lib/types";
 import { clauseNumberFromReference } from "@/lib/types";
 import {
-  blockingCitations,
   findingNumbers,
   findingState,
   signOffBlockers,
@@ -23,28 +22,23 @@ import {
 export const REVIEW_SUGGESTIONS = [
   "What stands before sign-off?",
   "Walk me through the findings",
-  "Which sources are blocked?",
+  "Which sources do the findings cite?",
 ];
 
 const DECISION = /\b(should i|shall i|do i|accept|approve|override|reject|dismiss|sign it off|ok to|okay to|is it fine|safe to)\b|\bsettle (it|this|finding)/i;
 const BLOCKERS = /sign[- ]?off|stand|blocker|left|remaining|before|outstanding/i;
-const SOURCES = /source|citation|cite|statute|verified|corpus|blocked/i;
+const SOURCES = /source|citation|cite|statute/i;
 const FINDINGS = /finding|walk|through|summar|overview|issues|raised|first pass/i;
 
 const SEVERITY: Record<Finding["severity"], string> = {
+  critical: "Critical",
   high: "High",
   medium: "Medium",
   low: "Low",
 };
 
 function sourceLine(finding: Finding): string {
-  if (finding.citations.length === 0) return "No source cited";
-  return finding.citations
-    .map((c) => {
-      if (c.withdrawn) return `${c.text} (withdrawn)`;
-      return `${c.text} (${c.status === "verified" ? "verified" : "blocked, no corpus match"})`;
-    })
-    .join("; ");
+  return finding.citation.trim() || "No source cited";
 }
 
 function findingRef(doc: ContractDocument, f: Finding) {
@@ -90,11 +84,7 @@ export function getReviewReply(
     return {
       decision: true,
       text: subject
-        ? `That is your call, and it is recorded against your name. What the first pass has on ${subject.clauseReference}: ${subject.description} Source: ${sourceLine(subject)}.${
-            blockingCitations(subject).length > 0
-              ? " A blocked source has to be withdrawn, with your note, before this finding can be settled."
-              : ""
-          }`
+        ? `That is your call, and it is recorded against your name. What the first pass has on ${subject.clauseReference}: ${subject.description} Source: ${sourceLine(subject)}.`
         : "That is your call, and it is recorded against your name. There is no open finding for me to set out.",
       refs: subject ? [findingRef(doc, subject)] : [],
     };
@@ -118,22 +108,16 @@ export function getReviewReply(
   }
 
   if (SOURCES.test(question)) {
-    const blocked = doc.findings.flatMap((f) =>
-      blockingCitations(f).map((c) => ({ f, c })),
-    );
-    if (blocked.length === 0) {
-      return {
-        decision: false,
-        text: "No source is blocked. Every citation the open findings rely on matched the corpus, or has been withdrawn with a note.",
-        refs: [],
-      };
+    const cited = open.filter((f) => f.citation.trim() !== "");
+    if (cited.length === 0) {
+      return { decision: false, text: "No open finding cites a source.", refs: [] };
     }
     return {
       decision: false,
-      text: `${blocked.length === 1 ? "One source is" : `${blocked.length} sources are`} blocked: ${blocked
-        .map(({ f, c }) => `${c.text}, cited by finding ${numbers[f.findingId]} on ${f.clauseReference}`)
-        .join("; ")}. A blocked source found no match in the corpus, so the finding cannot rest on it. You can withdraw it with a note; it is never re-labelled verified.`,
-      refs: blocked.map(({ f }) => findingRef(doc, f)),
+      text: `${cited.length === 1 ? "One open finding cites" : `${cited.length} open findings cite`} a source: ${cited
+        .map((f) => `${f.citation}, for finding ${numbers[f.findingId]} on ${f.clauseReference}`)
+        .join("; ")}.`,
+      refs: cited.map((f) => findingRef(doc, f)),
     };
   }
 
@@ -142,7 +126,7 @@ export function getReviewReply(
     if (blockers.length === 0) {
       return {
         decision: false,
-        text: "Nothing stands before sign-off. Every finding is settled and no source it relies on is blocked. Signing off is yours to do.",
+        text: "Nothing stands before sign-off. Every finding is settled. Signing off is yours to do.",
         refs: [],
       };
     }
@@ -177,7 +161,7 @@ export function getReviewReply(
 
   return {
     decision: false,
-    text: "I can set out what stands before sign-off, walk through the findings and their sources, list blocked sources, or read you a clause by its number or heading.",
+    text: "I can set out what stands before sign-off, walk through the findings and their sources, list the sources they cite, or read you a clause by its number or heading.",
     refs: [],
   };
 }

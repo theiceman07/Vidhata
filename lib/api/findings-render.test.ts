@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { CitationBlock } from "@/components/document/citation-block";
 import { FindingDetail } from "@/components/document/finding-detail";
 import { getMockDocumentById } from "@/lib/mock/documents.mock";
+import { BACKEND_EXAMPLE_FINDING } from "@/lib/mock/r1-backend-example.fixture";
 import { R1_FINDINGS, R1_FINDING_IDS } from "@/lib/mock/r1-findings.fixtures";
 import { linkFindingsToClauses, mapReviewFindings } from "./findings";
 
@@ -13,7 +14,7 @@ import { linkFindingsToClauses, mapReviewFindings } from "./findings";
 
 /** What a finding that came in as R1 looks like on the screen. */
 
-const findings = mapReviewFindings(R1_FINDINGS);
+const { findings } = mapReviewFindings(R1_FINDINGS);
 const byId = (id: string) => findings.find((f) => f.findingId === id)!;
 const base = getMockDocumentById("doc-msa-pending")!;
 const doc = { ...base, findings, clauses: linkFindingsToClauses(base.clauses, findings) };
@@ -29,42 +30,55 @@ const detail = (id: string, role: "advocate" | "client" = "advocate") =>
       onSettle: () => {},
       onReopen: () => {},
       onRequestChange: () => {},
-      onWithdrawSource: () => {},
       trail: [],
     }),
   );
 
-describe("a verified and a blocked source", () => {
-  const html = (id: string) =>
-    renderToStaticMarkup(createElement(CitationBlock, { citations: byId(id).citations, showWithdrawalNote: true }));
+describe("the citation", () => {
+  const html = (id: string) => renderToStaticMarkup(createElement(CitationBlock, { citation: byId(id).citation }));
 
-  it("look different without reading them: the blocked one carries the flagged rule and colour", () => {
-    const verified = html(R1_FINDING_IDS.confirmed);
-    const blocked = html(R1_FINDING_IDS.overridden);
-    expect(blocked).toContain("border-flagged");
-    expect(blocked).toContain("text-flagged");
-    expect(verified).not.toContain("border-flagged");
-    expect(verified).not.toContain("text-flagged");
+  it("is shown as the one string the backend sent", () => {
+    expect(html(R1_FINDING_IDS.pending)).toContain("Indian Contract Act, 1872, s.27");
+    expect(html(R1_FINDING_IDS.confirmed)).toContain(
+      "Micro, Small and Medium Enterprises Development Act, 2006, s.15",
+    );
   });
-  it("say which they are in words as well", () => {
-    expect(html(R1_FINDING_IDS.confirmed)).toContain("Verified");
-    expect(html(R1_FINDING_IDS.overridden)).toContain("Blocked");
-    expect(html(R1_FINDING_IDS.overridden)).toContain("No match in the approved corpus");
+  it("carries no verified, blocked or withdrawn mark, and no flagged colour", () => {
+    for (const id of Object.values(R1_FINDING_IDS)) {
+      const out = html(id);
+      expect(out).not.toMatch(/Verified|Blocked|Withdrawn|corpus/i);
+      expect(out).not.toContain("flagged");
+    }
   });
-  it("show every source on a finding that has several, the blocked one set apart from the verified", () => {
-    const out = html(R1_FINDING_IDS.pending);
-    expect(out).toContain("Indian Contract Act, 1872");
-    expect(out).toContain("Purported High Court ruling");
-    // The verified source (listed first) comes before any flagged styling; the blocked one carries it.
-    expect(out.indexOf("Verified")).toBeLessThan(out.indexOf("border-flagged"));
-    expect(out.indexOf("border-flagged")).toBeLessThan(out.indexOf("Purported High Court ruling"));
+  it("sits under Source on the finding screen, for either portal", () => {
+    for (const role of ["advocate", "client"] as const) {
+      const out = detail(R1_FINDING_IDS.pending, role);
+      expect(out).toContain("Source");
+      expect(out).toContain("Indian Contract Act, 1872, s.27");
+      expect(out).not.toMatch(/Verified|Blocked|Withdraw source/);
+    }
+  });
+});
+
+describe("a critical finding", () => {
+  it("is drawn as Critical on the finding screen", () => {
+    const out = detail(R1_FINDING_IDS.critical);
+    expect(out).toContain("Critical");
+    expect(out).toContain("CONFIDENTIALITY_TERM_MISSING");
+  });
+  it("is told apart from a high one by more than its word: not the high colour", () => {
+    const critical = detail(R1_FINDING_IDS.critical);
+    const high = detail(R1_FINDING_IDS.pending);
+    expect(critical).toContain("bg-ink");
+    expect(critical).not.toContain("bg-flagged");
+    expect(high).toContain("bg-flagged");
   });
 });
 
 describe("the finding screen", () => {
   it("shows the rule, the severity, the clause and the status to the advocate", () => {
     const out = detail(R1_FINDING_IDS.pending);
-    expect(out).toContain("ICA-S27-NONCOMPETE-V2");
+    expect(out).toContain("ICA_S27_NONCOMPETE_V2");
     expect(out).toContain("High");
     expect(out).toContain("Clause 7.2");
     expect(out).toContain("Open");
@@ -80,14 +94,26 @@ describe("the finding screen", () => {
     expect(out).toContain("No pipeline rule is behind it");
   });
   it("keeps the rule behind the advocate's side", () => {
-    expect(detail(R1_FINDING_IDS.pending, "client")).not.toContain("ICA-S27-NONCOMPETE-V2");
+    expect(detail(R1_FINDING_IDS.pending, "client")).not.toContain("ICA_S27_NONCOMPETE_V2");
   });
-  it("draws a finding that carries only what R1 requires, without a blank passage or remedy", () => {
-    const out = detail(R1_FINDING_IDS.sparse);
-    expect(out).toContain("A defined term is used before it is defined.");
-    expect(out).toContain("No remedy was suggested.");
+  it("draws a finding the backend example describes, a clause that is missing, without a blank passage", () => {
+    const [example] = mapReviewFindings([BACKEND_EXAMPLE_FINDING]).findings;
+    const out = renderToStaticMarkup(
+      createElement(FindingDetail, {
+        doc,
+        finding: example,
+        number: "01",
+        role: "advocate",
+        canAdjudicate: false,
+        onSettle: () => {},
+        onReopen: () => {},
+        onRequestChange: () => {},
+        trail: [],
+      }),
+    );
+    expect(out).toContain("NDA_GOVERNING_LAW_MISSING");
+    expect(out).toContain("Code of Civil Procedure, 1908, s. 20");
     expect(out).not.toContain("Passage");
-    expect(out).not.toContain("Clause Whole document");
-    expect(out).toContain("Whole document");
+    expect(out).toContain("Missing (expected after Clause 9, Term and Termination)");
   });
 });

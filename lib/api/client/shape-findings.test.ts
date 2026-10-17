@@ -82,7 +82,7 @@ describe("the findings a client is handed, after sign-off", () => {
     for (const f of shaped) {
       expect(f.clauseText).toEqual(expect.any(String));
       expect(Object.keys(f.detail!).sort()).toEqual(
-        expect.arrayContaining(["citations", "description", "disposition", "remedySuggested", "severity"]),
+        expect.arrayContaining(["citation", "description", "disposition", "remedySuggested", "severity"]),
       );
       expect(f.detail!.disposition).not.toBe("pending");
     }
@@ -117,29 +117,11 @@ describe("the findings a client is handed, after sign-off", () => {
     expect(shown.map((f) => f.detail)).not.toContainEqual(expect.objectContaining({ advocateAdded: true }));
   });
 
-  it("say that a source was withdrawn, and not what the advocate wrote about it", () => {
-    const withdrawn = withFindings(nda, (f) => ({
-      ...f,
-      citations: [
-        ...f.citations,
-        {
-          id: "c-withdrawn",
-          text: "A source the corpus did not hold",
-          status: "blocked" as const,
-          corpusRef: null,
-          withdrawn: { note: "Private reasoning about the source.", at: "2026-08-03T08:00:00.000Z", by: "Ananya Rao" },
-        },
-      ],
-    }));
-    const citations = shapeClientFindings(withdrawn)[0].detail!.citations;
-    expect(citations.at(-1)).toEqual({
-      id: "c-withdrawn",
-      text: "A source the corpus did not hold",
-      status: "blocked",
-      corpusRef: null,
-      withdrawn: true,
-    });
-    expect(JSON.stringify(shapeClientFindings(withdrawn))).not.toMatch(/Private reasoning|Ananya/);
+  it("hand the client the finding's citation as written, and nothing of the advocate's working", () => {
+    const cited = withFindings(nda, (f) => ({ ...f, citation: "Indian Contract Act, 1872, s.27", overrideNote: "Private reasoning." }));
+    const detail = shapeClientFindings(cited)[0].detail!;
+    expect(detail.citation).toBe("Indian Contract Act, 1872, s.27");
+    expect(JSON.stringify(detail)).not.toContain("Private reasoning.");
   });
 });
 

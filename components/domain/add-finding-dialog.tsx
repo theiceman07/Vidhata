@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/components/shared/icon";
-import { StateLabel } from "@/components/document/state-label";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,12 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { checkCitation } from "@/lib/api/citations";
-import type { CitationLookup } from "@/lib/citations";
 import { CORPUS } from "@/lib/mock/corpus.mock";
-import type { Citation, Clause, NewFinding, Severity } from "@/lib/types";
-
-const NO_SOURCE = "__none";
+import type { Clause, NewFinding, Severity } from "@/lib/types";
 
 /**
  * A finding the first pass missed.
@@ -37,24 +32,17 @@ const NO_SOURCE = "__none";
  * open, like any other finding: raising a concern and deciding it are two
  * different acts, and both are recorded.
  *
- * A source is optional, and there are two ways to give one. Pick it from
- * the corpus, and it is verified, because the corpus is where verified
- * means. Or type it, and the corpus checks it: an exact match verifies,
- * and anything else is blocked, however close it looks. A blocked source
- * can still be saved with the finding, and then it holds the finding open
- * and holds sign-off until it is withdrawn with a note. A citation is
- * verified or blocked, never "probably fine".
+ * It needs the source it rests on, written as it is cited. The backend holds
+ * a finding to one citation, and not an empty one. The corpus entries are
+ * offered as suggestions to type from; whether a citation resolves is the
+ * citation gate's work (layer 5), and nothing here says it has been checked.
  */
 export function AddFindingDialog({
-  documentId,
-  advocateId,
   clauses,
   open,
   onOpenChange,
   onAdd,
 }: {
-  documentId: string;
-  advocateId: string;
   clauses: Clause[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -63,97 +51,28 @@ export function AddFindingDialog({
   const [clauseId, setClauseId] = useState("");
   const [description, setDescription] = useState("");
   const [severity, setSeverity] = useState<Severity>("medium");
-  const [pickedRef, setPickedRef] = useState(NO_SOURCE);
-  const [typed, setTyped] = useState("");
-  // What the corpus said about the typed text, and which text that was, so a
-  // result is never shown against words that have since been edited.
-  const [checked, setChecked] = useState<{ for: string; result: CitationLookup } | null>(null);
-  const [checking, setChecking] = useState(false);
+  const [citation, setCitation] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
 
   const clause = clauses.find((c) => c.id === clauseId);
-  const canSubmit = Boolean(clause) && description.trim().length > 0 && !submitting && !checking;
-  const result = checked && checked.for === typed ? checked.result : null;
-
-  const reset = useCallback(() => {
-    setClauseId("");
-    setDescription("");
-    setSeverity("medium");
-    setPickedRef(NO_SOURCE);
-    setTyped("");
-    setChecked(null);
-    setChecking(false);
-    setSubmitting(false);
-    setError("");
-  }, []);
+  const canSubmit =
+    Boolean(clause) && description.trim().length > 0 && citation.trim().length > 0 && !submitting;
 
   // Start clean whenever the dialog closes, however it closes. The page
   // closes it after a save, which never calls onOpenChange, so resetting
   // there alone left the last finding's clause, concern and citation in the
-  // form, and a blocked source could ride along onto the next finding.
+  // form, and they could ride along onto the next finding.
   useEffect(() => {
-    if (!open) reset();
-  }, [open, reset]);
-
-  function pick(ref: string) {
-    setPickedRef(ref);
-    // One source: choosing from the corpus replaces anything typed.
-    setTyped("");
-    setChecked(null);
-    setError("");
-  }
-
-  function type(text: string) {
-    setTyped(text);
-    // And typing replaces the pick.
-    setPickedRef(NO_SOURCE);
-    setError("");
-  }
-
-  async function check(): Promise<CitationLookup | null> {
-    setChecking(true);
-    setError("");
-    try {
-      const lookup = await checkCitation({ documentId, advocateId, input: typed });
-      setChecked({ for: typed, result: lookup });
-      return lookup;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not check this source.");
-      return null;
-    } finally {
-      setChecking(false);
-    }
-  }
+    if (open) return;
+    setClauseId("");
+    setDescription("");
+    setSeverity("medium");
+    setCitation("");
+    setSubmitting(false);
+  }, [open]);
 
   async function submit() {
     if (!clause) return;
-
-    const citations: Citation[] = [];
-    if (pickedRef !== NO_SOURCE) {
-      const entry = CORPUS.find((e) => e.ref === pickedRef);
-      if (entry) {
-        citations.push({
-          id: `cite-${Date.now()}`,
-          text: entry.label,
-          status: "verified",
-          corpusRef: entry.ref,
-          withdrawn: null,
-        });
-      }
-    } else if (typed.trim() !== "") {
-      // Saved against what the corpus says, whether or not "Check" was
-      // pressed: an unchecked typed source is never saved as it stands.
-      const lookup = result ?? (await check());
-      if (!lookup) return;
-      citations.push({
-        id: `cite-${Date.now()}`,
-        text: lookup.text,
-        status: lookup.status,
-        corpusRef: lookup.corpusRef,
-        withdrawn: null,
-      });
-    }
 
     setSubmitting(true);
     try {
@@ -169,7 +88,7 @@ export function AddFindingDialog({
         description: description.trim(),
         ruleApplied: "MANUAL-ADVOCATE-ADDED",
         remedySuggested: "Advocate judgment · see the concern above.",
-        citations,
+        citation: citation.trim(),
         disposition: "pending",
         overrideNote: null,
         resolvedAt: null,
@@ -192,8 +111,8 @@ export function AddFindingDialog({
         <DialogHeader>
           <DialogTitle>Add a finding the first pass missed</DialogTitle>
           <DialogDescription>
-            It enters the record open, marked as added by you. A source is
-            optional. Without a verified one, settling it will need your note.
+            It enters the record open, marked as added by you. Give the source
+            it rests on, as it is cited.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -219,6 +138,7 @@ export function AddFindingDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="critical">Critical</SelectItem>
                 <SelectItem value="high">High</SelectItem>
                 <SelectItem value="medium">Medium</SelectItem>
                 <SelectItem value="low">Low</SelectItem>
@@ -235,78 +155,22 @@ export function AddFindingDialog({
             />
           </div>
 
-          <fieldset className="space-y-3 rounded-control bg-parchment p-4">
-            <legend className="px-1 text-label font-medium text-muted-fg">Source (optional)</legend>
-            <div>
-              <Label htmlFor="finding-source-pick">Pick one from the corpus</Label>
-              <Select value={pickedRef} onValueChange={pick}>
-                <SelectTrigger id="finding-source-pick">
-                  <SelectValue placeholder="No source" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_SOURCE}>No source</SelectItem>
-                  {CORPUS.map((entry) => (
-                    <SelectItem key={entry.ref} value={entry.ref}>
-                      {entry.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {pickedRef !== NO_SOURCE && (
-                <p className="mt-2 flex items-center gap-2 text-meta text-muted-fg">
-                  <StateLabel state="citation_verified" />
-                  In the corpus.
-                </p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="finding-source-type">Or type one, and the corpus checks it</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="finding-source-type"
-                  value={typed}
-                  onChange={(e) => type(e.target.value)}
-                  placeholder="As it is cited"
-                  autoComplete="off"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => void check()}
-                  disabled={typed.trim() === "" || checking}
-                >
-                  {checking ? "Checking" : "Check"}
-                </Button>
-              </div>
-              {result && (
-                <div className="mt-2 text-meta text-muted-fg" role="status">
-                  {result.status === "verified" ? (
-                    <p className="flex flex-wrap items-center gap-2">
-                      <StateLabel state="citation_verified" />
-                      <span className="text-ink">{result.text}</span>
-                    </p>
-                  ) : (
-                    <div className="space-y-1">
-                      <StateLabel state="citation_blocked" />
-                      <p>
-                        The corpus holds no exact match. You can still add the
-                        finding, but this source will stay blocked, and the
-                        finding cannot be settled or signed off until it is
-                        withdrawn with a note.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </fieldset>
-
-          {error && (
-            <p role="alert" className="text-small text-flagged">
-              {error}
-            </p>
-          )}
+          <div>
+            <Label htmlFor="finding-source">Source</Label>
+            <Input
+              id="finding-source"
+              value={citation}
+              onChange={(e) => setCitation(e.target.value)}
+              list="finding-source-suggestions"
+              placeholder="As it is cited, e.g. Indian Contract Act, 1872, s.27"
+              autoComplete="off"
+            />
+            <datalist id="finding-source-suggestions">
+              {CORPUS.map((entry) => (
+                <option key={entry.ref} value={entry.label} />
+              ))}
+            </datalist>
+          </div>
         </div>
         <DialogFooter>
           <Button disabled={!canSubmit} onClick={() => void submit()}>

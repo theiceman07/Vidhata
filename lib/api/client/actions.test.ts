@@ -25,7 +25,7 @@ const raised = (id: string): NewFinding => ({
   description: "The first pass missed this.",
   ruleApplied: "MANUAL-ADVOCATE-ADDED",
   remedySuggested: "Advocate judgment.",
-  citations: [],
+  citation: "Indian Contract Act, 1872, s.27",
   disposition: "pending",
   overrideNote: null,
   resolvedAt: null,

@@ -33,6 +33,7 @@ function markClass(finding: WorkspaceFinding, emphasised: boolean): string {
     );
   }
   const tone = {
+    critical: emphasised ? "border-ink bg-ink/15" : "border-ink bg-ink/[0.06]",
     high: emphasised ? "border-flagged bg-flagged/15" : "border-flagged bg-flagged/[0.06]",
     medium: emphasised ? "border-caution bg-caution/25" : "border-caution bg-caution/10",
     low: emphasised ? "border-muted-fg bg-ink/10" : "border-muted-fg bg-ink/[0.04]",

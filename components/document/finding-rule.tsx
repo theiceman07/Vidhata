@@ -7,6 +7,7 @@ import { findingState } from "@/lib/findings";
 import type { Severity, WorkspaceFinding } from "@/lib/types";
 
 const SEVERITY_RULE: Record<Severity, string> = {
+  critical: "bg-ink",
   high: "bg-flagged",
   medium: "bg-caution",
   // Info is reserved for layer badges. Low severity carries no colour.

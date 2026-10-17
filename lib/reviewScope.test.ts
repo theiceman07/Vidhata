@@ -169,7 +169,7 @@ const finding = (id: string, clauseReference: string, overrides: Partial<Finding
   description: `${id} description`,
   ruleApplied: "RULE",
   remedySuggested: "remedy",
-  citations: [],
+  citation: "Indian Contract Act, 1872, s.27",
   disposition: "pending",
   overrideNote: null,
   resolvedAt: null,

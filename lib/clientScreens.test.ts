@@ -165,57 +165,20 @@ describe("a signed-off document, as the shared workspace reads it for a client",
     }
   });
 
-  it("says that a source was withdrawn and not why", () => {
+  it("carries the finding's single citation into the workspace as written", () => {
     const client = shapeClientDocument(signedOff[0]);
-    const withdrawn = {
-      ...client,
-      findingList: client.findingList.map((f, i) =>
-        i === 0 && f.detail
-          ? {
-              ...f,
-              detail: {
-                ...f.detail,
-                citations: [
-                  ...f.detail.citations,
-                  { id: "c-w", text: "A source", status: "blocked" as const, corpusRef: null, withdrawn: true },
-                ],
-              },
-            }
-          : f,
-      ),
-    };
-    const citation = workspaceDocOf(withdrawn).findings[0].citations.at(-1)!;
-    // That it was withdrawn, and nothing of who, when or why.
-    expect(citation.withdrawn).toEqual({});
+    const adapted = workspaceDocOf(client);
+    client.findingList.forEach((f, i) => {
+      expect(adapted.findings[i].citation).toBe(f.detail!.citation);
+    });
   });
 
-  it("is drawn without a name or a date for a source withdrawn, and does not fall over for want of one", () => {
+  it("draws the citation as the source, with no verified or blocked mark", () => {
     const html = renderToStaticMarkup(
-      createElement(CitationBlock, {
-        citations: [{ id: "c-w", text: "A source, s.1", status: "blocked", corpusRef: null, withdrawn: {} }],
-        showWithdrawalNote: false,
-      }),
+      createElement(CitationBlock, { citation: "Indian Contract Act, 1872, s.27" }),
     );
-    expect(html).toContain("Withdrawn. The finding no longer relies on this source.");
-    expect(html).not.toMatch(/Invalid|NaN| by /);
-  });
-
-  it("still says who withdrew a source, when and why, for an advocate", () => {
-    const html = renderToStaticMarkup(
-      createElement(CitationBlock, {
-        citations: [
-          {
-            id: "c-w",
-            text: "A source, s.1",
-            status: "blocked",
-            corpusRef: null,
-            withdrawn: { by: "Rhea Kapoor", at: "2026-09-01T12:00:00.000Z", note: "Not relied on." },
-          },
-        ],
-        showWithdrawalNote: true,
-      }),
-    );
-    expect(html).toContain("Withdrawn by Rhea Kapoor · 1 Sep 2026.");
-    expect(html).toContain("Not relied on.");
+    expect(html).toContain("Source");
+    expect(html).toContain("Indian Contract Act, 1872, s.27");
+    expect(html).not.toMatch(/Verified|Blocked|Withdrawn|corpus/i);
   });
 });

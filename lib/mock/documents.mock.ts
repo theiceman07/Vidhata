@@ -12,6 +12,15 @@ import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import { esignatureStep } from "@/lib/config/esign";
 import { TIER_PRICING } from "@/lib/config/pricing";
 
+/**
+ * What a fixture finding says when the rule behind it names no statute (a check of the draft
+ * against itself or the deal on file). R1 requires a citation string, so it is said in words
+ * and never as an invented authority.
+ */
+// Mock data only. The real backend requires a non-empty citation on every finding, so no real
+// finding says this; it exists here so a fixture finding with no statute still has a string.
+export const NO_STATUTORY_SOURCE = "No statutory source";
+
 /** A fee paid at its tier's flat amount, so a fixture cannot disagree with the config. */
 function paid(tier: ReviewTier, paidAt: string) {
   return { amount: TIER_PRICING[tier].amount, paidAt };
@@ -61,7 +70,7 @@ const settledNda: ContractDocument = {
       description: "The term in this clause does not match the 24 months on the deal file.",
       ruleApplied: "TERM-VS-DEAL-ON-FILE-V1",
       remedySuggested: "State the term the deal file gives: 24 months.",
-      citations: [],
+      citation: NO_STATUTORY_SOURCE,
       disposition: "confirmed",
       overrideNote:
         "Confirmed. The term is corrected to 24 months to match the deal on file.",
@@ -83,7 +92,7 @@ const settledNda: ContractDocument = {
         "The retained copy is for showing compliance only. The clause does not say who may open it or for how long it may be kept.",
       ruleApplied: "MANUAL-ADVOCATE-ADDED",
       remedySuggested: "Advocate judgment · see the concern above.",
-      citations: [],
+      citation: NO_STATUTORY_SOURCE,
       disposition: "overridden",
       overrideNote:
         "Overridden. The clause stands as drafted; the advocate judged the retained copy acceptable here.",
@@ -177,15 +186,7 @@ const pendingReviewMsa: ContractDocument = {
       ruleApplied: "ICA-S27-NONCOMPETE-V2",
       remedySuggested:
         "Narrow the restriction to solicitation of the Client's active customers for 12 months, and remove the nationwide scope.",
-      citations: [
-        {
-          id: "cite-1",
-          text: "Indian Contract Act, 1872, s.27",
-          status: "verified",
-          corpusRef: "ica-1872-s27",
-          withdrawn: null,
-        },
-      ],
+      citation: "Indian Contract Act, 1872, s.27",
       disposition: "pending",
       overrideNote: null,
       resolvedAt: null,
@@ -206,15 +207,7 @@ const pendingReviewMsa: ContractDocument = {
       ruleApplied: "MSMED-S15-PAYMENT-TERM",
       remedySuggested:
         "Reduce the payment term to 45 days to comply with Section 15 of the MSMED Act, 2006.",
-      citations: [
-        {
-          id: "cite-2",
-          text: "Micro, Small and Medium Enterprises Development Act, 2006, s.15",
-          status: "verified",
-          corpusRef: "msmed-2006-s15",
-          withdrawn: null,
-        },
-      ],
+      citation: "Micro, Small and Medium Enterprises Development Act, 2006, s.15",
       disposition: "pending",
       overrideNote: null,
       resolvedAt: null,
@@ -235,15 +228,7 @@ const pendingReviewMsa: ContractDocument = {
       ruleApplied: "JURIS-SEAT-DOMESTIC-V1",
       remedySuggested:
         "Confirm whether a domestic seat (Mumbai) was intended before this clause is finalised.",
-      citations: [
-        {
-          id: "cite-3",
-          text: "Purported precedent on foreign-seated domestic arbitration",
-          status: "blocked",
-          corpusRef: null,
-          withdrawn: null,
-        },
-      ],
+      citation: NO_STATUTORY_SOURCE,
       disposition: "pending",
       overrideNote: null,
       resolvedAt: null,
@@ -330,15 +315,7 @@ const revisionVendor: ContractDocument = {
         "The counterparty is a registered MSME. A 90-day payment term exceeds the statutory ceiling.",
       ruleApplied: "MSMED-S15-PAYMENT-TERM",
       remedySuggested: "Reduce the payment term to 45 days.",
-      citations: [
-        {
-          id: "cite-4",
-          text: "Micro, Small and Medium Enterprises Development Act, 2006, s.15",
-          status: "verified",
-          corpusRef: "msmed-2006-s15",
-          withdrawn: null,
-        },
-      ],
+      citation: "Micro, Small and Medium Enterprises Development Act, 2006, s.15",
       disposition: "pending",
       overrideNote: null,
       resolvedAt: null,
@@ -372,7 +349,7 @@ const revisionVendor: ContractDocument = {
       ruleApplied: "LIABILITY-ASYMMETRY-V1",
       remedySuggested:
         "State what the Buyer may do if replacement is not made within the period.",
-      citations: [],
+      citation: NO_STATUTORY_SOURCE,
       disposition: "confirmed",
       overrideNote:
         "Confirmed. No source applies, so this rests on judgment: the concern stands and is carried to the quarterly price review in Clause 4.1.",
@@ -396,26 +373,14 @@ const revisionVendor: ContractDocument = {
       ruleApplied: "MANUAL-ADVOCATE-ADDED",
       remedySuggested:
         "Say when delivered goods are treated as accepted, then state the period from that date.",
-      citations: [
-        {
-          id: "cite-9",
-          text: "Micro, Small and Medium Enterprises Development Act, 2006, s.15",
-          status: "verified",
-          corpusRef: "msmed-2006-s15",
-          withdrawn: null,
-        },
-      ],
+      citation: "Micro, Small and Medium Enterprises Development Act, 2006, s.15",
       disposition: "pending",
       overrideNote: null,
       resolvedAt: null,
       changeRequest: null,
     },
     {
-      // Added by the advocate with a reference the corpus does not hold. It
-      // is saved, and it stays blocked: it cannot be settled or signed off
-      // until the source is withdrawn with a note. The citation text is a
-      // plain placeholder on purpose, so it cannot be mistaken for a real
-      // authority.
+      // Added by the advocate, with no statute behind it.
       findingId: "find-10",
       number: "05",
       clientNumber: null,
@@ -429,15 +394,7 @@ const revisionVendor: ContractDocument = {
         "The Agreement renews on silence. The advocate wants an authority on renewal by silence checked before this clause is settled.",
       ruleApplied: "MANUAL-ADVOCATE-ADDED",
       remedySuggested: "Advocate judgment · see the concern above.",
-      citations: [
-        {
-          id: "cite-10",
-          text: "PLACEHOLDER · reference typed by the advocate, not in the corpus",
-          status: "blocked",
-          corpusRef: null,
-          withdrawn: null,
-        },
-      ],
+      citation: NO_STATUTORY_SOURCE,
       disposition: "pending",
       overrideNote: null,
       resolvedAt: null,
@@ -500,7 +457,7 @@ const rereviewEmployment: ContractDocument = {
         "The probation can be extended once, but the clause does not say who gives the notice or how long before the six months end it must be given.",
       ruleApplied: "PROBATION-EXTENSION-CLARITY-V1",
       remedySuggested: "State who gives the notice, and that it is given before the probation ends.",
-      citations: [],
+      citation: NO_STATUTORY_SOURCE,
       disposition: "confirmed",
       overrideNote:
         "Confirmed. No source applies, so this rests on judgment: the concern stands and the notice is to come from the Head of Engineering before the end of month six.",
@@ -521,7 +478,7 @@ const rereviewEmployment: ContractDocument = {
         "The clause gives one figure as the annual cost to company without saying what it is made up of, and Clause 3.2 leaves any increase to the Company.",
       ruleApplied: "REMUNERATION-COMPONENTS-V1",
       remedySuggested: "State the fixed and variable parts of the figure, and when each is paid.",
-      citations: [],
+      citation: NO_STATUTORY_SOURCE,
       disposition: "pending",
       overrideNote: null,
       resolvedAt: null,
@@ -548,7 +505,7 @@ const rereviewEmployment: ContractDocument = {
         "The Employee can now be directed to work elsewhere on fourteen days notice, but Clause 1.2 gives fifteen days notice to end the employment in probation. A move could be required on less notice than it takes to leave.",
       ruleApplied: "NOTICE-PERIOD-CONSISTENCY-V1",
       remedySuggested: "Align the two notice periods, or say why they differ.",
-      citations: [],
+      citation: NO_STATUTORY_SOURCE,
       disposition: "pending",
       overrideNote: null,
       resolvedAt: null,
@@ -568,7 +525,7 @@ const rereviewEmployment: ContractDocument = {
         "Both parties have ninety days notice, but the clause says nothing about pay in place of notice if either party ends the employment sooner.",
       ruleApplied: "LIABILITY-ASYMMETRY-V1",
       remedySuggested: "State whether notice may be waived or paid for.",
-      citations: [],
+      citation: NO_STATUTORY_SOURCE,
       disposition: "overridden",
       overrideNote:
         "Overridden. The clause stands as drafted; the advocate judged the silence acceptable for a senior engineer.",

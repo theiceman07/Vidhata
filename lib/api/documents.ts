@@ -11,10 +11,8 @@ import type {
 import { PIPELINE_DURATION_MS, clauseNumberFromReference } from "@/lib/types";
 import { mockDocuments } from "@/lib/mock/documents.mock";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
-import { recheckCitation, recheckFindings } from "@/lib/citations";
 import { partitionForRelease, releaseMarked } from "@/lib/settlementNotes";
 import { declaredConflictWith } from "@/lib/conflicts";
-import { blockingCitations, settleNeedsNote } from "@/lib/findings";
 import { esignatureStep } from "@/lib/config/esign";
 import { TIER_PRICING } from "@/lib/config/pricing";
 import { SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF } from "@/lib/config/visibility";
@@ -144,14 +142,6 @@ function recordVersion(doc: ContractDocument, createdBy: VersionCreatedBy): void
   if (versionStore.some((v) => v.documentId === doc.id && v.number === doc.version)) {
     return;
   }
-  // The citation gate runs again on every draft: each citation on the record
-  // is resolved against the corpus afresh, on the working copy and in the
-  // snapshot alike, so the two agree at the moment of hand-off. A blocked
-  // citation becomes verified only by matching the corpus, and a verified
-  // one that no longer matches becomes blocked. The other layers do not run
-  // here: this mock has no drafting or screening logic of its own.
-  doc.findings = recheckFindings(doc.findings);
-
   const now = new Date().toISOString();
   versionStore.push({
     documentId: doc.id,
@@ -184,7 +174,7 @@ function reconcileAnalysis(doc: ContractDocument): void {
   // Demo-only: the pipeline has no real drafting/screening logic to run,
   // so a freshly analysed document is seeded with the same representative
   // finding set used in the pending_review fixture (high non-compete,
-  // medium MSMED, low blocked-citation) rather than staying empty.
+  // medium MSMED, low foreign-seat) rather than staying empty.
   doc.findings = structuredClone(
     mockDocuments.find((d) => d.id === "doc-msa-pending")?.findings ?? [],
   ).map((f, i) => ({ ...f, findingId: `${doc.id}-finding-${i}` }));
@@ -683,40 +673,6 @@ export async function respondToChanges(
   return structuredClone(doc);
 }
 
-/**
- * A blocked source is never re-labelled verified. Withdrawing it records
- * that the finding no longer relies on it, with the advocate's reasoning,
- * and the citation stays on the record as blocked.
- */
-export async function withdrawCitation(
-  docId: string,
-  findingId: string,
-  citationId: string,
-  note: string,
-  advocate: { id: string; name: string },
-): Promise<ContractDocument> {
-  await randomDelay(300, 600);
-  if (shouldSimulateFailure()) {
-    throw new MockApiError("Could not withdraw this source.");
-  }
-  const { doc, finding } = findFinding(docId, findingId, advocate.id);
-  const citation = finding.citations.find((c) => c.id === citationId);
-  if (!citation) throw new MockApiError("Citation not found.");
-  if (citation.status !== "blocked") {
-    throw new MockApiError("Only a blocked source can be withdrawn.");
-  }
-  // A withdrawal is a decision about the finding, and it is on the record with
-  // its reasoning. Without the reasoning there is nothing to record.
-  const reasoning = note.trim();
-  if (!reasoning) throw new MockApiError("Record why the finding stands without this source.");
-  citation.withdrawn = {
-    note: reasoning,
-    at: new Date().toISOString(),
-    by: advocate.name,
-  };
-  return structuredClone(doc);
-}
-
 export async function updateFinding(
   docId: string,
   findingId: string,
@@ -729,21 +685,6 @@ export async function updateFinding(
   }
   const { doc, finding } = findFinding(docId, findingId, advocateId);
   const note = patch.overrideNote?.trim() || null;
-  if (patch.disposition !== "pending") {
-    if (blockingCitations(finding).length > 0) {
-      throw new MockApiError(
-        "This finding's source is blocked. Withdraw it or resolve it before settling.",
-      );
-    }
-    // A finding without a verified source is an opinion. An advocate's judgment
-    // is the product, so it can be settled, but only with the reasoning written
-    // down.
-    if (settleNeedsNote(finding) && !note) {
-      throw new MockApiError(
-        "No verified source remains, so settling needs your reasoning on the record.",
-      );
-    }
-  }
   finding.disposition = patch.disposition;
   finding.overrideNote = patch.disposition === "pending" ? null : note;
   finding.resolvedAt =
@@ -764,11 +705,11 @@ export async function addFinding(
   if (doc.findings.some((f) => f.findingId === finding.findingId)) {
     throw new MockApiError("This finding is already on the record.");
   }
+  // R1 holds a finding to one citation, and not an empty one.
+  if (!finding.citation.trim()) throw new MockApiError("A finding needs the source it rests on.");
 
-  // What the caller says about a citation's standing, or about the finding's
-  // own, is not taken. The corpus decides each citation's status, a withdrawal
-  // is the advocate's decision on a finding that is already on the record, and
-  // a finding added in review enters it open and marked as added by an advocate.
+  // What the caller says about the finding's standing is not taken: a finding
+  // added in review enters the record open and marked as added by an advocate.
   const entered: Finding = {
     ...finding,
     // Numbered here, never by the caller: the next the document has ever used,
@@ -780,7 +721,7 @@ export async function addFinding(
     overrideNote: null,
     resolvedAt: null,
     changeRequest: null,
-    citations: finding.citations.map((c) => recheckCitation({ ...c, withdrawn: null })),
+    citation: finding.citation.trim(),
   };
   doc.findings = [...doc.findings, entered];
 
@@ -810,20 +751,8 @@ export async function signOffDocument(
   // Signed off once. A second press changes nothing, and the date stays.
   if (doc.status === "settled" || doc.status === "executed") return structuredClone(doc);
 
-  // The gate runs once more on every citation on the record, so what is signed
-  // off is what the corpus says now, not what it said when each was last
-  // looked at. A withdrawal is the advocate's decision and survives it.
-  doc.findings = recheckFindings(doc.findings);
   if (doc.findings.some((f) => f.disposition === "pending")) {
     throw new MockApiError("Every finding must be settled before sign-off.");
-  }
-  // A citation is either verified or blocked, never "probably fine". The
-  // sign-off screen disables its control over this too, but the rule
-  // belongs here as well: a UI-only guard is not a guard.
-  if (doc.findings.some((f) => blockingCitations(f).length > 0)) {
-    throw new MockApiError(
-      "A citation on this document is blocked. Resolve the source before sign-off.",
-    );
   }
   // A note to the client on a clause this draft does not have would speak of text
   // the client will not see. Sign-off stops and names it, before anything changes.

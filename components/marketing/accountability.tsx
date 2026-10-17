@@ -28,15 +28,15 @@ export function Accountability() {
 
   const open = openFindingCount(DOC);
   const settledFindings = DOC.findings.length - open;
-  const citations = DOC.findings.flatMap((f) => f.citations).length;
+  const cited = DOC.findings.filter((f) => f.citation.trim() !== "").length;
   const steps = DOC.executionSteps.filter((s) => s.applicable);
   const stepsDone = steps.filter((s) => s.complete).length;
 
   const record = [
     "First pass completed",
-    citations > 0
-      ? `${citations} ${citations === 1 ? "citation" : "citations"} verified against source`
-      : "Every citation verified against source",
+    cited > 0
+      ? `${cited} ${cited === 1 ? "finding" : "findings"} cited to a source`
+      : "Every finding cited to a source",
     settledFindings > 0
       ? `${settledFindings} ${settledFindings === 1 ? "finding" : "findings"} settled`
       : "No findings left open",

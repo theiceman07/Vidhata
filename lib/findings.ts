@@ -1,16 +1,16 @@
 import { SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF } from "@/lib/config/visibility";
-import type {
-  ContractDocument,
-  Finding,
-  Severity,
-  WorkspaceCitation,
+import {
+  SEVERITY_ORDER,
+  type ContractDocument,
+  type Finding,
+  type Severity,
 } from "@/lib/types";
 
 /**
- * Four state systems, never one.
+ * Three state systems, never one.
  *
- * A document moves through its lifecycle, a finding through its own, a
- * citation is verified or blocked, and a document is claimed or not. They
+ * A document moves through its lifecycle, a finding through its own, and a
+ * document is claimed or not. They
  * are read from different fields and drawn with different marks, so that
  * "changes requested" can never sit beside "no open findings" without the
  * screen also saying what the change is.
@@ -32,7 +32,6 @@ export type FindingState = "open" | "with_client" | "settled";
  * caller's richer finding comes back as it went in.
  */
 type Decidable = Pick<Finding, "disposition"> & { changeRequest: { response: string | null } | null };
-type Cited = { citations: WorkspaceCitation[] };
 
 export function findingState(finding: Decidable): FindingState {
   if (finding.disposition !== "pending") return "settled";
@@ -86,43 +85,13 @@ export function firstPassFindings(doc: ContractDocument): Finding[] {
   return doc.findings.filter((f) => f.source === "pipeline");
 }
 
-/**
- * Citation lifecycle: verified or blocked. Never "probably fine".
- *
- * A blocked citation that an advocate has withdrawn no longer blocks the
- * finding, but it is still blocked: nothing here pretends it was checked.
- */
-export function blockingCitations<C extends WorkspaceCitation>(finding: { citations: C[] }): C[] {
-  return finding.citations.filter(
-    (c) => c.status === "blocked" && c.withdrawn === null,
-  );
-}
-
-export function reliedCitations<C extends WorkspaceCitation>(finding: { citations: C[] }): C[] {
-  return finding.citations.filter(
-    (c) => c.status === "verified" && c.withdrawn === null,
-  );
-}
-
-export function canSettle(finding: Cited): boolean {
-  return blockingCitations(finding).length === 0;
-}
-
-/**
- * A finding without a verified source is an opinion. It can still be
- * settled, because an advocate's judgment is the product, but only with
- * the reasoning written down.
- */
-export function settleNeedsNote(finding: Cited): boolean {
-  return reliedCitations(finding).length === 0;
-}
-
-export function blockedCitationCount(doc: { findings: Cited[] }): number {
-  return doc.findings.reduce((n, f) => n + blockingCitations(f).length, 0);
+/** 0 is the most serious. Sort ascending to put the worst first. */
+export function severityRank(severity: Severity): number {
+  return SEVERITY_ORDER.indexOf(severity);
 }
 
 export function severityCounts(findings: Pick<Finding, "severity">[]): Record<Severity, number> {
-  const counts: Record<Severity, number> = { high: 0, medium: 0, low: 0 };
+  const counts: Record<Severity, number> = { critical: 0, high: 0, medium: 0, low: 0 };
   findings.forEach((f) => {
     counts[f.severity] += 1;
   });
@@ -167,9 +136,6 @@ export function signOffBlockers(
   const numbers = findingNumbers(doc);
   return unsettledFindings(doc).map((f) => {
     const n = numbers[f.findingId];
-    if (blockingCitations(f).length > 0) {
-      return { findingId: f.findingId, label: `Finding ${n} · source blocked` };
-    }
     if (findingState(f) === "with_client") {
       return { findingId: f.findingId, label: `Finding ${n} · with the client` };
     }

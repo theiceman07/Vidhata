@@ -8,7 +8,6 @@ import {
   signOffDocument,
   startAnalysis,
   updateFinding,
-  withdrawCitation,
 } from "./documents";
 
 /**
@@ -81,34 +80,15 @@ export async function claimedDocument(
   return settle(claimDocument(released.id, who, declaration));
 }
 
-/**
- * Every finding settled, the way an advocate does it: a blocked source is
- * withdrawn with a note, and a finding with no verified source left is settled
- * with the reasoning written down.
- */
+/** Every finding settled, the way an advocate does it: confirmed. */
 export async function settleEverything(
   docId: string,
   who: typeof advocate = advocate,
 ): Promise<ContractDocument> {
   let doc = (await settle(getDocument(docId)))!;
   for (const finding of doc.findings) {
-    let current = finding;
-    for (const citation of current.citations.filter((c) => c.status === "blocked")) {
-      doc = await settle(
-        withdrawCitation(docId, current.findingId, citation.id, "Not in the approved corpus.", who),
-      );
-      current = doc.findings.find((f) => f.findingId === finding.findingId)!;
-    }
-    const hasVerified = current.citations.some((c) => c.status === "verified" && !c.withdrawn);
     doc = await settle(
-      updateFinding(
-        docId,
-        finding.findingId,
-        hasVerified
-          ? { disposition: "confirmed", overrideNote: null }
-          : { disposition: "overridden", overrideNote: "Reviewed. The clause stands as drafted." },
-        who.id,
-      ),
+      updateFinding(docId, finding.findingId, { disposition: "confirmed", overrideNote: null }, who.id),
     );
   }
   return doc;

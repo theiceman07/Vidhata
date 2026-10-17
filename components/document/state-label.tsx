@@ -5,20 +5,15 @@ import type { FindingState } from "@/lib/findings";
 /**
  * A workflow state, set in the notation voice.
  *
- * Document, finding and citation states each have their own words here,
- * and they are never merged into one "status": a document can be with the
- * client while one of its findings is still open with the advocate, and
- * the screen has to be able to say both.
+ * Document and finding states each have their own words here, and they
+ * are never merged into one "status": a document can be with the client
+ * while one of its findings is still open with the advocate, and the
+ * screen has to be able to say both.
  *
  * Colour is carried by the semantic tokens and is always paired with the
  * word, never a substitute for it.
  */
-export type LabelState =
-  | DocumentStatus
-  | FindingState
-  | "citation_verified"
-  | "citation_blocked"
-  | "citation_withdrawn";
+export type LabelState = DocumentStatus | FindingState;
 
 const CAUTION = {
   tone: "text-caution-fg border-caution/40",
@@ -27,10 +22,6 @@ const CAUTION = {
 const VERIFIED = {
   tone: "text-verified border-verified/30",
   solid: "bg-verified text-paper border-transparent",
-};
-const FLAGGED = {
-  tone: "text-flagged border-flagged/30",
-  solid: "bg-flagged text-paper border-transparent",
 };
 const QUIET = {
   tone: "text-muted-fg border-line",
@@ -57,9 +48,6 @@ const LABEL: Record<LabelState, { text: string; tone: string; solid: string }> =
     executed: { text: "Executed", ...VERIFIED },
     open: { text: "Open", ...CAUTION },
     with_client: { text: "With client", ...QUIET },
-    citation_verified: { text: "Verified", ...VERIFIED },
-    citation_blocked: { text: "Blocked", ...FLAGGED },
-    citation_withdrawn: { text: "Withdrawn", ...QUIET },
   };
 
 export function stateText(state: LabelState): string {

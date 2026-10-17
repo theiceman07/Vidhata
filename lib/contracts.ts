@@ -1,52 +1,70 @@
 /**
  * R1 (finding) and C1 (conversation) contracts, shared with the backend.
  *
- * PROVISIONAL until the plan owner confirms (build plan tasks R1 and C1).
- * Mirrors backend/app/contracts/review.py and chat.py. Change both together.
+ * R1 mirrors the backend's finished schema (backend/app/schemas/finding.py, and its
+ * example_finding.json). C1 is still PROVISIONAL until the plan owner confirms it (build plan
+ * task C1); it mirrors backend/app/contracts/chat.py. Change both together.
  *
- * These are the wire shapes (snake_case, as the backend sends them). They are
- * deliberately separate from the screens' own `Finding` in lib/types.ts, which
- * uses different status and severity words; a mapper sits between the two when
- * the pages are wired to the real backend.
+ * These are the wire shapes (snake_case, as the backend sends them). They are deliberately
+ * separate from the screens' own `Finding` in lib/types.ts, which uses different status and
+ * severity words and an integer layer; lib/api/findings.ts is the mapper between the two.
  */
 import { z } from "zod";
+import { layerFromName } from "@/lib/layerNames";
+import type { PipelineLayer } from "@/lib/types";
 
-export const SEVERITIES = ["low", "medium", "high"] as const;
+export const SEVERITIES = ["low", "medium", "high", "critical"] as const;
 export const FINDING_STATUSES = ["pending", "confirmed", "overridden", "added"] as const;
 export const CHAT_STATUSES = ["answered", "refused", "escalated"] as const;
 
-export const citationSchema = z
-  .object({
-    text: z.string().min(1),
-    verified: z.boolean(),
-    corpus_ref: z.string().nullable().default(null),
-  })
-  .superRefine((c, ctx) => {
-    // A citation that cannot be resolved to the corpus is blocked, never verified.
-    if (c.verified && !c.corpus_ref) {
-      ctx.addIssue({ code: "custom", message: "a verified citation must carry a corpus_ref" });
+/**
+ * The layer, by name ("STATUTORY") or by the stored integer (2), as the backend accepts either.
+ * Both come out as the integer the screens use (PipelineLayer). A name that is not one of the
+ * seven, or an integer outside 0-6, is refused.
+ */
+export const layerSchema = z.union([
+  z
+    .number()
+    .int()
+    .min(0)
+    .max(6)
+    .transform((n) => n as PipelineLayer),
+  z.string().transform((name, ctx): PipelineLayer => {
+    const layer = layerFromName(name);
+    if (layer === null) {
+      ctx.addIssue({ code: "custom", message: `unknown layer "${name}"` });
+      return z.NEVER;
     }
-    if (!c.verified && c.corpus_ref) {
-      ctx.addIssue({ code: "custom", message: "a blocked citation must not carry a corpus_ref" });
-    }
-  });
+    return layer;
+  }),
+]);
 
-export const reviewFindingSchema = z.object({
-  finding_id: z.string().uuid(),
-  layer: z.number().int().min(0).max(6),
-  severity: z.enum(SEVERITIES),
-  rule_applied: z.string().nullable().default(null),
-  clause_reference: z.string().nullable().default(null),
-  /** The quoted span of the clause the finding is about. */
-  clause_text: z.string().nullable().default(null),
-  description: z.string().min(1),
-  remedy_suggested: z.string().nullable().default(null),
-  /** Every source the finding rests on; empty when it rests on advocate judgment alone. */
-  citations: z.array(citationSchema).default([]),
-  status: z.enum(FINDING_STATUSES).default("pending"),
-  /** The advocate's reasoning, when they settled or overrode the finding. */
-  override_note: z.string().nullable().default(null),
-});
+/**
+ * One finding as the review agent sends it. Keys the schema does not name are dropped, not
+ * refused, so the backend can add a field without breaking the screen.
+ */
+export const reviewFindingSchema = z
+  .object({
+    finding_id: z.string().uuid(),
+    layer: layerSchema,
+    severity: z.enum(SEVERITIES),
+    clause_reference: z.string().trim().min(1).max(200),
+    description: z.string().trim().min(1),
+    /** UPPER_SNAKE rule id, e.g. NDA_GOVERNING_LAW_MISSING. */
+    rule_applied: z.string().regex(/^[A-Z][A-Z0-9_]*$/).max(100),
+    remedy_suggested: z.string().trim().min(1),
+    /** One string, as the backend writes it; it may name more than one source. */
+    citation: z.string().trim().min(1),
+    status: z.enum(FINDING_STATUSES).default("pending"),
+    /**
+     * Not in the agent's schema, so not part of the wire contract. The findings API may
+     * carry the quoted span and the advocate's note; when it does they are read, and when it
+     * does not the screens show none.
+     */
+    clause_text: z.string().nullish(),
+    override_note: z.string().nullish(),
+  })
+  .strip();
 
 export const reviewResultSchema = z.object({
   document_id: z.string().uuid(),
@@ -89,7 +107,6 @@ export const chatReplySchema = z
     }
   });
 
-export type WireCitation = z.infer<typeof citationSchema>;
 export type ReviewFinding = z.infer<typeof reviewFindingSchema>;
 export type ReviewResult = z.infer<typeof reviewResultSchema>;
 export type ChatRequest = z.infer<typeof chatRequestSchema>;

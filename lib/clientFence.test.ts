@@ -167,9 +167,8 @@ describe("the rule the fence enforces", () => {
       "lib/findings",
       "lib/audit",
       // The advocate's side, which no client file imports and none should. The day a client screen
-      // needs part of one (a source shown as verified, say), that part is exposed through
-      // lib/api/client, and the module stays on the list.
-      "lib/api/citations",
+      // needs part of one, that part is exposed through lib/api/client, and the module stays on
+      // the list.
       "lib/api/metrics",
       "lib/api/onboarding",
       "lib/api/advocate-invite",

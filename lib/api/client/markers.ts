@@ -22,15 +22,10 @@ const present = (values: (string | null | undefined)[]): string[] =>
 function findingMarkers(findings: Finding[]): { machinery: string[]; names: string[] } {
   return {
     machinery: present(
-      findings.flatMap((f) => [
-        f.findingId,
-        f.ruleApplied,
-        f.overrideNote,
-        ...f.citations.flatMap((c) => [c.withdrawn?.note]),
-      ]),
+      findings.flatMap((f) => [f.findingId, f.ruleApplied, f.overrideNote]),
     ),
     names: present(
-      findings.flatMap((f) => [f.changeRequest?.requestedBy, ...f.citations.map((c) => c.withdrawn?.by)]),
+      findings.flatMap((f) => [f.changeRequest?.requestedBy]),
     ),
   };
 }

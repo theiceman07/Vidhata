@@ -15,7 +15,6 @@ import type {
   PrivacyState,
 } from "@/lib/types";
 import type { AdvocateProfile } from "./advocate";
-import type { CitationAttempt } from "./citations";
 
 /**
  * The preview's data, kept for the life of one browser tab.
@@ -44,7 +43,7 @@ import type { CitationAttempt } from "./citations";
  * can store (docs/api-contract.md, section 9).
  */
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 const STORAGE_KEY = "vidhata-preview-state";
 
 /** Every slice, in the shape it is stored. Maps and sets are stored as lists. */
@@ -52,7 +51,6 @@ export interface DemoState {
   documents: ContractDocument[];
   versions: DocumentVersion[];
   consultations: Consultation[];
-  citationAttempts: CitationAttempt[];
   privacy: [string, PrivacyState][];
   billing: [string, BillingProfile][];
   account: [string, Account][];
@@ -103,7 +101,6 @@ const SHAPES: Record<Slice, (v: unknown) => boolean> = {
   documents: listOf((d) => isRecord(d) && typeof d.id === "string" && typeof d.status === "string" && Array.isArray(d.findings) && Array.isArray(d.clauses)),
   versions: listOf((v) => isRecord(v) && typeof v.documentId === "string" && typeof v.number === "number"),
   consultations: listOf((c) => isRecord(c) && typeof c.id === "string" && typeof c.status === "string"),
-  citationAttempts: listOf((a) => isRecord(a) && typeof a.id === "string" && typeof a.outcome === "string"),
   privacy: listOf(pairOf),
   billing: listOf(pairOf),
   account: listOf(pairOf),
@@ -159,7 +156,6 @@ const SEEDS: { [K in Slice]: () => DemoState[K] } = {
   documents: () => structuredClone(mockDocuments),
   versions: () => structuredClone(mockVersions),
   consultations: () => structuredClone(mockConsultations),
-  citationAttempts: () => [],
   privacy: () => [],
   billing: () => [],
   account: () => structuredClone(accountSeed),

@@ -3,12 +3,11 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/shared/icon";
-import { blockingCitations, findingState } from "@/lib/findings";
-import type { Clause, Severity, WorkspaceFinding } from "@/lib/types";
+import { findingState, severityRank } from "@/lib/findings";
+import type { Clause, WorkspaceFinding } from "@/lib/types";
 import { clauseNumberFromReference } from "@/lib/types";
 import { SeverityGlyph } from "./severity";
 
-const RANK: Record<Severity, number> = { high: 0, medium: 1, low: 2 };
 
 /**
  * The clause index.
@@ -65,7 +64,7 @@ export function ClauseIndex({
               .filter((f): f is WorkspaceFinding => Boolean(f));
             const pending = clauseFindings
               .filter((f) => findingState(f) !== "settled")
-              .sort((a, b) => RANK[a.severity] - RANK[b.severity]);
+              .sort((a, b) => severityRank(a.severity) - severityRank(b.severity));
             const allSettled =
               clauseFindings.length > 0 && pending.length === 0;
             const active = clause.id === activeClauseId;
@@ -168,7 +167,6 @@ export function ClauseIndex({
           <ul>
             {shown.map((finding) => {
               const state = findingState(finding);
-              const blocked = blockingCitations(finding).length > 0;
               const selected = finding.findingId === selectedFindingId;
               const number = clauseNumberFromReference(finding.clauseReference);
 
@@ -197,22 +195,18 @@ export function ClauseIndex({
                     <span
                       className={cn(
                         "shrink-0 text-label",
-                        blocked
-                          ? "text-flagged"
-                          : state === "settled"
-                            ? "text-verified"
-                            : state === "with_client"
-                              ? "text-muted-fg"
-                              : "text-caution-fg",
+                        state === "settled"
+                          ? "text-verified"
+                          : state === "with_client"
+                            ? "text-muted-fg"
+                            : "text-caution-fg",
                       )}
                     >
-                      {blocked
-                        ? "Blocked"
-                        : state === "settled"
-                          ? "Settled"
-                          : state === "with_client"
-                            ? "Client"
-                            : "Open"}
+                      {state === "settled"
+                        ? "Settled"
+                        : state === "with_client"
+                          ? "Client"
+                          : "Open"}
                     </span>
                   </button>
                 </li>

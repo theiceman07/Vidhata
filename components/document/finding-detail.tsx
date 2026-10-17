@@ -6,11 +6,7 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { DURATION, EASE, duration } from "@/lib/motion";
-import {
-  blockingCitations,
-  findingState,
-  settleNeedsNote,
-} from "@/lib/findings";
+import { findingState } from "@/lib/findings";
 import type { WorkspaceDocument, WorkspaceFinding } from "@/lib/types";
 import { PIPELINE_LAYERS, clauseNumberFromReference } from "@/lib/types";
 import { AddedByLabel } from "./added-by-label";
@@ -22,11 +18,7 @@ import { SeverityMark } from "./severity";
 import { CitationBlock } from "./citation-block";
 import { AuditTrail, type TrailEntry } from "./audit-trail";
 
-type Draft =
-  | { kind: "note" }
-  | { kind: "request" }
-  | { kind: "withdraw"; citationId: string }
-  | null;
+type Draft = { kind: "note" } | { kind: "request" } | null;
 
 const DRAFT_COPY = {
   note: {
@@ -38,11 +30,6 @@ const DRAFT_COPY = {
     label: "Request to the client",
     placeholder: "What do you need from the client before this can be settled?",
     action: "Send to client",
-  },
-  withdraw: {
-    label: "Why the finding stands without this source",
-    placeholder: "The finding will rest on your judgment. Record why.",
-    action: "Withdraw source",
   },
 } as const;
 
@@ -81,9 +68,7 @@ export function FindingDetail({
   onSettle,
   onReopen,
   onRequestChange,
-  onWithdrawSource,
   requestBlockedReason = null,
-  citationBadge,
   busy = false,
   trail,
 }: {
@@ -98,22 +83,12 @@ export function FindingDetail({
   onSettle: (note: string | null) => void;
   onReopen: () => void;
   onRequestChange: (request: string) => void;
-  onWithdrawSource: (citationId: string, note: string) => void;
   /**
    * Why no revision request can be made, once the limit is reached. The
    * request buttons are not offered, and this is said in their place.
    * Settling and sign-off are unaffected.
    */
   requestBlockedReason?: string | null;
-  /**
-   * Wraps a source's state badge so it opens where the source resolved.
-   * The advocate's side only; the client's badge stays a plain label.
-   */
-  citationBadge?: (
-    findingId: string,
-    citation: WorkspaceFinding["citations"][number],
-    label: React.ReactNode,
-  ) => React.ReactNode;
   busy?: boolean;
   /** The record to draw the history from. Each portal brings its own. */
   trail: TrailEntry[];
@@ -131,9 +106,7 @@ export function FindingDetail({
 
   const state = findingState(finding);
   const settled = state === "settled";
-  const blocked = blockingCitations(finding).length > 0;
   const tag = useReviewScope()?.tags[finding.findingId];
-  const needsNote = settleNeedsNote(finding);
   const clauseNumber = clauseNumberFromReference(finding.clauseReference);
   const clause = doc.clauses.find((c) => c.number === clauseNumber);
   const history = trail.filter(
@@ -154,7 +127,6 @@ export function FindingDetail({
     if (!value || !draft) return;
     if (draft.kind === "note") onSettle(value);
     if (draft.kind === "request") onRequestChange(value);
-    if (draft.kind === "withdraw") onWithdrawSource(draft.citationId, value);
     setDraft(null);
     setText("");
   }
@@ -181,7 +153,6 @@ export function FindingDetail({
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <SeverityMark severity={finding.severity} />
             <StateLabel state={state} />
-            {blocked && <StateLabel state="citation_blocked" />}
             {finding.source === "advocate" && <AddedByLabel />}
             {tag && <ScopeTagLabel tag={tag} />}
           </div>
@@ -195,44 +166,7 @@ export function FindingDetail({
 
         {/* Source sits directly under the concern: never behind a disclosure. */}
         <Section title="Source">
-          <CitationBlock
-            citations={finding.citations}
-            showWithdrawalNote={role === "advocate"}
-            badge={
-              role === "advocate" && citationBadge
-                ? (citation, label) => citationBadge(finding.findingId, citation, label)
-                : undefined
-            }
-            blockedActions={
-              canAdjudicate && !settled
-                ? (citation) =>
-                    draft?.kind === "withdraw" ? null : (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={busy}
-                          aria-label={`Withdraw source for ${which}`}
-                          onClick={() => open({ kind: "withdraw", citationId: citation.id })}
-                        >
-                          Withdraw source
-                        </Button>
-                        {!request && !requestBlockedReason && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            disabled={busy}
-                            aria-label={`Ask the client instead, for ${which}`}
-                            onClick={() => open({ kind: "request" }, finding.remedySuggested)}
-                          >
-                            Ask the client instead
-                          </Button>
-                        )}
-                      </div>
-                    )
-                : undefined
-            }
-          />
+          <CitationBlock citation={finding.citation} />
         </Section>
 
         {/* R1 may leave the quoted span and the remedy out; an empty section is not shown as a blank one. */}
@@ -403,46 +337,27 @@ export function FindingDetail({
                 </span>
               </div>
             </div>
-          ) : blocked ? (
-            <div className="space-y-1">
-              <p className="text-meta text-flagged">
-                Settling is unavailable while the source is blocked.
-              </p>
-              <p className="text-meta text-muted-fg">
-                {requestBlockedReason
-                  ? "Withdraw the source above."
-                  : "Withdraw the source above, or ask the client to resolve the clause."}
-              </p>
-            </div>
           ) : (
             <div className="space-y-2">
-              {needsNote && (
-                <p className="text-meta text-muted-fg">
-                  No verified source remains, so settling needs your reasoning
-                  on the record.
-                </p>
-              )}
               {state === "with_client" && (
                 <p className="text-meta text-muted-fg">
                   The client has not answered yet. You can still decide it.
                 </p>
               )}
               <div className="flex flex-wrap gap-2">
-                {!needsNote && (
-                  <Button
-                    size="sm"
-                    onClick={() => onSettle(null)}
-                    disabled={busy}
-                    aria-label={`Settle ${which}`}
-                    aria-keyshortcuts="C"
-                  >
-                    Settle
-                    <kbd className="font-mono text-label opacity-70">C</kbd>
-                  </Button>
-                )}
                 <Button
                   size="sm"
-                  variant={needsNote ? "default" : "outline"}
+                  onClick={() => onSettle(null)}
+                  disabled={busy}
+                  aria-label={`Settle ${which}`}
+                  aria-keyshortcuts="C"
+                >
+                  Settle
+                  <kbd className="font-mono text-label opacity-70">C</kbd>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
                   onClick={() => open({ kind: "note" })}
                   disabled={busy}
                   aria-label={`Settle with note, ${which}`}

@@ -2,7 +2,6 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import type {
   ClientAuditEntry,
   ClientChangeRequest,
-  ClientCitation,
   ClientClause,
   ClientDeal,
   ClientDiff,
@@ -89,7 +88,6 @@ describe("client types carry no restricted key", () => {
     expectTypeOf<Leak<ClientFinding>>().toBeNever();
     expectTypeOf<Leak<ClientFindingDetail>>().toBeNever();
     expectTypeOf<Leak<ClientChangeRequest>>().toBeNever();
-    expectTypeOf<Leak<ClientCitation>>().toBeNever();
   });
 
   it("not a clause or the deal", () => {
