@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { DocumentWorkspace } from "@/components/document/workspace";
 import { PaletteProvider } from "@/components/shared/command-palette";
-import { linkFindingsToClauses, mapReviewFindings } from "@/lib/api/findings";
+import { linkFindingsToClauses, mapReviewFindings, skippedNotice } from "@/lib/api/findings";
 import { buildAuditTrail } from "@/lib/audit";
 import { findingNumbers } from "@/lib/findings";
 import { getMockDocumentById } from "@/lib/mock/documents.mock";
@@ -15,21 +15,26 @@ import type { ContractDocument } from "@/lib/types";
  *
  * The findings come from lib/mock/r1-findings.fixtures.ts, go through the same R1 mapper the
  * real data will (lib/api/findings.ts), and are laid over the Master Services Agreement's own
- * clauses. One finding per status (pending, confirmed, overridden, added), a verified and a
- * blocked source, two sources on one finding, and one that carries only what R1 requires.
+ * clauses. One finding per status (pending, confirmed, overridden, added), one at critical
+ * severity, and one more that fails R1 on purpose, so the "couldn't be shown" notice is drawn.
  * The portal is chosen on the page, so the screen can be switched in place.
  */
 export default function FindingsFromR1Page() {
   const [role, setRole] = useState<"advocate" | "client">("advocate");
 
-  const doc = useMemo<ContractDocument | null>(() => {
+  const mapped = useMemo<{ doc: ContractDocument; notice: string | null } | null>(() => {
     const base = getMockDocumentById("doc-msa-pending");
     if (!base) return null;
-    const findings = mapReviewFindings(R1_FINDINGS);
-    return { ...base, findings, clauses: linkFindingsToClauses(base.clauses, findings) };
+    // One finding the schema would refuse, to show the notice a skipped finding leaves.
+    const { findings, skipped } = mapReviewFindings([...R1_FINDINGS, { finding_id: "not-a-uuid" }]);
+    return {
+      doc: { ...base, findings, clauses: linkFindingsToClauses(base.clauses, findings) },
+      notice: skippedNotice(skipped),
+    };
   }, []);
 
-  if (!doc) return <p className="p-8">Fixture missing.</p>;
+  if (!mapped) return <p className="p-8">Fixture missing.</p>;
+  const { doc, notice } = mapped;
 
   return (
     <div className="flex h-[100dvh] flex-col bg-paper">
@@ -55,6 +60,7 @@ export default function FindingsFromR1Page() {
             key={role}
             doc={doc}
             role={role}
+            notice={notice}
             numbering={findingNumbers(doc)}
             trail={buildAuditTrail(doc)}
             back={{ href: "/dev/components", label: "Gallery" }}

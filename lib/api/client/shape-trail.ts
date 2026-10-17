@@ -10,7 +10,7 @@ import { asClientReads, isSignedOff, numberedForClient, type ShapeOptions } from
  * where. This closes what it left open:
  *
  * - Before sign-off a client is told what is raised and never what was decided,
- *   so a finding settled, a source withdrawn and the advocate's own conflict
+ *   so a finding settled, a finding reopened and the advocate's own conflict
  *   declaration are left out. After it, the record is theirs.
  * - Before sign-off the advocate is "Advocate", never a name. After it the
  *   record names them, as the sign-off already does.

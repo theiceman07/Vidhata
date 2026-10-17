@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/shared/icon";
-import { blockingCitations, findingState, severityRank } from "@/lib/findings";
+import { findingState, severityRank } from "@/lib/findings";
 import type { Clause, WorkspaceFinding } from "@/lib/types";
 import { clauseNumberFromReference } from "@/lib/types";
 import { SeverityGlyph } from "./severity";
@@ -167,7 +167,6 @@ export function ClauseIndex({
           <ul>
             {shown.map((finding) => {
               const state = findingState(finding);
-              const blocked = blockingCitations(finding).length > 0;
               const selected = finding.findingId === selectedFindingId;
               const number = clauseNumberFromReference(finding.clauseReference);
 
@@ -196,22 +195,18 @@ export function ClauseIndex({
                     <span
                       className={cn(
                         "shrink-0 text-label",
-                        blocked
-                          ? "text-flagged"
-                          : state === "settled"
-                            ? "text-verified"
-                            : state === "with_client"
-                              ? "text-muted-fg"
-                              : "text-caution-fg",
+                        state === "settled"
+                          ? "text-verified"
+                          : state === "with_client"
+                            ? "text-muted-fg"
+                            : "text-caution-fg",
                       )}
                     >
-                      {blocked
-                        ? "Blocked"
-                        : state === "settled"
-                          ? "Settled"
-                          : state === "with_client"
-                            ? "Client"
-                            : "Open"}
+                      {state === "settled"
+                        ? "Settled"
+                        : state === "with_client"
+                          ? "Client"
+                          : "Open"}
                     </span>
                   </button>
                 </li>

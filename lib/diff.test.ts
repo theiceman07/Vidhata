@@ -26,7 +26,7 @@ function finding(findingId: string, overrides: Partial<Finding> = {}): Finding {
     description: "description",
     ruleApplied: "RULE",
     remedySuggested: "remedy",
-    citations: [],
+    citation: "Indian Contract Act, 1872, s.27",
     disposition: "pending",
     overrideNote: null,
     resolvedAt: null,

@@ -59,14 +59,7 @@ function workspaceFinding(f: ClientFinding): WorkspaceFinding {
     clauseText: f.clauseText ?? "",
     description: detail.description,
     remedySuggested: detail.remedySuggested,
-    citations: detail.citations.map((c) => ({
-      id: c.id,
-      text: c.text,
-      status: c.status,
-      corpusRef: c.corpusRef,
-      // That it was withdrawn is said. By whom, when and why are the advocate's.
-      withdrawn: c.withdrawn ? {} : null,
-    })),
+    citation: detail.citation,
     disposition: detail.disposition,
     // Who asked is not the client's to be given: the workspace says "your advocate" for a client.
     changeRequest: f.request

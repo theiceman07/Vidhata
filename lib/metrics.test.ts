@@ -1,14 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { CitationAttempt } from "@/lib/api/citations";
 import type { ContractDocument, Finding } from "@/lib/types";
-import {
-  BLOCKED_REASON_WORDS,
-  additionRatio,
-  blockedAttempts,
-  fabricationRatio,
-  overrideRatio,
-  percent,
-} from "./metrics";
+import { additionRatio, overrideRatio, percent } from "./metrics";
 
 const finding = (over: Partial<Finding>): Finding => ({
   findingId: "f",
@@ -22,7 +14,7 @@ const finding = (over: Partial<Finding>): Finding => ({
   description: "",
   ruleApplied: "SOME-RULE-V1",
   remedySuggested: "",
-  citations: [],
+  citation: "Indian Contract Act, 1872, s.27",
   disposition: "pending",
   overrideNote: null,
   resolvedAt: null,
@@ -30,18 +22,6 @@ const finding = (over: Partial<Finding>): Finding => ({
   ...over,
 });
 const doc = (findings: Finding[]) => ({ findings }) as unknown as ContractDocument;
-
-const attempt = (over: Partial<CitationAttempt>): CitationAttempt => ({
-  id: "a",
-  at: "2026-10-04T10:00:00.000Z",
-  documentId: "d",
-  advocateId: "adv",
-  input: "",
-  outcome: "verified",
-  corpusRef: null,
-  reason: null,
-  ...over,
-});
 
 describe("a percentage", () => {
   it("is nothing to show when there is nothing to divide, never 0%", () => {
@@ -106,42 +86,5 @@ describe("the addition rate", () => {
 
   it("is nothing to show with no findings", () => {
     expect(additionRatio([doc([])])).toEqual({ numerator: 0, denominator: 0 });
-  });
-});
-
-describe("the pre-gate fabrication rate", () => {
-  it("is blocked attempts over every attempt", () => {
-    const attempts = [
-      attempt({ outcome: "verified" }),
-      attempt({ outcome: "blocked", reason: "not_in_corpus" }),
-      attempt({ outcome: "blocked", reason: "empty" }),
-      attempt({ outcome: "verified" }),
-    ];
-    expect(fabricationRatio(attempts)).toEqual({ numerator: 2, denominator: 4 });
-    expect(fabricationRatio([])).toEqual({ numerator: 0, denominator: 0 });
-  });
-});
-
-describe("the blocked-citation log", () => {
-  it("holds only the blocked attempts, newest first, as they were typed", () => {
-    const attempts = [
-      attempt({ id: "1", outcome: "blocked", input: "  Indian Contract Act 1872 s.27 ", reason: "not_in_corpus" }),
-      attempt({ id: "2", outcome: "verified" }),
-      attempt({ id: "3", outcome: "blocked", input: "", reason: "empty" }),
-    ];
-    const log = blockedAttempts(attempts);
-    expect(log.map((a) => a.id)).toEqual(["3", "1"]);
-    expect(log[1].input).toBe("  Indian Contract Act 1872 s.27 ");
-  });
-
-  it("says why in words for every reason there is", () => {
-    expect(Object.keys(BLOCKED_REASON_WORDS).sort()).toEqual(["empty", "not_in_corpus"]);
-    for (const words of Object.values(BLOCKED_REASON_WORDS)) expect(words.length).toBeGreaterThan(5);
-  });
-
-  it("does not change the list it is given", () => {
-    const attempts = [attempt({ id: "1", outcome: "blocked" }), attempt({ id: "2", outcome: "blocked" })];
-    blockedAttempts(attempts);
-    expect(attempts.map((a) => a.id)).toEqual(["1", "2"]);
   });
 });

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { format } from "date-fns";
 import { ErrorState } from "@/components/shared/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getMetrics } from "@/lib/api/metrics";
@@ -102,7 +101,7 @@ export default function MetricsPage() {
     <div className="w-full">
       <h1 className="font-display text-h1 text-ink">Metrics</h1>
       <p className="mt-2 max-w-measure text-body text-muted-fg">
-        How the first pass and the citation gate are doing, from the work advocates have recorded.
+        How the first pass is doing, from the work advocates have recorded.
         Internal.
       </p>
 
@@ -119,12 +118,6 @@ export default function MetricsPage() {
           none="There are no findings on the record yet."
           definition="Of every finding on the record, the share an advocate added because the first pass missed it."
         />
-        <Figure
-          label="Pre-gate fabrication rate"
-          ratio={metrics.fabrication}
-          none="No citation has been typed yet."
-          definition="Of the citations an advocate typed, the share the corpus could not match. A citation picked from the corpus is not counted, because it is always verified."
-        />
         <NoSource
           label="Triage override rate"
           why="No screen lets an advocate change a tier, so an override is not recorded. It has to be logged when that exists."
@@ -139,44 +132,9 @@ export default function MetricsPage() {
         />
       </div>
 
-      <section aria-labelledby="blocked-title" className="mt-12">
-        <h2 id="blocked-title" className="font-display text-h2 text-ink">
-          Blocked citations
-        </h2>
-        <p className="mt-2 max-w-measure text-meta text-muted-fg">
-          Every citation an advocate typed that the corpus could not match, newest first, exactly as
-          typed.
-        </p>
-
-        {metrics.blocked.length === 0 ? (
-          <p className="mt-6 max-w-measure rounded-card bg-parchment p-6 text-body text-ink">
-            No citation has been blocked yet. Type one that the corpus does not hold, in Add finding
-            on a document under review, and it appears here.
-          </p>
-        ) : (
-          <ul className="mt-6 space-y-3">
-            {metrics.blocked.map((row) => (
-              <li key={row.id} className="rounded-card bg-parchment p-5">
-                <p className="font-clause text-body text-ink">{row.typed || "(nothing typed)"}</p>
-                <p className="mt-2 text-meta text-ink">{row.reason}</p>
-                <p className="mt-1 text-label text-muted-fg">
-                  {row.documentTitle ?? "A document"}
-                  <span className="mx-1.5">·</span>
-                  {row.advocate}
-                  <span className="mx-1.5">·</span>
-                  <time dateTime={row.at}>{format(new Date(row.at), "d MMM yyyy, HH:mm")}</time>
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
       <p className="mt-12 max-w-measure text-label text-muted-fg">
         Counted over {metrics.documentsCounted} documents in the queue and the sample data they
-        carry. The citation log is kept in this browser tab only, so it starts empty in the preview
-        and goes when the tab does, and the figures it feeds start from nothing. A document still
-        awaiting payment is not counted.
+        carry. A document still awaiting payment is not counted.
       </p>
     </div>
   );

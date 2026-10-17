@@ -1,10 +1,9 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { checkCitation } from "./citations";
 import { getMetrics } from "./metrics";
 import { payFee } from "./documents";
-import { advocate, refusal, screenedDocument, settle } from "./testing";
+import { refusal, screenedDocument, settle } from "./testing";
 
 // The mock layer's failure switch (?fail=1 in a browser), set by a test.
 const failure = vi.hoisted(() => ({ on: false }));
@@ -22,6 +21,12 @@ afterEach(() => {
 });
 
 describe("the metrics", () => {
+  it("hold no citation-gate figure: the backend has no verified state to count", async () => {
+    const m = await settle(getMetrics());
+    expect(m).not.toHaveProperty("fabrication");
+    expect(m).not.toHaveProperty("blocked");
+  });
+
   it("say there is no source for the triage override rate and the corpus-currency lag, and give no number", async () => {
     const m = await settle(getMetrics());
     expect(m.triageOverride).toEqual({ state: "no_source" });
@@ -60,28 +65,6 @@ describe("the metrics", () => {
     const afterPaid = await settle(getMetrics());
     expect(afterPaid.documentsCounted).toBe(before.documentsCounted + 1);
     expect(afterPaid.additions.denominator).toBe(before.additions.denominator + unpaid.findings.length);
-  });
-
-  it("read the fabrication rate and the blocked log from the attempts, as typed", async () => {
-    const before = await settle(getMetrics());
-    const input = { documentId: "doc-msa-pending", advocateId: advocate.id };
-    await settle(checkCitation({ ...input, input: "Indian Contract Act, 1872, s.27" }));
-    await settle(checkCitation({ ...input, input: "  Indian Contract Act, 1872 s.27  " }));
-    await settle(checkCitation({ ...input, input: "   " }));
-
-    const m = await settle(getMetrics());
-    expect(m.fabrication).toEqual({
-      numerator: before.fabrication.numerator + 2,
-      denominator: before.fabrication.denominator + 3,
-    });
-    const [empty, nearMiss] = m.blocked;
-    expect(empty).toMatchObject({ typed: "   ", reason: "Nothing was typed" });
-    expect(nearMiss).toMatchObject({
-      typed: "  Indian Contract Act, 1872 s.27  ",
-      reason: "No exact match in the approved corpus",
-      documentTitle: "Master Services Agreement · Sundargarh Logistics",
-    });
-    expect(Number.isNaN(new Date(nearMiss.at).getTime())).toBe(false);
   });
 
   it("fail as an error, and read again once it works", async () => {

@@ -1,4 +1,3 @@
-import type { CitationAttempt } from "@/lib/api/citations";
 import type { ContractDocument, Ratio } from "@/lib/types";
 
 /**
@@ -8,8 +7,6 @@ import type { ContractDocument, Ratio } from "@/lib/types";
  * - The override rate and the addition rate read `Finding.disposition` and
  *   `Finding.source`, which are fields for exactly this and never inferred
  *   from a rule id.
- * - The pre-gate fabrication rate (FR-14) and the blocked-citation log read the
- *   citation attempt log.
  * - The triage override rate and the corpus-currency lag have no source yet, so
  *   they have no number. A figure with nothing behind it would be invented, and
  *   a zero would say something that was never measured.
@@ -45,26 +42,4 @@ export function additionRatio(docs: ContractDocument[]): Ratio {
     numerator: all.filter((f) => f.source === "advocate").length,
     denominator: all.length,
   };
-}
-
-/**
- * Of the citations advocates typed, how many the corpus could not match
- * (FR-14). One picked from the corpus is not an attempt, so it is not counted:
- * it is always verified.
- */
-export function fabricationRatio(attempts: CitationAttempt[]): Ratio {
-  return {
-    numerator: attempts.filter((a) => a.outcome === "blocked").length,
-    denominator: attempts.length,
-  };
-}
-
-export const BLOCKED_REASON_WORDS: Record<NonNullable<CitationAttempt["reason"]>, string> = {
-  empty: "Nothing was typed",
-  not_in_corpus: "No exact match in the approved corpus",
-};
-
-/** The blocked attempts, newest first, as the log shows them. */
-export function blockedAttempts(attempts: CitationAttempt[]): CitationAttempt[] {
-  return attempts.filter((a) => a.outcome === "blocked").reverse();
 }

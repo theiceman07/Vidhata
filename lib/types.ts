@@ -18,20 +18,6 @@ export type Severity = (typeof SEVERITY_ORDER)[number];
 export type FindingSource = "pipeline" | "advocate";
 export type PipelineLayer = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
-export interface Citation {
-  id: string;
-  text: string; // "Indian Contract Act, 1872, s.27"
-  status: "verified" | "blocked";
-  corpusRef: string | null; // null when blocked
-  /**
-   * A blocked citation stays blocked: it is never promoted to verified by
-   * anything but a corpus match. An advocate may instead withdraw it, which
-   * records that the finding no longer relies on it. The citation remains
-   * on the record with the reasoning attached.
-   */
-  withdrawn: { note: string; at: string; by: string } | null;
-}
-
 /**
  * An advocate asking the client for something before a finding can be
  * settled: a confirmation, a document, a commercial decision. This is what
@@ -105,7 +91,8 @@ export interface Finding {
   description: string;
   ruleApplied: string; // "ICA-S27-NONCOMPETE-V2"
   remedySuggested: string;
-  citations: Citation[];
+  /** The legal source behind the rule, as one string: "Indian Contract Act, 1872, s.27". */
+  citation: string;
   disposition: "pending" | "confirmed" | "overridden";
   overrideNote: string | null;
   /** ISO timestamp of the advocate's decision. Null while open. */
@@ -375,20 +362,12 @@ export type ClientChangeRequest = Pick<
   "request" | "requestedAt" | "response" | "respondedAt"
 >;
 
-/**
- * A source as the client reads it. Whether it was withdrawn is said; the
- * advocate's note on the withdrawal is not.
- */
-export type ClientCitation = Pick<Citation, "id" | "text" | "status" | "corpusRef"> & {
-  withdrawn: boolean;
-};
-
 /** What a client reads of a finding once the record is theirs, after sign-off. */
 export type ClientFindingDetail = Pick<
   Finding,
   "severity" | "description" | "remedySuggested" | "disposition"
 > & {
-  citations: ClientCitation[];
+  citation: string;
   /**
    * Present, and true, only for a finding the advocate added, and only while
    * SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF is on. When the switch is off the field
@@ -587,15 +566,6 @@ export interface Invoice {
 }
 
 /**
- * A source as the shared workspace reads it. That it was withdrawn is always
- * there. Who withdrew it, when and why are the advocate's record, so they may be
- * absent: a client is told a source was withdrawn and never by whom or why.
- */
-export interface WorkspaceCitation extends Pick<Citation, "id" | "text" | "status" | "corpusRef"> {
-  withdrawn: { at?: string; by?: string; note?: string } | null;
-}
-
-/**
  * A finding as the shared workspace reads it, for either portal. The advocate's
  * working (the rule and layer behind it, the override note, when it was decided
  * and who asked for a change) is optional: an advocate's record has it and a
@@ -612,9 +582,9 @@ export interface WorkspaceFinding
     | "clauseText"
     | "description"
     | "remedySuggested"
+    | "citation"
     | "disposition"
   > {
-  citations: WorkspaceCitation[];
   changeRequest: (Omit<ChangeRequest, "requestedBy"> & { requestedBy?: string }) | null;
   ruleApplied?: string;
   layer?: PipelineLayer;
@@ -964,18 +934,6 @@ export interface Ratio {
   denominator: number;
 }
 
-/** One citation an advocate typed that the corpus could not match. */
-export interface BlockedAttemptRow {
-  id: string;
-  /** ISO 8601. */
-  at: string;
-  documentTitle: string | null;
-  advocate: string;
-  /** Exactly what was typed. */
-  typed: string;
-  reason: string;
-}
-
 /**
  * The metrics page's figures. Each has a source or says it has none: the
  * triage override rate and the corpus-currency lag are `no_source`, and the
@@ -986,8 +944,6 @@ export interface Metrics {
   documentsCounted: number;
   overrides: Ratio;
   additions: Ratio;
-  fabrication: Ratio;
-  blocked: BlockedAttemptRow[];
   triageOverride: { state: "no_source" };
   corpusLag: { state: "no_source" };
   /**

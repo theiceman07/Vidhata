@@ -5,7 +5,7 @@ import {
   ndaClauses,
   vendorClauses,
 } from "./clauses.mock";
-import { getMockDocumentById } from "./documents.mock";
+import { NO_STATUTORY_SOURCE, getMockDocumentById } from "./documents.mock";
 
 /**
  * The history behind doc-vendor-revision, whose live head is draft 4.
@@ -19,11 +19,9 @@ import { getMockDocumentById } from "./documents.mock";
  *
  *   Draft 1 · first pass · 8 Sep
  *     Finding 7 (the court named is in another state from where the supply
- *     is delivered) and finding 4 (the 90-day payment term). Finding 4's
- *     citation is blocked: the corpus held no match on this run.
+ *     is delivered) and finding 4 (the 90-day payment term).
  *   Draft 2 · advocate's revision · 10 Sep (round 1 sent back)
- *     The wording is unchanged. The pipeline ran again and finding 4's source
- *     now verifies. A request is out on finding 4, about the counterparty's
+ *     The wording is unchanged. The pipeline ran again. A request is out on finding 4, about the counterparty's
  *     MSME registration.
  *   Draft 3 · client's answers · 12 Sep
  *     Clauses 3.2 and 8.1 changed. Finding 7 is gone because Clause 8.1
@@ -33,10 +31,10 @@ import { getMockDocumentById } from "./documents.mock";
  *   it was handed on)
  *     Clause 6.1 revised. Finding 8 settled by the advocate. Finding 4 still
  *     open, with a second request to the client. Findings 9 and 10 added by
- *     the advocate, one with a verified source and one with a blocked one.
+ *     the advocate, one with a statutory source and one without.
  *
  * Fixture prose is about contract facts. It says nothing about what any
- * statute provides, and the blocked placeholder is plainly not an authority.
+ * statute provides.
  */
 
 const DOCUMENT_ID = "doc-vendor-revision";
@@ -97,23 +95,17 @@ const courtMismatch: Finding = {
   ruleApplied: "JURIS-FORUM-MISMATCH-V1",
   remedySuggested:
     "Confirm which courts were intended. The delivery and the dealings are in Tamil Nadu.",
-  citations: [],
+  citation: NO_STATUTORY_SOURCE,
   disposition: "pending",
   overrideNote: null,
   resolvedAt: null,
   changeRequest: null,
 };
 
-// The payment-term finding as the first pass raised it: the citation did not
-// match the corpus on that run, so it was blocked.
+// The payment-term finding as the first pass raised it, before any request.
 const paymentTermDraft1: Finding = (() => {
   const finding = headFinding("find-4");
   finding.changeRequest = null;
-  finding.citations = finding.citations.map((c) => ({
-    ...c,
-    status: "blocked",
-    corpusRef: null,
-  }));
   return finding;
 })();
 
@@ -127,8 +119,7 @@ const FIRST_ROUND_REQUEST = {
 };
 
 // Draft 2: the finding as the advocate sent it back, after the pipeline ran
-// again. The corpus matched this time, so the citation verifies, and the
-// first request is out and unanswered.
+// again, and the first request is out and unanswered.
 const paymentTermDraft2: Finding = (() => {
   const finding = headFinding("find-4");
   finding.changeRequest = {
@@ -344,7 +335,7 @@ const remoteWorkDraft: Finding = {
     "The Employee can be directed to work elsewhere, or remotely, with no notice period stated.",
   ruleApplied: "WORK-LOCATION-NOTICE-V1",
   remedySuggested: "State how much notice the Employee is given before a change of place of work.",
-  citations: [],
+  citation: NO_STATUTORY_SOURCE,
   disposition: "pending",
   overrideNote: null,
   resolvedAt: null,

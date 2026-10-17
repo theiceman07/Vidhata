@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { blockingCitations, findingState } from "@/lib/findings";
+import { findingState } from "@/lib/findings";
 import type { WorkspaceFinding } from "@/lib/types";
 import { AddedByLabel } from "./added-by-label";
 import { FindingRule } from "./finding-rule";
@@ -15,7 +15,7 @@ import { StateLabel } from "./state-label";
  *
  * Annotation, not cards: no border, no shadow, no surrounding box. A rule
  * in the severity colour, then the facts a reviewer triages on (number,
- * severity, state, whether its source holds), then the concern.
+ * severity, state), then the concern.
  *
  * Hovering it lights the passage it concerns, so the link between the
  * words and the note is visible before anything is clicked.
@@ -38,7 +38,6 @@ export function FindingBar({
 }) {
   const state = findingState(finding);
   const settled = state === "settled";
-  const blocked = blockingCitations(finding).length > 0;
   const tag = useReviewScope()?.tags[finding.findingId];
 
   return (
@@ -62,7 +61,6 @@ export function FindingBar({
         <span className="font-mono text-label text-muted-fg">Finding {number}</span>
         {!settled && <SeverityMark severity={finding.severity} />}
         <StateLabel state={state} />
-        {blocked && <StateLabel state="citation_blocked" />}
         {finding.source === "advocate" && <AddedByLabel />}
         {tag && <ScopeTagLabel tag={tag} />}
       </span>

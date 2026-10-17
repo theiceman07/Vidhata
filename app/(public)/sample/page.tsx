@@ -29,18 +29,6 @@ export const metadata: Metadata = {
  */
 const doc = getMockDocumentById("doc-nda-settled");
 
-// Both findings on this document rest on the advocate's judgment, so it carries
-// no statutory source to show. How a source appears, verified and blocked, is
-// shown from another sample's findings and labelled as such. Nothing here is
-// written for the page: a citation is shown only as the fixtures hold it.
-const otherSample = getMockDocumentById("doc-msa-pending");
-const verifiedExample = otherSample?.findings
-  .flatMap((f) => f.citations)
-  .find((c) => c.status === "verified" && c.corpusRef === "ica-1872-s27");
-const blockedExample = otherSample?.findings
-  .flatMap((f) => f.citations)
-  .find((c) => c.status === "blocked" && c.id === "cite-3");
-
 const STEP_ORDER: ExecutionStep["kind"][] = ["stamping", "registration", "esignature"];
 const STEP_TITLE: Record<ExecutionStep["kind"], string> = {
   stamping: "Stamp duty",
@@ -147,8 +135,7 @@ export default function SamplePage() {
             <p className="mt-3 max-w-measure text-body text-muted-fg">
               The settled text is on the left. A clause an advocate raised a finding on is ruled
               in green and carries its finding number; the findings stay in view on the right,
-              each with the source it rests on. A source is either verified against the approved
-              corpus or blocked.
+              each with the source it rests on.
             </p>
 
             <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
@@ -209,7 +196,7 @@ export default function SamplePage() {
                       </p>
                       <p className="mt-3 text-body text-ink">{finding.description}</p>
                       <div className="mt-4">
-                        <CitationBlock citations={finding.citations} showWithdrawalNote={false} />
+                        <CitationBlock citation={finding.citation} />
                       </div>
                       <p className="mt-4 text-meta text-muted-fg">
                         {dispositionText(finding.disposition)}
@@ -232,28 +219,6 @@ export default function SamplePage() {
             </div>
           </div>
         </section>
-
-        {verifiedExample && blockedExample && (
-          <section className="mx-auto w-full max-w-6xl px-6 pt-14 md:pt-16">
-            <div className="grid items-center gap-x-14 gap-y-3 lg:grid-cols-2">
-              <h2 className="font-display text-h1 text-ink">How a source is shown</h2>
-              <p className="text-body text-muted-fg">
-                The findings above rest on the advocate&apos;s judgment, so they carry no
-                statutory source. Where a finding does cite one, it is checked against the approved
-                corpus by exact match, and shown as one or the other. These two come from a
-                different sample document.
-              </p>
-            </div>
-            <div className="mt-8 grid gap-6 md:grid-cols-2">
-              <div className="rounded-card bg-parchment p-8">
-                <CitationBlock citations={[verifiedExample]} showWithdrawalNote={false} large />
-              </div>
-              <div className="rounded-card bg-parchment p-8">
-                <CitationBlock citations={[blockedExample]} showWithdrawalNote={false} large />
-              </div>
-            </div>
-          </section>
-        )}
 
         <section className="mx-auto w-full max-w-6xl px-6 py-14 md:py-16">
           <h2 className="font-display text-h1 text-ink">The sign-off</h2>

@@ -25,7 +25,6 @@ import { listDocuments, claimDocument, getQueuePriority } from "@/lib/api/docume
 import { getAdvocateProfile } from "@/lib/api/advocate";
 import { tierLabel } from "@/lib/config/pricing";
 import {
-  blockedCitationCount,
   severityCounts,
   unsettledFindings,
 } from "@/lib/findings";
@@ -33,7 +32,7 @@ import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import { PIPELINE_LAYERS, type ContractDocument } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
-type Filter = "open" | "mine" | "unclaimed" | "client" | "blocked" | "settled";
+type Filter = "open" | "mine" | "unclaimed" | "client" | "settled";
 type Sort = "priority" | "oldest" | "findings";
 
 /**
@@ -76,13 +75,12 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: "mine", label: "Claimed by you" },
   { value: "unclaimed", label: "Unclaimed" },
   { value: "client", label: "With client" },
-  { value: "blocked", label: "Blocked sources" },
   { value: "settled", label: "Settled by you" },
 ];
 
 // Proportional, so the table uses the whole width it is given.
 const COLUMNS =
-  "lg:grid-cols-[minmax(0,2.4fr)_minmax(5rem,0.6fr)_minmax(8rem,0.9fr)_minmax(8rem,0.9fr)_minmax(5rem,0.6fr)_minmax(12rem,1.3fr)_8rem]";
+  "lg:grid-cols-[minmax(0,2.4fr)_minmax(5rem,0.6fr)_minmax(8rem,0.9fr)_minmax(5rem,0.6fr)_minmax(12rem,1.3fr)_8rem]";
 
 export default function QueuePage() {
   const router = useRouter();
@@ -138,7 +136,6 @@ export default function QueuePage() {
       mine: open.filter((d) => isMine(d) && d.status === "under_review"),
       unclaimed: open.filter((d) => d.status === "pending_review"),
       client: open.filter((d) => d.status === "revision"),
-      blocked: open.filter((d) => blockedCitationCount(d) > 0),
       settled: visible.filter(isSettled),
     };
     return result;
@@ -219,7 +216,6 @@ export default function QueuePage() {
 
   const openFindings = buckets.open.flatMap((d) => unsettledFindings(d));
   const undecided = openFindings.length;
-  const blockedSources = buckets.open.reduce((n, d) => n + blockedCitationCount(d), 0);
   const oldest = buckets.open.reduce(
     (max, d) => Math.max(max, differenceInCalendarDays(new Date(), new Date(d.createdAt))),
     0,
@@ -323,9 +319,9 @@ export default function QueuePage() {
         </p>
       )}
 
-      {/* The shape of the queue in four equal figures, then the next move
+      {/* The shape of the queue in three equal figures, then the next move
           in full width. */}
-      <dl className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <dl className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-3">
         <Figure
           label="Open documents"
           value={buckets.open.length}
@@ -352,13 +348,6 @@ export default function QueuePage() {
             )
           }
           onSelect={() => show("open")}
-        />
-        <Figure
-          label="Blocked sources"
-          value={blockedSources}
-          tone={blockedSources > 0 ? "flagged" : undefined}
-          note={blockedSources > 0 ? "Each holds sign-off until withdrawn" : "Every source verified"}
-          onSelect={() => show("blocked")}
         />
       </dl>
 
@@ -464,7 +453,6 @@ export default function QueuePage() {
             <span role="columnheader">Document</span>
             <span role="columnheader">Tier</span>
             <span role="columnheader">Undecided</span>
-            <span role="columnheader">Sources</span>
             <span role="columnheader">Waiting</span>
             <span role="columnheader">State</span>
             <span role="columnheader" className="text-right">
@@ -591,7 +579,6 @@ function UpNext({
   }
 
   const pending = unsettledFindings(doc);
-  const blocked = blockedCitationCount(doc);
   const days = differenceInCalendarDays(new Date(), new Date(doc.createdAt));
   const shown = pending.slice(0, 3);
   const why =
@@ -681,12 +668,6 @@ function UpNext({
             {pending.length} undecided {pending.length === 1 ? "finding" : "findings"}
             {pending.length > shown.length && ` · ${pending.length - shown.length} more inside`}
           </span>
-          {blocked > 0 && (
-            <span className="inline-flex items-center gap-1 text-flagged">
-              <Icon name="error" size={16} />
-              {blocked} {blocked === 1 ? "source" : "sources"} blocked
-            </span>
-          )}
         </p>
         <div className="flex items-center gap-2">
           <Button asChild variant="outline" size="lg">
@@ -915,12 +896,6 @@ function emptyCopy(filter: Filter, query: string): { title: string; description:
         description:
           "When you request a change, the document waits here until the client answers.",
       };
-    case "blocked":
-      return {
-        title: "No blocked sources.",
-        description:
-          "Every citation in open work has been verified against the corpus, or withdrawn.",
-      };
     case "settled":
       return {
         title: "You have not signed anything off yet.",
@@ -936,7 +911,6 @@ function emptyCopy(filter: Filter, query: string): { title: string; description:
 
 function QueueRow({ doc, action }: { doc: ContractDocument; action: React.ReactNode }) {
   const pending = unsettledFindings(doc);
-  const blocked = blockedCitationCount(doc);
   const days = differenceInCalendarDays(new Date(), new Date(doc.createdAt));
   const answered = clientAnswered(doc);
   // Only said when it adds to the state label beside it.
@@ -985,22 +959,6 @@ function QueueRow({ doc, action }: { doc: ContractDocument; action: React.ReactN
           <SeverityCounts counts={severityCounts(pending)} />
         ) : (
           <span className="text-label text-muted-fg">None</span>
-        )}
-        {blocked > 0 && (
-          <span className="text-label text-flagged lg:hidden">{blocked} source blocked</span>
-        )}
-      </div>
-
-      <div role="cell" className="hidden text-label lg:block">
-        {blocked > 0 ? (
-          <span className="inline-flex items-center gap-1 text-flagged">
-            <Icon name="error" size={16} />
-            {blocked} blocked
-          </span>
-        ) : doc.findings.length > 0 ? (
-          <span className="text-muted-fg">None blocked</span>
-        ) : (
-          <span className="text-muted-fg">None cited</span>
         )}
       </div>
 

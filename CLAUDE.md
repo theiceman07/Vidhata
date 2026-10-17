@@ -12,7 +12,9 @@ off. The client gets the settled document plus an execution checklist
 
 ## Non-negotiables
 - Never call fetch in a component. Use lib/api/* only.
-- A citation is either verified or blocked. Never "probably fine".
+- A finding carries one citation, a string as the backend writes it. The
+  UI shows it and never claims it was verified: that is the citation gate,
+  layer 5 of the pipeline, and the backend sends no verified field.
 - No document reaches a client without a recorded advocate sign-off.
 - The chat agent explains the settled document. It never gives advice.
 - Never invent statute text, section numbers or case names. Use the
@@ -166,7 +168,7 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
   advice inside one is for counsel.
 - The advocate's review page carries the review agent in the same pane.
   It reads the first pass back (blockers, findings with their sources,
-  blocked citations, clauses) and links to each finding. It never
+  clauses) and links to each finding. It never
   decides: settle, override and sign-off questions are handed back with
   the evidence. Mocked in lib/mock/review-agent.mock.ts.
 - Advocate notes come in two kinds, and are never merged.
@@ -196,11 +198,9 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
 - No em dashes in product copy. The separator is the middle dot.
 
 ## State
-Four systems, each with its own state. Never fold them into one label.
+Three systems, each with its own state. Never fold them into one label.
 - Document: ContractDocument.status (draft to executed).
 - Finding: findingState() in lib/findings.ts (open, with client, settled).
-- Citation: verified or blocked. A blocked citation can be withdrawn by
-  the advocate, with a note; it is never re-labelled verified.
 - Ownership: unclaimed, claimed by you, held by another advocate. Claims
   are exclusive, and only the holder sees decision controls.
 - What stands between a document and sign-off comes from

@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { lookupCitation } from "../citations";
 import { TIER_PRICING } from "../config/pricing";
 import { MAX_REVISION_CYCLES } from "../config/revisions";
 import { revisionCycle } from "../revisions";
@@ -166,7 +165,7 @@ describe("the revision limit", () => {
   it("still lets the advocate settle a finding at the limit", async () => {
     const doc = await settle(getDocument(id));
     expect(revisionCycle(doc!).canRequest).toBe(false);
-    const target = doc!.findings.find((f) => f.citations.every((c) => c.status !== "blocked"))!;
+    const target = doc!.findings[0];
     const settled = await settle(
       updateFinding(id, target.findingId, { disposition: "overridden", overrideNote: "Decided." }, advocate.id),
     );
@@ -187,36 +186,6 @@ describe("the snapshot written when the first pass finishes", () => {
     const versions = await settle(getDocumentVersions("doc-employment-analysing"));
     expect(versions).toHaveLength(1);
     expect(versions[0]).toMatchObject({ number: 1, createdBy: "first_pass" });
-  });
-
-  it("runs the citation gate again, so a citation the corpus no longer holds is blocked", async () => {
-    const doc = await settle(getDocument("doc-employment-analysing"));
-    const [snapshot] = await settle(getDocumentVersions("doc-employment-analysing"));
-
-    const cited = (findings: NonNullable<typeof doc>["findings"]) =>
-      findings
-        .filter((f) => f.ruleApplied.startsWith("MSMED"))
-        .flatMap((f) => f.citations);
-
-    // The fixture says verified; the corpus no longer holds it.
-    expect(cited(snapshot.findings).length).toBeGreaterThan(0);
-    for (const c of cited(snapshot.findings)) {
-      expect(c.status).toBe("blocked");
-      expect(c.corpusRef).toBeNull();
-    }
-    // The working copy agrees with the snapshot at the moment of hand-off.
-    expect(cited(doc!.findings)).toEqual(cited(snapshot.findings));
-  });
-
-  it("leaves every citation agreeing with a fresh lookup of its own text", async () => {
-    const [snapshot] = await settle(getDocumentVersions("doc-employment-analysing"));
-    const citations = snapshot.findings.flatMap((f) => f.citations);
-    expect(citations.length).toBeGreaterThan(0);
-    for (const c of citations) {
-      expect(c.status).toBe(lookupCitation(c.text).status);
-      if (c.status === "verified") expect(c.corpusRef).not.toBeNull();
-      else expect(c.corpusRef).toBeNull();
-    }
   });
 
   it("is not written a second time by reading the document again", async () => {

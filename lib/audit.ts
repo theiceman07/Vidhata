@@ -127,19 +127,6 @@ export function buildAuditTrail(doc: ContractDocument): AuditEntry[] {
     const n = numbers[finding.findingId];
     const ref = `Finding ${n} · ${finding.clauseReference}`;
 
-    finding.citations.forEach((citation) => {
-      if (!citation.withdrawn) return;
-      entries.push({
-        at: citation.withdrawn.at,
-        actor: `${citation.withdrawn.by}, advocate`,
-        action: "Blocked source withdrawn",
-        findingId: finding.findingId,
-        ref,
-        kind: "decision",
-        afterSignOff: true,
-      });
-    });
-
     const request = finding.changeRequest;
     if (request) {
       entries.push({

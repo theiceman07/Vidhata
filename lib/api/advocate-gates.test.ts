@@ -6,7 +6,6 @@ import {
   requestChange,
   signOffDocument,
   updateFinding,
-  withdrawCitation,
 } from "./documents";
 import {
   advocate,
@@ -36,7 +35,7 @@ const added = (over: Partial<NewFinding> = {}): NewFinding => ({
   description: "The first pass missed this.",
   ruleApplied: "MANUAL-ADVOCATE-ADDED",
   remedySuggested: "Advocate judgment.",
-  citations: [],
+  citation: "Indian Contract Act, 1872, s.27",
   disposition: "pending",
   overrideNote: null,
   resolvedAt: null,
@@ -45,12 +44,11 @@ const added = (over: Partial<NewFinding> = {}): NewFinding => ({
 });
 
 /** Each write an advocate can make, aimed at one document and one finding. */
-const writes = (docId: string, findingId: string, citationId: string, who = advocate) => ({
+const writes = (docId: string, findingId: string, who = advocate) => ({
   requestChange: () => requestChange(docId, findingId, "Please confirm.", who),
   updateFinding: () =>
     updateFinding(docId, findingId, { disposition: "pending", overrideNote: null }, who.id),
   addFinding: () => addFinding(docId, added(), who.id),
-  withdrawCitation: () => withdrawCitation(docId, findingId, citationId, "Because.", who),
   signOffDocument: () => signOffDocument(docId, who.id),
 });
 
@@ -60,10 +58,10 @@ describe("an advocate's writes", () => {
     expect(unpaid.status).toBe("awaiting_payment");
     const finding = unpaid.findings[0];
 
-    for (const [name, write] of Object.entries(writes(unpaid.id, finding.findingId, "c"))) {
+    for (const [name, write] of Object.entries(writes(unpaid.id, finding.findingId))) {
       expect(await refusal(write()), `${name} on an unpaid document`).toBe("Document not found.");
     }
-    for (const [name, write] of Object.entries(writes("no-such-document", "f", "c"))) {
+    for (const [name, write] of Object.entries(writes("no-such-document", "f"))) {
       expect(await refusal(write()), `${name} on a missing one`).toBe("Document not found.");
     }
     const after = await settle(getDocument(unpaid.id));
@@ -73,7 +71,7 @@ describe("an advocate's writes", () => {
   it("are refused until the document is claimed", async () => {
     const released = await releasedDocument();
     const finding = released.findings[0];
-    for (const [name, write] of Object.entries(writes(released.id, finding.findingId, "c"))) {
+    for (const [name, write] of Object.entries(writes(released.id, finding.findingId))) {
       expect(await refusal(write()), name).toMatch(/Claim this document/);
     }
     expect(await settle(getDocument(released.id))).toEqual(released);
@@ -82,7 +80,7 @@ describe("an advocate's writes", () => {
   it("are refused to any advocate but the one who holds it, who is named, and change nothing", async () => {
     const claimed = await claimedDocument({}, otherAdvocate);
     const finding = claimed.findings[0];
-    for (const [name, write] of Object.entries(writes(claimed.id, finding.findingId, "c"))) {
+    for (const [name, write] of Object.entries(writes(claimed.id, finding.findingId))) {
       expect(await refusal(write()), name).toBe("Other Advocate holds this document.");
     }
     expect(await settle(getDocument(claimed.id))).toEqual(claimed);
@@ -90,7 +88,7 @@ describe("an advocate's writes", () => {
 
   it("go through for the advocate who holds it", async () => {
     const claimed = await claimedDocument();
-    const finding = claimed.findings.find((f) => f.citations.some((c) => c.status === "verified"))!;
+    const finding = claimed.findings[0];
     const doc = await settle(
       updateFinding(claimed.id, finding.findingId, { disposition: "confirmed", overrideNote: null }, advocate.id),
     );
@@ -99,34 +97,24 @@ describe("an advocate's writes", () => {
 });
 
 describe("adding a finding", () => {
-  it("takes no word of the caller's about whether a citation is verified", async () => {
+  it("keeps the source as the advocate wrote it, trimmed", async () => {
     const claimed = await claimedDocument();
     const doc = await settle(
-      addFinding(
-        claimed.id,
-        added({
-          citations: [
-            // Claims to be verified, and is in no corpus.
-            { id: "c-fake", text: "A case that does not exist", status: "verified", corpusRef: null, withdrawn: null },
-            // Claims to be blocked, and is an exact corpus label.
-            { id: "c-real", text: "indian contract act, 1872,  s.27", status: "blocked", corpusRef: null, withdrawn: null },
-            // A near-miss: a missing comma.
-            { id: "c-near", text: "Indian Contract Act, 1872 s.27", status: "verified", corpusRef: null, withdrawn: null },
-          ],
-        }),
-        advocate.id,
-      ),
+      addFinding(claimed.id, added({ citation: "  Indian Contract Act, 1872, s.27  " }), advocate.id),
     );
     const entered = doc.findings.find((f) => f.findingId === "added-finding-1")!;
-    const byId = Object.fromEntries(entered.citations.map((c) => [c.id, c]));
-    expect(byId["c-fake"]).toMatchObject({ status: "blocked", corpusRef: null });
-    expect(byId["c-near"]).toMatchObject({ status: "blocked", corpusRef: null });
-    // Verified by matching, under the corpus's own wording.
-    expect(byId["c-real"]).toMatchObject({
-      status: "verified",
-      text: "Indian Contract Act, 1872, s.27",
-      corpusRef: "ica-1872-s27",
-    });
+    expect(entered.citation).toBe("Indian Contract Act, 1872, s.27");
+  });
+
+  it("is refused without a source, because R1 holds a finding to one citation", async () => {
+    const claimed = await claimedDocument();
+    for (const citation of ["", "   "]) {
+      expect(await refusal(addFinding(claimed.id, added({ citation }), advocate.id))).toBe(
+        "A finding needs the source it rests on.",
+      );
+    }
+    const after = await settle(getDocument(claimed.id));
+    expect(after!.findings.some((f) => f.findingId === "added-finding-1")).toBe(false);
   });
 
   it("enters the record open, marked as added by an advocate, whatever it arrived as", async () => {
@@ -139,15 +127,6 @@ describe("adding a finding", () => {
           disposition: "confirmed",
           overrideNote: "Already decided.",
           resolvedAt: "2026-01-01T00:00:00.000Z",
-          citations: [
-            {
-              id: "c-w",
-              text: "A case that does not exist",
-              status: "blocked",
-              corpusRef: null,
-              withdrawn: { note: "Pre-withdrawn.", at: "2026-01-01T00:00:00.000Z", by: "Someone" },
-            },
-          ],
         }),
         advocate.id,
       ),
@@ -160,9 +139,6 @@ describe("adding a finding", () => {
       resolvedAt: null,
       changeRequest: null,
     });
-    // A withdrawal is a decision on a finding already on the record, not something to arrive with.
-    expect(entered.citations[0].withdrawn).toBeNull();
-    expect(entered.citations[0].status).toBe("blocked");
   });
 
   it("is attached to the clause it names, and cannot be added twice", async () => {
@@ -177,101 +153,10 @@ describe("adding a finding", () => {
   });
 });
 
-describe("withdrawing a source", () => {
-  async function withBlockedSource() {
-    const claimed = await claimedDocument();
-    const finding = claimed.findings.find((f) => f.citations.some((c) => c.status === "blocked"))!;
-    const citation = finding.citations.find((c) => c.status === "blocked")!;
-    return { id: claimed.id, finding, citation };
-  }
-
-  it("needs the reasoning, and a blank one is not reasoning", async () => {
-    const { id, finding, citation } = await withBlockedSource();
-    for (const note of ["", "   \n  "]) {
-      expect(await refusal(withdrawCitation(id, finding.findingId, citation.id, note, advocate))).toBe(
-        "Record why the finding stands without this source.",
-      );
-    }
-    const after = await settle(getDocument(id));
-    const kept = after!.findings.find((f) => f.findingId === finding.findingId)!;
-    expect(kept.citations.find((c) => c.id === citation.id)!.withdrawn).toBeNull();
-  });
-
-  it("is only for a blocked source, and only for one that is there", async () => {
-    const claimed = await claimedDocument();
-    const verified = claimed.findings.find((f) => f.citations.some((c) => c.status === "verified"))!;
-    expect(
-      await refusal(
-        withdrawCitation(
-          claimed.id,
-          verified.findingId,
-          verified.citations.find((c) => c.status === "verified")!.id,
-          "Because.",
-          advocate,
-        ),
-      ),
-    ).toBe("Only a blocked source can be withdrawn.");
-    expect(
-      await refusal(withdrawCitation(claimed.id, verified.findingId, "no-such-citation", "Because.", advocate)),
-    ).toBe("Citation not found.");
-  });
-
-  it("records who, when and why, and leaves the source blocked", async () => {
-    const { id, finding, citation } = await withBlockedSource();
-    const doc = await settle(
-      withdrawCitation(id, finding.findingId, citation.id, "  Not in the approved corpus.  ", advocate),
-    );
-    const after = doc.findings
-      .find((f) => f.findingId === finding.findingId)!
-      .citations.find((c) => c.id === citation.id)!;
-    expect(after.status).toBe("blocked");
-    expect(after.withdrawn).toMatchObject({ note: "Not in the approved corpus.", by: "Test Advocate" });
-    expect(Number.isNaN(new Date(after.withdrawn!.at).getTime())).toBe(false);
-  });
-});
-
 describe("settling a finding", () => {
-  it("is refused while its source is blocked, and the finding stays open", async () => {
+  it("needs no note to settle, and reopening clears what was decided", async () => {
     const claimed = await claimedDocument();
-    const finding = claimed.findings.find((f) => f.citations.some((c) => c.status === "blocked"))!;
-    expect(
-      await refusal(
-        updateFinding(claimed.id, finding.findingId, { disposition: "overridden", overrideNote: "A reason." }, advocate.id),
-      ),
-    ).toMatch(/source is blocked/);
-    const after = await settle(getDocument(claimed.id));
-    expect(after!.findings.find((f) => f.findingId === finding.findingId)!.disposition).toBe("pending");
-  });
-
-  it("needs the reasoning when no verified source remains, and a blank one is not reasoning", async () => {
-    const claimed = await claimedDocument();
-    const finding = claimed.findings.find((f) => f.citations.some((c) => c.status === "blocked"))!;
-    const citation = finding.citations.find((c) => c.status === "blocked")!;
-    await settle(withdrawCitation(claimed.id, finding.findingId, citation.id, "Not in the corpus.", advocate));
-
-    for (const note of [null, "", "   "]) {
-      expect(
-        await refusal(
-          updateFinding(claimed.id, finding.findingId, { disposition: "confirmed", overrideNote: note }, advocate.id),
-        ),
-      ).toBe("No verified source remains, so settling needs your reasoning on the record.");
-    }
-    const settled = await settle(
-      updateFinding(
-        claimed.id,
-        finding.findingId,
-        { disposition: "overridden", overrideNote: "  The finding stands on my judgment.  " },
-        advocate.id,
-      ),
-    );
-    const after = settled.findings.find((f) => f.findingId === finding.findingId)!;
-    expect(after).toMatchObject({ disposition: "overridden", overrideNote: "The finding stands on my judgment." });
-    expect(after.resolvedAt).not.toBeNull();
-  });
-
-  it("needs no note when a verified source stands behind it, and reopening clears what was decided", async () => {
-    const claimed = await claimedDocument();
-    const finding = claimed.findings.find((f) => f.citations.some((c) => c.status === "verified"))!;
+    const finding = claimed.findings[0];
     const settled = await settle(
       updateFinding(claimed.id, finding.findingId, { disposition: "confirmed", overrideNote: null }, advocate.id),
     );
@@ -308,20 +193,6 @@ describe("signing off", () => {
     expect(after!.status).toBe("under_review");
     expect(after!.settledAt ?? null).toBeNull();
     expect(after!.executionSteps).toEqual([]);
-  });
-
-  it("is refused while a finding's source is blocked, because that finding cannot have been settled", async () => {
-    const claimed = await claimedDocument();
-    // Settle everything except the finding whose source is blocked.
-    const blocked = claimed.findings.find((f) => f.citations.some((c) => c.status === "blocked"))!;
-    for (const f of claimed.findings.filter((x) => x.findingId !== blocked.findingId)) {
-      await settle(
-        updateFinding(claimed.id, f.findingId, { disposition: "overridden", overrideNote: "Decided." }, advocate.id),
-      );
-    }
-    expect(await refusal(signOffDocument(claimed.id, advocate.id))).toBe(
-      "Every finding must be settled before sign-off.",
-    );
   });
 
   it("is refused to anyone but the advocate who holds the document", async () => {

@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { diffVersions } from "@/lib/diff";
 import { signOffBlockers } from "@/lib/findings";
-import type { Citation } from "@/lib/types";
 import { CORPUS } from "./corpus.mock";
-import { mockDocuments } from "./documents.mock";
+import { NO_STATUTORY_SOURCE, mockDocuments } from "./documents.mock";
 import { mockVersions } from "./versions.mock";
 
 const [draft1, draft2, draft3, draft4] = mockVersions;
@@ -46,12 +45,7 @@ describe("the vendor agreement's history", () => {
     ]);
   });
 
-  it("re-checks the citation on each run rather than copying the first", () => {
-    const state = (version: typeof draft1) =>
-      version.findings.find((f) => f.findingId === "find-4")!.citations[0].status;
-    expect(state(draft1)).toBe("blocked");
-    expect(state(draft2)).toBe("verified");
-    expect(state(draft3)).toBe("verified");
+  it("stamps each draft with its own pipeline run", () => {
     expect(draft2.pipelineRunAt > draft1.pipelineRunAt).toBe(true);
     expect(draft3.pipelineRunAt > draft2.pipelineRunAt).toBe(true);
   });
@@ -106,17 +100,8 @@ describe("the settled NDA's history", () => {
     expect(findingsOf(diff)).toEqual(["find-n1 resolved (settled)", "find-n2 new"]);
   });
 
-  it("has nothing standing between it and sign-off, with or without a citation", () => {
-    // Sign-off blocks on a finding with no decision, and on a blocked source
-    // that has not been withdrawn. A finding with no source at all is
-    // allowed, and settles on the advocate's note.
+  it("has nothing standing between it and sign-off", () => {
     expect(signOffBlockers(nda, "adv-1")).toEqual([]);
-    expect(
-      nda.findings.some((f) => f.citations.some((c) => c.status === "blocked" && !c.withdrawn)),
-    ).toBe(false);
-    const unsourced = nda.findings.filter((f) => f.citations.length === 0);
-    expect(unsourced.length).toBeGreaterThan(0);
-    for (const f of unsourced) expect(f.overrideNote).toBeTruthy();
   });
 
   it("gives every finding in the settled head a disposition", () => {
@@ -126,32 +111,28 @@ describe("the settled NDA's history", () => {
 });
 
 describe("citations in the fixtures", () => {
-  const citations: Citation[] = [
-    ...mockDocuments.flatMap((d) => d.findings.flatMap((f) => f.citations)),
-    ...mockVersions.flatMap((v) => v.findings.flatMap((f) => f.citations)),
+  const findings = [
+    ...mockDocuments.flatMap((d) => d.findings),
+    ...mockVersions.flatMap((v) => v.findings),
   ];
 
-  it("verifies only what the corpus holds, under the name it holds it by", () => {
-    const verified = citations.filter((c) => c.status === "verified");
-    expect(verified.length).toBeGreaterThan(0);
-    for (const c of verified) {
-      const entry = CORPUS.find((e) => e.ref === c.corpusRef);
-      expect(entry, `${c.text} has no corpus entry`).toBeDefined();
-      expect(c.text).toBe(entry!.label);
+  it("gives every finding one non-empty citation string, as R1 requires", () => {
+    expect(findings.length).toBeGreaterThan(0);
+    for (const f of findings) {
+      expect(typeof f.citation, f.findingId).toBe("string");
+      expect(f.citation.trim(), f.findingId).not.toBe("");
     }
   });
 
-  it("gives a blocked citation no corpus reference", () => {
-    for (const c of citations.filter((c) => c.status === "blocked")) {
-      expect(c.corpusRef).toBeNull();
-    }
+  it("cites only a statute the corpus names, or says there is none, and never invents an authority", () => {
+    const labels = new Set([...CORPUS.map((e) => e.label), NO_STATUTORY_SOURCE]);
+    for (const f of findings) expect(labels.has(f.citation), `${f.findingId}: ${f.citation}`).toBe(true);
   });
 
-  it("keeps the advocate's blocked citation plainly fake", () => {
-    const added = vendor.findings.filter((f) => f.source === "advocate");
-    expect(added.map((f) => f.findingId)).toEqual(["find-9", "find-10"]);
-    const blocked = added.flatMap((f) => f.citations).find((c) => c.status === "blocked");
-    expect(blocked?.text).toMatch(/^PLACEHOLDER/);
-    expect(CORPUS.some((e) => e.label === blocked?.text)).toBe(false);
+  it("carries no verified or blocked state: the backend has no such field", () => {
+    for (const f of findings) {
+      expect(f).not.toHaveProperty("citations");
+      expect(typeof f.citation).toBe("string");
+    }
   });
 });

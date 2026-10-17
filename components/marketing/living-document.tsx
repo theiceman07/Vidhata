@@ -41,15 +41,15 @@ const STAGES = [
   { n: "04", label: "Trusted release", caption: "Settled" },
 ] as const;
 
-// The MSA fixture's payment-terms finding, verbatim, with the source the
-// pipeline actually verified against the corpus. Nothing on this page is
+// The MSA fixture's payment-terms finding, verbatim, with its cited source.
+// Nothing on this page is
 // drafted for the page: an unsourced concern in a marketing section would
 // be exactly the "probably fine" the product refuses to produce.
 const MSA = getMockDocumentById("doc-msa-pending");
 const FINDING = MSA?.findings.find((f) => f.clauseReference === "Clause 4.1");
 const CLAUSE_AT = MSA?.clauses.findIndex((c) => c.number === "4.1") ?? -1;
 const CLAUSE = MSA?.clauses[CLAUSE_AT];
-const CITATION = FINDING?.citations[0];
+const CITATION = FINDING?.citation;
 // The clauses either side, from the same contract, so the passage reads
 // as a page of a document rather than a quotation on a card.
 const BEFORE = CLAUSE_AT > 0 ? MSA?.clauses[CLAUSE_AT - 1] : undefined;
@@ -189,9 +189,7 @@ function Sheet({ stage, reduced }: { stage: number; reduced: boolean }) {
                   </p>
                   <p className="mt-1 text-meta text-ink">{FINDING.description}</p>
                   <p className="mt-2 text-label text-muted-fg">
-                    <span className="font-mono text-ink">{CITATION.text}</span>
-                    <span aria-hidden className="mx-1.5 text-muted-fg">·</span>
-                    <span className="text-verified">Verified</span>
+                    <span className="font-mono text-ink">{CITATION}</span>
                   </p>
                 </div>
               </Note>

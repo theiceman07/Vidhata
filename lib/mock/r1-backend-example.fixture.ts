@@ -1,0 +1,21 @@
+/**
+ * The backend's own example finding, copied verbatim.
+ *
+ * Source: example_finding.json at the root of the backend repo (D:\agent_clause_be, the
+ * repo-root one is current), the sample of backend/app/schemas/finding.py (R1). Copied as it
+ * stood when the frontend was aligned to the finished R1 schema. If the backend changes the
+ * example, replace this value and let lib/contracts.test.ts say whether it still parses.
+ */
+export const BACKEND_EXAMPLE_FINDING: unknown = {
+  finding_id: "3f6c2a9e-8b1d-4c7a-9e52-1d0b7f4a6c83",
+  layer: "COMPLETENESS",
+  severity: "high",
+  clause_reference: "Missing (expected after Clause 9, Term and Termination)",
+  description:
+    "The NDA does not state which law governs it or which courts have jurisdiction. If a dispute arises, the parties may first have to litigate where and under which law the claim is heard, which delays any injunction against disclosure.",
+  rule_applied: "NDA_GOVERNING_LAW_MISSING",
+  remedy_suggested:
+    'Add a clause: "This Agreement is governed by the laws of India. The courts at Bengaluru, Karnataka have exclusive jurisdiction over any dispute arising out of or in connection with it."',
+  citation: "Code of Civil Procedure, 1908, s. 20; Indian Contract Act, 1872, s. 28 (Exception 1)",
+  status: "pending",
+};

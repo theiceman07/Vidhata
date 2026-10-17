@@ -77,15 +77,13 @@ function ist(iso: string): string {
 
 /** What the signature covers, counted from the document itself. */
 function recordOf(doc: ContractDocument) {
-  const citations = doc.findings.flatMap((f) => f.citations);
+  const sources = new Set(doc.findings.map((f) => f.citation.trim()).filter(Boolean));
   const requests = doc.findings.filter((f) => f.changeRequest);
   return {
     findings: doc.findings.length,
     settled: doc.findings.filter((f) => f.disposition !== "pending").length,
     withNote: doc.findings.filter((f) => f.overrideNote).length,
-    sources: citations.length,
-    verified: citations.filter((c) => c.status === "verified").length,
-    withdrawn: citations.filter((c) => c.withdrawn).length,
+    sources: sources.size,
     requests: requests.length,
     answered: requests.filter((f) => f.changeRequest?.response).length,
   };
@@ -109,7 +107,7 @@ function RecordList({ doc }: { doc: ContractDocument }) {
       "Sources",
       r.sources === 0
         ? "None cited"
-        : `${r.verified} of ${r.sources} verified against the approved corpus${r.withdrawn > 0 ? ` · ${r.withdrawn} blocked and withdrawn` : ""}`,
+        : `${plural(r.sources, "source", "sources")} cited`,
     ],
     [
       "Client",
@@ -304,7 +302,7 @@ export default function SignOffPage() {
       {blockers.length > 0 && (
         // State the fact, then where it is resolved. No document reaches a
         // client without a recorded sign-off, and none is signed off over
-        // an undecided finding or an unevidenced source.
+        // an undecided finding.
         <section className="mt-6">
           <h2 className="text-label font-medium text-flagged">
             {plural(blockers.length, "item stands", "items stand")} between this document and sign-off

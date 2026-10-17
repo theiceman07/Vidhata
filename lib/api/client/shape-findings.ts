@@ -2,7 +2,6 @@ import { SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF } from "@/lib/config/visibility";
 import { clientVisibleFindings } from "@/lib/findings";
 import { nextNumber } from "@/lib/numbering";
 import type {
-  ClientCitation,
   ClientFinding,
   ContractDocument,
   Finding,
@@ -55,17 +54,6 @@ export function asClientReads(doc: ContractDocument): ContractDocument {
   return claimsSignOff && !isSignedOff(doc) ? { ...doc, status: "under_review" } : doc;
 }
 
-function shapeCitation(c: Finding["citations"][number]): ClientCitation {
-  return {
-    id: c.id,
-    text: c.text,
-    status: c.status,
-    corpusRef: c.corpusRef,
-    // That it was withdrawn is said. The advocate's note on it is not.
-    withdrawn: c.withdrawn !== null,
-  };
-}
-
 /** The finding as this client reads it, under the number the client was given. */
 function shapeFinding(
   finding: Finding,
@@ -95,7 +83,7 @@ function shapeFinding(
           description: finding.description,
           remedySuggested: finding.remedySuggested,
           disposition: finding.disposition,
-          citations: finding.citations.map(shapeCitation),
+          citation: finding.citation,
           ...(advocateAdded && finding.source === "advocate" ? { advocateAdded: true as const } : {}),
         }
       : null,
