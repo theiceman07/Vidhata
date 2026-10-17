@@ -74,7 +74,7 @@ Everything below exists, works against the mock, and has loading, empty and erro
 | `/review/[id]/sign-off` | Blockers, notes to the client, confirmations, sign-off |
 | `/consultations`, `/consultations/[id]` | Requests on documents the advocate settled; accept, decline, answer |
 | `/payouts` | The advocate's consultation payout statement |
-| `/metrics` | Override rate, addition rate, fabrication rate, blocked-citation log |
+| `/metrics` | Override rate, addition rate |
 | `/profile` | Availability and declared conflicts |
 
 **Public site** (13 routes under `app/(public)`, plus the home page): `/login`, `/advocate-login`, `/advocate-invite`, `/advocate-onboarding/[token]`, `/contact`, `/contracts`, `/pricing`, `/privacy`, `/sample`, `/scope`, `/security`, `/terms`, `/lawyer-login`. Which of these show a sign-in or a prompt bar depends on the preview-mode flag (Part 7).
@@ -84,8 +84,8 @@ Everything below exists, works against the mock, and has loading, empty and erro
 These are rules, not just screens. Each is listed with its rule in the checklist.
 
 - **Release gating.** An advocate never sees a document until it is paid (`isReleased`). An unpaid document and a missing one give the same "Document not found."
-- **Sign-off.** Needs the holding advocate, no finding pending and no blocked citation. It records the advocate and the time. Nothing reaches a client without that record.
-- **The citation gate.** A citation is verified or blocked, matched exactly, re-run at every hand-off and at sign-off, never relabelled. A blocked one can only be withdrawn, with a note.
+- **Sign-off.** Needs the holding advocate and no finding pending. It records the advocate and the time. Nothing reaches a client without that record.
+- **The citation.** The backend's Layer 5 citation gate blocks unresolved citations before findings reach the API, and a finding carries one citation string. The frontend does not check, verify or block a citation. The frontend shows the string as the finding's source and claims nothing about it.
 - **Client visibility.** The client is handed client types built field by field (`ClientDocument`, `ClientFinding`, and so on), never the internal record. Before sign-off the client sees no draft body, only the passages behind requests addressed to them.
 - **Rounds and revisions.** A round is two hand-offs; "Round N" is `revisionCount + 1`. A configured limit stops new rounds and never blocks settling.
 - **Consultations.** Requested, accepted, declined, answered; one flat fee set on acceptance; money moves only when the client pays; the answer is read only once paid.
@@ -181,8 +181,7 @@ This table is generated from the imports in `app/` and `components/`. It is the 
 | Intake wizard and deal box | `createClientDraft`, `readBrief` (and `intakeFromReading`, which is pure) |
 | Payment panel | `payClientFee` |
 | Advocate `/queue` | `listDocuments`, `claimDocument`, `getQueuePriority`, `getAdvocateProfile` |
-| Advocate `/review/[id]` | `getDocumentForReview`, `getDocumentVersions`, `claimDocument`, `requestChange`, `updateFinding`, `addFinding`, `withdrawCitation`, `addNote`, `updateNote`, `deleteNote`, `listNotes`, `getAdvocateProfile` |
-| Add-finding dialog, citation dialog | `checkCitation`, `getCitationSource` |
+| Advocate `/review/[id]` | `getDocumentForReview`, `getDocumentVersions`, `claimDocument`, `requestChange`, `updateFinding`, `addFinding`, `addNote`, `updateNote`, `deleteNote`, `listNotes`, `getAdvocateProfile` |
 | Advocate `/review/[id]/sign-off` | `getDocumentForReview`, `signOffDocument`, `listSettlementNotes`, and the notes panel's `addSettlementNote`, `updateSettlementNote`, `deleteSettlementNote` |
 | Advocate `/consultations`, `/consultations/[id]` | `listAdvocateConsultations`, `getAdvocateConsultation`, `acceptConsultation`, `declineConsultation`, `answerConsultation` |
 | Advocate `/payouts` | `getPayoutStatement` |
@@ -198,7 +197,7 @@ This table is generated from the imports in `app/` and `components/`. It is the 
 
 ### 4.1 The check boxes
 
-`docs/backend-handover-checklist.md` has **115 boxes**, one per rule a backend must enforce. They are in eight sections.
+`docs/backend-handover-checklist.md` has **109 boxes**, one per rule a backend must enforce. They are in eight sections.
 
 **The boxes in sections 1 to 7 are deliberately not ticked.** Each is an obligation of the backend, and the backend has not been built, so nothing can honestly be ticked. What *is* done for each is the mock behaviour and its test, which the line names (`Mock:` and `Test:`). Section 8 is different: its boxes are about the mock, so they are ticked when fixed.
 
@@ -206,14 +205,14 @@ This table is generated from the imports in `app/` and `components/`. It is the 
 |---|---|---|---|
 | 1. Access and organisation scoping | 14 | 0 | The mock layer refuses cross-organisation reads and writes, with tests |
 | 2. Client visibility | 14 | 0 | Client types are built field by field; leak tests run over every fixture |
-| 3. Release gating (payment and sign-off) | 20 | 0 | Paid gates the queue; sign-off gates delivery; the gates are in the API |
-| 4. The citation gate | 9 | 0 | Exact match, re-run at each hand-off, withdrawn never relabelled |
+| 3. Release gating (payment and sign-off) | 19 | 0 | Paid gates the queue; sign-off gates delivery; the gates are in the API |
+| 4. The citation | 5 | 0 | One citation string per finding; no verified state on the frontend; the gate is the backend's Layer 5 |
 | 5. Notes and consultations | 16 | 0 | Working notes, settlement notes and consultation states with their rules |
 | 6. Billing and idempotency | 14 | 0 | Repeat-safe operations and invoice rules |
-| 7. What the mock fakes that a backend must persist | 20 | 0 | The list of things to persist |
+| 7. What the mock fakes that a backend must persist | 19 | 0 | The list of things to persist |
 | 8. State changes a backend must guard | 8 | **6** | Six fixed and ticked; two open on purpose |
 
-A rough count from the checklist text: 7 of the 115 lines say "Test: none". The others name a test that holds the rule in the mock.
+A rough count from the checklist text: 8 of the 109 lines say "Test: none". The others name a test that holds the rule in the mock.
 
 **The two open boxes in section 8:**
 
@@ -226,9 +225,9 @@ A rough count from the checklist text: 7 of the 115 lines say "Test: none". The 
 
 | Area | Test files |
 |---|---|
-| Release gating and sign-off | `lib/api/documents.test.ts`, `lib/api/advocate-gates.test.ts`, `lib/api/signoff-recheck.test.ts`, `lib/api/delivery.test.ts`, `lib/api/summaries.test.ts` |
+| Release gating and sign-off | `lib/api/documents.test.ts`, `lib/api/advocate-gates.test.ts`, `lib/api/delivery.test.ts`, `lib/api/summaries.test.ts` |
 | Client visibility | `lib/api/client/*.test.ts`, `lib/findings.test.ts`, `lib/clientVersions.test.ts`, `lib/audit.test.ts`, `lib/privacy.test.ts`, `lib/notifications.test.ts` |
-| Citations | `lib/citations.test.ts`, `lib/api/citations.test.ts` |
+| Citations | `lib/citations.test.ts`, `lib/contracts.test.ts` |
 | Consultations and money | `lib/api/consultations.test.ts`, `lib/api/payouts.test.ts`, `lib/billing.test.ts`, `lib/fees.test.ts` |
 | Notes | `lib/api/notes.test.ts`, `lib/noteAccess.test.ts`, `lib/api/settlement-notes.test.ts`, `lib/api/settlement-release.test.ts`, `lib/settlementNotes.leak.test.ts` |
 | Preconditions on client writes | `lib/api/client/respond-guard.test.ts`, `lib/api/client/start-analysis.test.ts`, `lib/api/execution-guard.test.ts`, `lib/api/client/draft.test.ts`, `lib/api/privacy.test.ts` |
@@ -260,6 +259,7 @@ These block or shape the backend, and none of them is a coding task:
 - Counsel's review of the wording (consultation fee arrangement, deletion wording, invoice tax breakup, the security page, the cookie banner buttons).
 - Counsel's answers: may an advocate change working notes after sign-off (append-only is the default); is there a correction path for a released settlement note; may the agent quote advice written inside one; what a deletion request's "processed" state is.
 - The legal owner's effective dates for the corpus (E2), the state stamp-duty schedule and the registration rules.
+- Confirm with backend that a blocked finding never reaches the API, and what a layer 4 (risk asymmetry) finding cites when there is no statute.
 - A monitored inbox for the contact page.
 - Whether the repository should stay public.
 - Who made commit `1ba9b62`, and whether the config-protection hook is on at project level.
@@ -360,8 +360,7 @@ The path above is a suggestion, not an agreed endpoint. What is not negotiable i
 | # | Module | Functions | Rules to enforce |
 |---|---|---|---|
 | 12 | `documents` (advocate) | `listDocuments`, `getDocumentForReview`, `getDocument`, `getDocumentVersions` | The queue holds released documents only; an unreleased document is exactly a missing one (3) |
-| 13 | `documents` (writes) | `claimDocument`, `requestChange`, `updateFinding`, `addFinding`, `withdrawCitation`, `signOffDocument` | Holder only; claim needs a conflict declaration and is exclusive; the citation gate runs at hand-off and at sign-off; the revision limit; sign-off releases marked notes in the same transaction (1, 3, 4) |
-| 14 | `citations` | `checkCitation`, `listCitationAttempts`, `getCitationSource` | Exact match only; every typed attempt is stored as an event (4, 7) |
+| 13 | `documents` (writes) | `claimDocument`, `requestChange`, `updateFinding`, `addFinding`, `signOffDocument` | Holder only; claim needs a conflict declaration and is exclusive; the revision limit; sign-off releases marked notes in the same transaction (1, 3, 4) |
 | 15 | `notes`, `settlement-notes` | `listNotes`, `addNote`, `updateNote`, `deleteNote`, and the four settlement-note functions | Same gate as other advocate writes; working notes append-only after sign-off; only sign-off sets a release time (5) |
 | 16 | `consultations` (advocate) | `listAdvocateConsultations`, `getAdvocateConsultation`, `acceptConsultation`, `declineConsultation`, `answerConsultation`, `getPayoutStatement` | Only requests on documents the advocate settled; the advocate sees paid or not, never the fee, time or payment detail (1, 5) |
 | 17 | `advocate`, `onboarding`, `advocate-invite` | profile, conflicts, `getInvite`, `completeOnboarding`, `requestAdvocateInvite` | Single-use expiring invitations; the password is a stand-in, so a real identity provider replaces it; nothing about an advocate is public, ranked or searchable (1, 7) |
@@ -389,8 +388,7 @@ The frontend's own tests run against the mock and keep running until the mock is
 
 Checklist section 7 lists these. In short, a real store is needed for:
 
-- Documents, findings, citations, and **append-only** snapshots written at hand-off points only.
-- The citation attempt log (every typed attempt, as an event). The fabrication-rate metric reads it.
+- Documents and findings (each with its one citation string), and **append-only** snapshots written at hand-off points only.
 - The consent log, with the time of each change, kept even after a deletion request.
 - Deletion requests, with their first time.
 - Cookie consent, if it must be provable.
@@ -442,7 +440,7 @@ None of these is ticked, because none has been done. Copy this into the integrat
 **Advocate side** (Step 4)
 - [ ] Modules 12 to 18 are swapped.
 - [ ] An unpaid document is invisible to advocates: no queue entry, no link, no count, no metric.
-- [ ] The citation gate runs at every hand-off and at sign-off.
+- [ ] A blocked finding never reaches the API, and every finding carries one non-empty citation string (the backend's Layer 5 gate).
 - [ ] Sign-off releases the marked notes in the same transaction.
 
 **Behaviour the mock gets wrong on purpose** (Step 4)
@@ -467,7 +465,7 @@ None of these is ticked, because none has been done. Copy this into the integrat
 - **Vocabulary in screens:** "advocate" not "lawyer" in client copy; "finding" not "issue" or "error"; "settled" not "finalised"; "sign-off" not "approval"; "execution checklist" not "next steps".
 - **No em dashes in product copy.** The separator is the middle dot.
 - **Types come from `lib/types.ts`.** Do not redeclare a shape inline.
-- **Four state systems, never folded into one label:** the document's status, a finding's state, a citation (verified or blocked), and ownership (unclaimed, claimed by you, held by another advocate).
+- **Three state systems, never folded into one label:** the document's status, a finding's state, and ownership (unclaimed, claimed by you, held by another advocate).
 - **What stands between a document and sign-off** comes from `signOffBlockers()`. Do not recompute it in a component.
 - **Server Components by default;** `"use client"` only for interactivity (Next.js 15 App Router).
 - **Every list view has loading, empty and error states.**

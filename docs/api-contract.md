@@ -21,7 +21,7 @@ Each rule has three marks:
 - **Test** is the test that holds it, as `file` › "describe › it", so it can be
   searched for. "No test" means exactly that. Paths are relative to `lib/`, and
   a file under `lib/api/` is written with its `api/` or full path. Three names
-  exist in both places (`citations`, `billing`, `privacy`), so those are always
+  exist in both places (`billing`, `privacy`), so those are always
   written in full.
 - **Gap** is a rule the mock leaves to the UI. A backend that copies the mock
   copies the gap. The gaps are collected in Appendix B.
@@ -39,7 +39,7 @@ Each rule has three marks:
 | **Named actors.** | An audit entry names who acted, never "the system" (`lib/audit.ts` › `AuditEntry.actor`). |
 
 State systems stay apart. A document has `status`, a finding has `findingState()`,
-a citation is verified or blocked, and a document is claimed or not. Never fold
+and a document is claimed or not. Never fold
 them into one field (`lib/findings.ts`, header comment).
 
 ```
@@ -108,14 +108,14 @@ The name match is a stand-in. Real conflict checks need party and matter data (S
 ## 2. The sign-off gates
 
 **2.1 Sign-off.** `signOffDocument` requires a claiming advocate, no finding
-still `pending`, and no citation that is blocked and not withdrawn. It sets
+still `pending`. It sets
 `status = "settled"` and `settledAt`, and builds the execution checklist once.
 Nothing reaches a client without a recorded advocate sign-off, so `settledAt`
 and `advocate` are the record.
-It also refuses anyone but the advocate who holds the claim, re-runs the citation gate first (section 3.3), and is idempotent: signing off a document that is already settled changes nothing, and `settledAt` stays.
+It also refuses anyone but the advocate who holds the claim, and is idempotent: signing off a document that is already settled changes nothing, and `settledAt` stays.
 In the same step, and the same transaction, it does three more things. It releases every settlement note the advocate marked to share, at the sign-off time and never a draft, and it stops before anything changes, naming the clause, when a marked note is on a clause the signed draft does not have (`lib/settlementNotes.ts` › `partitionForRelease`, `releaseMarked`; section 9, settlement notes). When `SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF` is on, it gives the client a number for each advocate-added finding they have not been shown, in the order raised, changing none already given (section 4).
 Mock: `documents.ts` › `signOffDocument`; the same blockers, as the screen reads them, in `lib/findings.ts` › `signOffBlockers`.
-Test: `lib/api/advocate-gates.test.ts` › "signing off › …" (four tests: open finding refused, blocked source refused, another advocate refused, recorded once and idempotent); `lib/api/signoff-recheck.test.ts` (the gate runs again at sign-off); `lib/api/checklist.test.ts` (through to the checklist); `lib/api/settlement-release.test.ts` (the notes); `lib/api/finding-numbers.test.ts` › "gives the rest theirs at sign-off, in the order they were raised, and changes none already given".
+Test: `lib/api/advocate-gates.test.ts` › "signing off › …" (three tests: open finding refused, another advocate refused, recorded once and idempotent); `lib/api/checklist.test.ts` (through to the checklist); `lib/api/settlement-release.test.ts` (the notes); `lib/api/finding-numbers.test.ts` › "gives the rest theirs at sign-off, in the order they were raised, and changes none already given".
 
 **2.2 The summary is unavailable until sign-off, and the gate is in the API.**
 `getSettledSummary` returns `{ state: "not_available" }` for any document that is
@@ -160,55 +160,20 @@ audited (counsel list).
 Mock: `documents.ts` › `buildExecutionSteps`; the e-signature step in `lib/config/esign.ts` › `esignatureStep`, from the Problem Statement's excluded classes, always marked as needing legal confirmation, naming no provider.
 Test: `checklist.test.ts` › "states no rupee figure for a … in …" (six documents), "cites no section of any Act", "leaves the amount to the advocate, and never rules registration out"; `lib/config/esign.test.ts`.
 
-## 3. The citation gate
+## 3. The citation
 
-A citation is verified or blocked. Never "probably fine".
+The backend's Layer 5 citation gate blocks unresolved citations before findings reach the API, and a finding carries one citation string. The frontend does not check, verify or block a citation. There is no verified, blocked or withdrawn state on the frontend, and nothing on a screen says a citation was checked.
 
-**3.1 Exact match only.** `lookupCitation` normalises whitespace and letter case
-and **nothing else**, then looks the text up as a corpus label or a corpus ref. A
-missing comma, a different section or an extra word is a near-miss, and a
-near-miss is blocked. There is no fuzzy matching, and there must never be: a
-citation wrongly marked verified is the one failure the gate exists to prevent.
-Mock: `lib/citations.ts` › `normaliseCitation`, `lookupCitation`.
-Test: `lib/citations.test.ts` › "blocks a near-miss, every one of them", "ignores spacing: padding, runs of spaces, tabs, newlines, non-breaking spaces", "normalises whitespace and case and touches nothing else".
+**3.1 One string.** `Finding.citation` is a single string, as the backend writes it (`citation` in R1, `lib/contracts.ts`). It is not empty, and it may name more than one source in the one string. It is shown as the finding's source, as written. A client reads it as `ClientFindingDetail.citation` after sign-off.
+Mock: `lib/mock/documents.mock.ts` (`NO_STATUTORY_SOURCE` stands in for a finding whose rule names no statute; the real backend requires a non-empty citation on every finding).
+Test: `lib/contracts.test.ts` › "holds the citation to one non-empty string"; `lib/mock/versions.mock.test.ts` › "citations in the fixtures › …".
 
-**3.2 Two outcomes, with a reason when blocked.** `verified` carries the corpus's
-own wording and `corpusRef`. `blocked` carries what was typed (tidied) and a
-reason: `empty` or `not_in_corpus`. There is no third state.
-Test: `lib/citations.test.ts` › "blocks empty input", "blocks a ref the corpus does not hold".
+**3.2 Adding a finding.** An advocate who adds a finding gives the source it rests on. `addFinding` refuses a blank one ("A finding needs the source it rests on."), and trims the rest. Whether the backend's add route takes a citation is open (`docs/backend-gap-report.md`, 2.1a).
+Mock: `documents.ts` › `addFinding`.
+Test: `lib/api/advocate-gates.test.ts` › "adding a finding › …".
 
-**3.3 The gate runs again at every hand-off.** Each citation on the record is
-resolved against the corpus afresh when a snapshot is written, on the working
-copy and in the snapshot alike. A blocked citation becomes verified only by
-matching the corpus, never by being relabelled, and a verified one that no longer
-matches becomes blocked. A withdrawal survives it.
-Mock: `documents.ts` › `recordVersion`; `lib/citations.ts` › `recheckCitation`, `recheckFindings`.
-Test: `lib/citations.test.ts` › "running the gate again on the record › …" (five tests); `documents.test.ts` › "runs the citation gate again, so a citation the corpus no longer holds is blocked", "leaves every citation agreeing with a fresh lookup of its own text".
-**The gate also runs at sign-off**, on every citation on the record, before the blockers are read. And a finding an advocate adds takes **no** word of the caller's about a citation's standing: `addFinding` computes each status from the lookup, drops any withdrawal the caller sent, and enters the finding open, marked as added by an advocate.
-Mock: `documents.ts` › `signOffDocument`, `addFinding`.
-Test: `lib/api/signoff-recheck.test.ts` › "runs the gate again, and refuses while a finding relies on a source that has gone"; `lib/api/advocate-gates.test.ts` › "adding a finding › takes no word of the caller's about whether a citation is verified", "enters the record open, marked as added by an advocate, whatever it arrived as".
-
-**3.4 A blocked citation can be withdrawn, never relabelled.** The advocate
-withdraws it with a note. The citation stays on the record as blocked, with who,
-when and why. Only a blocked citation can be withdrawn. A finding cannot be
-settled, and the document cannot be signed off, while one of its citations is
-blocked and not withdrawn. A finding with no verified source left can be settled
-only with the advocate's reasoning on the record.
-Mock: `documents.ts` › `withdrawCitation`, `updateFinding`, `signOffDocument`; `lib/findings.ts` › `blockingCitations`, `settleNeedsNote`.
-Both the withdrawal and the settling now refuse a blank note in the API, not only on the screen.
-Test: `lib/api/advocate-gates.test.ts` › "withdrawing a source › …" (three tests) and "settling a finding › …" (four tests); `lib/findings.test.ts` and `lib/citations.test.ts` hold the lookups.
-
-**3.5 The attempt log.** Every citation an advocate **types** is recorded: the
-exact input before any tidying, the outcome, the corpus ref or reason, the
-advocate, the document and the time. Picking a citation from the corpus is not an
-attempt, because it is always verified. The pre-gate fabrication rate (FR-14) is
-blocked typed attempts over all typed attempts.
-Mock: `lib/api/citations.ts` › `checkCitation`, `listCitationAttempts`.
-Test: `lib/api/citations.test.ts` (five tests), including "records exactly what was typed, before any tidying".
-Persist it (section 9).
-
-**3.6 The corpus is labels, not statute text.** `lib/mock/corpus.mock.ts` holds a
-reference and a label for each entry, and no body text. Never invent statute text,
+**3.3 The corpus is labels, not statute text.** `lib/mock/corpus.mock.ts` holds a
+reference and a label for each entry, and no body text. The document agent's reply check uses it (`lib/citations.ts` › `lookupCitation`), and the add-finding dialog offers the labels as suggestions. Never invent statute text,
 section numbers or case names. A missing fixture is a question for the legal
 owner, not a guess.
 
@@ -406,8 +371,7 @@ the tab**. None of it is a real store.
 
 | What | Where in the mock | What the backend does |
 |---|---|---|
-| **Documents, snapshots, findings, citations** | `documents.ts` › `store`, `versionStore` (seeded from `lib/mock/*`) | Persist. Snapshots are append-only, written at hand-off points only (section 5.4). |
-| **The citation attempt log (FR-14)** | `lib/api/citations.ts` › `attempts` | Persist each attempt as an event. The pre-gate fabrication rate and the blocked-citation log (E1) read it. |
+| **Documents, snapshots, findings** | `documents.ts` › `store`, `versionStore` (seeded from `lib/mock/*`) | Persist. Snapshots are append-only, written at hand-off points only (section 5.4). |
 | **Consent log** (training opt-in, with the time of each change) | `privacy.ts` › `states` | Persist, and keep it after a deletion request: it is the proof a revocation happened. Training use starts **off**. |
 | **Deletion request** | `privacy.ts` › `requestDeletion` | Persist the request and its first time. What deletion removes and keeps is pending counsel (`lib/config/privacy.ts` › `DELETION_SCOPE`): the sign-off record and audit trail are meant to be immutable (SRD §4.3), and whether a settled document itself is removed is undecided. |
 | **Cookie consent** | `localStorage["vidhata-preview-consent"]` (`lib/config/consent.ts`) | Decline is the default and nothing non-essential runs before "accepted". Store the answer server-side if consent must be provable. The banner and its copy are marked for revision when analytics or any other tool is added. |
@@ -546,10 +510,9 @@ the full record. A client screen does not call them.
 | `claimDocument` | `id`, advocate, `ConflictDeclaration` | document, `under_review`, `claimedAt`, `conflictDeclaredAt` | already claimed by another; unreleased (as not found); no declaration; declared-conflict match |
 | `requestChange` | `docId`, `findingId`, `request`, advocate `{ id, name }` | document, `revision` | past the cap; document or finding not found; unreleased (as not found); not the holder |
 | `respondToChanges` | `docId`, `{ findingId: answer }` | document; back to `under_review` or `pending_review` when nothing is left unanswered | not found |
-| `withdrawCitation` | `docId`, `findingId`, `citationId`, `note`, advocate `{ id, name }` | document | not found; unreleased; not the holder; blank note; "Only a blocked source can be withdrawn." |
-| `updateFinding` | `docId`, `findingId`, `{ disposition, overrideNote }`, `advocateId` | document. Reopening (`pending`) clears the note and the time. | not found; unreleased; not the holder; settling while a source is blocked and not withdrawn; settling with no verified source and no note |
-| `addFinding` | `docId`, `Finding`, `advocateId` | document, the finding attached to its clause. Enters open, `source: "advocate"`, each citation's status computed from the lookup. | not found; unreleased; not the holder; a finding id already on the record |
-| `signOffDocument` | `docId`, `advocateId` | document, `settled`, `settledAt`, checklist built. Idempotent once settled. The citation gate runs first. | not found; unreleased; not the holder; a finding pending; a citation blocked and not withdrawn |
+| `updateFinding` | `docId`, `findingId`, `{ disposition, overrideNote }`, `advocateId` | document. Reopening (`pending`) clears the note and the time. | not found; unreleased; not the holder |
+| `addFinding` | `docId`, `Finding`, `advocateId` | document, the finding attached to its clause. Enters open, `source: "advocate"`, its citation trimmed. | not found; unreleased; not the holder; a finding id already on the record; a blank citation |
+| `signOffDocument` | `docId`, `advocateId` | document, `settled`, `settledAt`, checklist built. Idempotent once settled. | not found; unreleased; not the holder; a finding pending |
 | `toggleExecutionStep` | `docId`, `kind`, `complete`, `actorName` | document; `executed` when the last applicable step is done | not found |
 | `attachEvidence` | `docId`, `kind`, `fileName \| null` | document | not found |
 
@@ -576,7 +539,7 @@ the full record. A client screen does not call them.
 | `answerConsultation` | `advocateId`, `id`, `answer` | the request, `answered` | not found; declined; not accepted; unpaid; empty or too long |
 | `getPayoutStatement` | `advocateId` | `PayoutStatement`: one line per consultation this advocate answered, newest first, each with the document, the day answered and the fee before GST, and a `total` that is the sum of the lines. Nothing for a request that is open, declined, accepted or unanswered, and never a question, an answer, a payment time or the platform's fee. | "Could not load your payout statement." |
 
-### `lib/api/billing.ts`, `lib/api/privacy.ts`, `lib/api/citations.ts`
+### `lib/api/billing.ts`, `lib/api/privacy.ts`
 
 | Function | Inputs | Returns | Refuses |
 |---|---|---|---|
@@ -589,16 +552,14 @@ the full record. A client screen does not call them.
 | `requestDataExport` | `orgId` | `{ fileName, contents }`, built from `ClientDocument` and `ClientConsultation`, the types the screens read, so a finding is the same number in the file as on a screen | |
 | `requestDeletion` | `orgId`, `{ understood: true }` | state; the first time kept | no confirmation |
 | `withdrawDeletion` | `orgId` | state | |
-| `checkCitation` | `documentId`, `advocateId`, `input` | the lookup; records the attempt | |
-| `listCitationAttempts` | none | attempts, oldest first | |
 
 ### `lib/api/metrics.ts`
 
 | Function | Inputs | Returns | Refuses |
 |---|---|---|---|
-| `getMetrics` | none | the override rate, the addition rate, the pre-gate fabrication rate, the blocked-citation log, and `no_source` for the triage override rate and the corpus-currency lag | the failure of either read |
+| `getMetrics` | none | the override rate, the addition rate, and `no_source` for the triage override rate and the corpus-currency lag | the failure of either read |
 
-It counts over released documents only (what an advocate may read), reads findings (`disposition`, `source`) and the citation attempt log, and reads nothing about money or a consultation. Test: `lib/api/metrics.test.ts` › "leave a document awaiting payment out of every figure, until it is paid", "what the metrics read › is no fee, no payment, no invoice and no consultation". A figure with nothing behind it is `no_source`, never a number: the backend must not fill the triage override rate until override logging exists (section 10.1), nor the corpus-currency lag until the corpus carries effective dates.
+It counts over released documents only (what an advocate may read), reads findings (`disposition`, `source`), and reads nothing about money or a consultation. Test: `lib/api/metrics.test.ts` › "leave a document awaiting payment out of every figure, until it is paid", "what the metrics read › is no fee, no payment, no invoice and no consultation". A figure with nothing behind it is `no_source`, never a number: the backend must not fill the triage override rate until override logging exists (section 10.1), nor the corpus-currency lag until the corpus carries effective dates.
 
 ### `lib/api/account.ts`
 
@@ -642,20 +603,20 @@ server. Items marked **closed** were gaps in the first draft of this document an
 are now held in the mock and by test; they stay here so the backend team knows
 they were once open and why.
 
-1. **Caller identity and release on every advocate write. Closed.** `requestChange`, `updateFinding`, `addFinding`, `withdrawCitation` and `signOffDocument` now take the caller's id, refuse an unreleased document as not found, and refuse anyone who does not hold the claim (`documents.ts` › `heldDocument`). Tests: `advocate-gates.test.ts` › "an advocate's writes › …". The working notes (`notes.ts` › `addNote`, `updateNote`, `deleteNote`) go through the same gate: an unpaid or missing document is "Document not found.", an unclaimed one asks for a claim, and another advocate's names the holder. Tests: `lib/api/notes.test.ts` › "a working note goes through the one gate the other advocate writes use". After sign-off they are append-only (section 9, working notes).
-2. **Citation status is trusted on write. Closed.** `addFinding` computes it from the lookup; sign-off re-runs the gate.
-3. **A withdrawal needs a note. Closed.**
-4. **Settling without a verified source needs a note. Closed.**
+1. **Caller identity and release on every advocate write. Closed.** `requestChange`, `updateFinding`, `addFinding` and `signOffDocument` now take the caller's id, refuse an unreleased document as not found, and refuse anyone who does not hold the claim (`documents.ts` › `heldDocument`). Tests: `advocate-gates.test.ts` › "an advocate's writes › …". The working notes (`notes.ts` › `addNote`, `updateNote`, `deleteNote`) go through the same gate: an unpaid or missing document is "Document not found.", an unclaimed one asks for a claim, and another advocate's names the holder. Tests: `lib/api/notes.test.ts` › "a working note goes through the one gate the other advocate writes use". After sign-off they are append-only (section 9, working notes).
+2. **Citation status is trusted on write. Superseded.** There is no citation status on the frontend any more: a finding carries one citation string, and the backend's Layer 5 gate runs before findings reach the API.
+3. **A withdrawal needs a note. Superseded.** There is no withdrawal.
+4. **Settling without a verified source needs a note. Superseded.** Settling no longer depends on a citation.
 5. **`respondToChanges` has no owner or state check. Closed.** The client function (`respondToClientRequests`) checks the organisation, that every answer is to a request addressed to the client, and that something was written. `respondToChanges` refuses unless the document is in `revision` with a request still unanswered and at least one real answer. A signed-off document cannot be un-settled by a client. Tests: `lib/api/client/respond-guard.test.ts` (7), `lib/api/client/actions.test.ts`. A second press after the first has handed the document back is refused, so a screen guards a double press itself.
 6. **Client reads and writes are not scoped to an organisation. Closed for the client.** Every client read and write is in `lib/api/client/*` and takes the organisation, and another organisation's document, request or invoice is the same not-found as a missing one (Appendix A). The functions below it still take a bare id, which is right for the advocate's screens (gated by release and claim) and for the client layer. A backend derives the organisation from the session and takes it from nowhere else.
 7. **Client visibility** (section 4). **Closed in the types, open in the store.** What a client is handed is a client type, built field by field, with a leak test over every fixture. What is left, for the backend and for later:
    - The store holds the full record and `lib/api/documents.ts` returns it. No endpoint that does so may be reachable by a client.
    - **The fence.** A lint rule (`no-restricted-imports`, an error, in `.eslintrc.json`) applies to `app/(client)` and to the 21 components only the client portal uses. `lib/clientFence.test.ts` computes those components from the imports and fails if one is missing from the rule's list, if the list names a file that is gone or that the advocate portal also uses, if the rule is weakened, if a module that holds the internal record is taken off the blocked list, or if a module a client file needs is put on it. It was proved on real files: a forbidden import failed `npm run lint` with the fence's message, and removing it passed.
-   - **What the fence blocks.** By alias, by relative path and with or without a file extension: `ContractDocument` and the internal `Finding` from `lib/types` (as `import type`, an inline `type` modifier, renamed, or a namespace import), a re-export of them, and every import of `lib/api/documents`, `lib/mock/documents.mock`, `lib/api/consultations`, `lib/api/delivery`, `lib/api/summaries`, `lib/api/notes`, `lib/api/advocate`, `lib/findings`, `lib/audit`, and the advocate's `lib/api/citations`, `metrics`, `onboarding` and `advocate-invite`. Of 26 routes to the record tried against the committed rule, 21 are caught.
+   - **What the fence blocks.** By alias, by relative path and with or without a file extension: `ContractDocument` and the internal `Finding` from `lib/types` (as `import type`, an inline `type` modifier, renamed, or a namespace import), a re-export of them, and every import of `lib/api/documents`, `lib/mock/documents.mock`, `lib/api/consultations`, `lib/api/delivery`, `lib/api/summaries`, `lib/api/notes`, `lib/api/advocate`, `lib/findings`, `lib/audit`, and the advocate's `metrics`, `onboarding` and `advocate-invite`. Of 26 routes to the record tried against the committed rule, 21 are caught.
    - **Accepted gaps, left to review.** A dynamic `import()` or `require()` of a blocked module, and an inline type `import("@/lib/types").ContractDocument` or `.Finding`, are not caught. Closing them needs a custom rule, and nobody writes them by accident here. A client component that is on neither list is caught by the completeness test and not by lint.
    - **Which `lib/` modules a client file may use.** The 36 fenced files import only these: the client layer (`lib/api/client/documents`, `versions`, `trail`, `delivery`, `consultations`); the organisation-scoped reads that return their own types (`lib/api/billing`, `account`, `privacy`, `brief`, `lib/billing`); presentation and config that read no record (`lib/clientVersions`, `lib/client-workspace`, `lib/moves`, `lib/coverage`, `lib/term`, `lib/utils`, `lib/session`, `lib/config/*`); `lib/types` for everything except `ContractDocument` and `Finding`; and fixtures that are not documents (`lib/mock/client.mock`, `chat.mock`, `intake-options.mock`). `lib/findings` and `lib/audit` hold the narrowing code the client layer runs, so no client file imports them.
-   - **The advocate's modules are on the list too.** `lib/api/citations`, `metrics`, `onboarding` and `advocate-invite` are blocked, though no client file imports them today, because a fence is cheaper to widen before something uses them. The day a client screen needs part of one (a source shown as verified, say), that part is exposed through `lib/api/client` and the module stays blocked. A backend does not rely on any of this: it returns client types and nothing else.
-   - The shared document workspace reads a `WorkspaceDocument`, which the advocate's record satisfies and a client's is built to (`lib/client-workspace.ts`). It has no place for the organisation, the advocate's id, the rule or layer behind a finding, the override note, when it was decided, who asked for a change, or who withdrew a source. It builds no trail and works out no numbers itself: each portal gives its own.
+   - **The advocate's modules are on the list too.** `metrics`, `onboarding` and `advocate-invite` are blocked, though no client file imports them today, because a fence is cheaper to widen before something uses them. The day a client screen needs part of one, that part is exposed through `lib/api/client` and the module stays blocked. A backend does not rely on any of this: it returns client types and nothing else.
+   - The shared document workspace reads a `WorkspaceDocument`, which the advocate's record satisfies and a client's is built to (`lib/client-workspace.ts`). It has no place for the organisation, the advocate's id, the rule or layer behind a finding, the override note, when it was decided, who asked for a change. It builds no trail and works out no numbers itself: each portal gives its own.
    - `lib/privacy.ts` is no longer narrowing code. It builds the export from client types inside `requestDataExport`.
 8. **Execution on an unsigned document. Closed.** `toggleClientStep` and `attachClientEvidence` refuse a document with no recorded sign-off, and so do the internal `toggleExecutionStep` and `attachEvidence`, at the write. Tests: `lib/api/execution-guard.test.ts` › "the execution checklist is worked only on a signed-off document, by the write itself", `lib/api/client/checklist.test.ts`.
 9. **Consultation requests are keyed by question text.** Use a client-supplied idempotency key.
