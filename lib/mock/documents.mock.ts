@@ -17,6 +17,8 @@ import { TIER_PRICING } from "@/lib/config/pricing";
  * against itself or the deal on file). R1 requires a citation string, so it is said in words
  * and never as an invented authority.
  */
+// Mock data only. The real backend requires a non-empty citation on every finding, so no real
+// finding says this; it exists here so a fixture finding with no statute still has a string.
 export const NO_STATUTORY_SOURCE = "No statutory source";
 
 /** A fee paid at its tier's flat amount, so a fixture cannot disagree with the config. */
