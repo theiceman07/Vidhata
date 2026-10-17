@@ -91,6 +91,8 @@ export const R1_FINDINGS: unknown[] = [
     description: "The confidentiality duty has no stated end date and no carve-out for information a party already holds.",
     rule_applied: "CONFIDENTIALITY_TERM_MISSING",
     remedy_suggested: "State how long the duty lasts after the Agreement ends, and list what falls outside it.",
+    // A placeholder for tests: a label taken from the mock corpus so the fixture has a citation
+    // string. It is not legal advice and not a checked citation.
     citation: "Indian Contract Act, 1872, s.27",
     status: "pending",
   },
