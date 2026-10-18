@@ -22,6 +22,9 @@ import { assignReviewTier } from "@/lib/triage";
 import { declaredConflictNames } from "./advocate";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { register, restored } from "./state";
+import { backendDataEnabled } from "./source";
+import { getBackendDocument, listBackendDocuments } from "./backend-documents";
+import { claimBackendDocument, listBackendQueue } from "./backend-queue";
 
 // QA 7.3: tier ordering used to sort the advocate queue, so the pricing
 // page's "Priority turnaround" claim (Enhanced/Senior tiers) is backed by
@@ -223,6 +226,8 @@ function reconcileAll(): void {
 export async function listDocuments(
   orgId?: string,
 ): Promise<ContractDocument[]> {
+  // Real backend: a client's list is scoped by the server from the token; the advocate list is the queue.
+  if (backendDataEnabled()) return orgId ? listBackendDocuments() : listBackendQueue();
   await randomDelay();
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not load your documents.");
@@ -237,6 +242,7 @@ export async function listDocuments(
 export async function getDocument(
   id: string,
 ): Promise<ContractDocument | null> {
+  if (backendDataEnabled()) return getBackendDocument(id);
   await randomDelay();
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not load this document.");
@@ -255,6 +261,7 @@ export async function getDocument(
 export async function getDocumentForReview(
   id: string,
 ): Promise<ContractDocument | null> {
+  if (backendDataEnabled()) return getBackendDocument(id);
   await randomDelay();
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not load this document.");
@@ -499,6 +506,12 @@ export async function claimDocument(
   advocate: { id: string; name: string; bar: string },
   declaration: ConflictDeclaration,
 ): Promise<ContractDocument> {
+  if (backendDataEnabled()) {
+    if (!declaration?.noConflictWithEitherParty) {
+      throw new MockApiError("Declare that you have no conflict of interest with either party before you claim.");
+    }
+    return claimBackendDocument(id);
+  }
   await randomDelay();
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not claim this document.");
