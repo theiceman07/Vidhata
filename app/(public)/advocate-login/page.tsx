@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useSession } from "@/lib/session";
 import { MOCK_PREVIEW_CREDENTIALS } from "@/lib/mock/auth.mock";
+import { backendDataEnabled } from "@/lib/api/source";
+import { signInToPortal } from "@/lib/api/auth";
 import { EXPIRED_INVITE_TOKEN, VALID_INVITE_TOKEN } from "@/lib/mock/invites.mock";
 
 const PREVIEW_MODE = process.env.NEXT_PUBLIC_VIDHATA_PREVIEW_MODE === "1";
@@ -36,9 +38,21 @@ export default function LawyerLoginPage() {
     router.push("/queue");
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (locked) return;
+    if (backendDataEnabled()) {
+      // Real Supabase account (the sign-in is by email until bar numbers are held by the backend).
+      try {
+        await signInToPortal(barNumber.trim(), password, "lawyer");
+        signIn();
+        return;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Those details do not match an empanelled advocate.");
+        setPassword("");
+        return;
+      }
+    }
     if (
       barNumber === MOCK_PREVIEW_CREDENTIALS.username &&
       password === MOCK_PREVIEW_CREDENTIALS.password
@@ -56,7 +70,7 @@ export default function LawyerLoginPage() {
     }
   }
 
-  if (!PREVIEW_MODE) {
+  if (!PREVIEW_MODE && !backendDataEnabled()) {
     return (
       <AuthScreen
         portal="advocate"
@@ -89,7 +103,7 @@ export default function LawyerLoginPage() {
     >
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         <div>
-          <Label htmlFor="bar-number">Bar enrolment number</Label>
+          <Label htmlFor="bar-number">{backendDataEnabled() ? "Email" : "Bar enrolment number"}</Label>
           <Input
             id="bar-number"
             required
