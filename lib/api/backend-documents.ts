@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { ApiError, authed, type Fetcher } from "@/lib/api/backend";
+import { confirmUpload, requestUploadUrl, uploadToS3 } from "@/lib/api/files";
+import { checkFile } from "@/lib/storage/upload";
 import type { ContractDocument, DocumentStatus, ReviewTier } from "@/lib/types";
 
 /** POST /documents on the real backend (backend/app/documents/router.py). Not the mock in documents.ts. */
@@ -7,8 +9,41 @@ const createdSchema = z.object({ id: z.string().uuid(), doc_type: z.string(), st
 
 export type CreatedDocument = z.infer<typeof createdSchema>;
 
-export function createBackendDocument(docType: string, fetchImpl?: Fetcher): Promise<CreatedDocument> {
-  return authed("/documents", { method: "POST", body: { doc_type: docType } }, createdSchema, fetchImpl);
+/** What the intake form states that the backend can hold (backend CreateDocument). */
+export interface CreateFacts {
+  stateOfExecution?: string;
+  transactionValue?: number;
+}
+
+export function createBackendDocument(docType: string, fetchImpl?: Fetcher, facts: CreateFacts = {}): Promise<CreatedDocument> {
+  const body: Record<string, unknown> = { doc_type: docType };
+  if (facts.stateOfExecution?.trim()) body.state_of_execution = facts.stateOfExecution.trim();
+  if (facts.transactionValue !== undefined && Number.isFinite(facts.transactionValue) && facts.transactionValue >= 0) {
+    body.transaction_value = facts.transactionValue;
+  }
+  return authed("/documents", { method: "POST", body }, createdSchema, fetchImpl);
+}
+
+/** The screens' contract type -> the backend's code. */
+export const BACKEND_CODE_BY_TYPE: Record<ContractDocument["type"], string> = {
+  nda: "nda", msa: "msa", vendor: "vendor_supplier", employment: "employment_contract",
+};
+
+/** The contract file: checked here, posted to S3 with the presigned form, then confirmed. */
+export async function uploadBackendContract(documentId: string, file: File, fetchImpl?: Fetcher): Promise<{ versionNo: number }> {
+  const problem = checkFile(file);
+  if (problem) throw new ApiError("rejected", { detail: problem });
+  const target = await requestUploadUrl(documentId, file, fetchImpl);
+  await uploadToS3(target, file, fetchImpl);
+  return confirmUpload(documentId, target.key, fetchImpl);
+}
+
+const reviewSchema = z.object({ state: z.string(), version_no: z.number().int(), findings_created: z.number().int() });
+
+/** Starts the review on the latest uploaded version (the stub agent today). */
+export async function requestBackendReview(documentId: string, fetchImpl?: Fetcher): Promise<{ findingsCreated: number }> {
+  const r = await authed(`/documents/${encodeURIComponent(documentId)}/review`, { method: "POST" }, reviewSchema, fetchImpl);
+  return { findingsCreated: r.findings_created };
 }
 
 /**

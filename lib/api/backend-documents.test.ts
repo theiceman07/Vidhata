@@ -4,7 +4,15 @@ const getSession = vi.fn();
 vi.mock("@/lib/auth/supabaseClient", () => ({ getSupabaseClient: () => ({ auth: { getSession } }) }));
 
 import { ApiError } from "@/lib/api/backend";
-import { getBackendDocument, listBackendDocuments, toContractDocument } from "@/lib/api/backend-documents";
+import {
+  BACKEND_CODE_BY_TYPE,
+  createBackendDocument,
+  getBackendDocument,
+  listBackendDocuments,
+  requestBackendReview,
+  toContractDocument,
+  uploadBackendContract,
+} from "@/lib/api/backend-documents";
 import { claimBackendDocument, listBackendQueue, releaseBackendDocument } from "@/lib/api/backend-queue";
 
 const ID = "11111111-1111-4111-8111-111111111111";
@@ -129,5 +137,62 @@ describe("the lawyer queue", () => {
     const f = fetchOf(json(200, { ok: true }));
     await expect(releaseBackendDocument(ID, f)).resolves.toBeUndefined();
     expect(f.mock.calls[0][0]).toBe(`http://localhost:8000/queue/${ID}/release`);
+  });
+});
+
+describe("creating, uploading and reviewing", () => {
+  const pdf = () => new File(["%PDF-1.4"], "nda.pdf", { type: "application/pdf" });
+  const target = {
+    key: `orgs/o/documents/${ID}/abc-nda.pdf`,
+    url: "https://bucket.s3.ap-south-1.amazonaws.com/",
+    fields: { key: `orgs/o/documents/${ID}/abc-nda.pdf`, policy: "p" },
+  };
+
+  it("creates with the doc type and the facts the backend holds, and only those", async () => {
+    const f = fetchOf(json(201, { id: ID, doc_type: "nda", state: "drafted" }));
+    await createBackendDocument("nda", f, { stateOfExecution: " Karnataka ", transactionValue: 250000 });
+    expect(JSON.parse(f.mock.calls[0][1].body)).toEqual({ doc_type: "nda", state_of_execution: "Karnataka", transaction_value: 250000 });
+    const g = fetchOf(json(201, { id: ID, doc_type: "nda", state: "drafted" }));
+    await createBackendDocument("nda", g);
+    expect(JSON.parse(g.mock.calls[0][1].body)).toEqual({ doc_type: "nda" });
+  });
+
+  it("maps every screen type to a backend code", () => {
+    expect(BACKEND_CODE_BY_TYPE).toEqual({ nda: "nda", msa: "msa", vendor: "vendor_supplier", employment: "employment_contract" });
+  });
+
+  it("asks for the upload form, posts the file to S3, then confirms the key", async () => {
+    const f = fetchOf(json(200, target), new Response(null, { status: 204 }), json(200, { version_no: 1 }));
+    await expect(uploadBackendContract(ID, pdf(), f)).resolves.toEqual({ versionNo: 1 });
+    expect(f.mock.calls.map((c) => c[0])).toEqual([
+      `http://localhost:8000/documents/${ID}/files/upload-url`,
+      target.url,
+      `http://localhost:8000/documents/${ID}/files/confirm`,
+    ]);
+    expect(JSON.parse(f.mock.calls[2][1].body)).toEqual({ key: target.key });
+  });
+
+  it("refuses a file the backend would refuse, before any request", async () => {
+    const f = fetchOf();
+    const bad = new File(["x"], "notes.txt", { type: "text/plain" });
+    await expect(uploadBackendContract(ID, bad, f)).rejects.toMatchObject({ code: "rejected" });
+    expect(f).not.toHaveBeenCalled();
+  });
+
+  it("does not confirm when S3 refuses the post", async () => {
+    const f = fetchOf(json(200, target), new Response("<Error/>", { status: 403 }));
+    await expect(uploadBackendContract(ID, pdf(), f)).rejects.toMatchObject({ code: "rejected" });
+    expect(f).toHaveBeenCalledTimes(2);
+  });
+
+  it("requests the review with POST and reports how many findings came back", async () => {
+    const f = fetchOf(json(200, { state: "pending_lawyer_review", version_no: 1, findings_created: 3 }));
+    await expect(requestBackendReview(ID, f)).resolves.toEqual({ findingsCreated: 3 });
+    expect(f.mock.calls[0][0]).toBe(`http://localhost:8000/documents/${ID}/review`);
+    expect(f.mock.calls[0][1].method).toBe("POST");
+  });
+
+  it("surfaces a review the document's state does not allow as a conflict", async () => {
+    await expect(requestBackendReview(ID, fetchOf(json(409, { detail: "x" })))).rejects.toMatchObject({ code: "conflict" });
   });
 });
