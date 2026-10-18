@@ -3,7 +3,10 @@ import { answerQuestion, type ChatReply } from "@/lib/chat/answer";
 import type { ChatSource } from "@/lib/chat/generate";
 import type { ChatAnswerStatus, ChatCitationView } from "@/lib/types";
 import { FAILURE_COPY, deadline, kindOfStatus, kindOfThrown, readDetail, type FailureKind } from "@/lib/net/failure";
+import { z } from "zod";
+import { ApiError, authed, type Fetcher } from "./backend";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
+import { backendDataEnabled } from "./source";
 
 /**
  * The swap boundary for the conversational agent, in the C1 shape (lib/contracts.ts).
@@ -82,6 +85,36 @@ export function mockTransport(source: ChatSource, options: { delay?: boolean } =
     if (shouldSimulateFailure()) throw new MockApiError();
     return toWireReply(answerQuestion(request.question, source), request.language);
   };
+}
+
+/**
+ * The real backend's chat endpoint (POST /documents/{id}/chat, backend/app/agents/router.py). It
+ * answers in the C1 shape, and `askDocumentQuestion` still validates the reply against C1.
+ * A failed call becomes a ChatError carrying fixed copy; what the server said stays in `detail`.
+ */
+export function backendChatTransport(fetchImpl?: Fetcher): ChatTransport {
+  return async (request) => {
+    try {
+      return await authed(
+        `/documents/${encodeURIComponent(request.document_id)}/chat`,
+        { method: "POST", body: request },
+        z.unknown(),
+        fetchImpl,
+      );
+    } catch (err) {
+      if (err instanceof ApiError) {
+        // A reply the backend sent that is not JSON is handled like any reply that breaks C1.
+        if (err.code === "bad_reply") return null;
+        throw new ChatError(err.message, { detail: err.detail });
+      }
+      throw err;
+    }
+  };
+}
+
+/** The transport a screen should use: the real backend when the flag is on, the local agent otherwise. */
+export function chatTransport(source: ChatSource): ChatTransport {
+  return backendDataEnabled() ? backendChatTransport() : mockTransport(source);
 }
 
 /** Used while there is no document to ask about. */

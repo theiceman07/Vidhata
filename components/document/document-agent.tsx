@@ -9,7 +9,7 @@ import { agentAvailable } from "@/lib/chatAccess";
 import { CONSULTATION, PRICE_BASIS } from "@/lib/config/pricing";
 import { scrollBehavior } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import { MAX_QUESTION_LENGTH, mockTransport, unavailableTransport } from "@/lib/api/chat";
+import { MAX_QUESTION_LENGTH, chatTransport, unavailableTransport } from "@/lib/api/chat";
 import { useDocumentChat } from "@/lib/chat-session/useDocumentChat";
 import { chatSourceOf, type ChatDocument } from "@/lib/mock/chat.mock";
 import { getClientSummary } from "@/lib/api/client/delivery";
@@ -48,7 +48,7 @@ export function DocumentAgent({
   const [notes, setNotes] = useState<ClientSettlementNote[]>([]);
   // Questions go through the C1 boundary (lib/api/chat), which waits like a network call and can fail.
   const transport = useMemo(
-    () => (doc ? mockTransport(chatSourceOf(doc, summary, notes)) : unavailableTransport),
+    () => (doc ? chatTransport(chatSourceOf(doc, summary, notes)) : unavailableTransport),
     [doc, summary, notes],
   );
   const chat = useDocumentChat({ documentId: doc.id, transport });

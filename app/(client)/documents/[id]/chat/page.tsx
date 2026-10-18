@@ -12,7 +12,7 @@ import { EscalationPrompt } from "@/components/domain/escalation-prompt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MAX_QUESTION_LENGTH, mockTransport, unavailableTransport } from "@/lib/api/chat";
+import { MAX_QUESTION_LENGTH, chatTransport, unavailableTransport } from "@/lib/api/chat";
 import { getClientDocument } from "@/lib/api/client/documents";
 import { useDocumentChat } from "@/lib/chat-session/useDocumentChat";
 import { getClientSummary } from "@/lib/api/client/delivery";
@@ -47,7 +47,7 @@ export default function ChatPage() {
   const [errorMessage, setErrorMessage] = useState("");
   // Questions go through the C1 boundary (lib/api/chat), which waits like a network call and can fail.
   const transport = useMemo(
-    () => (doc ? mockTransport(chatSourceOf(doc, summary, notes)) : unavailableTransport),
+    () => (doc ? chatTransport(chatSourceOf(doc, summary, notes)) : unavailableTransport),
     [doc, summary, notes],
   );
   const chat = useDocumentChat({ documentId: params.id, transport });
