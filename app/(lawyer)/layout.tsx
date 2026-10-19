@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { AppShell, type ShellSection } from "@/components/shared/app-shell";
 import { PortalGate } from "@/components/shared/portal-gate";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
+import { useIdentityName } from "@/lib/auth/identity";
 
 const SECTIONS: ShellSection[] = [
   {
@@ -32,6 +33,7 @@ export default function LawyerPortalLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const name = useIdentityName(CURRENT_ADVOCATE.name);
 
   return (
     <PortalGate portal="lawyer">
@@ -39,7 +41,7 @@ export default function LawyerPortalLayout({
         sections={SECTIONS}
         homeHref="/queue"
         identity={{
-          name: CURRENT_ADVOCATE.name,
+          name,
           standing: "Advocate",
           menuHref: "/profile",
         }}

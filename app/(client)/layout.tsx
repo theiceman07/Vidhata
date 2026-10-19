@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { AppShell, type ShellSection } from "@/components/shared/app-shell";
 import { PortalGate } from "@/components/shared/portal-gate";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
+import { useIdentityName } from "@/lib/auth/identity";
 
 const SECTIONS: ShellSection[] = [
   {
@@ -36,6 +37,7 @@ export default function ClientPortalLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const name = useIdentityName(MOCK_CLIENT_ORG.name);
 
   return (
     <PortalGate portal="client">
@@ -43,7 +45,7 @@ export default function ClientPortalLayout({
         sections={SECTIONS}
         homeHref="/documents"
         identity={{
-          name: MOCK_CLIENT_ORG.name,
+          name,
           standing: "Client",
           menuHref: "/settings",
         }}
