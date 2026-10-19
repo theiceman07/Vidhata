@@ -63,6 +63,12 @@ export function apiBase(): string {
   return (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000").replace(/\/+$/, "");
 }
 
+/** The signed-in account's id (the token's subject), or null with no session. Never the token. */
+export async function ownUserId(): Promise<string | null> {
+  const { data } = await getSupabaseClient().auth.getSession();
+  return data.session?.user?.id ?? null;
+}
+
 /** The current session's access token; a missing session is a 401 without a round trip. */
 export async function accessToken(): Promise<string> {
   const { data } = await getSupabaseClient().auth.getSession();

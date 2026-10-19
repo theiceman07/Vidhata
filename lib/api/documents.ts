@@ -23,7 +23,15 @@ import { declaredConflictNames } from "./advocate";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { register, restored } from "./state";
 import { backendDataEnabled } from "./source";
-import { getBackendDocument, listBackendDocuments } from "./backend-documents";
+import { ApiError, ownUserId } from "./backend";
+import { asViewedBy, getBackendDocument, listBackendDocuments } from "./backend-documents";
+import {
+  addBackendFinding,
+  adjudicateBackendFinding,
+  listBackendClientFindings,
+  listBackendFindings,
+  signOffBackendDocument,
+} from "./backend-findings";
 import { claimBackendDocument, listBackendQueue } from "./backend-queue";
 
 // QA 7.3: tier ordering used to sort the advocate queue, so the pricing
@@ -239,10 +247,33 @@ export async function listDocuments(
   return structuredClone(scoped);
 }
 
+/**
+ * Real backend, client side: once the advocate has signed off, the client reads the findings they may
+ * see. Before that the backend refuses the route (409), so it is not asked. A caller that is not a
+ * client (403) gets the document without findings. Any other failure is an error, never an empty list.
+ */
+async function withClientFindings(doc: ContractDocument | null): Promise<ContractDocument | null> {
+  if (!doc || doc.status !== "settled") return doc;
+  try {
+    return { ...doc, findings: await listBackendClientFindings(doc.id) };
+  } catch (err) {
+    if (err instanceof ApiError && err.code === "forbidden") return doc;
+    throw err;
+  }
+}
+
+/** Real backend, advocate side: the document with its merged findings, as the signed-in advocate holds it. */
+async function reviewDocument(id: string): Promise<ContractDocument | null> {
+  const doc = await getBackendDocument(id);
+  if (!doc) return null;
+  const [findings, viewer] = await Promise.all([listBackendFindings(id), ownUserId()]);
+  return asViewedBy({ ...doc, findings }, viewer);
+}
+
 export async function getDocument(
   id: string,
 ): Promise<ContractDocument | null> {
-  if (backendDataEnabled()) return getBackendDocument(id);
+  if (backendDataEnabled()) return withClientFindings(await getBackendDocument(id));
   await randomDelay();
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not load this document.");
@@ -261,7 +292,7 @@ export async function getDocument(
 export async function getDocumentForReview(
   id: string,
 ): Promise<ContractDocument | null> {
-  if (backendDataEnabled()) return getBackendDocument(id);
+  if (backendDataEnabled()) return reviewDocument(id);
   await randomDelay();
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not load this document.");
@@ -510,7 +541,11 @@ export async function claimDocument(
     if (!declaration?.noConflictWithEitherParty) {
       throw new MockApiError("Declare that you have no conflict of interest with either party before you claim.");
     }
-    return claimBackendDocument(id);
+    await claimBackendDocument(id);
+    // The claim answers with the bare row; the review screen needs the findings too.
+    const claimed = await reviewDocument(id);
+    if (!claimed) throw new MockApiError("Document not found.");
+    return claimed;
   }
   await randomDelay();
   if (shouldSimulateFailure()) {
@@ -692,6 +727,20 @@ export async function updateFinding(
   patch: Pick<Finding, "disposition" | "overrideNote">,
   advocateId: string,
 ): Promise<ContractDocument> {
+  if (backendDataEnabled()) {
+    if (patch.disposition === "pending") {
+      throw new MockApiError("A settled finding cannot be reopened yet.");
+    }
+    const note = patch.overrideNote?.trim();
+    if (patch.disposition === "overridden" && !note) throw new MockApiError("An override needs a reason.");
+    await adjudicateBackendFinding(
+      findingId,
+      patch.disposition === "overridden" ? { action: "override", notes: note! } : { action: "confirm" },
+    );
+    const updated = await reviewDocument(docId);
+    if (!updated) throw new MockApiError("Document not found.");
+    return updated;
+  }
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not save this finding.");
@@ -710,6 +759,17 @@ export async function addFinding(
   finding: NewFinding,
   advocateId: string,
 ): Promise<ContractDocument> {
+  if (backendDataEnabled()) {
+    // The backend holds no layer or citation for an advocate's own finding, so none is sent.
+    await addBackendFinding(docId, {
+      severity: finding.severity,
+      description: finding.description,
+      clauseReference: finding.clauseReference,
+    });
+    const updated = await reviewDocument(docId);
+    if (!updated) throw new MockApiError("Document not found.");
+    return updated;
+  }
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not add this finding.");
@@ -756,6 +816,12 @@ export async function signOffDocument(
   docId: string,
   advocateId: string,
 ): Promise<ContractDocument> {
+  if (backendDataEnabled()) {
+    await signOffBackendDocument(docId);
+    const signedOff = await reviewDocument(docId);
+    if (!signedOff) throw new MockApiError("Document not found.");
+    return signedOff;
+  }
   await randomDelay();
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not complete sign-off.");

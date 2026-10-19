@@ -22,6 +22,7 @@ import {
 } from "@/lib/api/documents";
 import { getAdvocateProfile } from "@/lib/api/advocate";
 import { addNote, deleteNote, listNotes, updateNote } from "@/lib/api/notes";
+import { backendDataEnabled } from "@/lib/api/source";
 import { canWriteNotes } from "@/lib/noteAccess";
 import { buildAuditTrail } from "@/lib/audit";
 import { findingNumbers, signOffBlockers } from "@/lib/findings";
@@ -187,18 +188,21 @@ export default function ReviewPage() {
       if (!updated) return;
       const n = findingNumbers(updated)[findingId];
       toast.success(`Finding ${n} settled`, {
-        action: {
-          label: "Undo",
-          onClick: async () => {
-            const reverted = await updateFinding(
-              doc.id,
-              findingId,
-              { disposition: "pending", overrideNote: null },
-              CURRENT_ADVOCATE.id,
-            );
-            setDoc(reverted);
-          },
-        },
+        // The real backend records a decision and has no way to take it back yet, so no Undo is offered there.
+        action: backendDataEnabled()
+          ? undefined
+          : {
+              label: "Undo",
+              onClick: async () => {
+                const reverted = await updateFinding(
+                  doc.id,
+                  findingId,
+                  { disposition: "pending", overrideNote: null },
+                  CURRENT_ADVOCATE.id,
+                );
+                setDoc(reverted);
+              },
+            },
       });
     },
     [doc, run],

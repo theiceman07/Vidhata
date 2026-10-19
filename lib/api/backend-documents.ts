@@ -2,6 +2,7 @@ import { z } from "zod";
 import { ApiError, authed, type Fetcher } from "@/lib/api/backend";
 import { confirmUpload, requestUploadUrl, uploadToS3 } from "@/lib/api/files";
 import { checkFile } from "@/lib/storage/upload";
+import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import type { ContractDocument, DocumentStatus, ReviewTier } from "@/lib/types";
 
 /** POST /documents on the real backend (backend/app/documents/router.py). Not the mock in documents.ts. */
@@ -138,6 +139,18 @@ export function toContractDocument(raw: unknown): ContractDocument {
     advocate: r.assigned_lawyer_id ? { id: r.assigned_lawyer_id, name: "Assigned advocate", bar: "" } : null,
     claimedAt: null, settledAt: status === "settled" ? r.updated_at : null,
   };
+}
+
+/**
+ * The review screens decide whether the signed-in advocate holds a claim by comparing the document's
+ * advocate id with CURRENT_ADVOCATE.id, the one identity those screens know. The backend holds the real
+ * account id. So the document an advocate holds is shown as held by CURRENT_ADVOCATE; one held by anyone
+ * else keeps that person's own id and still reads as held by someone else. Pure: with no viewer id, or
+ * a document nobody holds, it changes nothing.
+ */
+export function asViewedBy(doc: ContractDocument, viewerId: string | null): ContractDocument {
+  if (!viewerId || !doc.advocate || doc.advocate.id !== viewerId) return doc;
+  return { ...doc, advocate: { ...doc.advocate, id: CURRENT_ADVOCATE.id } };
 }
 
 export function queueRowToContractDocument(r: QueueRow): ContractDocument {
