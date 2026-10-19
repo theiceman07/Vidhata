@@ -177,9 +177,13 @@ export default function ClientLoginPage() {
           Sign in
         </Button>
 
-        <Button type="button" variant="outline" size="lg" className="w-full" onClick={signIn}>
-          Use the preview workspace
-        </Button>
+        {/* The preview workspace is the mock portal. With the real backend on it has no session to
+            use, so it is not offered. */}
+        {!backendDataEnabled() && (
+          <Button type="button" variant="outline" size="lg" className="w-full" onClick={signIn}>
+            Use the preview workspace
+          </Button>
+        )}
       </form>
     </AuthScreen>
   );

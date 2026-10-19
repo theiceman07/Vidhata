@@ -160,27 +160,33 @@ export default function LawyerLoginPage() {
           Sign in
         </Button>
 
-        <Button type="button" variant="outline" size="lg" className="w-full" onClick={signIn}>
-          Use the preview workspace
-        </Button>
+        {/* The preview workspace is the mock portal. With the real backend on it has no session to
+            use, so it is not offered. */}
+        {!backendDataEnabled() && (
+          <Button type="button" variant="outline" size="lg" className="w-full" onClick={signIn}>
+            Use the preview workspace
+          </Button>
+        )}
 
-        <p className="text-center text-meta text-muted-fg">
-          Preview: open a sample invitation,{" "}
-          <Link
-            href={`/advocate-onboarding/${VALID_INVITE_TOKEN}`}
-            className="text-accent underline underline-offset-2 hover:no-underline"
-          >
-            a valid one
-          </Link>{" "}
-          or{" "}
-          <Link
-            href={`/advocate-onboarding/${EXPIRED_INVITE_TOKEN}`}
-            className="text-accent underline underline-offset-2 hover:no-underline"
-          >
-            an expired one
-          </Link>
-          .
-        </p>
+        {!backendDataEnabled() && (
+          <p className="text-center text-meta text-muted-fg">
+            Preview: open a sample invitation,{" "}
+            <Link
+              href={`/advocate-onboarding/${VALID_INVITE_TOKEN}`}
+              className="text-accent underline underline-offset-2 hover:no-underline"
+            >
+              a valid one
+            </Link>{" "}
+            or{" "}
+            <Link
+              href={`/advocate-onboarding/${EXPIRED_INVITE_TOKEN}`}
+              className="text-accent underline underline-offset-2 hover:no-underline"
+            >
+              an expired one
+            </Link>
+            .
+          </p>
+        )}
       </form>
     </AuthScreen>
   );
