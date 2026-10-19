@@ -24,6 +24,7 @@
         "components/domain/payment-panel.tsx",
         "components/domain/pipeline-progress.tsx",
         "components/domain/summary-view.tsx",
+        "components/domain/upload-contract-panel.tsx",
         "components/domain/version-history.tsx",
         "components/marketing/deal-prompt.tsx"
       ],

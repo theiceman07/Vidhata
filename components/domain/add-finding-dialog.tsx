@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { backendDataEnabled } from "@/lib/api/source";
 import { CORPUS } from "@/lib/mock/corpus.mock";
 import type { Clause, NewFinding, Severity } from "@/lib/types";
 
@@ -31,6 +32,10 @@ import type { Clause, NewFinding, Severity } from "@/lib/types";
  * It is raised against a clause of this document and enters the record
  * open, like any other finding: raising a concern and deciding it are two
  * different acts, and both are recorded.
+ *
+ * On the real backend the contract's clauses are not held yet, so the clause is typed, not chosen
+ * (and may be left blank for the whole document), and no source is asked for: the backend keeps an
+ * advocate's own finding without a layer or a citation, as already the advocate's decision.
  *
  * It needs the source it rests on, written as it is cited. The backend holds
  * a finding to one citation, and not an empty one. The corpus entries are
@@ -52,11 +57,14 @@ export function AddFindingDialog({
   const [description, setDescription] = useState("");
   const [severity, setSeverity] = useState<Severity>("medium");
   const [citation, setCitation] = useState("");
+  const [clauseReference, setClauseReference] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const backend = backendDataEnabled();
 
   const clause = clauses.find((c) => c.id === clauseId);
-  const canSubmit =
-    Boolean(clause) && description.trim().length > 0 && citation.trim().length > 0 && !submitting;
+  const canSubmit = backend
+    ? description.trim().length > 0 && !submitting
+    : Boolean(clause) && description.trim().length > 0 && citation.trim().length > 0 && !submitting;
 
   // Start clean whenever the dialog closes, however it closes. The page
   // closes it after a save, which never calls onOpenChange, so resetting
@@ -68,10 +76,35 @@ export function AddFindingDialog({
     setDescription("");
     setSeverity("medium");
     setCitation("");
+    setClauseReference("");
     setSubmitting(false);
   }, [open]);
 
   async function submit() {
+    if (backend) {
+      setSubmitting(true);
+      try {
+        await onAdd({
+          findingId: `manual-${Date.now()}`,
+          source: "advocate",
+          layer: 6,
+          severity,
+          clauseReference: clauseReference.trim() || "Whole document",
+          clauseText: "",
+          description: description.trim(),
+          ruleApplied: "",
+          remedySuggested: "",
+          citation: "",
+          disposition: "pending",
+          overrideNote: null,
+          resolvedAt: null,
+          changeRequest: null,
+        });
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
     if (!clause) return;
 
     setSubmitting(true);
@@ -111,26 +144,40 @@ export function AddFindingDialog({
         <DialogHeader>
           <DialogTitle>Add a finding the first pass missed</DialogTitle>
           <DialogDescription>
-            It enters the record open, marked as added by you. Give the source
-            it rests on, as it is cited.
+            {backend
+              ? "It is recorded as added by you, and the client reads it after sign-off. It has no pipeline rule and no citation."
+              : "It enters the record open, marked as added by you. Give the source it rests on, as it is cited."}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <div>
-            <Label htmlFor="finding-clause">Clause</Label>
-            <Select value={clauseId} onValueChange={setClauseId}>
-              <SelectTrigger id="finding-clause">
-                <SelectValue placeholder="Choose a clause" />
-              </SelectTrigger>
-              <SelectContent>
-                {clauses.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.number} · {c.heading}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {backend ? (
+            <div>
+              <Label htmlFor="finding-clause">Clause (optional)</Label>
+              <Input
+                id="finding-clause"
+                value={clauseReference}
+                onChange={(e) => setClauseReference(e.target.value)}
+                placeholder="e.g. Clause 8. Leave blank for the whole document."
+                autoComplete="off"
+              />
+            </div>
+          ) : (
+            <div>
+              <Label htmlFor="finding-clause">Clause</Label>
+              <Select value={clauseId} onValueChange={setClauseId}>
+                <SelectTrigger id="finding-clause">
+                  <SelectValue placeholder="Choose a clause" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clauses.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.number} · {c.heading}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div>
             <Label htmlFor="severity">Severity</Label>
             <Select value={severity} onValueChange={(v) => setSeverity(v as Severity)}>
@@ -155,22 +202,24 @@ export function AddFindingDialog({
             />
           </div>
 
-          <div>
-            <Label htmlFor="finding-source">Source</Label>
-            <Input
-              id="finding-source"
-              value={citation}
-              onChange={(e) => setCitation(e.target.value)}
-              list="finding-source-suggestions"
-              placeholder="As it is cited, e.g. Indian Contract Act, 1872, s.27"
-              autoComplete="off"
-            />
-            <datalist id="finding-source-suggestions">
-              {CORPUS.map((entry) => (
-                <option key={entry.ref} value={entry.label} />
-              ))}
-            </datalist>
-          </div>
+          {!backend && (
+            <div>
+              <Label htmlFor="finding-source">Source</Label>
+              <Input
+                id="finding-source"
+                value={citation}
+                onChange={(e) => setCitation(e.target.value)}
+                list="finding-source-suggestions"
+                placeholder="As it is cited, e.g. Indian Contract Act, 1872, s.27"
+                autoComplete="off"
+              />
+              <datalist id="finding-source-suggestions">
+                {CORPUS.map((entry) => (
+                  <option key={entry.ref} value={entry.label} />
+                ))}
+              </datalist>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button disabled={!canSubmit} onClick={() => void submit()}>

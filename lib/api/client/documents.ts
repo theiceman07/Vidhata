@@ -1,6 +1,14 @@
 import { intakeSchema } from "@/lib/intakeSchema";
 import type { ClientDocument, ClientDocumentSummary, ContractDocument, ExecutionStep } from "@/lib/types";
 import { MockApiError } from "../delay";
+import { backendDataEnabled } from "../source";
+import {
+  BACKEND_CODE_BY_TYPE,
+  createBackendDocument,
+  getBackendDocument,
+  requestBackendReview,
+  uploadBackendContract,
+} from "../backend-documents";
 import {
   attachEvidence,
   createDraftDocument,
@@ -27,14 +35,15 @@ import { numberedForClient } from "./shape-findings";
 
 export async function getClientDocument(orgId: string, id: string): Promise<ClientDocument | null> {
   const doc = await getDocument(id);
-  if (!doc || doc.orgId !== orgId) return null;
+  // With the real backend the server has already scoped the read to the caller's organisation.
+  if (!doc || (!backendDataEnabled() && doc.orgId !== orgId)) return null;
   return shapeClientDocument(doc);
 }
 
 /** Every document the organisation has, whatever its state, as the list reads them. */
 export async function listClientDocuments(orgId: string): Promise<ClientDocumentSummary[]> {
   const docs = await listDocuments(orgId);
-  return docs.filter((d) => d.orgId === orgId).map((d) => shapeClientSummary(d));
+  return docs.filter((d) => backendDataEnabled() || d.orgId === orgId).map((d) => shapeClientSummary(d));
 }
 
 /**
@@ -47,6 +56,16 @@ export async function createClientDraft(orgId: string, input: IntakeInput): Prom
   // is refused the same way, and is made from what the schema read, numbers as numbers.
   const parsed = intakeSchema.safeParse(input);
   if (!parsed.success) throw new MockApiError(parsed.error.issues[0]?.message ?? "Check the details of this deal.");
+  if (backendDataEnabled()) {
+    // The backend holds the type, the state and the value; the rest of the form is not stored yet.
+    const created = await createBackendDocument(BACKEND_CODE_BY_TYPE[parsed.data.type], undefined, {
+      stateOfExecution: parsed.data.stateOfExecution,
+      transactionValue: parsed.data.transactionValue,
+    });
+    const doc = await getBackendDocument(created.id);
+    if (!doc) throw new MockApiError("Could not create the draft.");
+    return shapeClientDocument(doc);
+  }
   return shapeClientDocument(
     await createDraftDocument({ ...parsed.data, keyTerms: parsed.data.keyTerms ?? "" }, orgId),
   );
@@ -54,6 +73,8 @@ export async function createClientDraft(orgId: string, input: IntakeInput): Prom
 
 /** Starts the first pass on the client's own draft. */
 export async function startClientAnalysis(orgId: string, id: string): Promise<ClientDocument> {
+  // With the real backend a review starts only when the client asks for it, after uploading the contract.
+  if (backendDataEnabled()) return shapeClientDocument(await ownDocument(orgId, id));
   await ownDocument(orgId, id);
   return shapeClientDocument(await startAnalysis(id));
 }
@@ -138,4 +159,17 @@ export async function attachClientEvidence(
 ): Promise<ClientDocument> {
   await ownSettledDocument(orgId, id);
   return shapeClientDocument(await attachEvidence(id, kind, fileName));
+}
+
+/** Real backend only: uploads the contract file to the client's own draft. */
+export async function uploadClientContract(orgId: string, id: string, file: File): Promise<{ versionNo: number }> {
+  await ownDocument(orgId, id);
+  return uploadBackendContract(id, file);
+}
+
+/** Real backend only: asks for the review of the latest uploaded version, then returns the document as it now stands. */
+export async function requestClientReview(orgId: string, id: string): Promise<ClientDocument> {
+  await ownDocument(orgId, id);
+  await requestBackendReview(id);
+  return shapeClientDocument(await ownDocument(orgId, id));
 }

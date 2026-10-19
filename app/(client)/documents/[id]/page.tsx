@@ -21,6 +21,8 @@ import { PaymentPanel } from "@/components/domain/payment-panel";
 import { ErrorState } from "@/components/shared/error-state";
 import { Icon } from "@/components/shared/icon";
 import { PipelineProgress } from "@/components/domain/pipeline-progress";
+import { UploadContractPanel } from "@/components/domain/upload-contract-panel";
+import { backendDataEnabled } from "@/lib/api/source";
 import { ClientReader } from "@/components/document/client-reader";
 import { Provenance } from "@/components/document/provenance";
 import { ChangeRequests } from "@/components/document/change-requests";
@@ -118,6 +120,8 @@ export default function DocumentPage() {
     if (!docId || state !== "loaded") return;
 
     if (docStatus === "draft") {
+      // Real backend: nothing starts by itself; the client uploads the contract and asks for the review.
+      if (backendDataEnabled()) return;
       startClientAnalysis(ORG, docId).then(setDoc).catch(failWith);
       return;
     }
@@ -174,6 +178,14 @@ export default function DocumentPage() {
     return (
       <Frame>
         <ErrorState message={errorMessage} onRetry={load} />
+      </Frame>
+    );
+  }
+
+  if (doc.status === "draft" && backendDataEnabled()) {
+    return (
+      <Frame>
+        <UploadContractPanel docId={doc.id} onReviewRequested={setDoc} />
       </Frame>
     );
   }

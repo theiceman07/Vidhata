@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useSession } from "@/lib/session";
 import { MOCK_PREVIEW_CREDENTIALS } from "@/lib/mock/auth.mock";
+import { backendDataEnabled } from "@/lib/api/source";
+import { signInToPortal } from "@/lib/api/auth";
 
 const PREVIEW_MODE = process.env.NEXT_PUBLIC_VIDHATA_PREVIEW_MODE === "1";
 const MAX_ATTEMPTS = 5;
@@ -34,9 +36,21 @@ export default function ClientLoginPage() {
     router.push("/documents");
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (locked) return;
+    if (backendDataEnabled()) {
+      // Real Supabase account. A wrong password and an advocate's account get the same answer.
+      try {
+        await signInToPortal(username.trim(), password, "client");
+        signIn();
+        return;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Those details do not match an account.");
+        setPassword("");
+        return;
+      }
+    }
     if (
       username === MOCK_PREVIEW_CREDENTIALS.username &&
       password === MOCK_PREVIEW_CREDENTIALS.password
@@ -58,7 +72,7 @@ export default function ClientLoginPage() {
     }
   }
 
-  if (!PREVIEW_MODE) {
+  if (!PREVIEW_MODE && !backendDataEnabled()) {
     return (
       <AuthScreen
         portal="client"

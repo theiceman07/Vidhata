@@ -1,5 +1,6 @@
 import type { ClientAuditEntry } from "@/lib/types";
 import { getDocument } from "../documents";
+import { backendDataEnabled } from "../source";
 import { shapeClientTrail } from "./shape-trail";
 
 /**
@@ -9,6 +10,8 @@ import { shapeClientTrail } from "./shape-trail";
  */
 export async function getClientTrail(orgId: string, id: string): Promise<ClientAuditEntry[] | null> {
   const doc = await getDocument(id);
-  if (!doc || doc.orgId !== orgId) return null;
+  if (!doc || (!backendDataEnabled() && doc.orgId !== orgId)) return null;
+  // The real backend keeps its own audit log; none of it is handed to a client yet.
+  if (backendDataEnabled()) return [];
   return shapeClientTrail(doc);
 }

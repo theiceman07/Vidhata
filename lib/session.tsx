@@ -13,6 +13,8 @@ import {
   serialiseSession,
   type StoredRole,
 } from "@/lib/session-expiry";
+import { backendDataEnabled } from "@/lib/api/source";
+import { signOut as signOutOfBackend } from "@/lib/api/auth";
 
 export type SessionRole = StoredRole | null;
 
@@ -112,7 +114,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   // switcher, which is not shipped to production — leaving no way for a
   // user to end their session at all. Signing out is not an expiry: it
   // leaves no screen behind saying the session ended.
-  const signOut = useCallback(() => setRole(null), [setRole]);
+  const signOut = useCallback(() => {
+    setRole(null);
+    // Also end the real Supabase session; a failure there must not keep the person signed in here.
+    if (backendDataEnabled()) void signOutOfBackend().catch(() => {});
+  }, [setRole]);
 
   // Children always render. This provider used to hold the whole app
   // behind a placeholder until the role hydrated, which meant every page,
