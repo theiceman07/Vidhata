@@ -3,7 +3,7 @@ import { ApiError, authed, type Fetcher } from "@/lib/api/backend";
 import { confirmUpload, requestUploadUrl, uploadToS3 } from "@/lib/api/files";
 import { checkFile } from "@/lib/storage/upload";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
-import type { ContractDocument, DocumentStatus, ReviewTier } from "@/lib/types";
+import type { ContractDocument, DocumentStatus, ModelledContractType, ReviewTier } from "@/lib/types";
 
 /** POST /documents on the real backend (backend/app/documents/router.py). Not the mock in documents.ts. */
 const createdSchema = z.object({ id: z.string().uuid(), doc_type: z.string(), state: z.string() });
@@ -26,7 +26,7 @@ export function createBackendDocument(docType: string, fetchImpl?: Fetcher, fact
 }
 
 /** The screens' contract type -> the backend's code. */
-export const BACKEND_CODE_BY_TYPE: Record<ContractDocument["type"], string> = {
+export const BACKEND_CODE_BY_TYPE: Record<ModelledContractType, string> = {
   nda: "nda", msa: "msa", vendor: "vendor_supplier", employment: "employment_contract",
 };
 
@@ -57,9 +57,10 @@ const STATES = [
   "revision_in_progress", "lawyer_approved", "delivered",
 ] as const;
 
-// The backend has 19 contract types; the screens model four. Others are refused until they are modelled.
+// The backend has 19 contract types; the screens model four. Any other type is shown as type "other"
+// under a plain label made from its code (founders_agreement -> "Founders agreement"), never hidden.
 const TYPE_BY_CODE = { nda: "nda", msa: "msa", vendor_supplier: "vendor", employment_contract: "employment" } as const;
-const TITLE: Record<ContractDocument["type"], string> = {
+const TITLE: Record<ModelledContractType, string> = {
   nda: "Non-Disclosure Agreement",
   msa: "Master Services Agreement",
   vendor: "Vendor Agreement",
@@ -68,7 +69,26 @@ const TITLE: Record<ContractDocument["type"], string> = {
 const TIER: Record<string, ReviewTier> = { standard: "standard", enhanced: "enhanced", senior_counsel: "senior" };
 const NOT_RECORDED = "Not recorded";
 
-const docType = z.enum(Object.keys(TYPE_BY_CODE) as [keyof typeof TYPE_BY_CODE, ...(keyof typeof TYPE_BY_CODE)[]]);
+// Any non-empty code is accepted; typeAndTitle() decides how it is shown.
+const docType = z.string().min(1);
+
+function isModelledCode(code: string): code is keyof typeof TYPE_BY_CODE {
+  return Object.prototype.hasOwnProperty.call(TYPE_BY_CODE, code);
+}
+
+/** The plain label for a type the screens do not model: the code, spaced, first letter capital. */
+export function plainTypeLabel(code: string): string {
+  const spaced = code.replace(/[_-]+/g, " ").trim();
+  return spaced ? spaced.charAt(0).toUpperCase() + spaced.slice(1) : "Other agreement";
+}
+
+function typeAndTitle(code: string): { type: ContractDocument["type"]; title: string } {
+  if (isModelledCode(code)) {
+    const type = TYPE_BY_CODE[code];
+    return { type, title: TITLE[type] };
+  }
+  return { type: "other", title: plainTypeLabel(code) };
+}
 const tier = z.enum(["standard", "enhanced", "senior_counsel"]).nullable();
 const money = z.coerce.number().nullable();
 
@@ -110,9 +130,10 @@ function statusOf(state: DocumentRow["state"], assigned: string | null): Documen
   }
 }
 
-function base(type: ContractDocument["type"]): Omit<ContractDocument, "id" | "orgId" | "status" | "tier" | "clientName" | "stateOfExecution" | "transactionValue" | "createdAt" | "advocate" | "settledAt" | "claimedAt"> {
+function base(code: string): Omit<ContractDocument, "id" | "orgId" | "status" | "tier" | "clientName" | "stateOfExecution" | "transactionValue" | "createdAt" | "advocate" | "settledAt" | "claimedAt"> {
+  const { type, title } = typeAndTitle(code);
   return {
-    title: TITLE[type], type, counterpartyName: NOT_RECORDED, counterpartyIsMsme: false, durationMonths: 0,
+    title, type, counterpartyName: NOT_RECORDED, counterpartyIsMsme: false, durationMonths: 0,
     governingLaw: NOT_RECORDED, keyTerms: null, version: 1, revisionCount: 0, analysisCompletesAt: null,
     clauses: [], findings: [], executionSteps: [],
   };
@@ -129,10 +150,9 @@ function parseRow<S extends z.ZodTypeAny>(schema: S, raw: unknown): z.infer<S> {
 /** Accepts a raw backend row; throws ApiError("bad_reply") when it cannot be shown. */
 export function toContractDocument(raw: unknown): ContractDocument {
   const r = parseRow(documentRowSchema, raw);
-  const type = TYPE_BY_CODE[r.doc_type];
   const status = statusOf(r.state, r.assigned_lawyer_id);
   return {
-    ...base(type),
+    ...base(r.doc_type),
     id: r.id, orgId: r.org_id, status, tier: r.triage_tier ? TIER[r.triage_tier] : null,
     clientName: NOT_RECORDED, stateOfExecution: r.state_of_execution ?? NOT_RECORDED,
     transactionValue: r.transaction_value ?? 0, createdAt: r.created_at,
@@ -154,30 +174,22 @@ export function asViewedBy(doc: ContractDocument, viewerId: string | null): Cont
 }
 
 export function queueRowToContractDocument(r: QueueRow): ContractDocument {
-  const type = TYPE_BY_CODE[r.doc_type];
   return {
-    ...base(type),
+    ...base(r.doc_type),
     id: r.id, orgId: r.org_id, status: "pending_review", tier: r.triage_tier ? TIER[r.triage_tier] : null,
     clientName: r.org_name ?? NOT_RECORDED, stateOfExecution: r.state_of_execution ?? NOT_RECORDED,
     transactionValue: r.transaction_value ?? 0, createdAt: r.queued_at, advocate: null, claimedAt: null, settledAt: null,
   };
 }
 
-/** True for a row whose contract type the screens do not model yet (the backend has 19, the screens four). */
-function isUnmodelledType(raw: unknown): boolean {
-  if (typeof raw !== "object" || raw === null) return false;
-  const code = (raw as { doc_type?: unknown }).doc_type;
-  return typeof code === "string" && !(code in TYPE_BY_CODE);
-}
-
 /**
- * The signed-in account's documents. A document of a type the screens cannot show yet (say a founders'
- * agreement) is left out of the list rather than failing the whole list; it cannot be opened from here
- * either. Any other unreadable row (an unknown state, a missing field) still fails the read as bad_reply.
+ * The signed-in account's documents. A document of a type the screens do not model yet (say a founders'
+ * agreement) is listed under a plain label, never hidden. Any unreadable row (an unknown state, a
+ * missing field) still fails the read as bad_reply.
  */
 export async function listBackendDocuments(fetchImpl?: Fetcher): Promise<ContractDocument[]> {
   const rows = await authed("/documents", { method: "GET" }, z.array(z.unknown()), fetchImpl);
-  return rows.filter((row) => !isUnmodelledType(row)).map(toContractDocument);
+  return rows.map(toContractDocument);
 }
 
 /** Null when the backend says not found (also another organisation's document), as the mock does. */

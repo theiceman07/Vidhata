@@ -1,4 +1,4 @@
-import type { ContractDocument } from "@/lib/types";
+import type { ModelledContractType } from "@/lib/types";
 
 /**
  * The catalogue of contract types, in the groups it is published in.
@@ -43,7 +43,7 @@ interface ContractTypeBase {
 export type ContractTypeOption =
   | (ContractTypeBase & {
       available: true;
-      draftType: ContractDocument["type"];
+      draftType: ModelledContractType;
       draftLabel: string;
     })
   | (ContractTypeBase & { available: false });

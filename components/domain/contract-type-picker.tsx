@@ -7,10 +7,10 @@ import {
   CONTRACT_CATALOGUE,
   CONTRACT_GROUPS,
 } from "@/lib/mock/intake-options.mock";
-import type { ClientDocument } from "@/lib/types";
+import type { ModelledContractType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-type DraftType = ClientDocument["type"];
+type DraftType = ModelledContractType;
 
 /**
  * The first thing intake asks: what kind of document is this.

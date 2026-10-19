@@ -193,10 +193,16 @@ export interface SignOffRecord {
   at: string;
 }
 
+export type ModelledContractType = "nda" | "vendor" | "msa" | "employment";
+
 export interface ContractDocument {
   id: string;
   title: string;
-  type: "nda" | "vendor" | "msa" | "employment";
+  /**
+   * "other" is a contract type the backend has but the screens do not model yet (it has 19, the
+   * screens four). Such a document is shown under a plain label; it is never hidden.
+   */
+  type: ModelledContractType | "other";
   status: DocumentStatus;
   /**
    * Assigned by screening (lib/triage.ts) once the first pass has run, not

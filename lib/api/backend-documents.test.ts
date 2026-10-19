@@ -77,8 +77,17 @@ describe("toContractDocument", () => {
     expect(() => toContractDocument(row({ state: "mystery" }))).toThrowError(ApiError);
   });
 
-  it("rejects a contract type the screens cannot show yet instead of guessing one", () => {
-    expect(() => toContractDocument(row({ doc_type: "esop" }))).toThrowError(ApiError);
+  it("shows a contract type the screens do not model under a plain label instead of failing", () => {
+    const doc = toContractDocument(row({ doc_type: "esop" }));
+    expect(doc.type).toBe("other");
+    expect(doc.title).toBe("Esop");
+    const founders = toContractDocument(row({ doc_type: "founders_agreement" }));
+    expect(founders.type).toBe("other");
+    expect(founders.title).toBe("Founders agreement");
+  });
+
+  it("still rejects a row with no contract type at all", () => {
+    expect(() => toContractDocument(row({ doc_type: "" }))).toThrow();
   });
 });
 

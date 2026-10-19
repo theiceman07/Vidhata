@@ -229,11 +229,21 @@ describe("the document API on the real backend", () => {
     expect(doc?.advocate?.id).toBe(CURRENT_ADVOCATE.id);
   });
 
-  it("leaves a contract type the screens do not model out of the list, and keeps the rest", async () => {
+  it("lists a contract type the screens do not model under a plain label, and keeps the rest", async () => {
     const OTHER_DOC = "55555555-5555-4555-8555-555555555555";
     backend({ "GET /documents": () => json(200, [docRow(), docRow({ id: OTHER_DOC, doc_type: "founders_agreement" })]) });
     const docs = await listBackendDocuments();
-    expect(docs.map((d) => d.id)).toEqual([DOC]);
+    expect(docs.map((d) => d.id)).toEqual([DOC, OTHER_DOC]);
+    const other = docs.find((d) => d.id === OTHER_DOC);
+    expect(other?.type).toBe("other");
+    expect(other?.title).toBe("Founders agreement");
+  });
+
+  it("still shows a modelled type under its own title", async () => {
+    backend({ "GET /documents": () => json(200, [docRow({ doc_type: "nda" })]) });
+    const [doc] = await listBackendDocuments();
+    expect(doc.type).toBe("nda");
+    expect(doc.title).toBe("Non-Disclosure Agreement");
   });
 
   it("still refuses a list with a row it cannot read for any other reason", async () => {
