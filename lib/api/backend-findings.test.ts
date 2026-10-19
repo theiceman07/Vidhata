@@ -4,7 +4,7 @@ const getSession = vi.fn();
 vi.mock("@/lib/auth/supabaseClient", () => ({ getSupabaseClient: () => ({ auth: { getSession } }) }));
 
 import { ApiError } from "@/lib/api/backend";
-import { asViewedBy, toContractDocument } from "@/lib/api/backend-documents";
+import { asViewedBy, listBackendDocuments, toContractDocument } from "@/lib/api/backend-documents";
 import {
   addBackendFinding,
   adjudicateBackendFinding,
@@ -227,6 +227,18 @@ describe("the document API on the real backend", () => {
     const doc = await getDocumentForReview(DOC);
     expect(doc?.findings.map((f) => f.findingId)).toEqual([F1, F2]);
     expect(doc?.advocate?.id).toBe(CURRENT_ADVOCATE.id);
+  });
+
+  it("leaves a contract type the screens do not model out of the list, and keeps the rest", async () => {
+    const OTHER_DOC = "55555555-5555-4555-8555-555555555555";
+    backend({ "GET /documents": () => json(200, [docRow(), docRow({ id: OTHER_DOC, doc_type: "founders_agreement" })]) });
+    const docs = await listBackendDocuments();
+    expect(docs.map((d) => d.id)).toEqual([DOC]);
+  });
+
+  it("still refuses a list with a row it cannot read for any other reason", async () => {
+    backend({ "GET /documents": () => json(200, [docRow(), docRow({ state: "not_a_state" })]) });
+    await expect(listBackendDocuments()).rejects.toMatchObject({ code: "bad_reply" });
   });
 
   it("is null for a document the advocate cannot see", async () => {

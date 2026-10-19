@@ -163,9 +163,21 @@ export function queueRowToContractDocument(r: QueueRow): ContractDocument {
   };
 }
 
+/** True for a row whose contract type the screens do not model yet (the backend has 19, the screens four). */
+function isUnmodelledType(raw: unknown): boolean {
+  if (typeof raw !== "object" || raw === null) return false;
+  const code = (raw as { doc_type?: unknown }).doc_type;
+  return typeof code === "string" && !(code in TYPE_BY_CODE);
+}
+
+/**
+ * The signed-in account's documents. A document of a type the screens cannot show yet (say a founders'
+ * agreement) is left out of the list rather than failing the whole list; it cannot be opened from here
+ * either. Any other unreadable row (an unknown state, a missing field) still fails the read as bad_reply.
+ */
 export async function listBackendDocuments(fetchImpl?: Fetcher): Promise<ContractDocument[]> {
   const rows = await authed("/documents", { method: "GET" }, z.array(z.unknown()), fetchImpl);
-  return rows.map(toContractDocument);
+  return rows.filter((row) => !isUnmodelledType(row)).map(toContractDocument);
 }
 
 /** Null when the backend says not found (also another organisation's document), as the mock does. */
