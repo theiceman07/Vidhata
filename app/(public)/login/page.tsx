@@ -10,7 +10,7 @@ import { PasswordInput } from "@/components/shared/password-input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useSession } from "@/lib/session";
-import { MOCK_PREVIEW_CREDENTIALS } from "@/lib/mock/auth.mock";
+import { mockCredentialsAccepted } from "@/lib/auth/mock-credentials";
 import { backendDataEnabled } from "@/lib/api/source";
 import { signInToPortal } from "@/lib/api/auth";
 
@@ -51,10 +51,7 @@ export default function ClientLoginPage() {
         return;
       }
     }
-    if (
-      username === MOCK_PREVIEW_CREDENTIALS.username &&
-      password === MOCK_PREVIEW_CREDENTIALS.password
-    ) {
+    if (mockCredentialsAccepted(username, password)) {
       signIn();
       return;
     }

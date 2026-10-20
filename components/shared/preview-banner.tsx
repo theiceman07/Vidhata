@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { resetDemoData } from "@/lib/api/state";
+import { backendDataEnabled } from "@/lib/api/source";
 
 /**
  * Says, on every signed-in page, what the preview is: sample data, kept in this
@@ -17,6 +18,9 @@ import { resetDemoData } from "@/lib/api/state";
  */
 export function PreviewBanner() {
   const [confirming, setConfirming] = useState(false);
+
+  // With the real backend on, the data is real and is sent, so this notice would be false.
+  if (backendDataEnabled()) return null;
 
   return (
     <aside
