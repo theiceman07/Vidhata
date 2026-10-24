@@ -419,6 +419,73 @@ or log the browser keeps beyond the request. The same goes for the settled text
 of a document, the advocate's notes, and anything else section 4 restricts: the
 tab state is a demo convenience and **not a model for client storage**.
 
+### 9.2 Notification read state (needed by the backend, not built in the preview)
+
+The preview works the feed out on every visit (section 9, "Client notifications"),
+so it has nothing to mark read and the Notifications page shows no unread badge,
+no unread count and no "Mark all read". Those need the backend to keep a read
+state. The page is built so they can be added without a redesign, and until the
+backend has it the page must not show a number it cannot stand behind.
+
+**Shape.** `ClientNotification` gains one field. A notification is stored per
+organisation and per event, with a stable `id`.
+
+```ts
+interface ClientNotification {
+  id: string;            // stable for the same event
+  kind: ClientNotificationKind;
+  at: string;            // ISO 8601, UTC, when it happened
+  documentId: string;
+  text: string;          // the same sentence rules as section 9, no number in it
+  href: string;          // inside the client's own portal
+  readAt: string | null; // ISO 8601, UTC, when this organisation first read it; null while unread
+}
+```
+
+**Calls.** Both are scoped to the organisation the server derives from the
+session (section 0). Neither takes an `orgId` in the request.
+
+| Call | Request | Success | Failure |
+|---|---|---|---|
+| `GET /notifications` | none | `200`, `ClientNotification[]`, newest first, each with `readAt` | `401` |
+| `POST /notifications/{id}/read` | none | `200`, the `ClientNotification` with `readAt` set | `404` "Notification not found." for an id that does not exist **and** for one that belongs to another organisation, alike |
+| `POST /notifications/read-all` | none | `200`, `{ "marked": number }`, how many were unread before the call | `401` |
+
+**Rules.**
+- Idempotent. Marking a read notification read again changes nothing: `readAt` keeps its first value and the response is `200`. `read-all` with nothing unread returns `{ "marked": 0 }`.
+- A read is one transaction. `read-all` marks every unread notification of the organisation or none.
+- The unread count the UI shows is the number of rows with `readAt: null` in the response to `GET /notifications`. The backend sends no separate count, so a count and the list cannot disagree.
+- Opening a notification's `href` does not mark it read by itself. The screen calls the read endpoint.
+- The text of a notification obeys section 9 and section 4: never an advocate's name before sign-off, a count of findings the client was not given, an advocate's decision, question or answer text.
+
+**Example.**
+
+```http
+POST /notifications/ntf_7f3a/read
+200 OK
+{
+  "id": "ntf_7f3a",
+  "kind": "settled",
+  "at": "2026-10-22T09:14:00Z",
+  "documentId": "doc_21c",
+  "text": "Your document is settled. Open its execution checklist.",
+  "href": "/documents/doc_21c/checklist",
+  "readAt": "2026-10-24T10:02:31Z"
+}
+```
+
+```http
+POST /notifications/read-all
+200 OK
+{ "marked": 3 }
+```
+
+**Frontend when it lands.** `lib/api/client/notifications.ts` gains
+`markNotificationRead(orgId, id)` and `markAllNotificationsRead(orgId)`. The mock
+store behind them is registered in `lib/api/state.ts` and `SCHEMA_VERSION` is
+bumped. The page then shows an unread mark on a row, and a count only from the
+rows it holds.
+
 ## 10. Required behaviour that no screen exercises yet
 
 **10.1 Triage override logging (SRD FR-15).** When an advocate overrides routing,

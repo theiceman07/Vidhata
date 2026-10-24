@@ -268,6 +268,7 @@ Reality:
 | B15 | Role-based response shaping: `GET /documents` returns the full row (including `assigned_lawyer_id`, `triage_tier`, `draft_for_settlement`) to clients. | BE change |
 | B16 | Everything in api-contract sections 8 and 9 (consultations, settlement notes, working notes, notifications, billing profile, privacy, account and team, metrics, citation attempts, advocate profile). | BE change (later; not in this phase) |
 | B17 | No drafting route. Retrieval and adaptation exist as functions. Nothing exposes "draft this contract from these facts". | BE change |
+| B18 | No notification read state. The client's Notifications page shows no unread mark or count because there is nothing to count. Needs `readAt: string \| null` on each stored notification, `POST /notifications/{id}/read` and `POST /notifications/read-all`, both scoped to the organisation the server derives from the session. Exact shapes and an example are in api-contract section 9.2. | BE change |
 
 ### 3.2 What the frontend must change to match what exists
 
