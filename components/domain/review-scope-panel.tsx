@@ -70,7 +70,7 @@ export function ReviewScopePanel({
   return (
     <section
       aria-label={`Round ${scope.round} review scope`}
-      className="border-t border-line bg-parchment px-5 py-2 md:px-8"
+      className="bg-parchment px-5 py-1 md:px-8"
     >
       {/* One slim row at rest: round, comparison, undecided count, chevron. */}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1">

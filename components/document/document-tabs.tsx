@@ -40,7 +40,7 @@ export function DocumentTabs({
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "inline-flex h-9 items-center rounded-full px-4 text-meta transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                  "inline-flex h-8 items-center rounded-full px-4 text-meta transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                   active
                     ? "bg-ink font-medium text-paper"
                     : "bg-parchment text-ink hover:bg-line",

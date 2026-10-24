@@ -39,6 +39,7 @@ export const ICON_NAMES = [
   "logout",
   "mail",
   "monitoring",
+  "more_horiz",
   "note_add",
   "notifications",
   "payments",

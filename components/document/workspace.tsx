@@ -40,7 +40,8 @@ import { DocumentSurface } from "./document-surface";
 import { FindingDetail } from "./finding-detail";
 import { AuditTrail, type TrailEntry } from "./audit-trail";
 import { ReviewShortcuts } from "./review-shortcuts";
-import { PageHeader } from "@/components/shared/page-header";
+import { PageFacts, PageHeader } from "@/components/shared/page-header";
+import { WorkspaceMenu } from "@/components/document/workspace-menu";
 
 /**
  * The document workspace.
@@ -429,36 +430,21 @@ export function DocumentWorkspace({
       <header className="border-b border-line bg-paper">
         {/* The title is a PageHeader like every other page's, so it wraps
             instead of truncating and its separators never dangle. */}
-        <div className="px-5 pb-1 pt-1 md:px-8">
+        <div className="px-5 pt-0.5 md:px-8">
           <PageHeader
-            className="mb-2"
+            compact
             back={{ fallbackHref: back.href, label: back.label }}
             title={doc.title}
-            meta={[
-              doc.clientName,
-              doc.counterpartyName,
-              `Draft ${doc.version}`,
-              counter,
-              doc.tier ? (
-                <span key="tier">
-                  <span className="capitalize">{doc.tier}</span> tier
-                </span>
-              ) : (
-                `Tier ${TIER_PENDING_LABEL.toLowerCase()}`
-              ),
-            ]}
             actions={
               <>
                 <StateLabel state={doc.status} />
                 {owner && <span className="text-meta text-muted-fg">{owner}</span>}
-                <span aria-hidden className="mx-2 hidden h-6 w-px bg-line md:block" />
-                <HeaderButton
-                  icon="history"
-                  label="Activity"
-                  pressed={panel === "activity"}
-                  onClick={toggleActivity}
+                <WorkspaceMenu
+                  activityOpen={panel === "activity"}
+                  onActivity={toggleActivity}
+                  onSearch={openPalette}
+                  onShortcuts={() => setShortcutsOpen(true)}
                 />
-                <HeaderButton icon="search" label="Search" onClick={openPalette} />
                 <ReviewShortcuts
                   open={shortcutsOpen}
                   onOpenChange={setShortcutsOpen}
@@ -470,9 +456,29 @@ export function DocumentWorkspace({
           />
         </div>
 
-        {/* The status strip. The shape of the remaining work on the left,
-            what stands between it and sign-off on the right. */}
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 bg-paper px-5 pb-3 md:px-8">
+        {/* The second row: the document's tabs when it has them, then the
+            status strip. The shape of the remaining work, and what stands
+            between it and sign-off on the right. One row, so the header
+            leaves the reading column as much height as it can. */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-0 bg-paper px-5 pb-0.5 md:px-8">
+          {tabs}
+          <PageFacts
+            dense
+            facts={[
+              // A client's own name is on the rail already; the advocate needs it.
+              role === "advocate" ? doc.clientName : null,
+              doc.counterpartyName,
+              `Draft ${doc.version}`,
+              counter,
+              doc.tier ? (
+                <span key="tier">
+                  <span className="capitalize">{doc.tier}</span> tier
+                </span>
+              ) : (
+                `Tier ${TIER_PENDING_LABEL.toLowerCase()}`
+              ),
+            ]}
+          />
           <span className="flex items-center gap-3">
             <span className="text-meta text-muted-fg">
               {view.findings.length === 0
@@ -528,8 +534,6 @@ export function DocumentWorkspace({
             )}
           </div>
         </div>
-
-        {tabs && <div className="px-5 pb-3 md:px-8">{tabs}</div>}
 
         {notices.map((text) => (
           <div
@@ -697,35 +701,6 @@ export function DocumentWorkspace({
       </div>
     </div>
     </ReviewScopeProvider>
-  );
-}
-
-function HeaderButton({
-  icon,
-  label,
-  onClick,
-  pressed,
-}: {
-  icon: IconName;
-  label: string;
-  onClick: () => void;
-  pressed?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={pressed}
-      aria-label={label}
-      title={label}
-      className={cn(
-        "inline-flex h-10 items-center gap-2 rounded-full px-3 text-meta font-medium transition-colors",
-        pressed ? "bg-ink text-paper" : "text-muted-fg hover:bg-parchment hover:text-ink",
-      )}
-    >
-      <Icon name={icon} size={18} />
-      <span className="hidden xl:inline">{label}</span>
-    </button>
   );
 }
 
