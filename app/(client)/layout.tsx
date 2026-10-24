@@ -20,7 +20,6 @@ const SECTIONS: ShellSection[] = [
     label: "Account",
     links: [
       { href: "/billing", label: "Billing", icon: "receipt_long" },
-      { href: "/settings/privacy", label: "Privacy", icon: "lock" },
       { href: "/settings", label: "Settings", icon: "settings" },
     ],
   },

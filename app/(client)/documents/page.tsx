@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listClientDocuments } from "@/lib/api/client/documents";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
-import { groupOf, yourMove, type Move, type MoveGroup } from "@/lib/moves";
+import { groupOf, yourMove, youSummary, type Move, type MoveGroup } from "@/lib/moves";
 import { TONE, type Tone } from "@/lib/tone";
 import type { ClientDocumentSummary } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -104,7 +104,7 @@ export default function DocumentsPage() {
   }[] = [
     {
       key: "you",
-      title: "Needs your action",
+      title: "Needs you",
       tone: "move",
       docs: you,
       empty: "Nothing needs you right now.",
@@ -140,12 +140,9 @@ export default function DocumentsPage() {
         <h1 className="font-display text-greeting text-ink">
           {greeting()}, {MOCK_CLIENT_ORG.name.split(" ")[0]}
         </h1>
-        <p className="mt-3 text-lead text-muted-fg">
-          {you.length > 0
-            ? `${you.length} ${you.length === 1 ? "document needs" : "documents need"} you today.`
-            : docs.length === 0
-              ? "Describe your first deal to begin."
-              : "Nothing is waiting on you."}
+        <p className="mt-3 text-body text-muted-fg">
+          {youSummary(docs) ??
+            (docs.length === 0 ? "Describe your first deal to begin." : "Nothing is waiting on you.")}
         </p>
         <DealPrompt
           className="mt-6"

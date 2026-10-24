@@ -25,6 +25,7 @@
         "components/domain/execution-checklist.tsx",
         "components/domain/intake-wizard.tsx",
         "components/domain/payment-panel.tsx",
+        "components/domain/privacy-settings.tsx",
         "components/domain/pipeline-progress.tsx",
         "components/domain/summary-view.tsx",
         "components/domain/upload-contract-panel.tsx",

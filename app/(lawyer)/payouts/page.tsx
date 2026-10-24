@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
@@ -78,6 +79,11 @@ export default function PayoutsPage() {
           <EmptyState
             title="Nothing on your statement yet."
             description="When you answer a consultation, its fee is listed here with the document and the day."
+            action={
+              <Button asChild variant="outline">
+                <Link href="/consultations">See consultation requests</Link>
+              </Button>
+            }
           />
         </div>
       ) : (

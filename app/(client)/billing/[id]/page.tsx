@@ -102,7 +102,7 @@ export default function ReceiptPage() {
 
         <div className="border-t border-line px-6 py-4 md:px-8 md:py-5">
           <p className="max-w-measure text-meta text-muted-fg">
-            GST is added at the rate in force. A tax breakup is not part of this preview.{" "}
+            GST is added at the rate in force.{" "}
             {invoice.kind === "consultation_fee"
               ? "This is the consultation fee. It is separate from the document fee. Who issues an invoice for it is waiting for counsel to confirm, and the wording here is not final."
               : "The fee covers every revision round of the document."}

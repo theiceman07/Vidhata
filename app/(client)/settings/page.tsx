@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { ErrorState } from "@/components/shared/error-state";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,8 @@ import { useSession } from "@/lib/session";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { Account, TeamMember } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
+import { PrivacySettings } from "@/components/domain/privacy-settings";
+import { cn } from "@/lib/utils";
 
 /**
  * Client settings.
@@ -52,7 +54,7 @@ function Row({
   );
 }
 
-export default function SettingsPage() {
+function AccountSettings() {
   const router = useRouter();
   const { signOut } = useSession();
 
@@ -147,8 +149,7 @@ export default function SettingsPage() {
   if (state === "loading") {
     return (
       <div className="w-full" aria-busy="true">
-        <Skeleton className="h-10 w-48" />
-        <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <div className="space-y-6">
             <Skeleton className="h-56 w-full rounded-card" />
             <Skeleton className="h-64 w-full rounded-card" />
@@ -171,8 +172,6 @@ export default function SettingsPage() {
 
   return (
     <div className="w-full">
-      <PageHeader title="Settings" description={MOCK_CLIENT_ORG.name} />
-
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="min-w-0 space-y-6">
           <section
@@ -327,7 +326,7 @@ export default function SettingsPage() {
               Organisation
             </h2>
             <dl className="mt-2">
-              <Row label="Organisation">{MOCK_CLIENT_ORG.name}</Row>
+              <Row label="Name">{MOCK_CLIENT_ORG.name}</Row>
               <Row label="Review tier">
                 Assigned to each document after screening, from its value and
                 risk.
@@ -342,7 +341,7 @@ export default function SettingsPage() {
               </Row>
               <Row label="Privacy">
                 <Link
-                  href="/settings/privacy"
+                  href="/settings?tab=privacy"
                   className="link"
                 >
                   Training use, export and deletion
@@ -380,5 +379,54 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+const SETTINGS_TABS = [
+  { key: "account", label: "Account", href: "/settings" },
+  { key: "privacy", label: "Privacy", href: "/settings?tab=privacy" },
+] as const;
+
+/** Settings has two tabs: who you are, and what Vidhata may do with your documents. */
+function SettingsTabs() {
+  const tab = useSearchParams().get("tab") === "privacy" ? "privacy" : "account";
+
+  return (
+    <div className="w-full">
+      <PageHeader
+        title="Settings"
+        description={MOCK_CLIENT_ORG.name}
+        tabs={
+          <nav aria-label="Settings">
+            <ul className="flex flex-wrap items-center gap-1.5">
+              {SETTINGS_TABS.map((t) => (
+                <li key={t.key}>
+                  <Link
+                    href={t.href}
+                    aria-current={t.key === tab ? "page" : undefined}
+                    className={cn(
+                      "inline-flex h-9 items-center rounded-full px-4 text-meta transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                      t.key === tab ? "bg-ink font-medium text-paper" : "bg-parchment text-ink hover:bg-line",
+                    )}
+                  >
+                    {t.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        }
+      />
+      {tab === "privacy" ? <PrivacySettings /> : <AccountSettings />}
+    </div>
+  );
+}
+
+export default function SettingsPage() {
+  // useSearchParams reads the URL on the client, so the page waits behind a boundary.
+  return (
+    <Suspense fallback={null}>
+      <SettingsTabs />
+    </Suspense>
   );
 }

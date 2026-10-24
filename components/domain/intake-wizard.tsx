@@ -204,27 +204,6 @@ export function IntakeWizard() {
     void goNext();
   }
 
-  // What a draft needs, read from the form as it is filled, so the indicator
-  // moves with the person and not only with the brief.
-  const have: Record<string, boolean> = {
-    type: Boolean(values.type),
-    counterpartyName: Boolean(values.counterpartyName?.trim()),
-    transactionValue: Number(values.transactionValue) > 0,
-    durationMonths: Number(values.durationMonths) > 0,
-    stateOfExecution: Boolean(values.stateOfExecution),
-  };
-  const ready = DRAFT_NEEDS.filter((key) => have[key as string]).length;
-  const stillNeeded = DRAFT_NEEDS.length - ready;
-  // "Ready to draft" is said only when the form itself would accept the draft:
-  // the five facts can all be in while the deal name or governing law is not.
-  const formComplete = intakeSchema.safeParse(values).success;
-  const readinessText =
-    stillNeeded > 0
-      ? `${stillNeeded} to go`
-      : formComplete
-        ? "Ready to draft"
-        : "Complete the form";
-
   // Steps after the first sit in one column, so the heading, the card and the
   // bar share their edges; the contract picker uses the full width.
   const columnWidth = step === 0 ? "max-w-[90rem]" : "max-w-4xl";
@@ -290,21 +269,6 @@ export function IntakeWizard() {
                 Your brief gave {fromBrief.found} of the {DRAFT_NEEDS.length} details a draft needs.
               </p>
             )}
-          </div>
-          {/* Readiness: how many of the details a draft needs are in. */}
-          <div className="w-full shrink-0 sm:w-72" role="status">
-            <p className="flex items-baseline justify-between gap-3 text-meta text-muted-fg">
-              <span>
-                {ready} of {DRAFT_NEEDS.length} details a draft needs
-              </span>
-              <span className="whitespace-nowrap text-ink">{readinessText}</span>
-            </p>
-            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-line">
-              <div
-                className="h-full rounded-full bg-accent transition-[width] motion-reduce:transition-none"
-                style={{ width: `${(ready / DRAFT_NEEDS.length) * 100}%` }}
-              />
-            </div>
           </div>
         </div>
         <div

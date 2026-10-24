@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { EmptyState } from "@/components/shared/empty-state";
+import { Icon } from "@/components/shared/icon";
 import { ErrorState } from "@/components/shared/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getClientNotifications } from "@/lib/api/client/notifications";
@@ -72,6 +74,11 @@ export default function NotificationsPage() {
           <EmptyState
             title="Nothing new."
             description="When a document moves, or your advocate asks for something, it appears here."
+            action={
+              <Button asChild variant="outline">
+                <Link href="/documents">Go to your documents</Link>
+              </Button>
+            }
           />
         </div>
       ) : (
@@ -80,12 +87,14 @@ export default function NotificationsPage() {
             <li key={n.id}>
               <Link
                 href={n.href}
-                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-8 rounded-card bg-parchment/50 px-6 py-4 transition-colors hover:bg-parchment"
+                className="grid grid-cols-[minmax(0,var(--measure))_auto_1fr_auto] items-center gap-x-6 rounded-card bg-parchment/50 px-6 py-4 [--measure:68ch] transition-colors hover:bg-parchment"
               >
                 <span className="min-w-0 text-body text-ink">{n.text}</span>
-                <span className="text-meta text-muted-fg">
+                <span className="whitespace-nowrap text-meta text-muted-fg">
                   {format(new Date(n.at), "d MMM yyyy")}
                 </span>
+                <span aria-hidden />
+                <Icon name="chevron_right" size={20} className="text-muted-fg" />
               </Link>
             </li>
           ))}

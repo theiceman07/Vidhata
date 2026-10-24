@@ -39,8 +39,8 @@ export function DraftPaths({ children }: { children: React.ReactNode }) {
           </span>
         </TabsTrigger>
       </TabsList>
-      {/* The intake wizard puts its step indicator here, on the same row. */}
-      <div id={DRAFT_STEPS_SLOT} className="min-w-0 basis-full lg:flex-1 lg:basis-0" />
+      {/* The intake wizard puts its step indicator here, on a row of its own so no step is clipped. */}
+      <div id={DRAFT_STEPS_SLOT} className="min-w-0 basis-full" />
       </div>
 
       <TabsContent value="describe" className="mt-5 flex-1 flex-col data-[state=active]:flex">

@@ -54,10 +54,10 @@ function Figure({
 
 function NoSource({ label, why }: { label: string; why: string }) {
   return (
-    <section className="flex flex-col rounded-card bg-parchment p-6">
-      <h2 className="text-body font-medium text-ink">{label}</h2>
-      <p className="mt-3 font-display text-h2 text-ink">No data source yet</p>
-      <p className="mt-4 max-w-measure text-meta text-muted-fg">{why}</p>
+    <section className="flex flex-col rounded-card bg-parchment/60 p-5">
+      <h3 className="text-meta font-medium text-ink">{label}</h3>
+      <p className="mt-1 text-meta font-medium text-muted-fg">No data source yet</p>
+      <p className="mt-3 max-w-measure text-meta text-muted-fg">{why}</p>
     </section>
   );
 }
@@ -105,7 +105,7 @@ export default function MetricsPage() {
         description="How the first pass is doing, from the work advocates have recorded. Internal."
       />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <Figure
           label="Override rate"
           ratio={metrics.overrides}
@@ -118,6 +118,12 @@ export default function MetricsPage() {
           none="There are no findings on the record yet."
           definition="Of every finding on the record, the share an advocate added because the first pass missed it."
         />
+      </div>
+
+      {/* What cannot be measured yet is said plainly and kept quiet: a figure
+          with nothing behind it is never shown (CLAUDE.md, Metrics). */}
+      <h2 className="mb-3 mt-10 text-body font-medium text-ink">Not measured yet</h2>
+      <div className="grid gap-4 md:grid-cols-3">
         <NoSource
           label="Triage override rate"
           why="No screen lets an advocate change a tier, so an override is not recorded. It has to be logged when that exists."

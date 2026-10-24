@@ -101,6 +101,11 @@ export default function ConsultationsPage() {
           <EmptyState
             title="No requests yet."
             description="When a client asks to talk through a document you settled, the request appears here."
+            action={
+              <Button asChild variant="outline">
+                <Link href="/queue">Back to the queue</Link>
+              </Button>
+            }
           />
         </div>
       ) : (

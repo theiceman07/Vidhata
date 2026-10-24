@@ -342,9 +342,9 @@ export default function QueuePage() {
           value={undecided}
           note={
             undecided > 0 ? (
-              <span className="inline-flex items-center gap-2">
+              <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <SeverityCounts labelled counts={severityCounts(openFindings)} />
-                <span>across open documents</span>
+                <span className="whitespace-nowrap">across open documents</span>
               </span>
             ) : (
               "Every finding decided"
@@ -366,7 +366,7 @@ export default function QueuePage() {
 
       {/* The working table takes the full width; the reading of the
           queue sits beneath it in three even columns. */}
-      <div id="queue-table" className="mt-10 min-w-0 scroll-mt-6">
+      <div id="queue-table" className="mt-6 min-w-0 scroll-mt-6">
       <div className="flex flex-col gap-3">
         <div role="group" aria-label="Filter the queue" className="flex flex-wrap gap-1">
           {FILTERS.map((f) => (
@@ -517,7 +517,7 @@ function Figure({
   onSelect: () => void;
 }) {
   return (
-    <div className="group relative flex flex-col gap-1.5 rounded-card bg-parchment px-5 py-4 transition-colors hover:bg-parchment/70">
+    <div className="group relative flex flex-col gap-1 rounded-card bg-parchment px-5 py-3 transition-colors hover:bg-parchment/70">
       <dt className="flex items-center justify-between gap-2 text-meta font-medium text-ink">
         <button
           type="button"
@@ -541,7 +541,7 @@ function Figure({
         >
           {value}
         </span>
-        <span className="mt-2 block truncate text-meta text-muted-fg">{note}</span>
+        <span className="mt-2 block text-meta text-muted-fg">{note}</span>
       </dd>
     </div>
   );
@@ -641,7 +641,7 @@ function UpNext({
       </div>
 
       {shown.length > 0 ? (
-        <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(18rem,1fr))]">
           {shown.map((finding) => (
             <li key={finding.findingId} className="flex min-w-0 flex-col rounded-card bg-paper p-4">
               <div className="flex items-center justify-between gap-2">
@@ -650,7 +650,7 @@ function UpNext({
                   {finding.clauseReference}
                 </span>
               </div>
-              <p className="mt-2 text-meta text-ink">{finding.description}</p>
+              <p className="mt-2 line-clamp-3 text-meta text-ink">{finding.description}</p>
               <p className="mt-auto truncate pt-3 text-meta text-muted-fg">
                 {finding.source === "advocate"
                   ? "Added by advocate"

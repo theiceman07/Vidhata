@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { AuditTrail } from "@/components/document/audit-trail";
@@ -38,6 +39,7 @@ import { getClientSettlementNotes } from "@/lib/api/client/settlement-notes";
 import { getClientTrail } from "@/lib/api/client/trail";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { ClientAuditEntry, ClientDocument, ClientSettlementNote } from "@/lib/types";
+import { outstandingSteps } from "@/lib/moves";
 import { PageHeader } from "@/components/shared/page-header";
 import { DocumentTabs } from "@/components/document/document-tabs";
 
@@ -367,6 +369,8 @@ function SettledDocument({
   trail: ClientAuditEntry[];
   notes: ClientSettlementNote[];
 }) {
+  const stepsLeft = outstandingSteps(doc);
+
   return (
     <ClientReader
       doc={doc}
@@ -387,10 +391,21 @@ function SettledDocument({
       tabs={<DocumentTabs documentId={doc.id} signedOff={Boolean(doc.signOff)} checklist={doc.checklist} />}
       companion={({ goToClause }) => <DocumentAgent doc={doc} onCite={goToClause} />}
       actions={
-        <Button variant="ghost" size="sm" onClick={() => window.print()}>
-          <Icon name="print" size={18} />
-          Print
-        </Button>
+        <>
+          <Button variant="ghost" size="sm" onClick={() => window.print()}>
+            <Icon name="print" size={18} />
+            Print
+          </Button>
+          {/* The one primary action on a settled document: the next thing to do. */}
+          {stepsLeft > 0 && (
+            <Button asChild size="sm">
+              <Link href={`/documents/${doc.id}/checklist`}>
+                Execution checklist · {stepsLeft} {stepsLeft === 1 ? "step" : "steps"} left
+                <Icon name="arrow_forward" size={18} />
+              </Link>
+            </Button>
+          )}
+        </>
       }
     />
   );
