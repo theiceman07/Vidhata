@@ -1,3 +1,4 @@
+import { GlowBackdrop } from "./glow-backdrop";
 import { PublicEntry } from "./public-entry";
 
 /**
@@ -10,6 +11,7 @@ import { PublicEntry } from "./public-entry";
  */
 export function Hero() {
   return (
+    <GlowBackdrop>
     <section className="mx-auto w-full max-w-6xl px-6">
       <div className="flex min-h-[calc(100svh-6rem)] flex-col items-center justify-center py-20 text-center">
         <h1 className="max-w-4xl font-display text-display-hero text-ink">
@@ -21,5 +23,6 @@ export function Hero() {
         <PublicEntry className="mt-10" />
       </div>
     </section>
+    </GlowBackdrop>
   );
 }

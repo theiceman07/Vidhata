@@ -81,7 +81,7 @@ export function ClaimDialog({
             </p>
             <p className="text-muted-fg">
               If the entry is a mistake, correct it in your{" "}
-              <Link href="/profile" className="text-ink underline underline-offset-2">
+              <Link href="/profile" className="link">
                 declared conflicts
               </Link>
               .

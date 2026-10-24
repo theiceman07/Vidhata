@@ -16,7 +16,7 @@ export default function PrivacyPage() {
     <>
     <main className="mx-auto w-full max-w-3xl px-4 py-10">
       <PageHeader title="Privacy Policy" backHref="/" backLabel="Home" />
-      <div className="rounded-card border border-caution/30 bg-caution/10 p-6 text-body text-ink">
+      <div className="rounded-card border border-line bg-sand p-6 text-body text-ink">
         <p className="font-medium">Privacy Policy · pending publication.</p>
         <p className="mt-2 text-muted-fg">
           This page is a placeholder. Vidhata handles contract data, so our

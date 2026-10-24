@@ -31,7 +31,7 @@ import {
 import { intakeSchema, type IntakeFormValues } from "@/lib/intakeSchema";
 import { INDIAN_STATES } from "@/lib/mock/intake-options.mock";
 import { createReentryGuard, runExclusive } from "@/lib/reentry";
-import { Icon } from "@/components/shared/icon";
+import { Tick } from "@/components/shared/tick";
 import { DRAFT_STEPS_SLOT } from "@/components/domain/draft-paths";
 import { cn } from "@/lib/utils";
 
@@ -243,19 +243,9 @@ export function IntakeWizard() {
               i === step ? "bg-accent/10 font-medium text-ink" : "text-muted-fg",
             )}
           >
-            <span
-              aria-hidden
-              className={cn(
-                "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-label",
-                i < step
-                  ? "bg-accent text-accent-fg"
-                  : i === step
-                    ? "bg-accent text-accent-fg"
-                    : "bg-paper text-muted-fg ring-1 ring-inset ring-line",
-              )}
-            >
-              {i < step ? <Icon name="check" size={16} /> : i + 1}
-            </span>
+            <Tick state={i < step ? "done" : i === step ? "current" : "ahead"} size="md">
+              {i === step ? i + 1 : i < step ? undefined : i + 1}
+            </Tick>
             <span className="whitespace-nowrap max-sm:sr-only">{label}</span>
             {i === step && <span className="sr-only sm:hidden">{label}</span>}
           </span>

@@ -87,7 +87,7 @@ export default function PayoutsPage() {
               >
                 <Link
                   href={`/consultations/${line.consultationId}`}
-                  className="line-clamp-2 min-w-0 font-display text-h3 text-ink hover:underline"
+                  className="line-clamp-2 min-w-0 font-display text-h3 text-ink hover:text-brand"
                 >
                   {line.documentTitle}
                 </Link>

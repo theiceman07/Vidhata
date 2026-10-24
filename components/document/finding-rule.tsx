@@ -8,8 +8,8 @@ import type { Severity, WorkspaceFinding } from "@/lib/types";
 
 const SEVERITY_RULE: Record<Severity, string> = {
   critical: "bg-ink",
-  high: "bg-flagged",
-  medium: "bg-caution",
+  high: "bg-blocked",
+  medium: "bg-blocked/50",
   // Info is reserved for layer badges. Low severity carries no colour.
   low: "bg-muted-fg",
 };
@@ -45,7 +45,7 @@ export function FindingRule({
       )}
     >
       <motion.span
-        className="block h-full w-full origin-top bg-verified"
+        className="block h-full w-full origin-top bg-done"
         initial={false}
         animate={{ scaleY: settled ? 1 : 0 }}
         transition={{

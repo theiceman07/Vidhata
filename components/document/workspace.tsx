@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { TIER_PENDING_LABEL } from "@/lib/config/pricing";
 import { cn } from "@/lib/utils";
 import { Icon, type IconName } from "@/components/shared/icon";
+import { Tick } from "@/components/shared/tick";
 import {
   usePalette,
   useRegisterCommands,
@@ -505,8 +506,8 @@ export function DocumentWorkspace({
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 md:ml-auto">
             {blockers ? (
               blockers.length === 0 ? (
-                <span className="inline-flex items-center gap-1 text-meta text-verified">
-                  <Icon name="check_circle" size={16} />
+                <span className="inline-flex items-center gap-1 text-meta text-done-text">
+                  <Tick state="done" size="sm" />
                   Ready for sign-off
                 </span>
               ) : (

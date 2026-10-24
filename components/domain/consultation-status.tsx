@@ -1,4 +1,5 @@
-import { cn } from "@/lib/utils";
+import { Chip } from "@/components/document/state-label";
+import { consultationTone } from "@/lib/tone";
 import type { Consultation } from "@/lib/types";
 
 type Reading = Pick<Consultation, "status"> & { paid: boolean };
@@ -22,7 +23,7 @@ export function consultationLabel(c: Reading, audience: "client" | "advocate"): 
   }
 }
 
-/** The state as a pill. Neutral, except answered: a settled request carries the accent. */
+/** The state as a chip: tone and icon say whose move it is, the words say what. */
 export function ConsultationStatus({
   consultation,
   audience,
@@ -32,17 +33,10 @@ export function ConsultationStatus({
   audience: "client" | "advocate";
   className?: string;
 }) {
+  const { tone, icon } = consultationTone(consultation, audience);
   return (
-    <span
-      className={cn(
-        "inline-flex rounded-full border px-2.5 py-0.5 text-label font-medium",
-        consultation.status === "answered"
-          ? "border-accent/30 bg-accent/10 text-accent"
-          : "border-line text-ink",
-        className,
-      )}
-    >
+    <Chip tone={tone} icon={icon} className={className}>
       {consultationLabel(consultation, audience)}
-    </span>
+    </Chip>
   );
 }

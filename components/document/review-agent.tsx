@@ -92,11 +92,11 @@ export function ReviewAgent({
 
                 <div
                   className={cn(
-                    reply.decision && "rounded-card border border-caution/30 bg-caution/10 px-4 py-3",
+                    reply.decision && "rounded-card border border-progress/30 bg-progress-tint px-4 py-3",
                   )}
                 >
                   {reply.decision && (
-                    <p className="mb-1 text-meta font-medium text-caution-fg">Your decision</p>
+                    <p className="mb-1 text-meta font-medium text-progress">Your decision</p>
                   )}
                   <p className="whitespace-pre-line text-body leading-relaxed text-ink">
                     {reply.text}

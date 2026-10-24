@@ -28,14 +28,14 @@ function markClass(finding: WorkspaceFinding, emphasised: boolean): string {
   }
   if (state === "with_client") {
     return cn(
-      "border-b-2 border-dashed border-caution",
-      emphasised ? "bg-caution/20" : "bg-transparent",
+      "border-b-2 border-dashed border-move",
+      emphasised ? "bg-move/20" : "bg-transparent",
     );
   }
   const tone = {
     critical: emphasised ? "border-ink bg-ink/15" : "border-ink bg-ink/[0.06]",
-    high: emphasised ? "border-flagged bg-flagged/15" : "border-flagged bg-flagged/[0.06]",
-    medium: emphasised ? "border-caution bg-caution/25" : "border-caution bg-caution/10",
+    high: emphasised ? "border-blocked bg-blocked/15" : "border-blocked bg-blocked/[0.06]",
+    medium: emphasised ? "border-blocked/60 bg-blocked/10" : "border-blocked/60 bg-blocked/[0.05]",
     low: emphasised ? "border-muted-fg bg-ink/10" : "border-muted-fg bg-ink/[0.04]",
   }[finding.severity];
   return cn("border-b-2", tone);

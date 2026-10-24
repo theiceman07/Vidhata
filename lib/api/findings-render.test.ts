@@ -70,8 +70,8 @@ describe("a critical finding", () => {
     const critical = detail(R1_FINDING_IDS.critical);
     const high = detail(R1_FINDING_IDS.pending);
     expect(critical).toContain("bg-ink");
-    expect(critical).not.toContain("bg-flagged");
-    expect(high).toContain("bg-flagged");
+    expect(critical).not.toContain("bg-blocked");
+    expect(high).toContain("bg-blocked");
   });
 });
 

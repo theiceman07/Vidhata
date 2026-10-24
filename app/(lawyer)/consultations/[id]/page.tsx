@@ -320,7 +320,7 @@ export default function ConsultationRequestPage() {
             <p className="mt-2 text-meta text-ink">{request.documentTitle}</p>
             <Link
               href={`/review/${request.documentId}`}
-              className="mt-1 inline-block text-meta text-ink underline"
+              className="link mt-1 inline-block text-meta"
             >
               Open the settled document
             </Link>

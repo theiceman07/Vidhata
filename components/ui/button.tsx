@@ -15,7 +15,7 @@ const buttonVariants = cva(
           "border border-ink/80 bg-transparent text-ink hover:bg-ink hover:text-paper",
         secondary: "bg-canvas text-ink hover:bg-canvas/80",
         ghost: "text-ink hover:bg-canvas",
-        link: "text-accent underline-offset-4 hover:underline",
+        link: "link",
       },
       size: {
         default: "h-10 px-4 py-2",

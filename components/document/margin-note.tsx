@@ -67,7 +67,7 @@ export function MarginNote({
           disabled={blocked !== null}
           aria-describedby={blocked ? reasonId : undefined}
           onClick={() => setEditing(true)}
-          className="text-label text-muted-fg underline-offset-2 hover:text-ink hover:underline disabled:pointer-events-none disabled:opacity-50"
+          className="text-label text-muted-fg hover:text-ink disabled:pointer-events-none disabled:opacity-50"
         >
           Edit
         </button>
@@ -76,7 +76,7 @@ export function MarginNote({
           disabled={blocked !== null}
           aria-describedby={blocked ? reasonId : undefined}
           onClick={() => onDelete()}
-          className="text-label text-muted-fg underline-offset-2 hover:text-flagged hover:underline disabled:pointer-events-none disabled:opacity-50"
+          className="text-label text-muted-fg hover:text-blocked disabled:pointer-events-none disabled:opacity-50"
         >
           Remove
         </button>

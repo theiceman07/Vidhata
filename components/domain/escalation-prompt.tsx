@@ -11,8 +11,8 @@ interface EscalationPromptProps {
 export function EscalationPrompt({ advocateName, href }: EscalationPromptProps) {
   return (
     <div className="flex justify-start">
-      <div className="max-w-[92%] rounded-card border border-caution/30 bg-caution/10 p-4 sm:max-w-[80%]">
-        <p className="mb-2 text-label font-medium text-caution-fg">
+      <div className="max-w-[92%] rounded-card border border-progress/30 bg-progress-tint p-4 sm:max-w-[80%]">
+        <p className="mb-2 text-label font-medium text-progress">
           This needs legal judgment
         </p>
         <p className="text-body text-ink">

@@ -99,7 +99,7 @@ export default function ClientLoginPage() {
             onClick={() =>
               toast.info("Sign-up isn't available in this preview.")
             }
-            className="text-accent underline underline-offset-2 hover:no-underline"
+            className="link"
           >
             Create an account
           </button>
@@ -164,7 +164,7 @@ export default function ClientLoginPage() {
           <p
             role="alert"
             aria-live="polite"
-            className="text-small text-caution-fg"
+            className="text-small text-blocked"
           >
             Too many attempts. Try again in {LOCKOUT_SECONDS} seconds.
           </p>

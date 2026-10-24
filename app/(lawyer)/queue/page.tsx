@@ -6,6 +6,8 @@ import Link from "next/link";
 import { differenceInCalendarDays, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/shared/icon";
+import { TextLink } from "@/components/shared/text-link";
+import { Tick } from "@/components/shared/tick";
 import { toast } from "sonner";
 import { ClaimDialog } from "@/components/domain/claim-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -296,13 +298,13 @@ export default function QueuePage() {
           className={cn(
             "inline-flex items-center gap-2 rounded-full px-4 py-2 text-meta transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
             available
-              ? "bg-parchment text-ink hover:bg-parchment/70"
-              : "bg-caution/15 text-caution-fg hover:bg-caution/25",
+              ? "bg-sand text-ink hover:bg-sand/70"
+              : "bg-sand text-muted hover:bg-sand/70",
           )}
         >
           <span
             aria-hidden
-            className={cn("h-2 w-2 rounded-full", available ? "bg-verified" : "bg-caution")}
+            className={cn("h-2 w-2 rounded-full", available ? "bg-done" : "bg-muted")}
           />
           {available ? "Available for new claims" : "Unavailable for new claims"}
           <Icon name="chevron_right" size={18} className="text-muted-fg" />
@@ -310,11 +312,9 @@ export default function QueuePage() {
       </header>
 
       {!available && (
-        <p className="mt-6 border-l-2 border-caution pl-3 text-meta text-ink">
+        <p className="mt-6 border-l-2 border-muted pl-3 text-meta text-ink">
           You are marked unavailable, so you cannot claim new documents.{" "}
-          <Link href="/profile" className="text-accent underline underline-offset-2">
-            Change this in your profile
-          </Link>
+          <TextLink href="/profile">Change this in your profile</TextLink>
           .
         </p>
       )}
@@ -620,7 +620,7 @@ function UpNext({
       <div className="min-w-0">
         <Link
           href={`/review/${doc.id}`}
-          className="font-display text-h2 text-ink hover:underline"
+          className="font-display text-h2 text-ink hover:text-brand"
         >
           {doc.title}
         </Link>
@@ -775,7 +775,7 @@ function TierMix({ docs }: { docs: ContractDocument[] }) {
   const severities: { key: keyof typeof findings; label: string; fill: string }[] = [
     { key: "critical", label: "Critical", fill: "bg-ink" },
     { key: "high", label: "High", fill: "bg-flagged" },
-    { key: "medium", label: "Medium", fill: "bg-caution" },
+    { key: "medium", label: "Medium", fill: "bg-blocked/50" },
     { key: "low", label: "Low", fill: "bg-muted-fg" },
   ];
   const maxFinding = Math.max(1, findings.critical + findings.high + findings.medium + findings.low);
@@ -833,7 +833,7 @@ function SignedOffByYou({ docs, onShow }: { docs: ContractDocument[]; onShow: ()
           <button
             type="button"
             onClick={onShow}
-            className="text-label text-ink underline-offset-2 hover:underline"
+            className="link text-label"
           >
             All {docs.length}
           </button>
@@ -853,7 +853,7 @@ function SignedOffByYou({ docs, onShow }: { docs: ContractDocument[]; onShow: ()
                 href={`/review/${doc.id}`}
                 className="flex items-center gap-3 rounded-control bg-paper px-4 py-3 transition-colors hover:bg-paper/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
-                <Icon name="check_circle" size={18} className="text-accent" />
+                <Tick state="done" size="sm" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-meta text-ink">{doc.title}</span>
                   <span className="block truncate text-meta text-muted-fg">
@@ -935,7 +935,7 @@ function QueueRow({ doc, action }: { doc: ContractDocument; action: React.ReactN
       <div role="cell" className="min-w-0">
         <Link
           href={`/review/${doc.id}`}
-          className="line-clamp-2 font-display text-h3 text-ink hover:underline"
+          className="line-clamp-2 font-display text-h3 text-ink hover:text-brand"
         >
           {doc.title}
         </Link>

@@ -92,7 +92,7 @@ export default function LawyerLoginPage() {
       footer={
         <>
           Not on the panel yet?{" "}
-          <Link href="/advocate-invite" className="text-accent underline underline-offset-2 hover:no-underline">
+          <Link href="/advocate-invite" className="link">
             Request an invitation
           </Link>
         </>
@@ -147,7 +147,7 @@ export default function LawyerLoginPage() {
           <p
             role="alert"
             aria-live="polite"
-            className="text-small text-caution-fg"
+            className="text-small text-blocked"
           >
             Too many attempts. Try again in {LOCKOUT_SECONDS} seconds.
           </p>
@@ -170,14 +170,14 @@ export default function LawyerLoginPage() {
             Preview: open a sample invitation,{" "}
             <Link
               href={`/advocate-onboarding/${VALID_INVITE_TOKEN}`}
-              className="text-accent underline underline-offset-2 hover:no-underline"
+              className="link"
             >
               a valid one
             </Link>{" "}
             or{" "}
             <Link
               href={`/advocate-onboarding/${EXPIRED_INVITE_TOKEN}`}
-              className="text-accent underline underline-offset-2 hover:no-underline"
+              className="link"
             >
               an expired one
             </Link>

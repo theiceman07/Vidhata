@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Icon } from "@/components/shared/icon";
+import { Tick } from "@/components/shared/tick";
 import { ErrorState } from "@/components/shared/error-state";
 import { DocumentWorkspace } from "@/components/document/workspace";
 import { ReviewAgent } from "@/components/document/review-agent";
@@ -351,8 +351,8 @@ export default function ReviewPage() {
       blockers={settled ? undefined : blockers}
       aside={
         settled && doc.settledAt ? (
-          <span className="inline-flex items-center gap-1 text-label text-verified">
-            <Icon name="check_circle" size={16} />
+          <span className="inline-flex items-center gap-1 text-label text-done-text">
+            <Tick state="done" size="sm" />
             Signed off by {doc.advocate?.name}
           </span>
         ) : undefined

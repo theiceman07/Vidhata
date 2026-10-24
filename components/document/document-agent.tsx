@@ -132,8 +132,8 @@ export function DocumentAgent({
                   </p>
                 </li>
               ) : m.isEscalation ? (
-                <li key={m.id} className="rounded-card border border-caution/30 bg-caution/10 px-4 py-3">
-                  <p className="text-meta font-medium text-caution-fg">This needs an advocate</p>
+                <li key={m.id} className="rounded-card border border-progress/30 bg-progress-tint px-4 py-3">
+                  <p className="text-meta font-medium text-progress">This needs an advocate</p>
                   <p className="mt-1 text-body text-ink">
                     That asks what you should do, not what the document says.
                     {" "}{advocate} settled this document and can advise you.

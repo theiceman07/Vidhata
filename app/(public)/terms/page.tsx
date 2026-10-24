@@ -1,3 +1,4 @@
+import { TextLink } from "@/components/shared/text-link";
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/shared/page-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
@@ -17,16 +18,16 @@ export default function TermsPage() {
     <>
     <main className="mx-auto w-full max-w-3xl px-4 py-10">
       <PageHeader title="Terms of Service" backHref="/" backLabel="Home" />
-      <div className="rounded-card border border-caution/30 bg-caution/10 p-6 text-body text-ink">
+      <div className="rounded-card border border-line bg-sand p-6 text-body text-ink">
         <p className="font-medium">Terms of Service · pending publication.</p>
         <p className="mt-2 text-muted-fg">
           This page is a placeholder. Vidhata&apos;s Terms of Service are
           being drafted by qualified counsel and will be published here
           before general availability. If you need terms information now,
           contact us via the{" "}
-          <a href="/contact" className="text-accent underline underline-offset-2 hover:no-underline">
+          <TextLink href="/contact" className="link">
             contact page
-          </a>
+          </TextLink>
           .
         </p>
       </div>

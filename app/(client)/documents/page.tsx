@@ -6,12 +6,14 @@ import { format } from "date-fns";
 import { ErrorState } from "@/components/shared/error-state";
 import { Icon } from "@/components/shared/icon";
 import { LifecycleStepper, stageCaption } from "@/components/document/provenance";
+import { StateLabel } from "@/components/document/state-label";
 import { DealPrompt } from "@/components/marketing/deal-prompt";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listClientDocuments } from "@/lib/api/client/documents";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { groupOf, yourMove, type Move, type MoveGroup } from "@/lib/moves";
+import { TONE, type Tone } from "@/lib/tone";
 import type { ClientDocumentSummary } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -95,6 +97,7 @@ export default function DocumentsPage() {
   const groups: {
     key: MoveGroup;
     title: string;
+    tone: Tone;
     docs: ClientDocumentSummary[];
     empty: string;
     promise: string;
@@ -102,26 +105,29 @@ export default function DocumentsPage() {
     {
       key: "you",
       title: "Needs your action",
+      tone: "move",
       docs: you,
-      empty: "Nothing needs you.",
+      empty: "Nothing needs you right now.",
       promise:
-        "Requests from an advocate, and execution steps after sign-off, appear here.",
+        "When your advocate asks you something, or a step is left after sign-off, it shows up here.",
     },
     {
       key: "advocate",
       title: "With the advocate",
+      tone: "progress",
       docs: byGroup("advocate"),
       empty: "No document is with an advocate right now.",
       promise:
-        "Submit a draft and it waits here while an advocate reviews it, with the day it was claimed.",
+        "After you submit a draft, it waits here while an advocate reviews it.",
     },
     {
       key: "done",
       title: "Settled and executed",
+      tone: "done",
       docs: byGroup("done"),
       empty: "Nothing is settled and executed yet.",
       promise:
-        "Settled documents stay here for good, with the sign-off, the execution proof and the full record.",
+        "Once an advocate signs a document off, it stays here with its full record.",
     },
   ];
   const empties = groups.filter((g) => g.docs.length === 0);
@@ -156,7 +162,7 @@ export default function DocumentsPage() {
         {groups
           .filter((g) => g.docs.length > 0)
           .map((g) => (
-            <Section key={g.key} title={g.title} count={g.docs.length}>
+            <Section key={g.key} title={g.title} tone={g.tone} count={g.docs.length}>
               {g.docs.map((doc) => (
                 <DocumentRow
                   key={doc.id}
@@ -176,7 +182,7 @@ export default function DocumentsPage() {
             )}
           >
             {empties.map((g) => (
-                <EmptyGroup key={g.key} title={g.title} empty={g.empty} promise={g.promise} />
+                <EmptyGroup key={g.key} title={g.title} tone={g.tone} empty={g.empty} promise={g.promise} />
               ))}
           </div>
         )}
@@ -190,18 +196,25 @@ export default function DocumentsPage() {
 /** A group with nothing in it: what it holds, and what will arrive. */
 function EmptyGroup({
   title,
+  tone,
   empty,
   promise,
 }: {
   title: string;
+  tone: Tone;
   empty: string;
   promise: string;
 }) {
   return (
-    <section className="flex flex-col rounded-card bg-parchment p-6 md:p-7">
+    <section className="flex flex-col rounded-card bg-sand p-6 md:p-7">
       <h2 className="flex items-center gap-3 font-display text-h3 text-ink">
         {title}
-        <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-paper px-2 font-sans text-label font-medium tabular-nums text-muted-fg">
+        <span
+          className={cn(
+            "inline-flex h-6 min-w-6 items-center justify-center rounded-full border px-2 font-sans text-label font-medium tabular-nums",
+            TONE[tone].chip,
+          )}
+        >
           0
         </span>
       </h2>
@@ -258,7 +271,7 @@ function YourRecord({ docs }: { docs: ClientDocumentSummary[] }) {
   return (
     <section
       aria-label="Your record"
-      className="tile-grain grid gap-3 rounded-modal bg-parchment p-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.4fr)_repeat(4,minmax(0,1fr))]"
+      className="grid gap-3 rounded-modal bg-sand p-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.4fr)_repeat(4,minmax(0,1fr))]"
     >
       <div className="flex flex-col justify-between gap-4 p-5 md:col-span-2 xl:col-span-1">
         <p className="text-label font-medium text-muted-fg">Your record</p>
@@ -276,7 +289,7 @@ function YourRecord({ docs }: { docs: ClientDocumentSummary[] }) {
       {figures.map((figure) => (
         <div
           key={figure.label}
-          className="flex flex-col justify-between gap-6 rounded-card bg-paper p-6"
+          className="flex flex-col justify-between gap-6 rounded-card bg-surface p-6"
         >
           <p className="text-label font-medium text-muted-fg">{figure.label}</p>
           <div>
@@ -291,10 +304,12 @@ function YourRecord({ docs }: { docs: ClientDocumentSummary[] }) {
 
 function Section({
   title,
+  tone,
   count,
   children,
 }: {
   title: string;
+  tone: Tone;
   count: number;
   children: React.ReactNode;
 }) {
@@ -302,7 +317,12 @@ function Section({
     <section>
       <h2 className="flex items-center gap-3 font-display text-h2 text-ink">
         {title}
-        <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-parchment px-2 font-sans text-meta font-medium tabular-nums text-ink">
+        <span
+          className={cn(
+            "inline-flex h-7 min-w-7 items-center justify-center rounded-full border px-2 font-sans text-meta font-medium tabular-nums",
+            TONE[tone].chip,
+          )}
+        >
           {count}
         </span>
       </h2>
@@ -320,8 +340,9 @@ function DocumentRow({ doc, move }: { doc: ClientDocumentSummary; move: Move | n
   const date = since(doc);
 
   return (
-    <li className="relative grid items-center gap-x-10 gap-y-5 rounded-card border border-line bg-paper px-6 py-6 transition-colors hover:border-ink/25 lg:px-8 xl:grid-cols-[minmax(0,1fr)_12rem] 2xl:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)_12rem]">
+    <li className="relative grid items-center gap-x-10 gap-y-5 rounded-card border border-line bg-surface px-6 py-6 transition-colors hover:border-ink/25 lg:px-8 xl:grid-cols-[minmax(0,1fr)_12rem] 2xl:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)_12rem]">
       <div className="min-w-0">
+        <StateLabel state={doc.status} className="mb-2" />
         <Link
           href={`/documents/${doc.id}`}
           className="block truncate font-display text-[22px] font-medium leading-snug tracking-[-0.01em] text-ink after:absolute after:inset-0 after:content-['']"

@@ -161,7 +161,7 @@ function ShellBody({
         {/* Opaque behind the pill, so a page scrolling beneath it passes under
             the bar and is not seen at its sides. */}
         <header className="sticky top-0 z-30 bg-paper px-3 pb-2 pt-3 md:hidden">
-          <div className="flex h-14 items-center justify-between rounded-full bg-ink pl-6 pr-2 text-paper">
+          <div className="flex h-14 items-center justify-between rounded-full bg-shell pl-6 pr-2 text-paper">
             <Link href={homeHref} className="text-paper">
               <BrandLogo size="md" />
             </Link>
@@ -181,7 +181,7 @@ function ShellBody({
             className={cn(
               "min-h-0 min-w-0 flex-1",
               fullBleed
-                ? "md:overflow-y-auto lg:overflow-hidden"
+                ? "relative md:overflow-y-auto lg:overflow-hidden"
                 : "px-4 py-6 pb-24 md:overflow-y-auto md:px-8 md:py-8",
             )}
           >
@@ -333,7 +333,7 @@ function Rail({
         <nav
           aria-label="Main"
           className={cn(
-            "relative h-full overflow-hidden rounded-modal bg-ink text-paper transition-[width]",
+            "relative h-full overflow-hidden rounded-modal bg-shell text-paper transition-[width]",
             RAIL_EASE,
           )}
           style={{ width: open ? RAIL_CAPSULE : RAIL_SLIVER }}
@@ -495,7 +495,7 @@ function IdentityMenu({
         className={cn(
           "rounded-card",
           onInk
-            ? "rounded-control w-[var(--radix-dropdown-menu-trigger-width)] min-w-0 border-paper/15 bg-ink text-paper"
+            ? "rounded-control w-[var(--radix-dropdown-menu-trigger-width)] min-w-0 border-paper/15 bg-shell text-paper"
             : "w-64 shadow-float",
         )}
       >

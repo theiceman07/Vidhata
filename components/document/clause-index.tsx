@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Icon } from "@/components/shared/icon";
+import { Tick } from "@/components/shared/tick";
 import { findingState, severityRank } from "@/lib/findings";
 import type { Clause, WorkspaceFinding } from "@/lib/types";
 import { clauseNumberFromReference } from "@/lib/types";
@@ -100,12 +100,7 @@ export function ClauseIndex({
                     </span>
                   )}
                   {allSettled && (
-                    <Icon
-                      name="check"
-                      size={16}
-                      label="All findings settled"
-                      className="text-verified"
-                    />
+                    <Tick state="done" size="sm" label="All findings settled" />
                   )}
                 </button>
               </li>
@@ -158,7 +153,7 @@ export function ClauseIndex({
             <button
               type="button"
               onClick={() => setFilter("all")}
-              className="text-ink underline underline-offset-2"
+              className="link"
             >
               Show all
             </button>
@@ -196,10 +191,10 @@ export function ClauseIndex({
                       className={cn(
                         "shrink-0 text-label",
                         state === "settled"
-                          ? "text-verified"
+                          ? "text-done-text"
                           : state === "with_client"
-                            ? "text-muted-fg"
-                            : "text-caution-fg",
+                            ? "text-move-text"
+                            : "text-progress",
                       )}
                     >
                       {state === "settled"

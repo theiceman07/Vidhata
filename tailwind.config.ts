@@ -2,37 +2,63 @@ import type { Config } from "tailwindcss";
 import animate from "tailwindcss-animate";
 import containerQueries from "@tailwindcss/container-queries";
 
-// Brand Board V2.0 · 22 Sep 2026. A document is mostly paper: colour
-// appears where a decision has been made, and nowhere else. One accent
-// does almost all the work; the semantic set below carries citation and
-// review status only and is never used decoratively.
+// Design board "Before, and a safe After" (v1 conservative). One colour,
+// one meaning: green is done or brand, blue is in progress (advocate-side
+// work), marigold is "your move" (the client has something to do), vermilion
+// is blocked or a finding. These hex values are the single source of truth;
+// the contrast test (lib/contrast.test.ts) reads them from here.
 const config: Config = {
   darkMode: ["class"],
-  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
+  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./lib/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        accent: {
-          DEFAULT: "#1B4332",
-          hover: "#265E4A",
-          fg: "#FFFFFF",
+        paper: "#FBF9F4", // the page
+        surface: "#FFFFFF",
+        sand: "#F2EEE5", // quiet panels
+        line: "#E4DED1",
+        ink: "#14211C",
+        muted: "#4F5B55",
+        brand: { DEFAULT: "#0F5C45", deep: "#0B4A37", tint: "#E2F0E8" },
+        done: { DEFAULT: "#1B7F5A", text: "#146B4D", tint: "#E3F4EB" },
+        progress: { DEFAULT: "#1F5E99", tint: "#E6EFF9" },
+        move: { DEFAULT: "#F2A71B", text: "#7A4E00", tint: "#FDF1D6" },
+        blocked: { DEFAULT: "#B63A2B", tint: "#FBE7E3" },
+        night: "#0E1F1A",
+        shell: "#000000", // the portal rail and its mobile bar
+        // The calmer document page (app/(client)/documents/[id]). Scoped to it
+        // through CalmProvider; nothing else reads these.
+        calm: {
+          canvas: "#F5F3ED",
+          surface: "#FFFFFF",
+          muted: "#EFEEE8",
+          ink: "#343A40",
+          strong: "#263B33",
+          secondary: "#68716D",
+          border: "#DFDDD5",
+          "border-strong": "#C8C8BE",
+          divider: "#E8E6DF",
+          accent: "#B58A49",
+          "accent-muted": "#F1E8D8",
+          success: "#356A50",
+          "success-muted": "#E7EFE8",
+          warning: "#88652F",
+          "warning-muted": "#F5EEDC",
+          focus: "#547C69",
         },
-        ink: "#141414",
-        "muted-fg": "#5A5A5A",
-        line: "#E5E5E0",
-        // The page is white. Panels are told apart by hairlines, not tint.
-        canvas: "#FFFFFF",
-        paper: "#FFFFFF",
-        parchment: "#F0F0F0",
+        mint: "#5FC79A", // ticks on night
 
-        // Semantic tokens · citation and review status only.
-        verified: "#2D6A4F", // citation resolved, advocate approved (6.3:1)
-        flagged: "#9B2C2C", // high-severity finding, blocked citation (7.4:1)
-        // caution measures 3.7:1, which clears the floor for badge fills but
-        // not for text. As text it deepens to #92600A (5.2:1). Board V2.0
-        // specifies both values; caution-fg is the text/icon colour.
-        caution: { DEFAULT: "#B7791F", fg: "#92600A" },
-        info: "#2C5282", // layer badges only, never decorative (7.8:1)
+        // Aliases for the pre-board names, kept because about 100 files and
+        // the home page still use them. Each points at its new meaning and
+        // goes when its last user is migrated.
+        accent: { DEFAULT: "#0F5C45", hover: "#0B4A37", fg: "#FFFFFF" }, // brand, brand-deep, white
+        "muted-fg": "#4F5B55", // muted
+        canvas: "#FBF9F4", // paper
+        parchment: "#F2EEE5", // sand
+        verified: "#1B7F5A", // done
+        flagged: "#B63A2B", // blocked
+        caution: { DEFAULT: "#F2A71B", fg: "#7A4E00" }, // move, move-text
+        info: "#1F5E99", // progress
       },
       fontFamily: {
         // Board V3. A serif for headlines and contract text, a grotesk
@@ -94,13 +120,17 @@ const config: Config = {
         control: "12px",
         card: "20px",
         modal: "28px",
+        // The calmer document page: clause card, controls, badges.
+        "calm-card": "12px",
+        "calm-control": "8px",
+        "calm-badge": "5px",
       },
       boxShadow: {
         // No elevation. Surfaces are separated by hairlines, and the one
         // layer that sits over the work (menus, the palette, a sheet) is
         // outlined in ink rather than lifted.
         card: "none",
-        float: "0 0 0 1px #141414",
+        float: "0 0 0 1px #14211C",
       },
       keyframes: {
         "accordion-down": {

@@ -1,5 +1,8 @@
+import { Tick } from "@/components/shared/tick";
 import { Icon } from "@/components/shared/icon";
 import { ContextPanel } from "@/components/domain/document-context";
+import { CalmDisclosure, useCalm } from "@/components/domain/calm";
+import { cn } from "@/lib/utils";
 import { COVERAGE, layersRun } from "@/lib/coverage";
 import { PIPELINE_LAYERS, type ClientDocument } from "@/lib/types";
 
@@ -16,15 +19,88 @@ import { PIPELINE_LAYERS, type ClientDocument } from "@/lib/types";
 export function CoveragePanel({
   doc,
   className,
+  collapsible = false,
 }: {
   doc: Pick<ClientDocument, "status" | "version" | "clauses" | "otherClauseCount">;
   className?: string;
+  collapsible?: boolean;
 }) {
   const ran = layersRun(doc);
   const clauseCount = doc.clauses.length + doc.otherClauseCount;
+  const calm = useCalm();
+  const intro =
+    ran.length === 0
+      ? "The first pass has not run yet."
+      : `All ${ran.length} layers ran on the ${clauseCount} clauses of Draft ${doc.version}. The full pipeline runs again on every revision.`;
+
+  if (calm) {
+    // One open section: a strong rule, the heading with its intro line, then
+    // three columns set apart by soft dividers. A tick means a layer ran on
+    // this draft, not that a clause passed it.
+    return (
+      <CalmDisclosure
+        id="coverage-body"
+        className={cn("border-t-2 border-calm-strong", className)}
+        buttonClassName="flex w-full cursor-pointer items-baseline justify-between gap-6 rounded-calm-control py-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-calm-focus"
+        header={(open) => (
+          <>
+            <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-6 gap-y-1">
+              <span role="heading" aria-level={2} className="font-display text-[23px] font-medium leading-8 text-calm-strong">
+                What this was checked against
+              </span>
+              <span className="text-[13px] leading-5 text-calm-secondary">{intro}</span>
+            </span>
+            <span className="flex shrink-0 items-center gap-2 text-[12.5px] text-calm-secondary">
+              {!open && <span className="max-md:hidden">Layers and exclusions</span>}
+              <Icon
+                name="expand_more"
+                size={16}
+                className={cn("transition-transform motion-reduce:transition-none", open && "rotate-180")}
+              />
+            </span>
+          </>
+        )}
+      >
+        <div className="grid pb-2 md:grid-cols-3 md:divide-x md:divide-calm-divider">
+          {ran.length > 0 && (
+            <CalmColumn number="01" title="Layers that ran" note="A tick means the layer ran on this draft.">
+              <ol className="space-y-1.5">
+                {ran.map((layer) => (
+                  <li key={layer} className="flex items-center gap-2.5 text-[13px] leading-5 text-calm-ink">
+                    <Tick state="done" size="sm" className="!bg-calm-success" />
+                    <span>{PIPELINE_LAYERS[layer].name}</span>
+                  </li>
+                ))}
+              </ol>
+            </CalmColumn>
+          )}
+          <CalmColumn number="02" title="Rules and references" note="The same for every document.">
+            <div className="space-y-4">
+              <CalmList title="Statutory checks" scope="Layer 2" items={COVERAGE.statutory} note={COVERAGE.statutoryNote} />
+              <CalmList title="Cross-clause checks" scope="Layers 3 and 4" items={COVERAGE.crossClause} />
+            </div>
+          </CalmColumn>
+          <CalmColumn number="03" title="Outside the review" note="Not covered by this review.">
+            <ul className="space-y-1">
+              {COVERAGE.outOfScope.map((item) => (
+                <li key={item} className="text-[13px] leading-5 text-calm-secondary">
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </CalmColumn>
+        </div>
+      </CalmDisclosure>
+    );
+  }
 
   return (
-    <ContextPanel title="What this was checked against" className={className}>
+    <ContextPanel
+      title="What this was checked against"
+      className={className}
+      collapsible={collapsible}
+      hint="Layers and exclusions"
+    >
       <p className="text-meta text-ink">
         {ran.length === 0
           ? "The first pass has not run yet."
@@ -39,7 +115,7 @@ export function CoveragePanel({
             <ol className="grid gap-x-8 gap-y-1 md:grid-cols-2 xl:grid-cols-3">
               {ran.map((layer) => (
                 <li key={layer} className="flex items-baseline gap-2.5 text-meta">
-                  <Icon name="check" size={16} className="shrink-0 translate-y-0.5 text-verified" />
+                  <Tick state="done" size="sm" className="translate-y-0.5" />
                   <span className="text-ink">{PIPELINE_LAYERS[layer].name}</span>
                 </li>
               ))}
@@ -90,7 +166,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-control bg-paper px-4 py-3">
+    <section className="rounded-control bg-surface px-4 py-3">
       <h3 className="flex flex-wrap items-baseline gap-x-2.5 text-meta font-semibold text-ink">
         <span className="tabular-nums text-muted-fg">{number}</span>
         {title}
@@ -125,6 +201,59 @@ function CoverageList({
         ))}
       </ul>
       {note && <p className="mt-2.5 text-small text-muted-fg">{note}</p>}
+    </div>
+  );
+}
+
+/** One column of the calm layout: the number and heading share a line, so all three start level. */
+function CalmColumn({
+  number,
+  title,
+  note,
+  children,
+}: {
+  number: string;
+  title: string;
+  note: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="min-w-0 py-3 md:px-6 md:first:pl-0 md:last:pr-0">
+      <h3 className="flex items-baseline gap-2.5 text-[14px] font-semibold leading-5 text-calm-strong">
+        <span className="tabular-nums text-[11px] text-calm-secondary">{number}</span>
+        {title}
+      </h3>
+      <p className="mt-0.5 min-h-5 text-[12.5px] leading-5 text-calm-secondary">{note}</p>
+      <div className="mt-3">{children}</div>
+    </section>
+  );
+}
+
+function CalmList({
+  title,
+  scope,
+  items,
+  note,
+}: {
+  title: string;
+  scope?: string;
+  items: readonly string[];
+  note?: string;
+}) {
+  return (
+    <div>
+      <h4 className="text-[13px] font-medium leading-5 text-calm-ink">
+        {title}
+      </h4>
+      {scope && <p className="text-[12.5px] leading-5 text-calm-secondary">{scope}</p>}
+      <ul className="mt-1 space-y-0.5">
+        {items.map((item) => (
+          <li key={item} className="text-[13px] leading-5 text-calm-secondary">
+            {item}
+          </li>
+        ))}
+      </ul>
+      {note && <p className="mt-2 text-[12.5px] leading-5 text-calm-secondary">{note}</p>}
     </div>
   );
 }

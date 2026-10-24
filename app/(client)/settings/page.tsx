@@ -335,7 +335,7 @@ export default function SettingsPage() {
               <Row label="Billing">
                 <Link
                   href="/billing"
-                  className="underline underline-offset-2 hover:text-accent"
+                  className="link"
                 >
                   Invoices and billing details
                 </Link>
@@ -343,7 +343,7 @@ export default function SettingsPage() {
               <Row label="Privacy">
                 <Link
                   href="/settings/privacy"
-                  className="underline underline-offset-2 hover:text-accent"
+                  className="link"
                 >
                   Training use, export and deletion
                 </Link>

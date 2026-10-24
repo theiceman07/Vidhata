@@ -47,7 +47,7 @@ export default function SecurityPage() {
         <section className="mx-auto w-full max-w-6xl px-6 pb-16">
           <div
             role="note"
-            className="mx-auto max-w-measure rounded-card border border-caution/30 bg-caution/10 p-5 text-body text-ink"
+            className="mx-auto max-w-measure rounded-card border border-line bg-sand p-5 text-body text-ink"
           >
             <p className="font-medium">This is a preview.</p>
             <p className="mt-1 text-muted-fg">

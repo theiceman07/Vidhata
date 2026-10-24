@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { Chip } from "@/components/document/state-label";
 import { BackButton } from "@/components/shared/back-button";
 import { ErrorState } from "@/components/shared/error-state";
 import { Button } from "@/components/ui/button";
@@ -316,9 +317,9 @@ function DeletionPanel({
   return (
     <Panel id="delete-title" title="Delete your data">
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <p className="inline-flex rounded-full border border-caution/40 px-2.5 py-0.5 text-label font-medium text-caution-fg">
+        <Chip tone="progress" icon="hourglass_top">
           {DELETION_STATUS}
-        </p>
+        </Chip>
         <p className="min-w-0 max-w-measure text-meta text-ink">
           You can ask for your data to be deleted. This is a request. What it would and would not
           remove is below, and the wording is waiting for counsel to confirm it.

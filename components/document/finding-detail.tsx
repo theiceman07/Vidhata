@@ -188,7 +188,7 @@ export function FindingDetail({
 
         {request && (
           <Section title="Requested from the client">
-            <div className="space-y-3 border-l-2 border-caution pl-3">
+            <div className="space-y-3 border-l-2 border-move pl-3">
               <div>
                 <p className="text-meta text-ink">{request.request}</p>
                 <p className="mt-1 text-label text-muted-fg">

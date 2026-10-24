@@ -1,11 +1,10 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { BackButton } from "@/components/shared/back-button";
-import { format, formatDistanceToNowStrict } from "date-fns";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import { AuditTrail } from "@/components/document/audit-trail";
 import {
@@ -16,10 +15,14 @@ import {
   WhatHappensNext,
 } from "@/components/domain/document-context";
 import { CoveragePanel } from "@/components/domain/coverage-panel";
-import { DraftBanner } from "@/components/domain/draft-banner";
+import { Assurances, StatusHero, StatusStrip } from "@/components/domain/status-hero";
+import { CalmProvider } from "@/components/domain/calm";
+import { tierLabel } from "@/lib/config/pricing";
 import { PaymentPanel } from "@/components/domain/payment-panel";
 import { ErrorState } from "@/components/shared/error-state";
 import { Icon } from "@/components/shared/icon";
+import { TextLink } from "@/components/shared/text-link";
+import { Tick } from "@/components/shared/tick";
 import { PipelineProgress } from "@/components/domain/pipeline-progress";
 import { UploadContractPanel } from "@/components/domain/upload-contract-panel";
 import { backendDataEnabled } from "@/lib/api/source";
@@ -27,7 +30,6 @@ import { ClientReader } from "@/components/document/client-reader";
 import { Provenance } from "@/components/document/provenance";
 import { ChangeRequests } from "@/components/document/change-requests";
 import { DocumentAgent } from "@/components/document/document-agent";
-import { StateLabel } from "@/components/document/state-label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,7 +39,6 @@ import {
 } from "@/lib/api/client/documents";
 import { getClientSettlementNotes } from "@/lib/api/client/settlement-notes";
 import { getClientTrail } from "@/lib/api/client/trail";
-import { tierLabel } from "@/lib/config/pricing";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { ClientAuditEntry, ClientDocument, ClientSettlementNote } from "@/lib/types";
 
@@ -211,13 +212,14 @@ export default function DocumentPage() {
         <header className="flex min-w-0 items-start gap-4">
           <BackButton fallbackHref="/documents" label="Back" />
           <div className="min-w-0">
-            <StateLabel state={doc.status} />
-            <h1 className="mt-2 font-display text-h1 text-ink">{doc.title}</h1>
-            <p className="mt-1 text-meta text-muted-fg">{doc.deal.counterpartyName}</p>
+            <h1 className="font-display text-h1 text-ink">{doc.title}</h1>
+            <p className="mt-1 text-meta text-muted">{doc.deal.counterpartyName}</p>
           </div>
         </header>
 
-        <div className="mt-10 grid items-start gap-x-8 gap-y-6 lg:grid-cols-[minmax(0,13fr)_minmax(0,7fr)]">
+        <StatusHero doc={doc} className="mt-6" />
+
+        <div className="mt-5 grid items-start gap-x-8 gap-y-6 lg:grid-cols-[minmax(0,13fr)_minmax(0,7fr)]">
           <PaymentPanel
             doc={doc}
             onPaid={(paid) => {
@@ -234,8 +236,9 @@ export default function DocumentPage() {
               doc={doc}
               wide
               compact
+              collapsible
               footer={
-                <div className="mt-4 rounded-control bg-paper px-4 py-3">
+                <div className="mt-4 rounded-control bg-surface px-4 py-3">
                   <h3 className="text-label font-medium text-muted-fg">What you receive at the end</h3>
                   <ul className="mt-2 grid gap-x-8 gap-y-1.5 text-meta leading-[1.45] text-muted-fg md:grid-cols-2">
                     <li>The settled document, with your advocate&apos;s sign-off recorded on it.</li>
@@ -254,113 +257,62 @@ export default function DocumentPage() {
 
   return (
     <Frame>
-      {/* Full width: who and what on the left, the terms of the review
-          on the right, the way the settled workspace sets its header. */}
-      <header className="flex flex-wrap items-start justify-between gap-x-10 gap-y-4">
-        <div className="flex min-w-0 items-start gap-4">
+      <CalmProvider>
+        <header className="flex min-w-0 items-start gap-4">
           <BackButton fallbackHref="/documents" label="Back" />
           <div className="min-w-0">
-            <StateLabel state={doc.status} />
-            {/* The one display moment on this screen. */}
-            <h1 className="mt-1.5 font-display text-h1 text-ink">{doc.title}</h1>
-            <p className="mt-1 text-meta text-muted-fg">
+            <h1 className="font-display text-h1 text-ink">
+              {doc.title}
+            </h1>
+            <p className="mt-1 text-meta text-muted">
               {doc.deal.counterpartyName}
-              <span className="mx-1.5 text-muted-fg/50">·</span>
+              <span className="mx-1.5 text-muted/50">·</span>
               Draft {doc.version}
-              <span className="mx-1.5 text-muted-fg/50">·</span>
-              <Link
-                href={`/documents/${doc.id}/history`}
-                className="text-ink underline underline-offset-2 hover:no-underline"
-              >
-                Version history
-              </Link>
+              <span className="mx-1.5 text-muted/50">·</span>
+              <TextLink href={`/documents/${doc.id}/history`}>Version history</TextLink>
+              <span className="mx-1.5 text-muted/50">·</span>
+              Submitted {format(new Date(doc.createdAt), "d MMM yyyy")}
+              <span className="mx-1.5 text-muted/50">·</span>
+              {tierLabel(doc.tier)} review
             </p>
           </div>
-        </div>
-        <dl className="grid grid-cols-[auto_auto] gap-x-4 gap-y-1 text-meta sm:pt-9 sm:text-right">
-          <dt className="text-muted-fg">Review</dt>
-          <dd className="text-ink">{tierLabel(doc.tier)}</dd>
-          <dt className="text-muted-fg">Submitted</dt>
-          <dd className="text-ink">{format(new Date(doc.createdAt), "d MMM yyyy")}</dd>
-        </dl>
-      </header>
+        </header>
 
-      {/* Everything on this view is before sign-off, so say so up front. */}
-      <DraftBanner className="mt-4" />
+        {/* The state, who has the move and what comes next lead the page. */}
+        <StatusStrip doc={doc} className="mt-4" />
 
-      {/* With an advocate, the summary and the client's responses lead at the
-          full width of the page; the record and the rest sit below it. */}
-      {doc.status !== "revision" && (
-        <div className="mt-5">
-          <WithAdvocate doc={doc} />
-        </div>
-      )}
-
-      {/* The move in hand and everything that explains it on the left;
-          the record the document carries on the right. */}
-      <div className="mt-5 grid items-start gap-x-6 gap-y-5 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
-        <div className="min-w-0">
-          {doc.status === "revision" && (
-            <>
-              <MoveSummary doc={doc} />
-              <div className="mt-4">
-                <ChangeRequests doc={doc} onSubmit={handleRespond} submitting={submitting} />
-              </div>
-            </>
-          )}
-
-          <div className={cn("space-y-4", doc.status === "revision" && "mt-5")}>
-            <WhatHappensNext doc={doc} wide compact />
-            <DealOnFile doc={doc} compact />
-            <CoveragePanel doc={doc} />
+        {/* The move in hand on the left; the record on the right, one column
+            with rules between its parts. Narrows below 1100px, stacks below 768px. */}
+        <div className="mt-5 grid pb-8 gap-x-10 gap-y-7 md:grid-cols-[minmax(0,1fr)_272px] min-[1100px]:grid-cols-[minmax(0,1fr)_320px] [&>*]:min-w-0">
+          <div className="space-y-7">
+            {doc.status === "revision" ? (
+              <ChangeRequests doc={doc} onSubmit={handleRespond} submitting={submitting} />
+            ) : (
+              <>
+                <Assurances />
+                <WithAdvocate doc={doc} />
+              </>
+            )}
+            <div className="rounded-card border border-line bg-surface p-6 md:p-8">
+              <WhatHappensNext doc={doc} wide />
+            </div>
+            <CoveragePanel doc={doc} collapsible />
           </div>
+
+          <aside className="self-start rounded-card bg-sand p-6">
+            <AdvocatePanel doc={doc} />
+            <ContextPanel title="Where it is">
+              <Provenance doc={doc} />
+            </ContextPanel>
+            <ContextPanel title="Activity" collapsible hint="What has happened">
+              <AuditTrail entries={trail} title={null} />
+            </ContextPanel>
+            <OnYourDesk currentId={doc.id} />
+            <DealOnFile doc={doc} collapsible />
+          </aside>
         </div>
-
-        {/* Plain flow: the record is taller than the screen, so holding it
-            in place would add a second scroll inside the page's own. */}
-        <aside className="min-w-0 space-y-4">
-          <ContextPanel title="Where it is">
-            <Provenance doc={doc} />
-          </ContextPanel>
-          <AdvocatePanel doc={doc} />
-          <ContextPanel title="Activity">
-            <AuditTrail entries={trail} title={null} />
-          </ContextPanel>
-          <OnYourDesk currentId={doc.id} />
-        </aside>
-      </div>
+      </CalmProvider>
     </Frame>
-  );
-}
-
-/**
- * The move, stated once in a sentence and then in one line of facts: how
- * many requests are open, how long they have waited, and what the document
- * becomes once they are answered.
- */
-function MoveSummary({ doc }: { doc: ClientDocument }) {
-  const open = doc.findingList.filter((f) => f.request && !f.request.response);
-  const asked = open
-    .map((f) => f.request?.requestedAt)
-    .filter((d): d is string => Boolean(d))
-    .sort()[0];
-
-  const waiting = asked ? formatDistanceToNowStrict(new Date(asked)) : "today";
-
-  return (
-    <section className="flex flex-wrap items-baseline justify-between gap-x-10 gap-y-2">
-      <p className="max-w-2xl text-lead text-muted-fg">
-        Your advocate asked for your answer before this document can be settled. The
-        rest of the review continues in the meantime.
-      </p>
-      <p className="text-meta text-muted-fg">
-        {open.length} {open.length === 1 ? "request" : "requests"} open
-        <span aria-hidden className="mx-1.5">·</span>
-        Waiting {waiting}
-        <span aria-hidden className="mx-1.5">·</span>
-        Then Draft {doc.version + 1}, then sign-off
-      </p>
-    </section>
   );
 }
 
@@ -371,7 +323,7 @@ function MoveSummary({ doc }: { doc: ClientDocument }) {
  */
 function Frame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="h-full overflow-y-auto px-4 py-5 md:px-8 md:py-6">
+    <div className={"md:absolute md:inset-0 md:overflow-y-auto px-4 py-5 md:px-8 md:py-4"}>
       <div className="w-full">{children}</div>
     </div>
   );
@@ -383,35 +335,28 @@ function WithAdvocate({ doc }: { doc: ClientDocument }) {
 
   return (
     <div className="space-y-5">
-      <p className="max-w-measure text-lead text-ink">
-        {doc.status === "pending_review"
-          ? "The first pass has drafted and screened this document. It is in the advocate queue, and an empanelled advocate will claim it for review."
-          : "An advocate is reviewing the findings the first pass raised."}{" "}
-        You will read the document once it is settled and signed off. Nothing
-        reaches you before an advocate has recorded a sign-off.
-      </p>
-
       {answered.length > 0 && (
         <section>
-          <h2 className="text-label font-medium text-muted-fg">Your responses</h2>
-          <ul className="mt-3 space-y-2">
+          <h2 className="font-display text-h3 text-ink">Your responses</h2>
+          <ul className="mt-3 space-y-4">
             {answered.map((f) => (
-              <li key={f.number} className="rounded-card bg-parchment p-4">
-                <p className="text-label text-muted-fg">
+              <li key={f.number} className="rounded-modal border border-line bg-surface p-6 md:p-8">
+                <p className="text-label text-muted">
                   <span className="font-mono">{f.clauseReference}</span>
                   {f.request?.respondedAt && (
                     <> · {format(new Date(f.request.respondedAt), "d MMM yyyy")}</>
                   )}
                 </p>
-                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <div className="mt-4 flex gap-4 rounded-card bg-move-tint p-5">
+                  <Icon name="rate_review" size={24} className="mt-0.5 text-move-text" />
                   <div className="min-w-0">
-                    <p className="text-label font-medium text-muted-fg">Your advocate asked</p>
-                    <p className="mt-1 text-meta text-ink">{f.request?.request}</p>
+                    <p className="text-label font-medium text-move-text">Your advocate asked</p>
+                    <p className="mt-1 text-body leading-[1.6] text-ink">{f.request?.request}</p>
                   </div>
-                  <div className="min-w-0 rounded-control bg-paper px-4 py-3">
-                    <p className="text-label font-medium text-muted-fg">Your answer</p>
-                    <p className="mt-1 text-meta text-ink">{f.request?.response}</p>
-                  </div>
+                </div>
+                <div className="mt-3 rounded-card bg-sand px-5 py-4">
+                  <p className="text-label font-medium text-muted">Your answer</p>
+                  <p className="mt-1 text-body text-ink">{f.request?.response}</p>
                 </div>
               </li>
             ))}
@@ -443,40 +388,40 @@ function SettledDocument({
       aside={
         <>
           {doc.signOff && (
-            <span className="inline-flex items-center gap-1 text-label text-verified">
-              <Icon name="check_circle" size={16} />
+            <span className="inline-flex items-center gap-1 text-label text-done-text">
+              <Tick state="done" size="sm" />
               Signed off by {doc.signOff.advocate} ·{" "}
               {format(new Date(doc.signOff.at), "d MMM yyyy")}
             </span>
           )}
           <Link
             href={`/documents/${doc.id}/delivery`}
-            className="text-label text-ink underline-offset-2 hover:underline"
+            className="link text-label"
           >
             Delivery
           </Link>
           <Link
             href={`/documents/${doc.id}/checklist`}
-            className="text-label text-ink underline-offset-2 hover:underline"
+            className="link text-label"
           >
             Execution checklist · {done} of {total}
           </Link>
           <Link
             href={`/documents/${doc.id}/summary`}
-            className="text-label text-ink underline-offset-2 hover:underline"
+            className="link text-label"
           >
             Summary
           </Link>
           <Link
             href={`/documents/${doc.id}/history`}
-            className="text-label text-ink underline-offset-2 hover:underline"
+            className="link text-label"
           >
             Version history
           </Link>
           {doc.signOff && (
             <Link
               href={`/documents/${doc.id}/consultation`}
-              className="text-label text-ink underline-offset-2 hover:underline"
+              className="link text-label"
             >
               Consultation
             </Link>

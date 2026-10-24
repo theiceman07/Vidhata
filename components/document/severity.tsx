@@ -5,8 +5,8 @@ const FILL: Record<Severity, string> = {
   // Critical is ink, and a diamond rather than a square (below): not a deeper red, so it
   // never reads as high at a glance, and the word beside it always says which it is.
   critical: "bg-ink border-ink rotate-45",
-  high: "bg-flagged border-flagged",
-  medium: "bg-caution border-caution",
+  high: "bg-blocked border-blocked",
+  medium: "bg-blocked/50 border-blocked",
   // Low carries no colour. Colour is spent where it changes a decision.
   low: "bg-transparent border-muted-fg",
 };

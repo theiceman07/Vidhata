@@ -10,6 +10,7 @@ import { BackButton } from "@/components/shared/back-button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { Icon } from "@/components/shared/icon";
+import { Tick } from "@/components/shared/tick";
 import { SettlementNoteView } from "@/components/document/settlement-note-view";
 import { StateLabel } from "@/components/document/state-label";
 import { Button } from "@/components/ui/button";
@@ -133,7 +134,7 @@ export default function DeliveryPage() {
               Sign-off
             </h2>
             <p className="mt-3 inline-flex items-center gap-2 font-display text-h2 text-ink">
-              <Icon name="check_circle" size={24} className="text-accent" />
+              <Tick state="done" size="lg" />
               Signed off by {delivery.signOff.advocate}
             </p>
             <dl className="mt-4 grid max-w-md grid-cols-[10rem_minmax(0,1fr)] gap-x-4 gap-y-2.5 text-meta">

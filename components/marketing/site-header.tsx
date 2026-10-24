@@ -63,9 +63,9 @@ export function SiteHeader() {
       <div
         className={cn(
           "pointer-events-auto mx-auto flex h-16 max-w-6xl items-center justify-between gap-6 rounded-full border pl-7 pr-2.5 transition-colors duration-300",
-          tone === "top" && "border-transparent bg-ink text-paper",
+          tone === "top" && "border-transparent bg-shell text-paper",
           tone === "light" && "border-line bg-paper text-ink",
-          tone === "dark" && "border-paper/20 bg-ink text-paper",
+          tone === "dark" && "border-paper/20 bg-shell text-paper",
         )}
       >
         <Link href="/" aria-label="Vidhata home">

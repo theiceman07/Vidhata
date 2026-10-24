@@ -241,7 +241,7 @@ function JumpButton({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-control text-left text-meta text-ink underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      className="link rounded-control text-left text-meta focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
     >
       {children}
     </button>

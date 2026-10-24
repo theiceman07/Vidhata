@@ -46,7 +46,7 @@ export function PreviewBanner() {
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className="inline-flex min-h-6 items-center rounded-full px-2 text-ink underline underline-offset-2 hover:no-underline"
+              className="inline-flex min-h-6 items-center rounded-full px-2 link"
             >
               Keep it
             </button>
@@ -55,7 +55,7 @@ export function PreviewBanner() {
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className="inline-flex min-h-6 items-center text-ink underline underline-offset-2 hover:no-underline"
+            className="inline-flex min-h-6 items-center link"
           >
             Reset demo data
           </button>

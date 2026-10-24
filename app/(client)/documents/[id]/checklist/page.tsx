@@ -1,11 +1,13 @@
 "use client";
 
+import { TextLink } from "@/components/shared/text-link";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Icon } from "@/components/shared/icon";
+import { Tick } from "@/components/shared/tick";
 import { BackButton } from "@/components/shared/back-button";
 import { ErrorState } from "@/components/shared/error-state";
 import {
@@ -207,8 +209,8 @@ export default function ChecklistPage() {
             />
 
             {doc.status === "executed" && (
-              <p className="mt-6 inline-flex items-center gap-1.5 text-meta text-verified">
-                <Icon name="check_circle" size={18} />
+              <p className="mt-6 inline-flex items-center gap-1.5 text-meta text-done-text">
+                <Tick state="done" size="sm" />
                 Every step is complete. The document is recorded as executed.
               </p>
             )}
@@ -351,13 +353,13 @@ function ExecutionSummary({
             <p className="mt-1 text-meta text-muted-fg">
               Owner · {owners[next.kind]}
             </p>
-            <a
+            <TextLink
               href={`#step-${next.kind}`}
-              className="mt-4 inline-flex items-center gap-1 text-meta font-medium text-ink underline-offset-2 hover:underline"
+              className="link mt-4 inline-flex items-center gap-1 text-meta font-medium"
             >
               Go to the step
               <Icon name="arrow_forward" size={18} />
-            </a>
+            </TextLink>
           </div>
         ) : (
           <p className="text-meta text-ink">
@@ -372,7 +374,7 @@ function ExecutionSummary({
         {doc.signOff ? (
           <div>
             <p className="inline-flex items-center gap-1.5 font-display text-h3 text-ink">
-              <Icon name="check_circle" size={20} className="text-accent" />
+              <Tick state="done" size="md" />
               {doc.signOff.advocate}
             </p>
             <p className="mt-1 text-meta text-muted-fg">

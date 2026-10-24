@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Icon } from "@/components/shared/icon";
+import { Tick } from "@/components/shared/tick";
 import { Dateline } from "@/components/document/dateline";
 import { TIER_PENDING_LABEL } from "@/lib/config/pricing";
 import {
@@ -88,7 +88,7 @@ export function PipelineProgress() {
             >
               <span aria-hidden className="w-5 shrink-0">
                 {isComplete && (
-                  <Icon name="check" size={16} className="text-verified" />
+                  <Tick state="done" size="sm" />
                 )}
               </span>
               <span
@@ -102,7 +102,7 @@ export function PipelineProgress() {
                 {info.name}
               </span>
               {isCurrent && (
-                <span className="font-mono text-notation uppercase tracking-notation text-caution-fg">
+                <span className="font-mono text-notation uppercase tracking-notation text-progress">
                   Running
                 </span>
               )}

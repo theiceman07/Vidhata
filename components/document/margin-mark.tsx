@@ -27,7 +27,7 @@ export function MarginMark({
       focusable="false"
       className={cn(
         "shrink-0",
-        kind === "human" ? "text-accent" : "text-caution",
+        kind === "human" ? "text-accent" : "text-blocked",
         className,
       )}
     >

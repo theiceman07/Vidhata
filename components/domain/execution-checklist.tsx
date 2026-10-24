@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import type { ExecutionStep } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/shared/icon";
+import { Tick } from "@/components/shared/tick";
 import { EsignGuide } from "@/components/domain/esign-guide";
 import { cn } from "@/lib/utils";
 
@@ -96,25 +97,17 @@ export function ExecutionChecklist({
 }
 
 function StepNode({ step, number, isNext }: { step: ExecutionStep; number: number; isNext: boolean }) {
+  const state = !step.applicable
+    ? "na"
+    : step.complete
+      ? "done"
+      : isNext
+        ? "current"
+        : "ahead";
   return (
-    <span
-      aria-hidden
-      className={cn(
-        "relative z-10 flex h-9 w-9 items-center justify-center rounded-full font-mono text-meta print:hidden",
-        !step.applicable && "bg-parchment text-muted-fg ring-1 ring-inset ring-line",
-        step.applicable && step.complete && "bg-accent text-accent-fg",
-        step.applicable && !step.complete && isNext && "bg-ink text-paper ring-4 ring-ink/10",
-        step.applicable && !step.complete && !isNext && "bg-paper text-ink ring-2 ring-inset ring-ink",
-      )}
-    >
-      {!step.applicable ? (
-        <Icon name="remove" size={18} />
-      ) : step.complete ? (
-        <Icon name="check" size={18} />
-      ) : (
-        number
-      )}
-    </span>
+    <Tick state={state} size="xl" className="relative z-10 text-meta print:hidden">
+      {state === "current" || state === "ahead" ? number : undefined}
+    </Tick>
   );
 }
 
@@ -127,10 +120,10 @@ function StatusPill({ step, isNext }: { step: ExecutionStep; isNext: boolean }) 
       <span
         className={cn(
           "inline-flex items-center gap-1 rounded-full bg-paper px-2.5 py-1 text-label",
-          !step.applicable ? "text-muted-fg" : step.complete ? "text-verified" : "text-muted-fg",
+          !step.applicable ? "text-muted-fg" : step.complete ? "text-done-text" : "text-muted",
         )}
       >
-        {step.applicable && step.complete && <Icon name="check_circle" size={16} />}
+        {step.applicable && step.complete && <Tick state="done" size="sm" />}
         {!step.applicable ? "Not required" : step.complete ? "Complete" : "Not done"}
       </span>
     </span>
@@ -319,7 +312,7 @@ function StepRow({
                 {step.complete ? (
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="inline-flex items-start gap-1.5 text-meta text-ink">
-                      <Icon name="check_circle" size={18} className="mt-px text-verified" />
+                      <Tick state="done" size="sm" className="mt-px" />
                       <span>
                         Marked complete
                         {step.completedBy && ` by ${step.completedBy}`}

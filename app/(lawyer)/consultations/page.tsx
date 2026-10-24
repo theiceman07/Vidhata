@@ -170,7 +170,7 @@ export default function ConsultationsPage() {
                 <div className="min-w-0">
                   <Link
                     href={`/consultations/${r.id}`}
-                    className="line-clamp-2 font-display text-h3 text-ink hover:underline"
+                    className="line-clamp-2 font-display text-h3 text-ink hover:text-brand"
                   >
                     {r.documentTitle}
                   </Link>
