@@ -130,7 +130,7 @@ export function SettlementNotesPanel({
           {order(notes).map((note) => (
             <li key={note.id} className="rounded-card bg-parchment p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className="text-label font-medium text-ink">
+                <p className="text-meta font-medium text-ink">
                   Clause {note.clauseNumber}
                   {headingOf(note.clauseNumber) ? ` · ${headingOf(note.clauseNumber)}` : ""}
                 </p>
@@ -207,10 +207,10 @@ export function SettlementNotesPanel({
 
       {free.length > 0 && (
         <div className="mt-4 rounded-card bg-parchment p-4">
-          <p className="text-label font-medium text-ink">Add a note to the client</p>
+          <p className="text-meta font-medium text-ink">Add a note to the client</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-[14rem_minmax(0,1fr)]">
             <div>
-              <Label htmlFor="note-clause" className="text-label text-muted-fg">
+              <Label htmlFor="note-clause" className="text-meta text-muted-fg">
                 Clause
               </Label>
               <Select value={clause} onValueChange={setClause} disabled={busy}>
@@ -227,7 +227,7 @@ export function SettlementNotesPanel({
               </Select>
             </div>
             <div>
-              <Label htmlFor="note-text" className="text-label text-muted-fg">
+              <Label htmlFor="note-text" className="text-meta text-muted-fg">
                 Note
               </Label>
               <Textarea

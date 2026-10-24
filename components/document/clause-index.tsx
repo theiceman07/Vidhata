@@ -81,7 +81,7 @@ export function ClauseIndex({
                     active ? "bg-parchment text-ink" : "text-muted-fg hover:bg-parchment/60 hover:text-ink",
                   )}
                 >
-                  <span className="w-8 shrink-0 font-mono text-label">
+                  <span className="w-9 shrink-0 font-mono text-meta">
                     {clause.number}
                   </span>
                   <span
@@ -131,7 +131,7 @@ export function ClauseIndex({
                   onClick={() => setFilter(value)}
                   aria-pressed={filter === value}
                   className={cn(
-                    "inline-flex h-7 items-center rounded-control px-2.5 text-label transition-colors",
+                    "inline-flex h-8 items-center rounded-control px-2.5 text-meta transition-colors",
                     filter === value ? "bg-parchment text-ink" : "text-muted-fg hover:text-ink",
                   )}
                 >
@@ -179,12 +179,12 @@ export function ClauseIndex({
                       selected ? "bg-parchment" : "hover:bg-parchment/60",
                     )}
                   >
-                    <span className="w-6 shrink-0 font-mono text-label text-muted-fg">
+                    <span className="w-6 shrink-0 font-mono text-meta text-muted-fg">
                       {findingNumbers[finding.findingId]}
                     </span>
                     <SeverityGlyph severity={finding.severity} />
                     <span className="min-w-0 flex-1 truncate text-meta text-ink">
-                      <span className="font-mono text-label text-muted-fg">{number}</span>{" "}
+                      <span className="font-mono text-meta text-muted-fg">{number}</span>{" "}
                       {headingByNumber.get(number) ?? finding.clauseReference}
                     </span>
                     <span
