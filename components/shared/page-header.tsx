@@ -27,7 +27,7 @@ export interface PageHeaderProps {
   /**
    * Short facts under the description (client, counterparty, draft, tier).
    * Pass an array or fragment of nodes: empties are dropped and the dots
-   * between them are drawn here, so a separator never dangles at a line end.
+   * between them are drawn here, so a separator never starts or ends a line.
    */
   meta?: ReactNode;
   /** Buttons on the right of the title. */
@@ -71,11 +71,22 @@ export function PageHeader({
       <h1 className="font-display text-h1 text-ink">{title}</h1>
       {description && <p className="mt-2 max-w-measure text-body text-muted-fg">{description}</p>}
       {facts.length > 0 && (
-        <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-meta text-muted-fg [&>*+*]:before:mr-2 [&>*+*]:before:content-['·']">
-          {facts.map((fact, i) => (
-            <span key={i}>{fact}</span>
-          ))}
-        </p>
+        // Every fact carries a dot at its left, and the row is pulled left by the
+        // width of one and clipped, so the dot of the first fact on any line (the
+        // first line, or one that wrapped) falls outside and is never seen. A dot
+        // can then never start or end a line.
+        <div className="mt-2 overflow-hidden pb-px">
+          <p className="-ml-5 flex flex-wrap gap-y-1 text-meta text-muted-fg">
+            {facts.map((fact, i) => (
+              <span
+                key={i}
+                className="relative pl-5 before:absolute before:left-2 before:content-['·']"
+              >
+                {fact}
+              </span>
+            ))}
+          </p>
+        </div>
       )}
       {tabs && <div className="mt-4">{tabs}</div>}
     </header>
