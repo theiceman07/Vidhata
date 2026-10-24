@@ -509,7 +509,7 @@ function IdentityMenu({
                 <span className="block truncate text-meta font-medium text-ink">
                   {identity.name}
                 </span>
-                <span className="block text-label text-muted-fg">
+                <span className="block text-meta text-muted-fg">
                   Signed in as {identity.standing.toLowerCase()}
                 </span>
               </span>

@@ -68,7 +68,7 @@ export function PaymentPanel({
           Nothing reaches an advocate until the fee is paid.
         </p>
 
-        <h3 className="mt-5 text-label font-medium text-muted-fg">The deal facts behind the tier</h3>
+        <h3 className="mt-5 text-meta font-medium text-ink">The deal facts behind the tier</h3>
         <dl className="mt-3 grid max-w-md grid-cols-[10rem_minmax(0,1fr)] gap-x-4 gap-y-2.5 text-meta">
           <dt className="text-muted-fg">Agreement</dt>
           <dd className="text-ink">{typeLabel}</dd>
@@ -98,7 +98,7 @@ export function PaymentPanel({
         <p className="mt-4 text-meta text-ink">
           One fee for the document. It covers every revision round.
         </p>
-        <p className="mt-1 text-label text-muted-fg">GST is added at the rate in force.</p>
+        <p className="mt-1 text-meta text-muted-fg">GST is added at the rate in force.</p>
 
         {failed && (
           <p role="alert" className="mt-4 text-meta text-flagged">
@@ -109,7 +109,7 @@ export function PaymentPanel({
         <Button className="mt-5 w-full" size="lg" onClick={pay} disabled={paying || !tier}>
           {paying ? "Paying" : failed ? "Try again" : "Pay (preview)"}
         </Button>
-        <p className="mt-3 text-label text-muted-fg">Preview. No payment is taken.</p>
+        <p className="mt-3 text-meta text-muted-fg">Preview. No payment is taken.</p>
       </div>
     </section>
   );

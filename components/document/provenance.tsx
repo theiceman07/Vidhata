@@ -350,7 +350,7 @@ export function Provenance({
               <span
                 aria-hidden
                 className={cn(
-                  "relative z-10 flex h-[22px] w-[22px] items-center justify-center rounded-full text-[11px] font-semibold tabular-nums",
+                  "relative z-10 flex h-[22px] w-[22px] items-center justify-center rounded-full text-label font-semibold tabular-nums",
                   stage.state === "done" && "bg-calm-success text-white",
                   stage.state === "attention" && "bg-calm-accent text-white",
                   stage.state === "current" && "bg-calm-strong text-white",
@@ -366,7 +366,7 @@ export function Provenance({
               <div className="min-w-0 pt-px">
                 <p
                   className={cn(
-                    "text-[13px] font-medium leading-5",
+                    "text-meta font-medium leading-5",
                     stage.state === "ahead" ? "text-calm-secondary" : "text-calm-ink",
                     stage.state === "attention" && "text-calm-warning",
                   )}
@@ -374,7 +374,7 @@ export function Provenance({
                   {stage.label}
                   {stage.state === "attention" && " · changes requested"}
                 </p>
-                <p className="text-[12.5px] leading-5 text-calm-secondary">
+                <p className="text-meta leading-5 text-calm-secondary">
                   {stage.detail ?? stageNote(doc, stage)}
                 </p>
               </div>
@@ -418,7 +418,7 @@ export function Provenance({
                 {stage.label}
                 {stage.state === "attention" && " · changes requested"}
               </p>
-              <p className="mt-0.5 text-label text-muted-fg">
+              <p className="mt-0.5 text-meta text-muted-fg">
                 {stage.detail ?? stageNote(doc, stage)}
               </p>
             </div>

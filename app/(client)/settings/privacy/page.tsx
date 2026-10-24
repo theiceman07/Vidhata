@@ -178,7 +178,7 @@ function TrainingPanel({
         </p>
       )}
 
-      <h3 className="mt-6 text-label font-medium text-muted-fg">Consent log</h3>
+      <h3 className="mt-6 text-meta font-medium text-ink">Consent log</h3>
       {privacy.consentLog.length === 0 ? (
         <p className="mt-2 text-meta text-muted-fg">
           No changes yet. Training use has never been on.
@@ -193,7 +193,7 @@ function TrainingPanel({
           ))}
         </ol>
       )}
-      <p className="mt-3 text-label text-muted-fg">
+      <p className="mt-3 text-meta text-muted-fg">
         This log is kept even if you ask for deletion, so a change you made can be shown to have
         happened.
       </p>
@@ -337,7 +337,7 @@ function DeletionPanel({
       {privacy.deletionRequestedAt ? (
         <div role="status" className="mt-6 space-y-2">
           <p className="text-meta font-medium text-ink">{DELETION_RECORDED}</p>
-          <p className="text-label text-muted-fg">
+          <p className="text-meta text-muted-fg">
             Asked on {stamp(privacy.deletionRequestedAt)}.
           </p>
           <Button variant="outline" size="sm" onClick={withdraw} disabled={busy}>

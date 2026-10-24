@@ -312,7 +312,7 @@ function DiffView({ diff }: { diff: ClientDiff }) {
       {/* One summary surface: which drafts, the three finding counts, and
           what is and is not shown of the clauses. */}
       <div className="rounded-card bg-parchment p-5">
-        <h2 id="diff-title" className="font-display text-[21px] font-medium leading-[1.2] text-ink">
+        <h2 id="diff-title" className="font-display text-h3 font-medium leading-[1.2] text-ink">
           {diff.fromLabel} to {diff.toLabel}
         </h2>
         <dl className="mt-3 flex flex-wrap gap-2">

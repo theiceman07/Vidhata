@@ -45,12 +45,12 @@ export function CoveragePanel({
         header={(open) => (
           <>
             <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-6 gap-y-1">
-              <span role="heading" aria-level={2} className="font-display text-[23px] font-medium leading-8 text-calm-strong">
+              <span role="heading" aria-level={2} className="font-display text-h3 font-medium leading-8 text-calm-strong">
                 What this was checked against
               </span>
-              <span className="text-[13px] leading-5 text-calm-secondary">{intro}</span>
+              <span className="text-meta leading-5 text-calm-secondary">{intro}</span>
             </span>
-            <span className="flex shrink-0 items-center gap-2 text-[12.5px] text-calm-secondary">
+            <span className="flex shrink-0 items-center gap-2 text-meta text-calm-secondary">
               {!open && <span className="max-md:hidden">Layers and exclusions</span>}
               <Icon
                 name="expand_more"
@@ -66,7 +66,7 @@ export function CoveragePanel({
             <CalmColumn number="01" title="Layers that ran" note="A tick means the layer ran on this draft.">
               <ol className="space-y-1.5">
                 {ran.map((layer) => (
-                  <li key={layer} className="flex items-center gap-2.5 text-[13px] leading-5 text-calm-ink">
+                  <li key={layer} className="flex items-center gap-2.5 text-meta leading-5 text-calm-ink">
                     <Tick state="done" size="sm" className="!bg-calm-success" />
                     <span>{PIPELINE_LAYERS[layer].name}</span>
                   </li>
@@ -83,7 +83,7 @@ export function CoveragePanel({
           <CalmColumn number="03" title="Outside the review" note="Not covered by this review.">
             <ul className="space-y-1">
               {COVERAGE.outOfScope.map((item) => (
-                <li key={item} className="text-[13px] leading-5 text-calm-secondary">
+                <li key={item} className="text-meta leading-5 text-calm-secondary">
                   {item}
                 </li>
               ))}
@@ -219,11 +219,11 @@ function CalmColumn({
 }) {
   return (
     <section className="min-w-0 py-3 md:px-6 md:first:pl-0 md:last:pr-0">
-      <h3 className="flex items-baseline gap-2.5 text-[14px] font-semibold leading-5 text-calm-strong">
-        <span className="tabular-nums text-[11px] text-calm-secondary">{number}</span>
+      <h3 className="flex items-baseline gap-2.5 text-meta font-semibold leading-5 text-calm-strong">
+        <span className="tabular-nums text-label text-calm-secondary">{number}</span>
         {title}
       </h3>
-      <p className="mt-0.5 min-h-5 text-[12.5px] leading-5 text-calm-secondary">{note}</p>
+      <p className="mt-0.5 min-h-5 text-meta leading-5 text-calm-secondary">{note}</p>
       <div className="mt-3">{children}</div>
     </section>
   );
@@ -242,18 +242,18 @@ function CalmList({
 }) {
   return (
     <div>
-      <h4 className="text-[13px] font-medium leading-5 text-calm-ink">
+      <h4 className="text-meta font-medium leading-5 text-calm-ink">
         {title}
       </h4>
-      {scope && <p className="text-[12.5px] leading-5 text-calm-secondary">{scope}</p>}
+      {scope && <p className="text-meta leading-5 text-calm-secondary">{scope}</p>}
       <ul className="mt-1 space-y-0.5">
         {items.map((item) => (
-          <li key={item} className="text-[13px] leading-5 text-calm-secondary">
+          <li key={item} className="text-meta leading-5 text-calm-secondary">
             {item}
           </li>
         ))}
       </ul>
-      {note && <p className="mt-2 text-[12.5px] leading-5 text-calm-secondary">{note}</p>}
+      {note && <p className="mt-2 text-meta leading-5 text-calm-secondary">{note}</p>}
     </div>
   );
 }

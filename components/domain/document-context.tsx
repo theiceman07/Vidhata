@@ -52,7 +52,7 @@ export function ContextPanel({
 
   // Calm: no card. A rule above, equal padding, the title as a small label.
   const labelClass =
-    "text-[11px] font-semibold uppercase leading-4 tracking-[0.08em] text-calm-secondary";
+    "text-label font-semibold uppercase leading-4 tracking-[0.08em] text-calm-secondary";
 
   if (calm && collapsible) {
     return (
@@ -65,7 +65,7 @@ export function ContextPanel({
             <span role="heading" aria-level={2} className={labelClass}>
               {title}
             </span>
-            <span className="flex items-center gap-2 text-[12.5px] text-calm-secondary">
+            <span className="flex items-center gap-2 text-meta text-calm-secondary">
               {hint && !open && <span>{hint}</span>}
               <Icon
                 name="expand_more"
@@ -181,11 +181,11 @@ export function DealOnFile({
               !calm && term === "Parties" && "sm:col-span-2 xl:col-span-4",
             )}
           >
-            <dt className={calm ? "text-[12.5px] text-calm-secondary" : "text-label text-muted-fg"}>{term}</dt>
+            <dt className={calm ? "text-meta text-calm-secondary" : "text-label text-muted-fg"}>{term}</dt>
             <dd
               className={cn(
                 "mt-0.5 font-medium",
-                calm ? "text-[13px] leading-5 text-calm-ink" : "text-body text-ink",
+                calm ? "text-meta leading-5 text-calm-ink" : "text-body text-ink",
               )}
             >
               {value}
@@ -200,10 +200,10 @@ export function DealOnFile({
             calm ? "rounded-calm-control border border-calm-border bg-calm-surface px-3 py-2.5" : "rounded-control bg-surface px-4 py-3",
           )}
         >
-          <p className={calm ? "text-[12.5px] text-calm-secondary" : "text-label text-muted-fg"}>
+          <p className={calm ? "text-meta text-calm-secondary" : "text-meta text-muted-fg"}>
             Key terms, as you stated them
           </p>
-          <p className={cn("mt-1 font-medium", calm ? "text-[13px] leading-5 text-calm-ink" : "text-body text-ink")}>
+          <p className={cn("mt-1 font-medium", calm ? "text-meta leading-5 text-calm-ink" : "text-body text-ink")}>
             {deal.keyTerms}
           </p>
         </div>
@@ -238,10 +238,10 @@ export function AdvocatePanel({
 }) {
   const { signOff } = doc;
   const calm = useCalm();
-  const body = calm ? "text-[13px] leading-5 text-calm-ink" : "text-meta text-ink";
-  const note = calm ? "text-[12.5px] leading-5 text-calm-secondary" : "text-label text-muted-fg";
+  const body = calm ? "text-meta leading-5 text-calm-ink" : "text-meta text-ink";
+  const note = calm ? "text-meta leading-5 text-calm-secondary" : "text-label text-muted-fg";
   const rows = calm
-    ? "mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1 text-[13px] leading-5"
+    ? "mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1 text-meta leading-5"
     : "mt-4 grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1.5 text-meta";
 
   return (
@@ -251,13 +251,13 @@ export function AdvocatePanel({
           <div className="flex items-center gap-3.5">
             <span
               aria-hidden
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface font-display text-[17px] text-ink"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface font-display text-body text-ink"
             >
               {initials(signOff.advocate)}
             </span>
             <div className="min-w-0">
               <p className="truncate text-body font-medium text-ink">{signOff.advocate}</p>
-              <p className="text-label text-muted-fg">
+              <p className="text-meta text-muted-fg">
                 Empanelled advocate · <span className="font-mono">{signOff.enrolment}</span>
               </p>
             </div>
@@ -430,7 +430,7 @@ export function WhatHappensNext({
               <span
                 aria-hidden
                 className={cn(
-                  "relative z-10 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums",
+                  "relative z-10 flex h-6 w-6 items-center justify-center rounded-full text-label font-semibold tabular-nums",
                   station.current
                     ? "bg-calm-strong text-white"
                     : "bg-calm-canvas text-calm-secondary ring-1 ring-inset ring-calm-border-strong",
@@ -441,18 +441,18 @@ export function WhatHappensNext({
               <div className="min-w-0 min-[600px]:mt-3">
                 <p
                   className={cn(
-                    "flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] font-medium leading-6",
+                    "flex flex-wrap items-center gap-x-2 gap-y-1 text-meta font-medium leading-6",
                     station.current ? "text-calm-strong" : "text-calm-ink",
                   )}
                 >
                   {station.title}
                   {station.current && (
-                    <span className="rounded-calm-badge bg-calm-warning-muted px-1.5 py-px text-[11px] font-semibold leading-4 text-calm-warning">
+                    <span className="rounded-calm-badge bg-calm-warning-muted px-1.5 py-px text-label font-semibold leading-4 text-calm-warning">
                       Now
                     </span>
                   )}
                 </p>
-                <p className="mt-1 max-w-[30ch] text-[12.5px] leading-[1.5] text-calm-secondary">
+                <p className="mt-1 max-w-[30ch] text-meta leading-[1.5] text-calm-secondary">
                   {station.body}
                 </p>
               </div>
@@ -601,11 +601,11 @@ export function OnYourDesk({ currentId, className }: { currentId: string; classN
                   )}
                 >
                   <span className="min-w-0 flex-1">
-                    <span className={cn("block truncate font-medium", calm ? "text-[13px] text-calm-ink" : "text-meta text-ink")}>
+                    <span className={cn("block truncate font-medium", calm ? "text-meta text-calm-ink" : "text-meta text-ink")}>
                       {d.title}
                     </span>
                     {move && (
-                      <span className={cn("block truncate", calm ? "text-[12.5px] text-calm-secondary" : "text-label text-muted-fg")}>
+                      <span className={cn("block truncate", calm ? "text-meta text-calm-secondary" : "text-label text-muted-fg")}>
                         {move.note}
                       </span>
                     )}

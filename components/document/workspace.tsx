@@ -435,7 +435,7 @@ export function DocumentWorkspace({
           </Link>
 
           <div className="min-w-0 flex-1 basis-72">
-            <h1 className="truncate font-display text-[26px] font-medium leading-tight tracking-[-0.015em] text-ink">
+            <h1 className="truncate font-display text-h1 font-medium leading-tight tracking-[-0.015em] text-ink">
               {doc.title}
             </h1>
             <p className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-meta text-muted-fg">

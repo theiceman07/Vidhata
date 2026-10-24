@@ -95,7 +95,7 @@ export function ChangeRequests({
           return (
             <li key={finding.number} className="overflow-hidden rounded-modal border border-line bg-surface">
               <div className="px-6 pb-6 pt-5 md:px-8">
-                <p className="text-label text-muted">
+                <p className="text-meta text-muted">
                   Request {i + 1} of {requested.length}
                   <span aria-hidden className="mx-1.5">·</span>
                   Clause {number}
@@ -105,7 +105,7 @@ export function ChangeRequests({
                 </h2>
 
                 <p className="mt-4 text-meta font-medium text-ink">Current clause wording</p>
-                <blockquote className="mt-2 rounded-card bg-paper px-5 py-3 font-clause text-[20px] leading-[1.45] text-ink">
+                <blockquote className="mt-2 rounded-card bg-paper px-5 py-3 font-clause text-h3 leading-[1.45] text-ink">
                   {finding.clauseText}
                 </blockquote>
 

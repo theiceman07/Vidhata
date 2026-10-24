@@ -63,7 +63,7 @@ export function PipelineProgress() {
         </p>
         {/* The tier is set by this very screening, so say so while it runs
             rather than leaving the first sight of it until afterwards. */}
-        <p className="mt-1 text-label text-muted-fg">
+        <p className="mt-1 text-meta text-muted-fg">
           Review tier · {TIER_PENDING_LABEL}
         </p>
         {/* QA 5.4: announce layer transitions, not the per-second ticker

@@ -61,7 +61,7 @@ export function AuditTrail({
 
   return (
     <section className={className}>
-      {title && <h2 className="text-label font-medium text-muted-fg">{title}</h2>}
+      {title && <h2 className="text-body font-medium text-ink">{title}</h2>}
 
       {timeline ? (
         <div className={cn(title && "mt-3")}>

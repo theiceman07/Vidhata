@@ -134,7 +134,7 @@ export function StatusHero({ doc, className }: { doc: ClientDocument; className?
         </div>
       </dl>
 
-      <p className="mt-6 text-label text-muted">
+      <p className="mt-6 text-meta text-muted">
         Submitted {format(new Date(doc.createdAt), "d MMM yyyy")}
         <span aria-hidden className="mx-1.5">·</span>
         {tierLabel(doc.tier)} review
@@ -196,7 +196,7 @@ export function StatusStrip({ doc, className }: { doc: ClientDocument; className
             </span>
             <div className="min-w-0">
               <dt className="text-label text-paper/70">Who has the move</dt>
-              <dd className="font-display text-[20px] font-medium leading-tight">
+              <dd className="font-display text-h3 font-medium leading-tight">
                 {MOVER_LABEL[hero.mover]}
                 <span className="ml-2 font-sans text-meta font-normal text-paper/80">{hero.move}</span>
               </dd>
@@ -245,7 +245,7 @@ export function Assurances({ className }: { className?: string }) {
         {items.map((item, i) => (
           <li key={i} className="flex items-start gap-2.5 sm:px-5 sm:first:pl-0 sm:last:pr-0">
             <Icon name={item.icon} size={16} className="mt-0.5 text-calm-strong" />
-            <span className="text-[13px] leading-5 text-calm-ink">{item.text}</span>
+            <span className="text-meta leading-5 text-calm-ink">{item.text}</span>
           </li>
         ))}
       </ul>

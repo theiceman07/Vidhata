@@ -156,7 +156,7 @@ export default function ConsultationPage() {
               maxLength={MAX_QUESTION_LENGTH}
               aria-describedby="consultation-question-note"
             />
-            <p id="consultation-question-note" className="mt-1.5 text-label text-muted-fg">
+            <p id="consultation-question-note" className="mt-1.5 text-meta text-muted-fg">
               Your question goes to {advocate}. {question.length} of {MAX_QUESTION_LENGTH}{" "}
               characters.
             </p>
@@ -180,7 +180,7 @@ export default function ConsultationPage() {
 
         <aside className="min-w-0 self-start space-y-4">
           <div className="rounded-card bg-parchment p-6">
-            <h2 className="text-label font-medium text-muted-fg">The two fees</h2>
+            <h2 className="text-body font-medium text-ink">The two fees</h2>
             <dl className="mt-4 space-y-5">
               <div>
                 <dt className="text-label font-medium text-ink">Document fee · the platform</dt>
@@ -205,7 +205,7 @@ export default function ConsultationPage() {
       </div>
 
       <section aria-labelledby="requests-title" className="mt-14 max-w-3xl">
-        <h2 id="requests-title" className="text-label font-medium text-muted-fg">
+        <h2 id="requests-title" className="text-body font-medium text-ink">
           Your consultation requests
         </h2>
         {requests.length === 0 ? (
@@ -275,7 +275,7 @@ function RequestItem({
 
   return (
     <li className="rounded-card bg-parchment p-5">
-      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-label text-muted-fg">
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-muted-fg">
         <span>
           {r.advocateName} · {format(new Date(r.requestedAt), "d MMM yyyy")}
         </span>
@@ -286,13 +286,13 @@ function RequestItem({
       </p>
 
       {r.status === "requested" && (
-        <p className="mt-2 text-label text-muted-fg">
+        <p className="mt-2 text-meta text-muted-fg">
           Fee payable if the advocate accepts, {PRICE_BASIS}.
         </p>
       )}
 
       {r.status === "declined" && (
-        <p className="mt-2 text-label text-muted-fg">
+        <p className="mt-2 text-meta text-muted-fg">
           The advocate declined this request. You were not charged.
         </p>
       )}
@@ -306,7 +306,7 @@ function RequestItem({
             {r.advocateName} accepted. Nothing is charged until you pay. This is separate from the
             document fee.
           </p>
-          <p className="mt-1 text-label text-muted-fg">GST is added at the rate in force.</p>
+          <p className="mt-1 text-meta text-muted-fg">GST is added at the rate in force.</p>
 
           {failed && (
             <p role="alert" className="mt-4 text-meta text-flagged">
@@ -317,12 +317,12 @@ function RequestItem({
           <Button className="mt-4 w-full" size="lg" onClick={pay} disabled={paying}>
             {paying ? "Paying" : failed ? "Try again" : "Pay (preview)"}
           </Button>
-          <p className="mt-3 text-label text-muted-fg">Preview. No payment is taken.</p>
+          <p className="mt-3 text-meta text-muted-fg">Preview. No payment is taken.</p>
         </div>
       )}
 
       {r.status === "accepted" && paid && (
-        <p className="mt-2 text-label text-muted-fg">
+        <p className="mt-2 text-meta text-muted-fg">
           Paid. {r.advocateName} will answer here.
         </p>
       )}
@@ -332,7 +332,7 @@ function RequestItem({
           <p className="text-label font-medium text-muted-fg">Answer from {r.advocateName}</p>
           <p className="mt-1.5 max-w-measure whitespace-pre-line text-meta text-ink">{r.answer}</p>
           {r.answeredAt && (
-            <p className="mt-1.5 text-label text-muted-fg">
+            <p className="mt-1.5 text-meta text-muted-fg">
               {format(new Date(r.answeredAt), "d MMM yyyy")}
             </p>
           )}

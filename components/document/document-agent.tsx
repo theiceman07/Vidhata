@@ -114,7 +114,7 @@ export function DocumentAgent({
       >
         {empty ? (
           <div className="flex h-full flex-col justify-center pb-6 pt-10">
-            <h2 className="font-display text-[30px] font-medium leading-tight tracking-[-0.015em] text-ink">
+            <h2 className="font-display text-h2 font-medium leading-tight tracking-[-0.015em] text-ink">
               What would you like to understand?
             </h2>
             <p className="mt-3 text-body text-muted-fg">
@@ -145,7 +145,7 @@ export function DocumentAgent({
                     Request a consultation with {advocate}
                     <Icon name="arrow_forward" size={16} />
                   </Link>
-                  <p className="mt-2 text-label text-muted-fg">
+                  <p className="mt-2 text-meta text-muted-fg">
                     {CONSULTATION.price} {PRICE_BASIS}, payable only if {advocate} accepts. A
                     request is free, and the fee is separate from the platform&apos;s fixed
                     document fee.

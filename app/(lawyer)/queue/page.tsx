@@ -741,7 +741,7 @@ function YourDesk({
               <span className="w-8 shrink-0 text-right font-mono text-h3 tabular-nums text-ink">{line.value}</span>
               <span className="min-w-0 flex-1">
                 <span className="block text-meta text-ink">{line.label}</span>
-                <span className="block truncate text-label text-muted-fg">{line.note}</span>
+                <span className="block truncate text-meta text-muted-fg">{line.note}</span>
               </span>
               <Icon
                 name="chevron_right"
@@ -782,7 +782,7 @@ function TierMix({ docs }: { docs: ContractDocument[] }) {
 
   return (
     <SidePanel title="Shape of the queue">
-      <p className="text-label text-muted-fg">Open work by tier, in the order it is offered</p>
+      <p className="text-meta text-muted-fg">Open work by tier, in the order it is offered</p>
       <ul className="mt-2 space-y-2">
         {counts.map((c) => (
           <li key={c.tier} className="grid grid-cols-[6.5rem_minmax(0,1fr)_1.5rem] items-center gap-3">
@@ -798,7 +798,7 @@ function TierMix({ docs }: { docs: ContractDocument[] }) {
         ))}
       </ul>
 
-      <p className="mt-4 text-label text-muted-fg">Undecided findings by severity</p>
+      <p className="mt-4 text-meta text-muted-fg">Undecided findings by severity</p>
       <ul className="mt-2 space-y-2">
         {severities.map((s) => (
           <li key={s.key} className="grid grid-cols-[6.5rem_minmax(0,1fr)_1.5rem] items-center gap-3">

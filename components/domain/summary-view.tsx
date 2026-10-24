@@ -25,7 +25,7 @@ export function SummaryView({ summary }: { summary: SettledSummary }) {
             <dd className="max-w-measure text-body text-ink">
               {item.text}
               {item.clauses.length > 0 && (
-                <span className="mt-1 block text-label text-muted-fg">
+                <span className="mt-1 block text-meta text-muted-fg">
                   {item.clauses.length === 1 ? "Clause" : "Clauses"} {item.clauses.join(", ")}
                 </span>
               )}

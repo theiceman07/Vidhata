@@ -102,7 +102,7 @@ export function ClaimDialog({
                 {doc.counterpartyName}.
               </label>
             </div>
-            <p className="pl-7 text-label text-muted-fg">
+            <p className="pl-7 text-meta text-muted-fg">
               Your declaration is recorded with the claim.
             </p>
           </div>

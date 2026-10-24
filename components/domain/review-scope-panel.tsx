@@ -133,14 +133,14 @@ export function ReviewScopePanel({
                 )}
               >
                 <span className="text-label text-muted-fg">{m.label}</span>
-                <span className="font-display text-xl font-medium leading-none text-ink">
+                <span className="font-display text-h3 font-medium leading-none text-ink">
                   {m.count}
                 </span>
               </button>
             ))}
           </div>
 
-          <p className="mt-1 text-label leading-snug text-muted-fg" aria-live="polite">
+          <p className="mt-1 text-meta leading-snug text-muted-fg" aria-live="polite">
             {showAll
               ? `All ${plural(total, "finding", "findings")} shown`
               : `${total - hidden} of ${plural(total, "finding", "findings")} shown`}

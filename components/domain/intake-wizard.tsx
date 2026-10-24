@@ -293,7 +293,7 @@ export function IntakeWizard() {
           </div>
           {/* Readiness: how many of the details a draft needs are in. */}
           <div className="w-full shrink-0 sm:w-72" role="status">
-            <p className="flex items-baseline justify-between gap-3 text-label text-muted-fg">
+            <p className="flex items-baseline justify-between gap-3 text-meta text-muted-fg">
               <span>
                 {ready} of {DRAFT_NEEDS.length} details a draft needs
               </span>

@@ -221,7 +221,7 @@ export default function SignOffPage() {
 
         {released.length > 0 && (
           <section className="mt-8">
-            <h2 className="text-label font-medium text-muted-fg">Shared with the client at sign-off</h2>
+            <h2 className="text-body font-medium text-ink">Shared with the client at sign-off</h2>
             <ul className="mt-2 space-y-3">
               {released.map((n) => (
                 <li key={n.id}>
@@ -295,7 +295,7 @@ export default function SignOffPage() {
       </p>
 
       <section className="mt-8 rounded-card border border-line bg-paper p-5">
-        <h2 className="mb-3 text-label font-medium text-muted-fg">What you are signing</h2>
+        <h2 className="mb-3 text-body font-medium text-ink">What you are signing</h2>
         <RecordList doc={doc} />
       </section>
 
@@ -304,7 +304,7 @@ export default function SignOffPage() {
         // client without a recorded sign-off, and none is signed off over
         // an undecided finding.
         <section className="mt-6">
-          <h2 className="text-label font-medium text-flagged">
+          <h2 className="text-body font-medium text-flagged">
             {plural(blockers.length, "item stands", "items stand")} between this document and sign-off
           </h2>
           <ul className="mt-2 divide-y divide-line border-y border-line">
@@ -342,7 +342,7 @@ export default function SignOffPage() {
       )}
 
       <section className="mt-8">
-        <h2 className="text-label font-medium text-muted-fg">Confirmations</h2>
+        <h2 className="text-body font-medium text-ink">Confirmations</h2>
         <ul className="mt-2 border-t border-line">
           {CONFIRMATIONS.map((confirmation) => (
             <li

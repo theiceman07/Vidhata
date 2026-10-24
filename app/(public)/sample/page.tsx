@@ -67,7 +67,7 @@ function Step({ step, number }: { step: ExecutionStep; number: number }) {
       <p className="mt-2 max-w-measure text-meta text-ink">
         {step.applicable ? step.detail : step.reason}
       </p>
-      <p className="mt-3 text-label text-muted-fg">
+      <p className="mt-3 text-meta text-muted-fg">
         {!step.applicable ? "Not required" : step.complete ? "Complete" : "Not done"}
       </p>
     </li>

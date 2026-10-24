@@ -86,19 +86,22 @@ const config: Config = {
           "clamp(44px, 6.4vw, 92px)",
           { lineHeight: "1", fontWeight: "500", letterSpacing: "-0.03em" },
         ],
+        // The product has six type steps and no others: 12 label, 14 meta,
+        // 16 body, 20 h3, 26 h2, 40 h1 (the display sizes above are the
+        // marketing headlines). `lead`, `small` and `notation` are aliases of
+        // the nearest step, kept so older screens keep compiling; do not use
+        // them in new code. Held by lib/typeScale.test.ts.
         h1: ["clamp(30px, 3vw, 40px)", { lineHeight: "1.08", fontWeight: "500", letterSpacing: "-0.02em" }],
-        h2: ["clamp(24px, 2.2vw, 30px)", { lineHeight: "1.15", fontWeight: "500", letterSpacing: "-0.015em" }],
-        h3: ["19px", { lineHeight: "1.3", fontWeight: "500", letterSpacing: "-0.01em" }],
-        lead: ["19px", { lineHeight: "1.55", fontWeight: "400" }],
+        h2: ["26px", { lineHeight: "1.2", fontWeight: "500", letterSpacing: "-0.015em" }],
+        h3: ["20px", { lineHeight: "1.3", fontWeight: "500", letterSpacing: "-0.01em" }],
+        lead: ["20px", { lineHeight: "1.55", fontWeight: "400" }], // alias of h3's size
         body: ["16px", { lineHeight: "1.6", fontWeight: "400" }],
         meta: ["14px", { lineHeight: "1.5", fontWeight: "400" }],
-        // Helper text and fine print. Same measure as meta; kept as its own
-        // name because older screens were written against it.
-        small: ["13px", { lineHeight: "1.5", fontWeight: "400" }],
-        notation: ["13px", { lineHeight: "1.5", fontWeight: "400" }],
-        // State labels, counts and table headings inside the application.
-        // Dense surfaces carry a lot of small facts; at 13px uppercase mono
-        // they shouted over the content they describe.
+        small: ["14px", { lineHeight: "1.5", fontWeight: "400" }], // alias of meta
+        notation: ["14px", { lineHeight: "1.5", fontWeight: "400" }], // alias of meta
+        // Chips, state text, counts and short metadata only. Anything a
+        // person has to read (a finding, a note, a checklist row, a table
+        // cell) is `meta` or larger.
         label: ["12px", { lineHeight: "16px", fontWeight: "400" }],
       },
       letterSpacing: {

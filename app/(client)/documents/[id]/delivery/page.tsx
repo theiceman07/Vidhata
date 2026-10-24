@@ -130,7 +130,7 @@ export default function DeliveryPage() {
         <div className="min-w-0 space-y-10">
           {/* The sign-off is a decision, so it carries the accent. */}
           <section aria-labelledby="signoff-title" className="rounded-card bg-parchment p-6 md:p-8">
-            <h2 id="signoff-title" className="text-label font-medium text-muted-fg">
+            <h2 id="signoff-title" className="text-body font-medium text-ink">
               Sign-off
             </h2>
             <p className="mt-3 inline-flex items-center gap-2 font-display text-h2 text-ink">
@@ -146,7 +146,7 @@ export default function DeliveryPage() {
           </section>
 
           <section aria-labelledby="summary-title" className="rounded-card bg-parchment p-6 md:p-8">
-            <h2 id="summary-title" className="text-label font-medium text-muted-fg">
+            <h2 id="summary-title" className="text-body font-medium text-ink">
               Summary
             </h2>
             <div className="mt-3">
@@ -164,7 +164,7 @@ export default function DeliveryPage() {
               them when there are none, so nothing says that any were ever written. */}
           {delivery.settlementNotes.length > 0 && (
             <section aria-labelledby="notes-title">
-              <h2 id="notes-title" className="text-label font-medium text-muted-fg">
+              <h2 id="notes-title" className="text-body font-medium text-ink">
                 Your advocate&apos;s notes
               </h2>
               <ul className="mt-3 space-y-3">
@@ -185,7 +185,7 @@ export default function DeliveryPage() {
 
         <aside className="min-w-0 space-y-4 self-start">
           <section aria-labelledby="downloads-title" className="rounded-card bg-parchment p-6">
-            <h2 id="downloads-title" className="text-label font-medium text-muted-fg">
+            <h2 id="downloads-title" className="text-body font-medium text-ink">
               Downloads
             </h2>
             <div className="mt-4">
@@ -194,7 +194,7 @@ export default function DeliveryPage() {
           </section>
 
           <section aria-labelledby="next-title" className="rounded-card bg-parchment p-6">
-            <h2 id="next-title" className="text-label font-medium text-muted-fg">
+            <h2 id="next-title" className="text-body font-medium text-ink">
               Around this document
             </h2>
             <ul className="mt-4 space-y-2">
@@ -206,7 +206,7 @@ export default function DeliveryPage() {
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block text-meta text-ink">{link.label}</span>
-                      <span className="block text-label text-muted-fg">{link.note}</span>
+                      <span className="block text-meta text-muted-fg">{link.note}</span>
                     </span>
                     <Icon
                       name="arrow_forward"

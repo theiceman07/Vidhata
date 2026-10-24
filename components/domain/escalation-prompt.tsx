@@ -24,11 +24,11 @@ export function EscalationPrompt({ advocateName, href }: EscalationPromptProps) 
         <Button asChild size="sm" className="mt-3 h-auto min-h-11 w-full whitespace-normal py-2 text-center sm:w-auto">
           <Link href={href}>Request a consultation with {advocateName}</Link>
         </Button>
-        <p className="mt-2 text-label text-muted-fg">
+        <p className="mt-2 text-meta text-muted-fg">
           {CONSULTATION.label} · {CONSULTATION.price} {PRICE_BASIS}
           {PRICING_IS_INDICATIVE && " (indicative)"}
         </p>
-        <p className="mt-1 text-label text-muted-fg">
+        <p className="mt-1 text-meta text-muted-fg">
           A request is free. The fee is payable only if the advocate accepts, and it is
           separate from the platform&apos;s fixed document fee.
         </p>

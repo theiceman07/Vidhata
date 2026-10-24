@@ -26,7 +26,7 @@ export function DownloadOptions() {
           Word
         </Button>
       </div>
-      <p id="downloads-note" className="mt-3 text-label text-muted-fg">
+      <p id="downloads-note" className="mt-3 text-meta text-muted-fg">
         {DOWNLOADS_NOTE}
       </p>
     </div>

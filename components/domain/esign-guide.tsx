@@ -41,7 +41,7 @@ export function EsignGuide() {
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-label text-muted-fg">{ESIGN_LEGAL_NOTE}</p>
+      <p className="mt-2 text-meta text-muted-fg">{ESIGN_LEGAL_NOTE}</p>
 
       <Dialog>
         <DialogTrigger asChild>

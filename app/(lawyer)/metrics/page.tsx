@@ -32,7 +32,7 @@ function Figure({
   const value = percent(ratio);
   return (
     <section className="flex flex-col rounded-card bg-parchment p-6">
-      <h2 className="text-label font-medium text-muted-fg">{label}</h2>
+      <h2 className="text-body font-medium text-ink">{label}</h2>
       {value ? (
         <>
           <p className="mt-3 font-display text-h1 tabular-nums text-ink">{value}</p>
@@ -46,7 +46,7 @@ function Figure({
           <p className="mt-1 text-meta text-muted-fg">{none}</p>
         </>
       )}
-      <p className="mt-4 max-w-measure text-label text-muted-fg">{definition}</p>
+      <p className="mt-4 max-w-measure text-meta text-muted-fg">{definition}</p>
     </section>
   );
 }
@@ -54,9 +54,9 @@ function Figure({
 function NoSource({ label, why }: { label: string; why: string }) {
   return (
     <section className="flex flex-col rounded-card bg-parchment p-6">
-      <h2 className="text-label font-medium text-muted-fg">{label}</h2>
+      <h2 className="text-body font-medium text-ink">{label}</h2>
       <p className="mt-3 font-display text-h2 text-ink">No data source yet</p>
-      <p className="mt-4 max-w-measure text-label text-muted-fg">{why}</p>
+      <p className="mt-4 max-w-measure text-meta text-muted-fg">{why}</p>
     </section>
   );
 }
@@ -132,7 +132,7 @@ export default function MetricsPage() {
         />
       </div>
 
-      <p className="mt-12 max-w-measure text-label text-muted-fg">
+      <p className="mt-12 max-w-measure text-meta text-muted-fg">
         Counted over {metrics.documentsCounted} documents in the queue and the sample data they
         carry. A document still awaiting payment is not counted.
       </p>

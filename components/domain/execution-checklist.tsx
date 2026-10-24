@@ -173,7 +173,7 @@ function StepRow({
         <div className="rounded-card bg-parchment/50 p-6 md:px-7 print:p-0">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="text-label font-medium text-muted-fg">
+              <h2 className="text-body font-medium text-ink">
                 {String(number).padStart(2, "0")} · {STEP_TITLE[step.kind]}
               </h2>
               <p className="mt-1 font-display text-h3 text-muted-fg">{step.headline}</p>
@@ -194,7 +194,7 @@ function StepRow({
           {/* What to do. */}
           <div className="min-w-0">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <h2 className="text-label font-medium text-muted-fg">
+              <h2 className="text-body font-medium text-ink">
                 {String(number).padStart(2, "0")} · {STEP_TITLE[step.kind]}
                 <span className="mx-1.5 text-muted-fg/50">·</span>
                 <span className="font-normal">Owner · {owner}</span>
@@ -263,7 +263,7 @@ function StepRow({
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-meta text-ink">{step.evidence.name}</span>
-                    <span className="block text-label text-muted-fg">
+                    <span className="block text-meta text-muted-fg">
                       Attached {format(new Date(step.evidence.attachedAt), "d MMM yyyy")}
                     </span>
                   </span>
@@ -301,7 +301,7 @@ function StepRow({
                   </span>
                   <span className="min-w-0">
                     <span className="block text-meta text-ink">Attach proof</span>
-                    <span className="block text-label text-muted-fg">
+                    <span className="block text-meta text-muted-fg">
                       {EVIDENCE_HINT[step.kind]} is enough. It stays with this document.
                     </span>
                   </span>
@@ -317,7 +317,7 @@ function StepRow({
                         Marked complete
                         {step.completedBy && ` by ${step.completedBy}`}
                         {step.completedAt && (
-                          <span className="block text-label text-muted-fg">
+                          <span className="block text-meta text-muted-fg">
                             {format(new Date(step.completedAt), "d MMM yyyy, HH:mm")}
                           </span>
                         )}
@@ -345,7 +345,7 @@ function StepRow({
                       <Icon name="check" size={18} />
                       {step.kind === "esignature" ? "Both have signed" : "Mark complete"}
                     </Button>
-                    <p className="text-label text-muted-fg">
+                    <p className="text-meta text-muted-fg">
                       {step.kind === "esignature"
                         ? "This says both signatories have signed. "
                         : ""}

@@ -133,7 +133,7 @@ export default function BillingPage() {
                     className="grid items-center gap-x-6 gap-y-2 rounded-card border border-line bg-paper px-6 py-4 transition-colors hover:border-ink/30 hover:bg-parchment/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:grid-cols-[minmax(0,1fr)_8rem]"
                   >
                     <span className="min-w-0">
-                      <span className="block text-label text-muted-fg">
+                      <span className="block text-meta text-muted-fg">
                         {invoice.number} · {format(new Date(invoice.issuedAt), "d MMM yyyy")}
                       </span>
                       <span className="mt-0.5 block text-body font-medium text-ink [overflow-wrap:anywhere]">
@@ -150,7 +150,7 @@ export default function BillingPage() {
                       <span className="block font-display text-h3 tabular-nums text-ink">
                         {rupees(invoice.amount)}
                       </span>
-                      <span className="block text-label text-muted-fg">{PRICE_BASIS}</span>
+                      <span className="block text-meta text-muted-fg">{PRICE_BASIS}</span>
                     </span>
                   </Link>
                 </li>
@@ -184,7 +184,7 @@ export default function BillingPage() {
                 onChange={(e) => setGstin(e.target.value)}
                 aria-describedby="billing-gstin-note"
               />
-              <p id="billing-gstin-note" className="mt-1.5 text-label text-muted-fg">
+              <p id="billing-gstin-note" className="mt-1.5 text-meta text-muted-fg">
                 Kept as you enter it. It is not checked against any register.
               </p>
             </div>
@@ -196,7 +196,7 @@ export default function BillingPage() {
               {saving ? "Saving" : "Save details"}
             </Button>
             {unchanged && (
-              <p className="text-center text-label text-muted-fg">Your details are up to date.</p>
+              <p className="text-center text-meta text-muted-fg">Your details are up to date.</p>
             )}
           </form>
         </aside>

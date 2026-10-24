@@ -345,7 +345,7 @@ function DocumentRow({ doc, move }: { doc: ClientDocumentSummary; move: Move | n
         <StateLabel state={doc.status} className="mb-2" />
         <Link
           href={`/documents/${doc.id}`}
-          className="block truncate font-display text-[22px] font-medium leading-snug tracking-[-0.01em] text-ink after:absolute after:inset-0 after:content-['']"
+          className="block truncate font-display text-h3 font-medium leading-snug tracking-[-0.01em] text-ink after:absolute after:inset-0 after:content-['']"
         >
           {doc.title}
         </Link>

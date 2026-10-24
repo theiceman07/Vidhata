@@ -50,7 +50,7 @@ export function MarginNote({
 
   return (
     <div className="group/note rounded-control bg-parchment px-3.5 py-3">
-      <p className="flex items-center gap-1.5 text-label text-muted-fg">
+      <p className="flex items-center gap-1.5 text-meta text-muted-fg">
         <Icon name="sticky_note_2" size={16} />
         Your note · {format(new Date(note.updatedAt), "d MMM")}
         {edited && " · edited"}

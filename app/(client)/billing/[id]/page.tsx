@@ -95,7 +95,7 @@ export default function ReceiptPage() {
 
           <div className="flex flex-col justify-center border-t border-line bg-parchment/60 p-6 md:border-l md:border-t-0 md:p-8">
             <p className="text-label font-medium text-muted-fg">Amount</p>
-            <p className="mt-2 font-display text-[44px] font-medium leading-none tracking-tight tabular-nums text-ink md:text-[48px]">
+            <p className="mt-2 font-display text-h1 font-medium leading-none tracking-tight tabular-nums text-ink">
               {rupees(invoice.amount)}
             </p>
             <p className="mt-2 text-meta text-muted-fg">{PRICE_BASIS}</p>
@@ -103,7 +103,7 @@ export default function ReceiptPage() {
         </div>
 
         <div className="border-t border-line px-6 py-4 md:px-8 md:py-5">
-          <p className="max-w-measure text-label text-muted-fg">
+          <p className="max-w-measure text-meta text-muted-fg">
             GST is added at the rate in force. A tax breakup is not part of this preview.{" "}
             {invoice.kind === "consultation_fee"
               ? "This is the consultation fee. It is separate from the document fee. Who issues an invoice for it is waiting for counsel to confirm, and the wording here is not final."
@@ -113,7 +113,7 @@ export default function ReceiptPage() {
       </section>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-label text-muted-fg">Preview receipt. No payment was taken.</p>
+        <p className="text-meta text-muted-fg">Preview receipt. No payment was taken.</p>
         <div className="flex items-center gap-3">
           <span className="text-label text-muted-fg">Downloads aren&apos;t enabled in this preview</span>
           <Button variant="outline" disabled>

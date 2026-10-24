@@ -218,7 +218,7 @@ export default function OnboardingPage() {
                 autoComplete="new-password"
                 aria-describedby="onboarding-password-note"
               />
-              <p id="onboarding-password-note" className="mt-1.5 text-label text-muted-fg">
+              <p id="onboarding-password-note" className="mt-1.5 text-meta text-muted-fg">
                 At least {MIN_PASSWORD_LENGTH} characters.
               </p>
             </div>

@@ -239,7 +239,7 @@ export default function DocumentPage() {
               collapsible
               footer={
                 <div className="mt-4 rounded-control bg-surface px-4 py-3">
-                  <h3 className="text-label font-medium text-muted-fg">What you receive at the end</h3>
+                  <h3 className="text-meta font-medium text-ink">What you receive at the end</h3>
                   <ul className="mt-2 grid gap-x-8 gap-y-1.5 text-meta leading-[1.45] text-muted-fg md:grid-cols-2">
                     <li>The settled document, with your advocate&apos;s sign-off recorded on it.</li>
                     <li>A summary that explains the settled clauses in plain words.</li>
@@ -341,7 +341,7 @@ function WithAdvocate({ doc }: { doc: ClientDocument }) {
           <ul className="mt-3 space-y-4">
             {answered.map((f) => (
               <li key={f.number} className="rounded-modal border border-line bg-surface p-6 md:p-8">
-                <p className="text-label text-muted">
+                <p className="text-meta text-muted">
                   <span className="font-mono">{f.clauseReference}</span>
                   {f.request?.respondedAt && (
                     <> · {format(new Date(f.request.respondedAt), "d MMM yyyy")}</>

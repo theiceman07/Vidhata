@@ -112,7 +112,7 @@ export function SettlementNotesPanel({
 
   return (
     <section aria-labelledby="notes-to-client" className="mt-8">
-      <h2 id="notes-to-client" className="text-label font-medium text-muted-fg">
+      <h2 id="notes-to-client" className="text-body font-medium text-ink">
         Notes to the client
       </h2>
       <p className="mt-1 max-w-measure text-meta text-muted-fg">
@@ -134,7 +134,7 @@ export function SettlementNotesPanel({
                   Clause {note.clauseNumber}
                   {headingOf(note.clauseNumber) ? ` · ${headingOf(note.clauseNumber)}` : ""}
                 </p>
-                <p className={note.shareWithClient ? "text-label text-accent" : "text-label text-muted-fg"}>
+                <p className={note.shareWithClient ? "text-label text-accent" : "text-meta text-muted-fg"}>
                   {note.shareWithClient ? "Marked: shared at sign-off" : "Draft: not shared"}
                 </p>
               </div>
@@ -240,7 +240,7 @@ export function SettlementNotesPanel({
                 disabled={busy}
                 placeholder="Say, in your own words, what this clause means for the client."
               />
-              <p className="mt-1 text-label text-muted-fg">
+              <p className="mt-1 text-meta text-muted-fg">
                 {text.length} of {MAX_SETTLEMENT_NOTE_LENGTH} · Kept as a draft until you mark it to share.
               </p>
             </div>
@@ -251,7 +251,7 @@ export function SettlementNotesPanel({
         </div>
       )}
 
-      <h3 className="mt-8 text-label font-medium text-muted-fg">These will be shared with the client</h3>
+      <h3 className="mt-8 text-meta font-medium text-ink">These will be shared with the client</h3>
       {marked.length === 0 ? (
         <p className="mt-2 text-meta text-muted-fg">
           No notes are marked. Nothing is shared with the client at sign-off except the settled

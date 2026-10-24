@@ -42,7 +42,7 @@ function Section({
 }) {
   return (
     <section>
-      <h3 className="mb-2 text-label font-medium text-muted-fg">{title}</h3>
+      <h3 className="mb-2 text-meta font-medium text-ink">{title}</h3>
       {children}
     </section>
   );
@@ -141,7 +141,7 @@ export function FindingDetail({
     >
       <div className="flex-1 space-y-6 p-4 lg:p-5">
         <header>
-          <p className="font-mono text-label text-muted-fg">
+          <p className="font-mono text-meta text-muted-fg">
             Finding {number}
             <span aria-hidden className="mx-1.5 text-muted-fg">·</span>
             {/* A reference with no clause number ("Whole document") is said as it is, not as "Clause Whole document". */}
@@ -191,7 +191,7 @@ export function FindingDetail({
             <div className="space-y-3 border-l-2 border-move pl-3">
               <div>
                 <p className="text-meta text-ink">{request.request}</p>
-                <p className="mt-1 text-label text-muted-fg">
+                <p className="mt-1 text-meta text-muted-fg">
                   {role === "client"
                     ? "Your advocate asked for your answer"
                     : `${request.requestedBy}, advocate`}{" "}
@@ -203,7 +203,7 @@ export function FindingDetail({
                   <p className="text-label font-medium text-muted-fg">Client response</p>
                   <p className="mt-1 text-meta text-ink">{request.response}</p>
                   {request.respondedAt && (
-                    <p className="mt-1 text-label text-muted-fg">
+                    <p className="mt-1 text-meta text-muted-fg">
                       {doc.clientName} ·{" "}
                       {format(new Date(request.respondedAt), "d MMM yyyy")}
                     </p>
@@ -234,7 +234,7 @@ export function FindingDetail({
                 Added by the advocate in review. No pipeline rule is behind it.
               </p>
             ) : (
-              <p className="font-mono text-label text-muted-fg">
+              <p className="font-mono text-meta text-muted-fg">
                 {finding.ruleApplied}
                 {finding.layer !== undefined && (
                   <>
@@ -377,7 +377,7 @@ export function FindingDetail({
                 )}
               </div>
               {!request && requestBlockedReason && (
-                <p className="text-label text-muted-fg">{requestBlockedReason}</p>
+                <p className="text-meta text-muted-fg">{requestBlockedReason}</p>
               )}
             </div>
           )}

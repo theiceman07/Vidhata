@@ -8,10 +8,10 @@ import { cn } from "@/lib/utils";
 // separate thing and appears once per document.
 
 const SIZES = {
-  sm: "text-[20px]",
-  md: "text-[24px]",
-  lg: "text-[30px]",
-  xl: "text-[38px]",
+  sm: "text-h3",
+  md: "text-h2",
+  lg: "text-h2",
+  xl: "text-h1",
 } as const;
 
 export function BrandLogo({
