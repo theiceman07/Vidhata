@@ -11,7 +11,7 @@ import { scrollBehavior } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { MAX_QUESTION_LENGTH, chatTransport, unavailableTransport } from "@/lib/api/chat";
 import { useDocumentChat } from "@/lib/chat-session/useDocumentChat";
-import { chatSourceOf, type ChatDocument } from "@/lib/mock/chat.mock";
+import { chatSourceOf, SUGGESTED_QUESTIONS, type ChatDocument } from "@/lib/mock/chat.mock";
 import { getClientSummary } from "@/lib/api/client/delivery";
 import { getClientSettlementNotes } from "@/lib/api/client/settlement-notes";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
@@ -113,7 +113,7 @@ export function DocumentAgent({
         className="min-h-0 flex-1 overflow-y-auto px-6 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
       >
         {empty ? (
-          <div className="flex h-full flex-col justify-center pb-6 pt-10">
+          <div className="flex h-full flex-col justify-center pb-6 pt-6">
             <h2 className="font-display text-h2 font-medium leading-tight tracking-[-0.015em] text-ink">
               What would you like to understand?
             </h2>
@@ -121,6 +121,21 @@ export function DocumentAgent({
               Ask about any clause in the settled text. It explains what the
               document says, and leaves advice to {advocate}.
             </p>
+            {/* Two questions that ask what the document says, to start from. The third
+                suggestion, which asks for advice, is only for the page that shows the refusal. */}
+            <div className="mt-6 flex flex-col items-start gap-2">
+              {SUGGESTED_QUESTIONS.slice(0, 2).map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => send(q)}
+                  disabled={chat.pending}
+                  className="rounded-full bg-parchment px-4 py-2 text-meta text-ink transition-colors hover:bg-ink hover:text-paper disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
           <ol className="space-y-5 py-6">

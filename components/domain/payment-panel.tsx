@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { payClientFee } from "@/lib/api/client/documents";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { PRICE_BASIS, TIER_PRICING, rupees } from "@/lib/config/pricing";
@@ -24,9 +25,11 @@ import type { ClientDocument } from "@/lib/types";
 export function PaymentPanel({
   doc,
   onPaid,
+  className,
 }: {
   doc: Pick<ClientDocument, "id" | "type" | "tier" | "deal">;
   onPaid: (paid: ClientDocument) => void;
+  className?: string;
 }) {
   const [paying, setPaying] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
@@ -54,7 +57,10 @@ export function PaymentPanel({
   return (
     <section
       aria-labelledby="pay-title"
-      className="grid items-start gap-x-8 gap-y-6 self-start rounded-card bg-parchment p-5 md:px-6 md:py-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]"
+      className={cn(
+        "grid items-stretch gap-x-10 gap-y-6 rounded-card bg-parchment p-5 md:px-6 md:py-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]",
+        className,
+      )}
     >
       <div className="min-w-0">
         <p className="text-label font-medium text-muted-fg">Screened</p>
@@ -69,7 +75,7 @@ export function PaymentPanel({
         </p>
 
         <h3 className="mt-5 text-meta font-medium text-ink">The deal facts behind the tier</h3>
-        <dl className="mt-3 grid max-w-md grid-cols-[10rem_minmax(0,1fr)] gap-x-4 gap-y-2.5 text-meta">
+        <dl className="mt-3 grid grid-cols-[7rem_minmax(0,1fr)] gap-x-4 gap-y-2.5 text-meta">
           <dt className="text-muted-fg">Agreement</dt>
           <dd className="text-ink">{typeLabel}</dd>
           {doc.deal.transactionValue > 0 && (

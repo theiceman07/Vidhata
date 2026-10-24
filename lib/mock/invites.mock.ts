@@ -24,7 +24,7 @@ export const EXPIRED_INVITE_TOKEN = "expired-invitation";
 export const mockInvitations: Invitation[] = [
   {
     token: VALID_INVITE_TOKEN,
-    name: "Ananya Rao",
+    name: "Ishita Rao",
     email: "ananya.rao@example.com",
     barEnrolmentNumber: "MH/2210/2018",
     stateBarCouncil: "Bar Council of Maharashtra and Goa",
@@ -33,7 +33,7 @@ export const mockInvitations: Invitation[] = [
   },
   {
     token: EXPIRED_INVITE_TOKEN,
-    name: "Ananya Rao",
+    name: "Ishita Rao",
     email: "ananya.rao@example.com",
     barEnrolmentNumber: "MH/2210/2018",
     stateBarCouncil: "Bar Council of Maharashtra and Goa",

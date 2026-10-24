@@ -62,7 +62,7 @@ const TUCK_DELAY_MS = 280;
  * working a document wants the width.
  *
  * There is no role control here, not even in the identity menu. Identity
- * is a person and their standing ("Ananya Rao, advocate"). The preview
+ * is a person and their standing ("Ishita Rao, advocate"). The preview
  * reaches each portal through "Use the preview workspace" on that
  * portal's sign-in page; to move between them, sign out.
  */
@@ -473,7 +473,7 @@ function IdentityMenu({
         {onInk && (
           <>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-meta font-medium text-paper">
+              <span title={identity.name} className="block truncate text-meta font-medium text-paper">
                 {identity.name}
               </span>
               <span className="block truncate text-label text-paper/55">

@@ -161,7 +161,7 @@ export function DealPrompt({
               "ml-auto inline-flex h-12 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-6 text-body font-medium transition-all duration-300 ease-out",
               ready
                 ? "scale-100 bg-accent text-accent-fg hover:bg-accent-hover"
-                : "scale-95 bg-ink/[0.06] text-muted-fg",
+                : "scale-95 bg-brand-tint text-brand",
             )}
           >
             {drafting ? "Drafting…" : "Draft a document"}

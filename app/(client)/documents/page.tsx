@@ -11,7 +11,7 @@ import { DealPrompt } from "@/components/marketing/deal-prompt";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listClientDocuments } from "@/lib/api/client/documents";
-import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
+import { MOCK_CLIENT_ORG, MOCK_CLIENT_PERSON } from "@/lib/mock/client.mock";
 import { groupOf, yourMove, youSummary, type Move, type MoveGroup } from "@/lib/moves";
 import { TONE, type Tone } from "@/lib/tone";
 import type { ClientDocumentSummary } from "@/lib/types";
@@ -138,7 +138,7 @@ export default function DocumentsPage() {
       <section className="flex flex-col items-center px-2 pb-10 pt-2 text-center md:pt-4">
         {/* The one page that is not a PageHeader: a greeting and a prompt, centred. */}
         <h1 className="font-display text-greeting text-ink">
-          {greeting()}, {MOCK_CLIENT_ORG.name.split(" ")[0]}
+          {greeting()}, {MOCK_CLIENT_PERSON.name.split(" ")[0]}
         </h1>
         <p className="mt-3 text-body text-muted-fg">
           {youSummary(docs) ??

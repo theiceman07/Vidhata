@@ -216,8 +216,7 @@ export default function ChatPage() {
             aria-live="polite"
             aria-label="Conversation about this document"
             tabIndex={0}
-            className="flex-1 space-y-3 overflow-y-auto p-4 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
-            style={{ maxHeight: 480 }}
+            className="max-h-[calc(100dvh-26rem)] min-h-[18rem] flex-1 space-y-3 overflow-y-auto p-4 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
           >
             {messages.map((m) =>
               m.isEscalation ? (

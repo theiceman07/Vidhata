@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/shared/page-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
+import { SiteHeader } from "@/components/marketing/site-header";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -13,8 +14,9 @@ export const metadata: Metadata = {
 // drafted speculatively.
 export default function PrivacyPage() {
   return (
-    <>
-    <main className="mx-auto w-full max-w-3xl px-4 py-10">
+    <div>
+      <SiteHeader />
+      <main className="mx-auto w-full max-w-3xl px-6 pb-20 pt-24 md:pt-32">
       <PageHeader title="Privacy Policy" back={{ fallbackHref: "/", label: "Home" }} />
       <div className="rounded-card border border-line bg-sand p-6 text-body text-ink">
         <p className="font-medium">Privacy Policy · pending publication.</p>
@@ -29,7 +31,7 @@ export default function PrivacyPage() {
         </p>
       </div>
     </main>
-    <SiteFooter />
-    </>
+      <SiteFooter />
+    </div>
   );
 }

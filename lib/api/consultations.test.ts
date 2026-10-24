@@ -113,7 +113,7 @@ describe("requesting a consultation", () => {
   });
 });
 
-// Settled by Ananya Rao, the advocate the preview signs in as. The NDA above
+// Settled by Ishita Rao, the advocate the preview signs in as. The NDA above
 // was settled by Rhea Kapoor, so between them there is a request that is
 // yours and one that is not.
 const mine = "doc-nda-settled-2";
@@ -127,7 +127,7 @@ async function ask(documentId: string, question: string) {
 describe("the advocate's inbox", () => {
   it("holds only requests on documents they settled", async () => {
     const theirs = await ask(settled, "A question on Rhea's document.");
-    const yours = await ask(mine, "A question on Ananya's document.");
+    const yours = await ask(mine, "A question on Ishita's document.");
     expect(yours.advocateId).toBe(me);
 
     const inbox = await settle(listAdvocateConsultations(me));
@@ -173,7 +173,7 @@ describe("the advocate's inbox", () => {
 
 describe("another advocate's request", () => {
   it("is not found by a direct link, exactly as a request that does not exist is", async () => {
-    const made = await ask(settled, "Rhea's question, not Ananya's.");
+    const made = await ask(settled, "Rhea's question, not Ishita's.");
     const other = await settle(getAdvocateConsultation(me, made.id));
     const missing = await settle(getAdvocateConsultation(me, "consultation-9999"));
     expect(other).toBeNull();

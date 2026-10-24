@@ -219,8 +219,8 @@ export default function DocumentPage() {
 
         <StatusHero doc={doc} />
 
-        <div className="mt-5 grid items-start gap-x-8 gap-y-6 lg:grid-cols-[minmax(0,13fr)_minmax(0,7fr)]">
-          <PaymentPanel
+        <div className="mt-5 grid items-stretch gap-x-8 gap-y-6 lg:grid-cols-2">
+          <PaymentPanel className="lg:col-span-2"
             doc={doc}
             onPaid={(paid) => {
               setDoc(paid);
@@ -231,7 +231,7 @@ export default function DocumentPage() {
           <ContextPanel title="Where it is" compact>
             <Provenance doc={doc} />
           </ContextPanel>
-          <div className="min-w-0 lg:col-span-2">
+          <div className="min-w-0">
             <WhatHappensNext
               doc={doc}
               wide

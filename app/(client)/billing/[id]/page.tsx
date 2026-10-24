@@ -97,6 +97,10 @@ export default function ReceiptPage() {
               {rupees(invoice.amount)}
             </p>
             <p className="mt-2 text-meta text-muted-fg">{PRICE_BASIS}</p>
+            <Button variant="outline" disabled className="mt-5 w-full">
+              Download receipt
+            </Button>
+            <p className="mt-2 text-label text-muted-fg">Downloads aren&apos;t enabled in this preview</p>
           </div>
         </div>
 
@@ -110,15 +114,7 @@ export default function ReceiptPage() {
         </div>
       </section>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-meta text-muted-fg">Preview receipt. No payment was taken.</p>
-        <div className="flex items-center gap-3">
-          <span className="text-label text-muted-fg">Downloads aren&apos;t enabled in this preview</span>
-          <Button variant="outline" disabled>
-            Download receipt
-          </Button>
-        </div>
-      </div>
+      <p className="mt-4 text-meta text-muted-fg">Preview receipt. No payment was taken.</p>
     </div>
   );
 }

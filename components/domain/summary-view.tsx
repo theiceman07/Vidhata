@@ -1,4 +1,5 @@
 import type { SettledSummary } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 /** What the summary says it is, on every screen that shows it. */
 export const SUMMARY_LABEL =
@@ -12,17 +13,30 @@ export const SUMMARY_LABEL =
  * says so and cites nothing. It states what the document says and is never
  * phrased as a recommendation.
  */
-export function SummaryView({ summary }: { summary: SettledSummary }) {
+export function SummaryView({
+  summary,
+  showLabel = true,
+}: {
+  summary: SettledSummary;
+  /** False where the page already says it in its own header. */
+  showLabel?: boolean;
+}) {
   return (
     <section aria-labelledby="summary-label">
-      <p id="summary-label" className="max-w-measure text-meta text-muted-fg">
-        {SUMMARY_LABEL}
-      </p>
-      <dl className="mt-6 grid gap-x-10 gap-y-5 md:grid-cols-[minmax(11rem,14rem)_minmax(0,1fr)]">
+      {showLabel ? (
+        <p id="summary-label" className="max-w-measure text-meta text-muted-fg">
+          {SUMMARY_LABEL}
+        </p>
+      ) : (
+        <h2 id="summary-label" className="sr-only">
+          Summary
+        </h2>
+      )}
+      <dl className={cn("grid gap-x-12 gap-y-6 xl:grid-cols-2", showLabel && "mt-6")}>
         {summary.items.map((item) => (
-          <div key={item.label} className="contents">
-            <dt className="text-meta font-medium text-ink">{item.label}</dt>
-            <dd className="max-w-measure text-body text-ink">
+          <div key={item.label}>
+            <dt className="text-meta font-medium text-muted-fg">{item.label}</dt>
+            <dd className="mt-1 max-w-measure text-body text-ink">
               {item.text}
               {item.clauses.length > 0 && (
                 <span className="mt-1 block text-meta text-muted-fg">

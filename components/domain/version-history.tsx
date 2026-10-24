@@ -111,7 +111,7 @@ export function VersionHistory({
     <div className="grid gap-x-7 gap-y-6 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
       {/* Stretches to the foot of the comparison beside it, so the rail is a
           full-height panel rather than a short one with a gap beneath. */}
-      <ContextPanel title="Drafts" className="lg:self-stretch">
+      <ContextPanel title="Drafts" className="lg:self-start">
         {/* A row of drafts to pick from on a narrow screen, a column in the
             rail from lg up. */}
         <ol className="-mx-2 flex gap-2 overflow-x-auto lg:block lg:space-y-1 lg:overflow-visible">

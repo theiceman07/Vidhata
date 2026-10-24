@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
-import { SummaryView } from "@/components/domain/summary-view";
+import { SUMMARY_LABEL, SummaryView } from "@/components/domain/summary-view";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getClientSummary } from "@/lib/api/client/delivery";
@@ -73,13 +73,14 @@ export default function SummaryPage() {
         back={{ fallbackHref: `/documents/${params.id}`, label: "Document" }}
         eyebrow={title || undefined}
         title="Summary"
+        description={result.state === "ready" ? SUMMARY_LABEL : undefined}
         tabs={<DocumentTabs documentId={params.id} signedOff={result.state === "ready"} />}
       />
 
       <div>
         {result.state === "ready" && (
           <div className="rounded-card bg-parchment p-6 md:p-8">
-            <SummaryView summary={result.summary} />
+            <SummaryView summary={result.summary} showLabel={false} />
           </div>
         )}
 
