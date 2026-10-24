@@ -12,6 +12,7 @@ import { getClientSummary } from "@/lib/api/client/delivery";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { SummaryResult } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
+import { DocumentTabs } from "@/components/document/document-tabs";
 
 type Load =
   | { phase: "loading" }
@@ -72,6 +73,7 @@ export default function SummaryPage() {
         back={{ fallbackHref: `/documents/${params.id}`, label: "Document" }}
         eyebrow={title || undefined}
         title="Summary"
+        tabs={<DocumentTabs documentId={params.id} signedOff={result.state === "ready"} />}
       />
 
       <div>

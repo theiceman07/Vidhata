@@ -49,7 +49,6 @@ const H1_ALLOWED: Array<[RegExp, string]> = [
   [/^app\/(global-error|not-found)\.tsx$/, "error pages"],
   [/^app\/dev\//, "developer pages, not part of the product"],
   [/^app\/\(client\)\/documents\/page\.tsx$/, "the Documents greeting, the one centred hero"],
-  [/^components\/document\/workspace\.tsx$/, "the full-bleed document workspace header"],
 ];
 
 describe("page titles", () => {

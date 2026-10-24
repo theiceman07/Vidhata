@@ -27,7 +27,7 @@ export function ClientReader({
   settlementNotes?: ClientSettlementNote[];
 } & Pick<
   React.ComponentProps<typeof DocumentWorkspace>,
-  "back" | "aside" | "companion" | "actions" | "commands"
+  "back" | "aside" | "tabs" | "companion" | "actions" | "commands"
 >) {
   const workspaceDoc = useMemo(() => workspaceDocOf(doc), [doc]);
   const numbering = useMemo(() => workspaceNumbering(doc), [doc]);

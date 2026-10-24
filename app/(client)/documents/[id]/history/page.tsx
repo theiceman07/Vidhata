@@ -10,6 +10,7 @@ import { getClientVersions } from "@/lib/api/client/versions";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { ClientDocument, ClientVersionList } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
+import { DocumentTabs } from "@/components/document/document-tabs";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -78,6 +79,7 @@ export default function VersionHistoryPage() {
         eyebrow={doc.title}
         title="Version history"
         description="Each draft as it was handed on, and what changed between any two."
+        tabs={<DocumentTabs documentId={doc.id} signedOff={Boolean(doc.signOff)} checklist={doc.checklist} />}
       />
 
       <div>

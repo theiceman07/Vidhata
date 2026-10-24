@@ -18,6 +18,7 @@ import { getClientDelivery } from "@/lib/api/client/delivery";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { DeliveryResult } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
+import { DocumentTabs } from "@/components/document/document-tabs";
 
 type Load =
   | { phase: "loading" }
@@ -122,6 +123,7 @@ export default function DeliveryPage() {
         eyebrow={delivery.counterparty}
         title={delivery.title}
         actions={<StateLabel state={delivery.status} />}
+        tabs={<DocumentTabs documentId={delivery.documentId} signedOff={true} checklist={delivery.checklist} />}
       />
 
       <div className="grid gap-x-10 gap-y-10 lg:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem]">

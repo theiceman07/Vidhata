@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 import { TIER_PENDING_LABEL } from "@/lib/config/pricing";
@@ -41,6 +40,7 @@ import { DocumentSurface } from "./document-surface";
 import { FindingDetail } from "./finding-detail";
 import { AuditTrail, type TrailEntry } from "./audit-trail";
 import { ReviewShortcuts } from "./review-shortcuts";
+import { PageHeader } from "@/components/shared/page-header";
 
 /**
  * The document workspace.
@@ -65,6 +65,7 @@ export function DocumentWorkspace({
   actions,
   blockers,
   aside,
+  tabs,
   companion,
   commands,
   initialFindingId = null,
@@ -92,6 +93,8 @@ export function DocumentWorkspace({
   blockers?: Blocker[];
   /** Right side of the status strip when there are no blockers to show. */
   aside?: React.ReactNode;
+  /** The way between the document's pages (DocumentTabs), under the status strip. */
+  tabs?: React.ReactNode;
   /**
    * What the right pane holds when no finding or activity is open, e.g.
    * the document agent. It keeps the full height of the pane, so it stays
@@ -424,68 +427,52 @@ export function DocumentWorkspace({
         dropdown has room to open. */}
     <div className="flex min-h-0 flex-col lg:h-full">
       <header className="border-b border-line bg-paper">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4 md:px-8">
-          <Link
-            href={back.href}
-            aria-label={`Back to ${back.label}`}
-            title={back.label}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line text-ink transition-colors hover:bg-parchment"
-          >
-            <Icon name="arrow_back" size={20} />
-          </Link>
-
-          <div className="min-w-0 flex-1 basis-72">
-            <h1 className="truncate font-display text-h1 font-medium leading-tight tracking-[-0.015em] text-ink">
-              {doc.title}
-            </h1>
-            <p className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-meta text-muted-fg">
-              <span>{doc.clientName}</span>
-              <span aria-hidden className="h-1 w-1 rounded-full bg-line" />
-              <span>{doc.counterpartyName}</span>
-              <span aria-hidden className="h-1 w-1 rounded-full bg-line" />
-              <span>Draft {doc.version}</span>
-              {counter && (
-                <>
-                  <span aria-hidden className="h-1 w-1 rounded-full bg-line" />
-                  <span>{counter}</span>
-                </>
-              )}
-              <span aria-hidden className="h-1 w-1 rounded-full bg-line" />
-              <span>
-                {doc.tier ? (
-                  <>
-                    <span className="capitalize">{doc.tier}</span> tier
-                  </>
-                ) : (
-                  `Tier ${TIER_PENDING_LABEL.toLowerCase()}`
-                )}
-              </span>
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <StateLabel state={doc.status} />
-            {owner && <span className="text-meta text-muted-fg">{owner}</span>}
-            <span aria-hidden className="mx-2 hidden h-6 w-px bg-line md:block" />
-            <HeaderButton
-              icon="history"
-              label="Activity"
-              pressed={panel === "activity"}
-              onClick={toggleActivity}
-            />
-            <HeaderButton icon="search" label="Search" onClick={openPalette} />
-            <ReviewShortcuts
-              open={shortcutsOpen}
-              onOpenChange={setShortcutsOpen}
-              includeSettle={canAdjudicate}
-            />
-            {actions}
-          </div>
+        {/* The title is a PageHeader like every other page's, so it wraps
+            instead of truncating and its separators never dangle. */}
+        <div className="px-5 pb-1 pt-1 md:px-8">
+          <PageHeader
+            className="mb-2"
+            back={{ fallbackHref: back.href, label: back.label }}
+            title={doc.title}
+            meta={[
+              doc.clientName,
+              doc.counterpartyName,
+              `Draft ${doc.version}`,
+              counter,
+              doc.tier ? (
+                <span key="tier">
+                  <span className="capitalize">{doc.tier}</span> tier
+                </span>
+              ) : (
+                `Tier ${TIER_PENDING_LABEL.toLowerCase()}`
+              ),
+            ]}
+            actions={
+              <>
+                <StateLabel state={doc.status} />
+                {owner && <span className="text-meta text-muted-fg">{owner}</span>}
+                <span aria-hidden className="mx-2 hidden h-6 w-px bg-line md:block" />
+                <HeaderButton
+                  icon="history"
+                  label="Activity"
+                  pressed={panel === "activity"}
+                  onClick={toggleActivity}
+                />
+                <HeaderButton icon="search" label="Search" onClick={openPalette} />
+                <ReviewShortcuts
+                  open={shortcutsOpen}
+                  onOpenChange={setShortcutsOpen}
+                  includeSettle={canAdjudicate}
+                />
+                {actions}
+              </>
+            }
+          />
         </div>
 
         {/* The status strip. The shape of the remaining work on the left,
             what stands between it and sign-off on the right. */}
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line bg-paper px-5 py-3 md:px-8">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 bg-paper px-5 pb-3 md:px-8">
           <span className="flex items-center gap-3">
             <span className="text-meta text-muted-fg">
               {view.findings.length === 0
@@ -541,6 +528,8 @@ export function DocumentWorkspace({
             )}
           </div>
         </div>
+
+        {tabs && <div className="px-5 pb-3 md:px-8">{tabs}</div>}
 
         {notices.map((text) => (
           <div

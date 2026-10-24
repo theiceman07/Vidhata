@@ -31,6 +31,7 @@ import type {
   ExecutionStep,
 } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
+import { DocumentTabs } from "@/components/document/document-tabs";
 
 type LoadState = "loading" | "error" | "loaded";
 type Kind = ExecutionStep["kind"];
@@ -154,6 +155,7 @@ export default function ChecklistPage() {
         eyebrow={doc.title}
         title="Execution checklist"
         description="What remains before the settled document takes effect."
+        tabs={<DocumentTabs documentId={doc.id} signedOff={Boolean(doc.signOff)} checklist={doc.checklist} />}
         actions={
           isSettled ? (
             <>

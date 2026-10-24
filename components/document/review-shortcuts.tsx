@@ -46,6 +46,7 @@ export function ReviewShortcuts({
       >
         <Icon name="keyboard" size={18} />
         <span className="hidden sm:inline">Shortcuts</span>
+        <kbd className="hidden rounded-control border border-line px-1.5 font-mono text-label text-muted-fg sm:inline">?</kbd>
       </PopoverTrigger>
 
       <PopoverContent>

@@ -7,6 +7,7 @@
         "components/document/change-requests.tsx",
         "components/document/client-reader.tsx",
         "components/document/dateline.tsx",
+        "components/document/document-tabs.tsx",
         "components/document/document-agent.tsx",
         "components/document/provenance.tsx",
         "components/domain/chat-message.tsx",

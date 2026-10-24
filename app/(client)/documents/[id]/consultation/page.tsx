@@ -22,6 +22,7 @@ import { CONSULTATION, PRICE_BASIS, TIER_PRICING, rupees } from "@/lib/config/pr
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { ClientConsultation, ClientDocument } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
+import { DocumentTabs } from "@/components/document/document-tabs";
 
 const ORG = MOCK_CLIENT_ORG.id;
 
@@ -135,6 +136,7 @@ export default function ConsultationPage() {
         back={{ fallbackHref: `/documents/${doc.id}`, label: "Document" }}
         eyebrow={doc.title}
         title="Request a consultation"
+        tabs={<DocumentTabs documentId={doc.id} signedOff={true} />}
       />
 
       <div className="grid gap-x-10 gap-y-10 lg:grid-cols-[minmax(0,1fr)_24rem]">

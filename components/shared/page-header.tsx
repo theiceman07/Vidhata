@@ -8,9 +8,9 @@ import { cn } from "@/lib/utils";
  * Every page in both portals starts here, so the title sits at one left edge
  * (the shell's padding), one height, one size, and the description under it is
  * one size and one measure. The way back, when there is one, is always the
- * same pill on the same line above the title, and that line is kept even when
- * there is no way back, so a title does not move as a person clicks between
- * pages.
+ * same pill on the same line above the title, with the page's actions at the
+ * right of that line, and the line is kept even when there is neither, so a
+ * title does not move as a person clicks between pages.
  *
  * Slots: back, eyebrow, title, description, meta, actions. No hairline rule
  * under it: sections are divided by space and tint (CLAUDE.md).
@@ -32,6 +32,8 @@ export interface PageHeaderProps {
   meta?: ReactNode;
   /** Buttons on the right of the title. */
   actions?: ReactNode;
+  /** A row of tabs under the header, the same on every page of a set (a document's pages). */
+  tabs?: ReactNode;
   /**
    * The way back. `fallbackHref` is where it goes when there is nothing to go
    * back to; `label` names that place for assistive technology.
@@ -46,6 +48,7 @@ export function PageHeader({
   description,
   meta,
   actions,
+  tabs,
   back,
   className,
 }: PageHeaderProps) {
@@ -54,24 +57,27 @@ export function PageHeader({
   );
 
   return (
-    <header className={cn("mb-8 flex flex-wrap items-start justify-between gap-x-8 gap-y-4", className)}>
-      <div className="min-w-0 flex-1">
-        {/* Kept at one height whether or not there is a way back. */}
-        <div className="mb-1 flex min-h-8 items-center gap-3">
+    <header className={cn("mb-8", className)}>
+      {/* One line above the title: the way back and the page's actions. Kept at
+          one height whether or not either is there, and the actions sit here, on
+          the right, so a long row of them never squeezes the title. */}
+      <div className="mb-1 flex min-h-10 flex-wrap items-center justify-between gap-x-6 gap-y-2">
+        <div className="flex min-w-0 items-center gap-3">
           {back && <BackButton fallbackHref={back.fallbackHref} label={back.label} />}
           {eyebrow && <p className="min-w-0 truncate text-meta text-muted-fg">{eyebrow}</p>}
         </div>
-        <h1 className="font-display text-h1 text-ink">{title}</h1>
-        {description && <p className="mt-2 max-w-measure text-body text-muted-fg">{description}</p>}
-        {facts.length > 0 && (
-          <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-meta text-muted-fg [&>*+*]:before:mr-2 [&>*+*]:before:content-['·']">
-            {facts.map((fact, i) => (
-              <span key={i}>{fact}</span>
-            ))}
-          </p>
-        )}
+        {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
-      {actions && <div className="flex shrink-0 flex-wrap items-center gap-2 pt-1">{actions}</div>}
+      <h1 className="font-display text-h1 text-ink">{title}</h1>
+      {description && <p className="mt-2 max-w-measure text-body text-muted-fg">{description}</p>}
+      {facts.length > 0 && (
+        <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-meta text-muted-fg [&>*+*]:before:mr-2 [&>*+*]:before:content-['·']">
+          {facts.map((fact, i) => (
+            <span key={i}>{fact}</span>
+          ))}
+        </p>
+      )}
+      {tabs && <div className="mt-4">{tabs}</div>}
     </header>
   );
 }

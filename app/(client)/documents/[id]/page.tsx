@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { AuditTrail } from "@/components/document/audit-trail";
@@ -20,7 +19,6 @@ import { tierLabel } from "@/lib/config/pricing";
 import { PaymentPanel } from "@/components/domain/payment-panel";
 import { ErrorState } from "@/components/shared/error-state";
 import { Icon } from "@/components/shared/icon";
-import { TextLink } from "@/components/shared/text-link";
 import { Tick } from "@/components/shared/tick";
 import { PipelineProgress } from "@/components/domain/pipeline-progress";
 import { UploadContractPanel } from "@/components/domain/upload-contract-panel";
@@ -41,6 +39,7 @@ import { getClientTrail } from "@/lib/api/client/trail";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { ClientAuditEntry, ClientDocument, ClientSettlementNote } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
+import { DocumentTabs } from "@/components/document/document-tabs";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -213,6 +212,7 @@ export default function DocumentPage() {
           back={{ fallbackHref: "/documents", label: "Documents" }}
           title={doc.title}
           meta={[doc.deal.counterpartyName]}
+          tabs={<DocumentTabs documentId={doc.id} signedOff={Boolean(doc.signOff)} />}
         />
 
         <StatusHero doc={doc} />
@@ -262,12 +262,10 @@ export default function DocumentPage() {
           meta={[
             doc.deal.counterpartyName,
             `Draft ${doc.version}`,
-            <TextLink key="history" href={`/documents/${doc.id}/history`}>
-              Version history
-            </TextLink>,
             `Submitted ${format(new Date(doc.createdAt), "d MMM yyyy")}`,
             `${tierLabel(doc.tier)} review`,
           ]}
+          tabs={<DocumentTabs documentId={doc.id} signedOff={Boolean(doc.signOff)} />}
         />
 
         {/* The state, who has the move and what comes next lead the page. */}
@@ -369,8 +367,6 @@ function SettledDocument({
   trail: ClientAuditEntry[];
   notes: ClientSettlementNote[];
 }) {
-  const { done, total } = doc.checklist;
-
   return (
     <ClientReader
       doc={doc}
@@ -386,48 +382,15 @@ function SettledDocument({
               {format(new Date(doc.signOff.at), "d MMM yyyy")}
             </span>
           )}
-          <Link
-            href={`/documents/${doc.id}/delivery`}
-            className="link text-label"
-          >
-            Delivery
-          </Link>
-          <Link
-            href={`/documents/${doc.id}/checklist`}
-            className="link text-label"
-          >
-            Execution checklist · {done} of {total}
-          </Link>
-          <Link
-            href={`/documents/${doc.id}/summary`}
-            className="link text-label"
-          >
-            Summary
-          </Link>
-          <Link
-            href={`/documents/${doc.id}/history`}
-            className="link text-label"
-          >
-            Version history
-          </Link>
-          {doc.signOff && (
-            <Link
-              href={`/documents/${doc.id}/consultation`}
-              className="link text-label"
-            >
-              Consultation
-            </Link>
-          )}
         </>
       }
+      tabs={<DocumentTabs documentId={doc.id} signedOff={Boolean(doc.signOff)} checklist={doc.checklist} />}
       companion={({ goToClause }) => <DocumentAgent doc={doc} onCite={goToClause} />}
       actions={
-        <>
-          <Button variant="outline" onClick={() => window.print()}>
-            <Icon name="print" size={18} />
-            Print this page (browser)
-          </Button>
-        </>
+        <Button variant="ghost" size="sm" onClick={() => window.print()}>
+          <Icon name="print" size={18} />
+          Print
+        </Button>
       }
     />
   );

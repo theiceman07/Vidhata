@@ -30,6 +30,7 @@ import type {
 } from "@/lib/types";
 import { scrollBehavior } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+import { DocumentTabs } from "@/components/document/document-tabs";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -165,6 +166,7 @@ export default function ChatPage() {
         title="Ask about this document"
         eyebrow={doc.title}
         back={{ fallbackHref: `/documents/${doc.id}`, label: doc.title }}
+        tabs={<DocumentTabs documentId={doc.id} signedOff={Boolean(doc.signOff)} checklist={doc.checklist} />}
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[280px_1fr]">
