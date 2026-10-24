@@ -33,6 +33,11 @@ describe("type scale", () => {
     expect(offenders(/\btext-\[\d/)).toEqual([]);
   });
 
+  it("has no clamp() font sizes outside the marketing pages, which keep their display sizes", () => {
+    const stray = offenders(/\btext-\[clamp\(/).filter((line) => !line.startsWith("components/marketing/"));
+    expect(stray).toEqual([]);
+  });
+
   it("has no Tailwind default sizes (text-xs, text-sm, text-lg, text-xl and up)", () => {
     expect(offenders(/\btext-(xs|sm|lg|xl|[2-9]xl)\b/)).toEqual([]);
   });

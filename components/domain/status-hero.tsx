@@ -179,7 +179,7 @@ export function StatusStrip({ doc, className }: { doc: ClientDocument; className
             <Icon name={icon} size={16} />
             {text}
           </span>
-          <h2 id="hero-title" className="mt-3 font-display text-[clamp(28px,2.6vw,38px)] font-medium leading-[1.08] tracking-[-0.02em]">
+          <h2 id="hero-title" className="mt-3 font-display text-h2">
             {hero.headline}
           </h2>
         </div>

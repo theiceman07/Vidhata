@@ -204,7 +204,7 @@ function StepRow({
               </span>
             </div>
 
-            <p className="mt-2 font-display text-[clamp(20px,1.6vw,24px)] font-medium leading-snug tracking-[-0.01em] text-ink">
+            <p className="mt-2 font-display text-h3 text-ink">
               {step.headline}
             </p>
             <p className="mt-2 max-w-prose text-body text-ink">{step.detail}</p>
