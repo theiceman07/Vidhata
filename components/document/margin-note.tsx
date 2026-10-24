@@ -135,7 +135,7 @@ export function AddMarginNote({
         disabled={blocked !== null}
         aria-describedby={blocked ? reasonId : undefined}
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-label text-muted-fg transition-opacity hover:bg-parchment hover:text-ink focus-visible:opacity-100 disabled:pointer-events-none disabled:opacity-50"
+        className="inline-flex min-h-8 items-center gap-1.5 rounded-full px-3 text-label text-muted-fg transition-opacity hover:bg-parchment hover:text-ink focus-visible:opacity-100 disabled:pointer-events-none disabled:opacity-50"
       >
         <Icon name="sticky_note_2" size={16} />
         Add a note

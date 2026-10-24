@@ -1,7 +1,16 @@
 import { scheduleSave } from "./state";
 
+/**
+ * The preview's stand-in for a network. The waits the calls ask for are the
+ * ones written at each call; a page that makes five of them in a row took three
+ * to four seconds to open even in a production build, so every wait is scaled
+ * down. A page still shows its loading state, only for a moment. Real latency
+ * is the backend's, and the backend replaces these calls (CLAUDE.md, lib/api/*).
+ */
+const LATENCY_SCALE = 0.25;
+
 export function randomDelay(minMs = 600, maxMs = 1200): Promise<void> {
-  const ms = minMs + Math.random() * (maxMs - minMs);
+  const ms = (minMs + Math.random() * (maxMs - minMs)) * LATENCY_SCALE;
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve();

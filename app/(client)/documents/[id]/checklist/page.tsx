@@ -351,7 +351,7 @@ function ExecutionSummary({
             </p>
             <TextLink
               href={`#step-${next.kind}`}
-              className="link mt-4 inline-flex items-center gap-1 text-meta font-medium"
+              className="link mt-3 inline-flex min-h-8 items-center gap-1 text-meta font-medium"
             >
               Go to the step
               <Icon name="arrow_forward" size={18} />

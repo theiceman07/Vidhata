@@ -73,7 +73,7 @@ export default function ProfilePage() {
               Bar enrolment: {CURRENT_ADVOCATE.bar}
             </p>
           </div>
-          <Badge className="bg-verified/15 text-verified hover:bg-verified/15">
+          <Badge className="border-transparent bg-done-tint text-done-text hover:bg-done-tint">
             Empanelled
           </Badge>
         </div>

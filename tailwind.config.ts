@@ -34,7 +34,7 @@ const config: Config = {
           muted: "#EFEEE8",
           ink: "#343A40",
           strong: "#263B33",
-          secondary: "#68716D",
+          secondary: "#5F6965", // 4.9:1 on sand, 5.1:1 on the calm canvas (was #68716D, 4.35:1 on sand)
           border: "#DFDDD5",
           "border-strong": "#C8C8BE",
           divider: "#E8E6DF",

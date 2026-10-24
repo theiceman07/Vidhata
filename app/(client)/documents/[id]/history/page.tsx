@@ -11,6 +11,7 @@ import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { ClientDocument, ClientVersionList } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
 import { DocumentTabs } from "@/components/document/document-tabs";
+import { PageSkeleton } from "@/components/shared/page-skeleton";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -53,18 +54,16 @@ export default function VersionHistoryPage() {
 
   if (state === "loading") {
     return (
-      <div className="w-full">
-        <Skeleton className="h-4 w-48" />
-        <Skeleton className="mt-4 h-10 w-1/3" />
-        <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+      <PageSkeleton tabs>
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
           <Skeleton className="h-64 rounded-card" />
           <div className="space-y-4">
-            <Skeleton className="h-12 w-2/3 rounded-control" />
-            <Skeleton className="h-48 rounded-card" />
-            <Skeleton className="h-48 rounded-card" />
+            <Skeleton className="h-10 w-2/3 rounded-control" />
+            <Skeleton className="h-28 rounded-card" />
+            <Skeleton className="h-64 rounded-card" />
           </div>
         </div>
-      </div>
+      </PageSkeleton>
     );
   }
 

@@ -19,6 +19,7 @@ import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { DeliveryResult } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
 import { DocumentTabs } from "@/components/document/document-tabs";
+import { PageSkeleton } from "@/components/shared/page-skeleton";
 
 type Load =
   | { phase: "loading" }
@@ -59,14 +60,12 @@ export default function DeliveryPage() {
 
   if (load.phase === "loading") {
     return (
-      <div className="w-full">
-        <Skeleton className="h-4 w-48" />
-        <Skeleton className="mt-4 h-10 w-1/3" />
-        <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <PageSkeleton tabs description={false}>
+        <div className="grid gap-x-10 gap-y-10 lg:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem]">
           <Skeleton className="h-96 w-full rounded-card" />
           <Skeleton className="h-72 w-full rounded-card" />
         </div>
-      </div>
+      </PageSkeleton>
     );
   }
 

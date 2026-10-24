@@ -385,7 +385,7 @@ function Rail({
             >
               <Icon name="search" size={20} />
               Search
-              <kbd className="ml-auto font-mono text-label text-paper/45">
+              <kbd className="ml-auto font-mono text-label text-paper/60">
                 {isMac ? "⌘K" : "Ctrl K"}
               </kbd>
             </button>
@@ -393,7 +393,7 @@ function Rail({
             <div className="mt-4 space-y-5">
               {sections.map((section) => (
                 <div key={section.label}>
-                  <p className="px-3 pb-1.5 text-label text-paper/45">{section.label}</p>
+                  <p className="px-3 pb-1.5 text-label text-paper/60">{section.label}</p>
                   <ul className="space-y-0.5">
                     {section.links.map((link) => {
                       const active = isActive(link.href);

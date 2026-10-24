@@ -836,7 +836,7 @@ function SignedOffByYou({ docs, onShow }: { docs: ContractDocument[]; onShow: ()
           <button
             type="button"
             onClick={onShow}
-            className="link text-label"
+            className="link inline-flex min-h-8 items-center text-label"
           >
             All {docs.length}
           </button>

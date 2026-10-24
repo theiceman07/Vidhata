@@ -19,6 +19,7 @@
         "components/domain/draft-banner.tsx",
         "components/domain/status-hero.tsx",
         "components/shared/gloss.tsx",
+        "components/shared/page-skeleton.tsx",
         "components/domain/draft-paths.tsx",
         "components/domain/escalation-prompt.tsx",
         "components/domain/esign-guide.tsx",

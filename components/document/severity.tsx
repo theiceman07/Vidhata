@@ -93,7 +93,7 @@ export function SeverityCounts({
           title={`${counts[s]} ${s}`}
           className={cn(
             "inline-flex items-center gap-1 text-label tabular-nums",
-            counts[s] === 0 ? "text-muted-fg/50" : "text-ink",
+            counts[s] === 0 ? "text-muted-fg" : "text-ink",
           )}
         >
           <SeverityGlyph

@@ -557,7 +557,7 @@ export function OnYourDesk({ currentId, className }: { currentId: string; classN
       aside={
         <Link
           href="/documents"
-          className="link text-label"
+          className="link inline-flex min-h-8 items-center text-label"
         >
           All documents
         </Link>

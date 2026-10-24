@@ -31,6 +31,7 @@ import type {
 import { scrollBehavior } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { DocumentTabs } from "@/components/document/document-tabs";
+import { PageSkeleton } from "@/components/shared/page-skeleton";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -128,10 +129,12 @@ export default function ChatPage() {
 
   if (state === "loading") {
     return (
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-[280px_1fr]">
-        <Skeleton className="h-96 rounded-card" />
-        <Skeleton className="h-96 rounded-card" />
-      </div>
+      <PageSkeleton tabs description={false}>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-[280px_1fr]">
+          <Skeleton className="h-60 rounded-card" />
+          <Skeleton className="h-[26rem] rounded-card" />
+        </div>
+      </PageSkeleton>
     );
   }
 

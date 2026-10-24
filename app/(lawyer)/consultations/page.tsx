@@ -134,7 +134,7 @@ export default function ConsultationsPage() {
                   onClick={() => setFilter(f.id)}
                   aria-pressed={filter === f.id}
                   className={cn(
-                    "rounded-full px-4 py-1.5 text-label transition-colors",
+                    "inline-flex h-8 items-center rounded-full px-4 text-label transition-colors",
                     filter === f.id
                       ? "bg-ink text-paper"
                       : "bg-parchment/50 text-ink hover:bg-parchment",

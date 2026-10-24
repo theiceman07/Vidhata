@@ -114,25 +114,25 @@ export function StatusHero({ doc, className }: { doc: ClientDocument; className?
         {hero.headline}
       </h2>
 
-      <dl className="mt-6 grid gap-x-10 gap-y-5 md:grid-cols-2">
+      <div className="mt-6 grid gap-x-10 gap-y-5 md:grid-cols-2">
         <div className="flex items-start gap-3">
           <Icon name={MOVER_ICON[hero.mover]} size={24} className={cn("mt-0.5", TONE[tone].text)} />
           <div className="min-w-0">
-            <dt className="text-label font-medium text-muted">Who has the move</dt>
-            <dd className="mt-0.5 text-body font-medium text-ink">
+            <p className="text-label font-medium text-muted">Who has the move</p>
+            <div className="mt-0.5 text-body font-medium text-ink">
               {MOVER_LABEL[hero.mover]}
               <span className="block text-meta font-normal text-ink">{hero.move}</span>
-            </dd>
+            </div>
           </div>
         </div>
         <div className="flex items-start gap-3">
           <Icon name="arrow_forward" size={24} className="mt-0.5 text-muted" />
           <div className="min-w-0">
-            <dt className="text-label font-medium text-muted">What happens next</dt>
-            <dd className="mt-0.5 max-w-measure text-body text-ink">{hero.next}</dd>
+            <p className="text-label font-medium text-muted">What happens next</p>
+            <div className="mt-0.5 max-w-measure text-body text-ink">{hero.next}</div>
           </div>
         </div>
-      </dl>
+      </div>
 
       <p className="mt-6 text-meta text-muted">
         Submitted {format(new Date(doc.createdAt), "d MMM yyyy")}
@@ -184,7 +184,7 @@ export function StatusStrip({ doc, className }: { doc: ClientDocument; className
           </h2>
         </div>
 
-        <dl className="grid gap-5 border-paper/15 max-md:border-t max-md:pt-6 md:border-l md:pl-10">
+        <div className="grid gap-5 border-paper/15 max-md:border-t max-md:pt-6 md:border-l md:pl-10">
           <div className="flex min-w-0 items-start gap-3.5">
             <span
               className={cn(
@@ -195,11 +195,11 @@ export function StatusStrip({ doc, className }: { doc: ClientDocument; className
               <Icon name={MOVER_ICON[hero.mover]} size={20} />
             </span>
             <div className="min-w-0">
-              <dt className="text-label text-paper/70">Who has the move</dt>
-              <dd className="font-display text-h3 font-medium leading-tight">
+              <p className="text-label text-paper/70">Who has the move</p>
+              <div className="font-display text-h3 font-medium leading-tight">
                 {MOVER_LABEL[hero.mover]}
                 <span className="ml-2 font-sans text-meta font-normal text-paper/80">{hero.move}</span>
-              </dd>
+              </div>
             </div>
           </div>
           <div className="flex min-w-0 items-start gap-3.5">
@@ -207,11 +207,11 @@ export function StatusStrip({ doc, className }: { doc: ClientDocument; className
               <Icon name="arrow_forward" size={20} />
             </span>
             <div className="min-w-0">
-              <dt className="text-label text-paper/70">What happens next</dt>
-              <dd className="text-meta leading-[1.5]">{hero.next}</dd>
+              <p className="text-label text-paper/70">What happens next</p>
+              <div className="text-meta leading-[1.5]">{hero.next}</div>
             </div>
           </div>
-        </dl>
+        </div>
       </div>
     </section>
   );

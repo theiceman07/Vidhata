@@ -76,7 +76,7 @@ export function ClauseIndex({
                   onClick={() => onSelectClause(clause.id)}
                   aria-current={active ? "location" : undefined}
                   className={cn(
-                    "flex w-full items-center gap-2 rounded-control px-2 py-1 text-left transition-colors",
+                    "flex min-h-8 w-full items-center gap-2 rounded-control px-2 py-1 text-left transition-colors",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                     active ? "bg-parchment text-ink" : "text-muted-fg hover:bg-parchment/60 hover:text-ink",
                   )}
@@ -131,7 +131,7 @@ export function ClauseIndex({
                   onClick={() => setFilter(value)}
                   aria-pressed={filter === value}
                   className={cn(
-                    "rounded-[4px] px-1.5 py-px text-label transition-colors",
+                    "inline-flex h-7 items-center rounded-control px-2.5 text-label transition-colors",
                     filter === value ? "bg-parchment text-ink" : "text-muted-fg hover:text-ink",
                   )}
                 >
@@ -174,7 +174,7 @@ export function ClauseIndex({
                     onMouseLeave={() => onHoverFinding(null)}
                     aria-current={selected ? "true" : undefined}
                     className={cn(
-                      "flex w-full items-center gap-2 rounded-control px-2 py-1 text-left transition-colors",
+                      "flex min-h-8 w-full items-center gap-2 rounded-control px-2 py-1 text-left transition-colors",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                       selected ? "bg-parchment" : "hover:bg-parchment/60",
                     )}

@@ -13,6 +13,7 @@ import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { SummaryResult } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
 import { DocumentTabs } from "@/components/document/document-tabs";
+import { PageSkeleton } from "@/components/shared/page-skeleton";
 
 type Load =
   | { phase: "loading" }
@@ -51,11 +52,9 @@ export default function SummaryPage() {
 
   if (load.phase === "loading") {
     return (
-      <div className="w-full">
-        <Skeleton className="h-4 w-48" />
-        <Skeleton className="mt-4 h-10 w-1/3" />
-        <Skeleton className="mt-10 h-72 w-full max-w-4xl rounded-card" />
-      </div>
+      <PageSkeleton tabs>
+        <Skeleton className="h-96 w-full rounded-card" />
+      </PageSkeleton>
     );
   }
 
