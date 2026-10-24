@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getClientNotifications } from "@/lib/api/client/notifications";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { ClientNotification } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -61,22 +62,20 @@ export default function NotificationsPage() {
 
   return (
     <div className="w-full">
-      <header className="max-w-measure">
-        <h1 className="font-display text-h1 text-ink">Notifications</h1>
-        <p className="mt-2 text-lead text-muted-fg">
-          What has happened on your documents and consultation requests, newest first.
-        </p>
-      </header>
+      <PageHeader
+        title="Notifications"
+        description="What has happened on your documents and consultation requests, newest first."
+      />
 
       {items.length === 0 ? (
-        <div className="mt-10 max-w-xl">
+        <div className="max-w-xl">
           <EmptyState
             title="Nothing new."
             description="When a document moves, or your advocate asks for something, it appears here."
           />
         </div>
       ) : (
-        <ul className="mt-8 space-y-2">
+        <ul className="space-y-2">
           {items.map((n) => (
             <li key={n.id}>
               <Link

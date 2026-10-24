@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { BackButton } from "@/components/shared/back-button";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { AuditTrail } from "@/components/document/audit-trail";
@@ -41,6 +40,7 @@ import { getClientSettlementNotes } from "@/lib/api/client/settlement-notes";
 import { getClientTrail } from "@/lib/api/client/trail";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { ClientAuditEntry, ClientDocument, ClientSettlementNote } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -209,15 +209,13 @@ export default function DocumentPage() {
   if (doc.status === "awaiting_payment") {
     return (
       <Frame>
-        <header className="flex min-w-0 items-start gap-4">
-          <BackButton fallbackHref="/documents" label="Back" />
-          <div className="min-w-0">
-            <h1 className="font-display text-h1 text-ink">{doc.title}</h1>
-            <p className="mt-1 text-meta text-muted">{doc.deal.counterpartyName}</p>
-          </div>
-        </header>
+        <PageHeader
+          back={{ fallbackHref: "/documents", label: "Documents" }}
+          title={doc.title}
+          meta={[doc.deal.counterpartyName]}
+        />
 
-        <StatusHero doc={doc} className="mt-6" />
+        <StatusHero doc={doc} />
 
         <div className="mt-5 grid items-start gap-x-8 gap-y-6 lg:grid-cols-[minmax(0,13fr)_minmax(0,7fr)]">
           <PaymentPanel
@@ -258,28 +256,22 @@ export default function DocumentPage() {
   return (
     <Frame>
       <CalmProvider>
-        <header className="flex min-w-0 items-start gap-4">
-          <BackButton fallbackHref="/documents" label="Back" />
-          <div className="min-w-0">
-            <h1 className="font-display text-h1 text-ink">
-              {doc.title}
-            </h1>
-            <p className="mt-1 text-meta text-muted">
-              {doc.deal.counterpartyName}
-              <span className="mx-1.5 text-muted/50">·</span>
-              Draft {doc.version}
-              <span className="mx-1.5 text-muted/50">·</span>
-              <TextLink href={`/documents/${doc.id}/history`}>Version history</TextLink>
-              <span className="mx-1.5 text-muted/50">·</span>
-              Submitted {format(new Date(doc.createdAt), "d MMM yyyy")}
-              <span className="mx-1.5 text-muted/50">·</span>
-              {tierLabel(doc.tier)} review
-            </p>
-          </div>
-        </header>
+        <PageHeader
+          back={{ fallbackHref: "/documents", label: "Documents" }}
+          title={doc.title}
+          meta={[
+            doc.deal.counterpartyName,
+            `Draft ${doc.version}`,
+            <TextLink key="history" href={`/documents/${doc.id}/history`}>
+              Version history
+            </TextLink>,
+            `Submitted ${format(new Date(doc.createdAt), "d MMM yyyy")}`,
+            `${tierLabel(doc.tier)} review`,
+          ]}
+        />
 
         {/* The state, who has the move and what comes next lead the page. */}
-        <StatusStrip doc={doc} className="mt-4" />
+        <StatusStrip doc={doc} />
 
         {/* The move in hand on the left; the record on the right, one column
             with rules between its parts. Narrows below 1100px, stacks below 768px. */}
@@ -323,7 +315,7 @@ export default function DocumentPage() {
  */
 function Frame({ children }: { children: React.ReactNode }) {
   return (
-    <div className={"md:absolute md:inset-0 md:overflow-y-auto px-4 py-5 md:px-8 md:py-4"}>
+    <div className="px-4 py-6 md:absolute md:inset-0 md:overflow-y-auto md:px-8 md:py-8">
       <div className="w-full">{children}</div>
     </div>
   );

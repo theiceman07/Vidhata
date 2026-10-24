@@ -86,6 +86,11 @@ const config: Config = {
           "clamp(44px, 6.4vw, 92px)",
           { lineHeight: "1", fontWeight: "500", letterSpacing: "-0.03em" },
         ],
+        // The greeting on Documents, the one centred hero inside the product.
+        greeting: [
+          "clamp(36px, 4.6vw, 60px)",
+          { lineHeight: "1.05", fontWeight: "500", letterSpacing: "-0.02em" },
+        ],
         // The product has six type steps and no others: 12 label, 14 meta,
         // 16 body, 20 h3, 26 h2, 40 h1 (the display sizes above are the
         // marketing headlines). `lead`, `small` and `notation` are aliases of

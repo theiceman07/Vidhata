@@ -21,6 +21,7 @@ import { signOffBlockers } from "@/lib/findings";
 import { buildAuditTrail } from "@/lib/audit";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import type { ContractDocument, SettlementNote } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -182,24 +183,13 @@ export default function SignOffPage() {
     // What was released to the client, read back from the record, as written.
     const released = (doc.settlementNotes ?? []).filter((n) => n.releasedAt !== null);
     return (
-      <div className="mx-auto w-full max-w-3xl">
-        <Link
-          href="/queue"
-          className="inline-flex items-center gap-0.5 text-meta text-muted-fg transition-colors hover:text-ink"
-        >
-          <Icon name="chevron_left" size={18} />
-          Queue
-        </Link>
-
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <StateLabel state={doc.status} variant="solid" />
-        </div>
-        <h1 className="mt-2 font-display text-h1 text-ink">{doc.title}</h1>
-        <p className="mt-1 text-meta text-muted-fg">
-          {doc.clientName}
-          <span aria-hidden className="mx-1.5 text-muted-fg">·</span>
-          {doc.counterpartyName}
-        </p>
+      <div className="w-full">
+        <PageHeader
+          back={{ fallbackHref: "/queue", label: "Queue" }}
+          title={doc.title}
+          meta={[doc.clientName, doc.counterpartyName]}
+          actions={<StateLabel state={doc.status} variant="solid" />}
+        />
 
         <section className="mt-8 grid items-start gap-6 rounded-card border border-line bg-paper p-5 sm:grid-cols-[minmax(0,1fr)_auto] md:p-6">
           <div className="min-w-0">
@@ -276,23 +266,13 @@ export default function SignOffPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
-      <Link
-        href={`/review/${doc.id}`}
-        className="inline-flex items-center gap-0.5 text-meta text-muted-fg transition-colors hover:text-ink"
-      >
-        <Icon name="chevron_left" size={18} />
-        Back to the document
-      </Link>
-
-      <p className="mt-4 text-label font-medium text-muted-fg">Sign-off</p>
-      {/* The one display moment on this screen. */}
-      <h1 className="mt-1 font-display text-h1 text-ink">{doc.title}</h1>
-      <p className="mt-1 text-meta text-muted-fg">
-        {doc.clientName}
-        <span aria-hidden className="mx-1.5 text-muted-fg">·</span>
-        {doc.counterpartyName}
-      </p>
+    <div className="w-full">
+      <PageHeader
+        back={{ fallbackHref: `/review/${doc.id}`, label: "the document" }}
+        eyebrow="Sign-off"
+        title={doc.title}
+        meta={[doc.clientName, doc.counterpartyName]}
+      />
 
       <section className="mt-8 rounded-card border border-line bg-paper p-5">
         <h2 className="mb-3 text-body font-medium text-ink">What you are signing</h2>

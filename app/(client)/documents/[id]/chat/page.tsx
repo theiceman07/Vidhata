@@ -146,11 +146,10 @@ export default function ChatPage() {
     // Says only that it is not open yet: the document is not named, as the
     // delivery and the summary do not name one that is not signed off.
     return (
-      <div className="mx-auto w-full max-w-2xl">
+      <div className="w-full">
         <PageHeader
           title="Ask about this document"
-          backHref={`/documents/${doc.id}`}
-          backLabel="Document"
+          back={{ fallbackHref: `/documents/${doc.id}`, label: "Document" }}
         />
         <p className="border-l-2 border-line pl-4 text-body text-ink">
           Questions open once an advocate has settled and signed off this
@@ -164,9 +163,8 @@ export default function ChatPage() {
     <div>
       <PageHeader
         title="Ask about this document"
-        description={doc.title}
-        backHref={`/documents/${doc.id}`}
-        backLabel={doc.title}
+        eyebrow={doc.title}
+        back={{ fallbackHref: `/documents/${doc.id}`, label: doc.title }}
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[280px_1fr]">

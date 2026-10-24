@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
-import { BackButton } from "@/components/shared/back-button";
 import { ErrorState } from "@/components/shared/error-state";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,6 +11,7 @@ import { INVOICE_KIND_LABEL, invoiceBasis } from "@/lib/billing";
 import { PRICE_BASIS, rupees } from "@/lib/config/pricing";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { BillingProfile, Invoice } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -52,7 +52,7 @@ export default function ReceiptPage() {
 
   if (state === "loading") {
     return (
-      <div className="w-full lg:px-[3%]">
+      <div className="w-full">
         <Skeleton className="h-10 w-64" />
         <Skeleton className="mt-6 h-64 w-full rounded-card" />
       </div>
@@ -64,17 +64,15 @@ export default function ReceiptPage() {
   }
 
   return (
-    <div className="w-full lg:px-[3%]">
-      <p className="text-label font-medium text-muted-fg">Receipt · Preview</p>
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-        <BackButton fallbackHref="/billing" label="Billing" />
-        <h1 className="min-w-0 font-display text-h1 text-ink">{invoice.number}</h1>
-        <p className="text-meta text-muted-fg md:ml-auto">
-          {format(new Date(invoice.issuedAt), "d MMMM yyyy")}
-        </p>
-      </div>
+    <div className="w-full">
+      <PageHeader
+        back={{ fallbackHref: "/billing", label: "Billing" }}
+        eyebrow="Receipt · Preview"
+        title={invoice.number}
+        meta={format(new Date(invoice.issuedAt), "d MMMM yyyy")}
+      />
 
-      <section className="mt-6 overflow-hidden rounded-card border border-line bg-paper">
+      <section className="overflow-hidden rounded-card border border-line bg-paper">
         <div className="grid md:grid-cols-[minmax(0,69fr)_minmax(0,31fr)]">
           <dl className="grid grid-cols-[6.5rem_minmax(0,1fr)] content-center items-baseline gap-x-4 gap-y-3 p-6 text-meta md:grid-cols-[8rem_minmax(0,1fr)] md:p-8">
             <dt className="text-muted-fg">Made out to</dt>

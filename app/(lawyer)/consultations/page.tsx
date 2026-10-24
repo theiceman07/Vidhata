@@ -12,6 +12,7 @@ import { listAdvocateConsultations } from "@/lib/api/consultations";
 import { cn } from "@/lib/utils";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import type { ConsultationSummary } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 type LoadState = "loading" | "error" | "loaded";
 type Filter = "all" | "waiting" | "answered" | "declined";
@@ -90,16 +91,13 @@ export default function ConsultationsPage() {
 
   return (
     <div className="w-full">
-      <header className="max-w-measure">
-        <h1 className="font-display text-h1 text-ink">Consultations</h1>
-        <p className="mt-2 text-lead text-muted-fg">
-          Follow-up requests from clients whose documents you settled. Only you see them. Declining
-          is free and never chargeable.
-        </p>
-      </header>
+      <PageHeader
+        title="Consultations"
+        description="Follow-up requests from clients whose documents you settled. Only you see them. Declining is free and never chargeable."
+      />
 
       {requests.length === 0 ? (
-        <div className="mt-10 max-w-xl">
+        <div className="max-w-xl">
           <EmptyState
             title="No requests yet."
             description="When a client asks to talk through a document you settled, the request appears here."

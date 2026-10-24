@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { BackButton } from "@/components/shared/back-button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { SummaryView } from "@/components/domain/summary-view";
@@ -12,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getClientSummary } from "@/lib/api/client/delivery";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { SummaryResult } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 type Load =
   | { phase: "loading" }
@@ -66,16 +66,15 @@ export default function SummaryPage() {
 
   return (
     <div className="w-full">
-      <header className="flex items-start gap-4">
-        <BackButton fallbackHref={`/documents/${params.id}`} label="Document" />
-        <div className="min-w-0">
-          {/* Before sign-off the page says only that it is not available. */}
-          {title && <p className="truncate text-meta text-muted-fg">{title}</p>}
-          <h1 className="mt-1 font-display text-h1 text-ink">Summary</h1>
-        </div>
-      </header>
+      {/* Before sign-off the page says only that it is not available, so no
+          title is passed down until there is one. */}
+      <PageHeader
+        back={{ fallbackHref: `/documents/${params.id}`, label: "Document" }}
+        eyebrow={title || undefined}
+        title="Summary"
+      />
 
-      <div className="mt-10">
+      <div>
         {result.state === "ready" && (
           <div className="rounded-card bg-parchment p-6 md:p-8">
             <SummaryView summary={result.summary} />

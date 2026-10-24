@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getMetrics } from "@/lib/api/metrics";
 import { percent } from "@/lib/metrics";
 import type { Metrics, Ratio } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 /**
  * Metrics. Internal, and only in the advocate portal.
@@ -99,13 +100,12 @@ export default function MetricsPage() {
 
   return (
     <div className="w-full">
-      <h1 className="font-display text-h1 text-ink">Metrics</h1>
-      <p className="mt-2 max-w-measure text-body text-muted-fg">
-        How the first pass is doing, from the work advocates have recorded.
-        Internal.
-      </p>
+      <PageHeader
+        title="Metrics"
+        description="How the first pass is doing, from the work advocates have recorded. Internal."
+      />
 
-      <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <Figure
           label="Override rate"
           ratio={metrics.overrides}

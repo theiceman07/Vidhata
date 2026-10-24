@@ -37,3 +37,27 @@ describe("type scale", () => {
     expect(offenders(/\btext-(xs|sm|lg|xl|[2-9]xl)\b/)).toEqual([]);
   });
 });
+
+// Every page title is a PageHeader (components/shared/page-header.tsx), so the
+// title has one size, one height and one left edge. A hand-written <h1> in a
+// portal page is how titles ended up at eight different left edges.
+const H1_ALLOWED: Array<[RegExp, string]> = [
+  [/^components\/shared\/page-header\.tsx$/, "the one header"],
+  [/^components\/marketing\//, "marketing pages own their hero"],
+  [/^app\/\(public\)\//, "public pages own their hero"],
+  [/^components\/shared\/(auth-screen|portal-gate)\.tsx$/, "sign-in and session screens"],
+  [/^app\/(global-error|not-found)\.tsx$/, "error pages"],
+  [/^app\/dev\//, "developer pages, not part of the product"],
+  [/^app\/\(client\)\/documents\/page\.tsx$/, "the Documents greeting, the one centred hero"],
+  [/^components\/document\/workspace\.tsx$/, "the full-bleed document workspace header"],
+];
+
+describe("page titles", () => {
+  it("are PageHeaders, not hand-written <h1> elements", () => {
+    const strays = files
+      .map((file) => relative(root, file))
+      .filter((rel) => !H1_ALLOWED.some(([pattern]) => pattern.test(rel)))
+      .filter((rel) => /<h1[\s>]/.test(readFileSync(join(root, rel), "utf8")));
+    expect(strays).toEqual([]);
+  });
+});

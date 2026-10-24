@@ -135,8 +135,9 @@ export default function DocumentsPage() {
   return (
     <div className="w-full">
       {/* The greeting and the way in: the one display moment. */}
-      <section className="flex flex-col items-center px-2 pb-16 pt-12 text-center md:pt-20">
-        <h1 className="font-display text-[clamp(36px,4.6vw,60px)] font-medium leading-[1.05] tracking-[-0.02em] text-ink">
+      <section className="flex flex-col items-center px-2 pb-10 pt-2 text-center md:pt-4">
+        {/* The one page that is not a PageHeader: a greeting and a prompt, centred. */}
+        <h1 className="font-display text-greeting text-ink">
           {greeting()}, {MOCK_CLIENT_ORG.name.split(" ")[0]}
         </h1>
         <p className="mt-3 text-lead text-muted-fg">
@@ -147,7 +148,7 @@ export default function DocumentsPage() {
               : "Nothing is waiting on you."}
         </p>
         <DealPrompt
-          className="mt-10"
+          className="mt-6"
           destination="draft"
           restore
           placeholder="Describe a new deal: who it is with, what it covers, where it will be signed"

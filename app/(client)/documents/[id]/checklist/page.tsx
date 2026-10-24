@@ -8,7 +8,6 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { Icon } from "@/components/shared/icon";
 import { Tick } from "@/components/shared/tick";
-import { BackButton } from "@/components/shared/back-button";
 import { ErrorState } from "@/components/shared/error-state";
 import {
   ExecutionChecklist,
@@ -31,6 +30,7 @@ import type {
   ClientDocument,
   ExecutionStep,
 } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 type LoadState = "loading" | "error" | "loaded";
 type Kind = ExecutionStep["kind"];
@@ -148,39 +148,33 @@ export default function ChecklistPage() {
     <div className="w-full">
       {/* The title and way back on the left, the record the sheet rests
           on and the way to print it on the right. */}
-      <header className="flex flex-wrap items-start justify-between gap-x-10 gap-y-6 print:hidden">
-        <div className="flex min-w-0 items-start gap-4">
-          <BackButton fallbackHref={`/documents/${doc.id}`} label="Back" />
-          <div className="min-w-0">
-            <p className="truncate text-meta text-muted-fg">{doc.title}</p>
-            <h1 className="mt-1 font-display text-h1 text-ink">
-              Execution checklist
-            </h1>
-            <p className="mt-2 text-body text-muted-fg">
-              What remains before the settled document takes effect.
-            </p>
-          </div>
-        </div>
-
-        {isSettled && (
-          <div className="flex flex-wrap items-center gap-3 sm:pt-7">
-            <Button asChild size="sm" variant="ghost">
-              <Link href={`/documents/${doc.id}`}>
-                <Icon name="description" size={18} />
-                Settled document
-              </Link>
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => window.print()}>
-              <Icon name="print" size={18} />
-              Print this page (browser)
-            </Button>
-          </div>
-        )}
-      </header>
+      <PageHeader
+        className="print:hidden"
+        back={{ fallbackHref: `/documents/${doc.id}` }}
+        eyebrow={doc.title}
+        title="Execution checklist"
+        description="What remains before the settled document takes effect."
+        actions={
+          isSettled ? (
+            <>
+              <Button asChild size="sm" variant="ghost">
+                <Link href={`/documents/${doc.id}`}>
+                  <Icon name="description" size={18} />
+                  Settled document
+                </Link>
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => window.print()}>
+                <Icon name="print" size={18} />
+                Print
+              </Button>
+            </>
+          ) : undefined
+        }
+      />
 
       {/* Print-only heading: the screen header above is hidden in print. */}
       <div className="hidden print:mb-6 print:block">
-        <h1 className="font-display text-h1 text-ink">{doc.title}</h1>
+        <p role="heading" aria-level={1} className="font-display text-h1 text-ink">{doc.title}</p>
         <p className="text-body text-muted-fg">
           {doc.deal.clientName} and {doc.deal.counterpartyName} · Execution
           checklist · Generated {format(new Date(), "d MMM yyyy, HH:mm")}

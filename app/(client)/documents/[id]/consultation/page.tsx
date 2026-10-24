@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { BackButton } from "@/components/shared/back-button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { Button } from "@/components/ui/button";
@@ -22,6 +21,7 @@ import { getClientDocument } from "@/lib/api/client/documents";
 import { CONSULTATION, PRICE_BASIS, TIER_PRICING, rupees } from "@/lib/config/pricing";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { ClientConsultation, ClientDocument } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 const ORG = MOCK_CLIENT_ORG.id;
 
@@ -113,11 +113,11 @@ export default function ConsultationPage() {
   if (!signOff) {
     return (
       <div className="w-full">
-        <div className="flex items-start gap-4">
-          <BackButton fallbackHref={`/documents/${doc.id}`} label="Document" />
-          <h1 className="font-display text-h1 text-ink">Request a consultation</h1>
-        </div>
-        <div className="mt-8 max-w-measure">
+        <PageHeader
+          back={{ fallbackHref: `/documents/${doc.id}`, label: "Document" }}
+          title="Request a consultation"
+        />
+        <div className="max-w-measure">
           <EmptyState
             title="Not available yet"
             description="A consultation is with the advocate who settled the document, so it opens once the document is signed off."
@@ -131,15 +131,13 @@ export default function ConsultationPage() {
 
   return (
     <div className="w-full">
-      <div className="flex items-start gap-4">
-        <BackButton fallbackHref={`/documents/${doc.id}`} label="Document" />
-        <div className="min-w-0">
-          <h1 className="font-display text-h1 text-ink">Request a consultation</h1>
-          <p className="mt-1 text-meta text-muted-fg">{doc.title}</p>
-        </div>
-      </div>
+      <PageHeader
+        back={{ fallbackHref: `/documents/${doc.id}`, label: "Document" }}
+        eyebrow={doc.title}
+        title="Request a consultation"
+      />
 
-      <div className="mt-10 grid gap-x-10 gap-y-10 lg:grid-cols-[minmax(0,1fr)_24rem]">
+      <div className="grid gap-x-10 gap-y-10 lg:grid-cols-[minmax(0,1fr)_24rem]">
         <section className="min-w-0">
           <p className="max-w-measure text-body text-ink">
             A conversation with {advocate} ({signOff.enrolment}), who settled this document. It is

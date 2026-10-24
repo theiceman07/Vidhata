@@ -32,6 +32,7 @@ import {
 } from "@/lib/findings";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import { PIPELINE_LAYERS, type ContractDocument } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 type LoadState = "loading" | "error" | "loaded";
 type Filter = "open" | "mine" | "unclaimed" | "client" | "settled";
@@ -273,43 +274,45 @@ export default function QueuePage() {
 
   return (
     <div className="w-full">
-      <header className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
-        <div className="min-w-0">
-          <p className="text-meta text-muted-fg">
+      <PageHeader
+        eyebrow={
+          <>
             {CURRENT_ADVOCATE.name}
             <span className="mx-1.5 text-muted-fg/50">·</span>
             <span className="font-mono">{CURRENT_ADVOCATE.bar}</span>
-          </p>
-          {/* The one display moment on this screen. */}
-          <h1 className="mt-1 font-display text-h1 text-ink">
+          </>
+        }
+        title={
+          <>
             {greeting()}, {firstName}
-          </h1>
-          <p className="mt-2 text-lead text-muted-fg">
-            {buckets.unclaimed.length > 0
-              ? `${buckets.unclaimed.length} ${buckets.unclaimed.length === 1 ? "document is" : "documents are"} waiting for an advocate. Oldest open document: ${oldest} ${oldest === 1 ? "day" : "days"}.`
-              : buckets.mine.length > 0
-                ? `${buckets.mine.length} ${buckets.mine.length === 1 ? "review is" : "reviews are"} in your hands.`
-                : "The queue is clear."}
-          </p>
-        </div>
-
-        <Link
-          href="/profile"
-          className={cn(
-            "inline-flex items-center gap-2 rounded-full px-4 py-2 text-meta transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-            available
-              ? "bg-sand text-ink hover:bg-sand/70"
-              : "bg-sand text-muted hover:bg-sand/70",
-          )}
-        >
-          <span
-            aria-hidden
-            className={cn("h-2 w-2 rounded-full", available ? "bg-done" : "bg-muted")}
-          />
-          {available ? "Available for new claims" : "Unavailable for new claims"}
-          <Icon name="chevron_right" size={18} className="text-muted-fg" />
-        </Link>
-      </header>
+          </>
+        }
+        description={
+          buckets.unclaimed.length > 0
+            ? `${buckets.unclaimed.length} ${buckets.unclaimed.length === 1 ? "document is" : "documents are"} waiting for an advocate. Oldest open document: ${oldest} ${oldest === 1 ? "day" : "days"}.`
+            : buckets.mine.length > 0
+              ? `${buckets.mine.length} ${buckets.mine.length === 1 ? "review is" : "reviews are"} in your hands.`
+              : "The queue is clear."
+        }
+        actions={
+          <Link
+            href="/profile"
+            className={cn(
+              "inline-flex items-center gap-2 rounded-full px-4 py-2 text-meta transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+              available
+                ? "bg-sand text-ink hover:bg-sand/70"
+                : "bg-sand text-muted hover:bg-sand/70",
+            )}
+          >
+            <span
+              aria-hidden
+              className={cn("h-2 w-2 rounded-full", available ? "bg-done" : "bg-muted")}
+            />
+            {available ? "Available for new claims" : "Unavailable for new claims"}
+            <Icon name="chevron_right" size={18} className="text-muted-fg" />
+          </Link>
+        }
+      />
 
       {!available && (
         <p className="mt-6 border-l-2 border-muted pl-3 text-meta text-ink">

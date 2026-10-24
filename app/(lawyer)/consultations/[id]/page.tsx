@@ -6,7 +6,6 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ConsultationStatus } from "@/components/domain/consultation-status";
-import { BackButton } from "@/components/shared/back-button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { Icon } from "@/components/shared/icon";
@@ -24,6 +23,7 @@ import {
 import { CONSULTATION, PRICE_BASIS } from "@/lib/config/pricing";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import type { AdvocateConsultation } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -105,11 +105,11 @@ export default function ConsultationRequestPage() {
   if (!request) {
     return (
       <div className="w-full">
-        <div className="flex items-start gap-4">
-          <BackButton fallbackHref="/consultations" label="Consultations" />
-          <h1 className="font-display text-h1 text-ink">Request not found</h1>
-        </div>
-        <div className="mt-8 max-w-xl">
+        <PageHeader
+          back={{ fallbackHref: "/consultations", label: "Consultations" }}
+          title="Request not found"
+        />
+        <div className="max-w-xl">
           <EmptyState
             title="Request not found."
             description="It may have been removed, or the link may be wrong."
@@ -128,21 +128,17 @@ export default function ConsultationRequestPage() {
 
   return (
     <div className="w-full">
-      <div className="flex items-start gap-4">
-        <BackButton fallbackHref="/consultations" label="Consultations" />
-        <div className="min-w-0">
-          <h1 className="font-display text-h1 text-ink">Consultation request</h1>
-          <p className="mt-1 text-meta text-muted-fg">
-            {request.documentTitle}
-            <span className="mx-1.5 text-muted-fg/50">·</span>
-            {clientName}
-            <span className="mx-1.5 text-muted-fg/50">·</span>
-            requested {format(new Date(request.requestedAt), "d MMM yyyy")}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        back={{ fallbackHref: "/consultations", label: "Consultations" }}
+        title="Consultation request"
+        meta={[
+          request.documentTitle,
+          clientName,
+          `requested ${format(new Date(request.requestedAt), "d MMM yyyy")}`,
+        ]}
+      />
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-8">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-8">
         <section className="min-w-0 space-y-6">
           <div className="rounded-card bg-parchment/50 p-6">
             <div className="flex items-center gap-3">

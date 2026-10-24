@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { BackButton } from "@/components/shared/back-button";
 import { ErrorState } from "@/components/shared/error-state";
 import { VersionHistory } from "@/components/domain/version-history";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,6 +9,7 @@ import { getClientDocument } from "@/lib/api/client/documents";
 import { getClientVersions } from "@/lib/api/client/versions";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { ClientDocument, ClientVersionList } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -73,18 +73,14 @@ export default function VersionHistoryPage() {
 
   return (
     <div className="w-full">
-      <header className="flex min-w-0 items-start gap-4">
-        <BackButton fallbackHref={`/documents/${doc.id}`} label="Back" />
-        <div className="min-w-0">
-          <p className="truncate text-meta text-muted-fg">{doc.title}</p>
-          <h1 className="mt-1 font-display text-h1 text-ink">Version history</h1>
-          <p className="mt-2 max-w-measure text-body text-muted-fg">
-            Each draft as it was handed on, and what changed between any two.
-          </p>
-        </div>
-      </header>
+      <PageHeader
+        back={{ fallbackHref: `/documents/${doc.id}` }}
+        eyebrow={doc.title}
+        title="Version history"
+        description="Each draft as it was handed on, and what changed between any two."
+      />
 
-      <div className="mt-10">
+      <div>
         <VersionHistory documentId={doc.id} rows={rows} />
       </div>
     </div>

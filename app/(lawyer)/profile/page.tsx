@@ -60,7 +60,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl">
+    <div className="w-full max-w-xl">
       <PageHeader title="Profile" description="Empanelment, conflicts and availability." />
 
       <section className="mb-6 rounded-card border border-line bg-paper p-5 shadow-card">

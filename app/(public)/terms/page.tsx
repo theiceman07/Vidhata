@@ -17,7 +17,7 @@ export default function TermsPage() {
   return (
     <>
     <main className="mx-auto w-full max-w-3xl px-4 py-10">
-      <PageHeader title="Terms of Service" backHref="/" backLabel="Home" />
+      <PageHeader title="Terms of Service" back={{ fallbackHref: "/", label: "Home" }} />
       <div className="rounded-card border border-line bg-sand p-6 text-body text-ink">
         <p className="font-medium">Terms of Service · pending publication.</p>
         <p className="mt-2 text-muted-fg">

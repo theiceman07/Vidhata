@@ -15,6 +15,7 @@ import { INVOICE_KIND_LABEL } from "@/lib/billing";
 import { PRICE_BASIS, rupees, tierLabel } from "@/lib/config/pricing";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { BillingProfile, Invoice } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -97,18 +98,21 @@ export default function BillingPage() {
     profile !== null && name.trim() === profile.name && gstin.trim() === (profile.gstin ?? "");
 
   return (
-    <div className="w-full xl:px-4">
-      <h1 className="font-display text-h1 text-ink">Billing</h1>
-      <p className="mt-2 max-w-measure text-body text-muted-fg">
-        One fixed fee per document, set by its review tier, covering every revision round. All
-        amounts are {PRICE_BASIS}. GST is added at the rate in force, and a tax breakup is not part
-        of this preview.
-      </p>
+    <div className="w-full">
+      <PageHeader
+        title="Billing"
+        description={
+          <>
+            One fixed fee per document, set by its review tier, covering every revision round. All
+            amounts are {PRICE_BASIS}. GST is added at the rate in force.
+          </>
+        }
+      />
 
       {/* One grid. The heading takes the first row of the list column; the
           list and the panel share the second, so both start at one line and
           the panel sticks within that row alone. */}
-      <div className="mt-8 grid gap-x-6 gap-y-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:gap-x-8">
+      <div className="grid gap-x-6 gap-y-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:gap-x-8">
         <h2 id="invoices-title" className="min-w-0 font-display text-h3 text-ink">
           Invoices
         </h2>

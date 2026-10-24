@@ -6,7 +6,6 @@ import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import { DownloadOptions } from "@/components/domain/download-options";
 import { SummaryView } from "@/components/domain/summary-view";
-import { BackButton } from "@/components/shared/back-button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { Icon } from "@/components/shared/icon";
@@ -18,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getClientDelivery } from "@/lib/api/client/delivery";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { DeliveryResult } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 type Load =
   | { phase: "loading" }
@@ -78,11 +78,11 @@ export default function DeliveryPage() {
   if (result.state === "not_available") {
     return (
       <div className="w-full">
-        <header className="flex items-start gap-4">
-          <BackButton fallbackHref={`/documents/${params.id}`} label="Document" />
-          <h1 className="font-display text-h1 text-ink">Your settled document</h1>
-        </header>
-        <div className="mt-10 max-w-xl">
+        <PageHeader
+          back={{ fallbackHref: `/documents/${params.id}`, label: "Document" }}
+          title="Your settled document"
+        />
+        <div className="max-w-xl">
           <EmptyState
             title="Not available yet"
             description="This is handed over once the document is settled and signed off by an advocate."
@@ -117,16 +117,14 @@ export default function DeliveryPage() {
 
   return (
     <div className="w-full">
-      <header className="flex items-start gap-4">
-        <BackButton fallbackHref={`/documents/${delivery.documentId}`} label="Document" />
-        <div className="min-w-0">
-          <StateLabel state={delivery.status} />
-          <h1 className="mt-2 font-display text-h1 text-ink">{delivery.title}</h1>
-          <p className="mt-1 text-meta text-muted-fg">{delivery.counterparty}</p>
-        </div>
-      </header>
+      <PageHeader
+        back={{ fallbackHref: `/documents/${delivery.documentId}`, label: "Document" }}
+        eyebrow={delivery.counterparty}
+        title={delivery.title}
+        actions={<StateLabel state={delivery.status} />}
+      />
 
-      <div className="mt-10 grid gap-x-10 gap-y-10 lg:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem]">
+      <div className="grid gap-x-10 gap-y-10 lg:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem]">
         <div className="min-w-0 space-y-10">
           {/* The sign-off is a decision, so it carries the accent. */}
           <section aria-labelledby="signoff-title" className="rounded-card bg-parchment p-6 md:p-8">

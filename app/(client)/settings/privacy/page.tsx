@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Chip } from "@/components/document/state-label";
-import { BackButton } from "@/components/shared/back-button";
 import { ErrorState } from "@/components/shared/error-state";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,6 +31,7 @@ import {
 } from "@/lib/config/privacy";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { PrivacyState } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -85,18 +85,13 @@ export default function PrivacyPage() {
 
   return (
     <div className="w-full">
-      <div className="flex items-start gap-4">
-        <BackButton fallbackHref="/settings" label="Settings" />
-        <div>
-          <h1 className="font-display text-h1 text-ink">Privacy</h1>
-          <p className="mt-1 max-w-measure text-body text-muted-fg">
-            What Vidhata may do with your documents, what you can take with you, and how to ask
-            for deletion.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        back={{ fallbackHref: "/settings", label: "Settings" }}
+        title="Privacy"
+        description="What Vidhata may do with your documents, what you can take with you, and how to ask for deletion."
+      />
 
-      <div className="mt-10 grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2">
         <TrainingPanel privacy={privacy} onChange={setPrivacy} />
         <ExportPanel />
         <div className="min-w-0 md:col-span-2">

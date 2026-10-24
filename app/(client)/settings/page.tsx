@@ -18,6 +18,7 @@ import {
 import { useSession } from "@/lib/session";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { Account, TeamMember } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 /**
  * Client settings.
@@ -170,10 +171,9 @@ export default function SettingsPage() {
 
   return (
     <div className="w-full">
-      <h1 className="font-display text-h1 text-ink">Settings</h1>
-      <p className="mt-2 text-body text-muted-fg">{MOCK_CLIENT_ORG.name}</p>
+      <PageHeader title="Settings" description={MOCK_CLIENT_ORG.name} />
 
-      <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="min-w-0 space-y-6">
           <section
             aria-labelledby="profile-title"
