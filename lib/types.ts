@@ -1024,8 +1024,35 @@ export type ChatAnswerStatus = "answered" | "refused" | "escalated";
 
 /** A clause an answer rests on, and the span of it the answer quotes. */
 export interface ChatCitationView {
+  /** "Clause 9", followed when tapped. Empty when the citation has no clause number. */
   clauseReference: string;
   quote: string;
+  /** The clause heading, shown beside the reference, or alone when there is no number. */
+  heading?: string;
+}
+
+/**
+ * The chat endpoint's reply (POST /documents/{id}/chat), as the backend's
+ * conversational contract writes it. `answer` is always the text to show,
+ * whatever the status; `reason` is for logs and is never shown.
+ */
+export interface Citation {
+  source: "document" | "lawyer_note";
+  chunk_id: string;
+  clause_number: string | null;
+  heading: string | null;
+  snippet: string;
+}
+
+export interface ChatResponse {
+  turn_id: string;
+  document_id: string;
+  status: ChatAnswerStatus;
+  answer: string;
+  citations: Citation[];
+  reason: string | null;
+  retrieval_score: number | null;
+  escalation_id: string | null;
 }
 
 export interface ChatMessage {
@@ -1038,4 +1065,8 @@ export interface ChatMessage {
   status?: ChatAnswerStatus;
   /** Every clause an answer rests on, shown under it. Empty for a refusal or an escalation. */
   citations?: ChatCitationView[];
+  /** The reply is the chat service's own text, shown as returned with no screen copy around it. */
+  asReturned?: boolean;
+  /** An escalation the service recorded (it returned an escalation id). Only then is a tick shown. */
+  escalationRecorded?: boolean;
 }

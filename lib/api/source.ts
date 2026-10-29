@@ -5,3 +5,11 @@
 export function backendDataEnabled(): boolean {
   return process.env.NEXT_PUBLIC_VIDHATA_DATA === "backend";
 }
+
+/**
+ * Whether questions go to the backend's chat endpoint (POST /documents/{id}/chat). Off unless
+ * NEXT_PUBLIC_VIDHATA_CHAT=1, so production keeps the local agent until the flag is set there.
+ */
+export function chatBackendEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_VIDHATA_CHAT === "1";
+}

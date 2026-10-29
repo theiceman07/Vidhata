@@ -34,10 +34,12 @@ export function completeAsk(state: ThreadState, answer: ChatAnswer, id: string):
     id,
     role: "agent",
     text: answer.text,
-    citedClauseReference: answer.citations[0]?.clauseReference ?? null,
-    isEscalation: answer.status === "escalated",
+    citedClauseReference: answer.citations[0]?.clauseReference || null,
+    // A reply shown as returned carries its own escalation text, so the screen adds no referral.
+    isEscalation: answer.status === "escalated" && !answer.asReturned,
     status: answer.status,
     citations: answer.citations,
+    ...(answer.asReturned ? { asReturned: true, escalationRecorded: Boolean(answer.escalationRecorded) } : {}),
   };
   return { messages: [...state.messages, agent], pending: false, failed: null };
 }

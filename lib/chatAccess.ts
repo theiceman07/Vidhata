@@ -13,6 +13,17 @@ import type { ClientDocument } from "@/lib/types";
  * One rule, used by the document page, the chat page and the agent itself, so
  * the three cannot disagree and a new place to put the agent has to answer it.
  */
+/**
+ * The backend document states in which chat is open: the chat-open rule, in one place. Today only
+ * lawyer_approved is reachable; delivered opens chat once something moves a document there. Both
+ * read as "settled" on the client (backend-documents statusOf), which agentAvailable checks.
+ */
+export const CHAT_OPEN_STATES = ["lawyer_approved", "delivered"] as const;
+
+export function chatOpenForState(state: string): boolean {
+  return (CHAT_OPEN_STATES as readonly string[]).includes(state);
+}
+
 export function agentAvailable(doc: Pick<ClientDocument, "status" | "signOff">): boolean {
   return doc.signOff !== null && (doc.status === "settled" || doc.status === "executed");
 }
