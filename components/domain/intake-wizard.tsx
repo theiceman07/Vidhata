@@ -31,7 +31,7 @@ import {
 import { intakeSchema, type IntakeFormValues } from "@/lib/intakeSchema";
 import { INDIAN_STATES } from "@/lib/mock/intake-options.mock";
 import { createReentryGuard, runExclusive } from "@/lib/reentry";
-import { Icon } from "@/components/shared/icon";
+import { Tick } from "@/components/shared/tick";
 import { DRAFT_STEPS_SLOT } from "@/components/domain/draft-paths";
 import { cn } from "@/lib/utils";
 
@@ -204,33 +204,12 @@ export function IntakeWizard() {
     void goNext();
   }
 
-  // What a draft needs, read from the form as it is filled, so the indicator
-  // moves with the person and not only with the brief.
-  const have: Record<string, boolean> = {
-    type: Boolean(values.type),
-    counterpartyName: Boolean(values.counterpartyName?.trim()),
-    transactionValue: Number(values.transactionValue) > 0,
-    durationMonths: Number(values.durationMonths) > 0,
-    stateOfExecution: Boolean(values.stateOfExecution),
-  };
-  const ready = DRAFT_NEEDS.filter((key) => have[key as string]).length;
-  const stillNeeded = DRAFT_NEEDS.length - ready;
-  // "Ready to draft" is said only when the form itself would accept the draft:
-  // the five facts can all be in while the deal name or governing law is not.
-  const formComplete = intakeSchema.safeParse(values).success;
-  const readinessText =
-    stillNeeded > 0
-      ? `${stillNeeded} to go`
-      : formComplete
-        ? "Ready to draft"
-        : "Complete the form";
-
   // Steps after the first sit in one column, so the heading, the card and the
   // bar share their edges; the contract picker uses the full width.
   const columnWidth = step === 0 ? "max-w-[90rem]" : "max-w-4xl";
 
   const stepper = (
-    <ol aria-label="Progress" className="flex w-full items-center lg:ml-auto lg:max-w-2xl">
+    <ol aria-label="Progress" className="ml-auto flex w-full max-w-2xl items-center">
       {STEP_LABELS.map((label, i) => (
         <li
           key={label}
@@ -243,19 +222,9 @@ export function IntakeWizard() {
               i === step ? "bg-accent/10 font-medium text-ink" : "text-muted-fg",
             )}
           >
-            <span
-              aria-hidden
-              className={cn(
-                "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-label",
-                i < step
-                  ? "bg-accent text-accent-fg"
-                  : i === step
-                    ? "bg-accent text-accent-fg"
-                    : "bg-paper text-muted-fg ring-1 ring-inset ring-line",
-              )}
-            >
-              {i < step ? <Icon name="check" size={16} /> : i + 1}
-            </span>
+            <Tick state={i < step ? "done" : i === step ? "current" : "ahead"} size="md">
+              {i === step ? i + 1 : i < step ? undefined : i + 1}
+            </Tick>
             <span className="whitespace-nowrap max-sm:sr-only">{label}</span>
             {i === step && <span className="sr-only sm:hidden">{label}</span>}
           </span>
@@ -301,21 +270,6 @@ export function IntakeWizard() {
               </p>
             )}
           </div>
-          {/* Readiness: how many of the details a draft needs are in. */}
-          <div className="w-full shrink-0 sm:w-72" role="status">
-            <p className="flex items-baseline justify-between gap-3 text-label text-muted-fg">
-              <span>
-                {ready} of {DRAFT_NEEDS.length} details a draft needs
-              </span>
-              <span className="whitespace-nowrap text-ink">{readinessText}</span>
-            </p>
-            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-line">
-              <div
-                className="h-full rounded-full bg-accent transition-[width] motion-reduce:transition-none"
-                style={{ width: `${(ready / DRAFT_NEEDS.length) * 100}%` }}
-              />
-            </div>
-          </div>
         </div>
         <div
           className={cn(
@@ -346,7 +300,7 @@ export function IntakeWizard() {
                 placeholder="Vendor agreement · packaging supply"
               />
               {errors.title && (
-                <p className="mt-1 text-small text-flagged">
+                <p className="mt-1 text-small text-ink">
                   {errors.title.message}
                 </p>
               )}
@@ -356,7 +310,7 @@ export function IntakeWizard() {
               <Label htmlFor="clientName">Your company name</Label>
               <Input className="h-12" id="clientName" {...register("clientName")} />
               {errors.clientName && (
-                <p className="mt-1 text-small text-flagged">
+                <p className="mt-1 text-small text-ink">
                   {errors.clientName.message}
                 </p>
               )}
@@ -365,7 +319,7 @@ export function IntakeWizard() {
               <Label htmlFor="counterpartyName">Counterparty name</Label>
               <Input className="h-12" id="counterpartyName" {...register("counterpartyName")} />
               {errors.counterpartyName && (
-                <p className="mt-1 text-small text-flagged">
+                <p className="mt-1 text-small text-ink">
                   {errors.counterpartyName.message}
                 </p>
               )}
@@ -406,7 +360,7 @@ export function IntakeWizard() {
                 {...register("transactionValue")}
               />
               {errors.transactionValue && (
-                <p className="mt-1 text-small text-flagged">
+                <p className="mt-1 text-small text-ink">
                   {errors.transactionValue.message}
                 </p>
               )}
@@ -420,7 +374,7 @@ export function IntakeWizard() {
                 {...register("durationMonths")}
               />
               {errors.durationMonths && (
-                <p className="mt-1 text-small text-flagged">
+                <p className="mt-1 text-small text-ink">
                   {errors.durationMonths.message}
                 </p>
               )}
@@ -443,7 +397,7 @@ export function IntakeWizard() {
                 </SelectContent>
               </Select>
               {errors.stateOfExecution && (
-                <p className="mt-1 text-small text-flagged">
+                <p className="mt-1 text-small text-ink">
                   {errors.stateOfExecution.message}
                 </p>
               )}
@@ -457,7 +411,7 @@ export function IntakeWizard() {
                 placeholder="Laws of India"
               />
               {errors.governingLaw && (
-                <p className="mt-1 text-small text-flagged">
+                <p className="mt-1 text-small text-ink">
                   {errors.governingLaw.message}
                 </p>
               )}
@@ -486,7 +440,7 @@ export function IntakeWizard() {
         )}
 
         {submitError && (
-          <p className="text-small text-flagged">{submitError}</p>
+          <p className="text-small text-ink">{submitError}</p>
         )}
         </div>
         </div>

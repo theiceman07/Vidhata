@@ -130,7 +130,7 @@ export function AdvocateInviteForm() {
           })}
         </div>
         {problems.practiceAreas && (
-          <p id="invite-areas-error" role="alert" className="mt-2 text-small text-flagged">
+          <p id="invite-areas-error" role="alert" className="mt-2 text-small text-ink">
             {problems.practiceAreas}
           </p>
         )}
@@ -150,7 +150,7 @@ export function AdvocateInviteForm() {
       </Field>
 
       {state === "error" && (
-        <p role="alert" className="text-small text-flagged">
+        <p role="alert" className="text-small text-ink">
           Could not send your request. Try again.
         </p>
       )}
@@ -183,7 +183,7 @@ function Field({
       <Label htmlFor={id}>{label}</Label>
       {children}
       {error && (
-        <p id={`${id}-error`} role="alert" className="mt-1.5 text-small text-flagged">
+        <p id={`${id}-error`} role="alert" className="mt-1.5 text-small text-ink">
           {error}
         </p>
       )}

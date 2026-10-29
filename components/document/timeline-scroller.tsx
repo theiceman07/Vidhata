@@ -56,6 +56,10 @@ export function TimelineScroller({
     <div className={cn("relative", className)}>
       <div
         ref={scroller}
+        // A scrolling region the keyboard can reach, so it can be moved without a mouse.
+        tabIndex={0}
+        role="region"
+        aria-label="Timeline"
         className="overflow-x-auto overscroll-x-contain pb-2 [scroll-snap-type:x_proximity]"
       >
         {children}

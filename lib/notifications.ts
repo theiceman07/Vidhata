@@ -40,6 +40,8 @@ function ofDocument(doc: NotifiableDocument): ClientNotification[] {
           id: `awaiting_payment:${doc.id}`,
           kind: "awaiting_payment",
           at: doc.createdAt,
+          title: doc.title,
+          event: "Screened. Pay the fee to send it to an advocate.",
           text: `${doc.title} is screened. Pay the fee to send it to an advocate.`,
         },
       ];
@@ -50,6 +52,8 @@ function ofDocument(doc: NotifiableDocument): ClientNotification[] {
           id: `with_advocate:${doc.id}`,
           kind: "with_advocate",
           at: doc.paidAt ?? doc.createdAt,
+          title: doc.title,
+          event: "Paid for and waiting for an advocate.",
           text: `${doc.title} is paid for and waiting for an advocate.`,
         },
       ];
@@ -60,6 +64,8 @@ function ofDocument(doc: NotifiableDocument): ClientNotification[] {
           id: `with_advocate:${doc.id}`,
           kind: "with_advocate",
           at: doc.claimedAt ?? doc.paidAt ?? doc.createdAt,
+          title: doc.title,
+          event: "With an advocate for review.",
           text: `${doc.title} is with an advocate for review.`,
         },
       ];
@@ -73,6 +79,8 @@ function ofDocument(doc: NotifiableDocument): ClientNotification[] {
           id: `advocate_asked:${doc.id}`,
           kind: "advocate_asked",
           at: doc.latestRequestAt ?? doc.createdAt,
+          title: doc.title,
+          event: "Your advocate asked for your answer.",
           text: `Your advocate asked for your answer on ${doc.title}.`,
         },
       ];
@@ -85,6 +93,8 @@ function ofDocument(doc: NotifiableDocument): ClientNotification[] {
           id: `settled:${doc.id}`,
           kind: "settled",
           at: doc.signedOffAt,
+          title: doc.title,
+          event: "Settled. Open it to read it and work through the execution checklist.",
           text: `${doc.title} is settled. Open it to read it and work through the execution checklist.`,
         },
       ];
@@ -106,6 +116,8 @@ function ofConsultation(c: NotifiableConsultation): ClientNotification[] {
         id: `consultation_accepted:${c.id}`,
         kind: "consultation_accepted",
         at: c.acceptedAt,
+        title: c.documentTitle,
+        event: "Your advocate accepted your consultation request. Pay the fee to go ahead.",
         text: `Your advocate accepted your consultation request on ${c.documentTitle}. Pay the fee to go ahead.`,
       },
     ];
@@ -120,6 +132,8 @@ function ofConsultation(c: NotifiableConsultation): ClientNotification[] {
         id: `consultation_declined:${c.id}`,
         kind: "consultation_declined",
         at: c.declinedAt,
+        title: c.documentTitle,
+        event: "Your consultation request was declined. Nothing was charged.",
         text: `Your consultation request on ${c.documentTitle} was declined. Nothing was charged.`,
       },
     ];
@@ -132,6 +146,8 @@ function ofConsultation(c: NotifiableConsultation): ClientNotification[] {
         id: `consultation_answered:${c.id}`,
         kind: "consultation_answered",
         at: c.answeredAt,
+        title: c.documentTitle,
+        event: "Your advocate answered your consultation request.",
         text: `Your advocate answered your consultation request on ${c.documentTitle}.`,
       },
     ];

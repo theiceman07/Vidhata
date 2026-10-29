@@ -31,7 +31,7 @@ export function BrandLoader({
     >
       <span className="sr-only">Loading</span>
       <div aria-hidden className="flex flex-col items-center">
-        <span className="font-wordmark text-[44px] leading-none tracking-[-0.02em] text-ink sm:text-[56px]">
+        <span className="font-wordmark text-h1 leading-none tracking-[-0.02em] text-ink">
           {NAME.split("").map((letter, i) => (
             <span
               key={i}

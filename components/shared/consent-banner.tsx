@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   consentStatement,
+  NON_ESSENTIAL_IN_USE,
   readConsent,
   serialiseConsent,
   type ConsentChoice,
@@ -46,7 +47,7 @@ export function ConsentBanner() {
   return (
     <section
       aria-label="Cookies"
-      className="fixed inset-x-3 bottom-3 z-[60] rounded-card bg-ink p-5 text-paper sm:inset-x-auto sm:bottom-4 sm:left-4 sm:w-[24rem] print:hidden"
+      className="fixed inset-x-3 bottom-3 z-[60] rounded-card bg-ink p-5 text-paper sm:inset-x-auto sm:bottom-4 sm:right-4 sm:w-[24rem] print:hidden"
     >
       <p className="text-meta text-paper">{consentStatement()}</p>
       <p className="mt-2 text-label text-paper/70">
@@ -54,23 +55,40 @@ export function ConsentBanner() {
           Privacy policy
         </Link>
       </p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button
-          size="sm"
-          className="h-11 bg-paper px-5 text-ink hover:bg-parchment"
-          onClick={() => answer("declined")}
-        >
-          Decline non-essential
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-11 px-5 text-paper hover:bg-paper/10 hover:text-paper"
-          onClick={() => answer("accepted")}
-        >
-          Accept non-essential
-        </Button>
-      </div>
+      {NON_ESSENTIAL_IN_USE.length === 0 ? (
+        // Nothing non-essential runs, so there is nothing to accept: it is a notice, with one
+        // way to dismiss it, and the answer on record stays "declined".
+        <div className="mt-4">
+          <Button
+            size="sm"
+            className="h-11 bg-paper px-5 text-ink hover:bg-parchment"
+            onClick={() => answer("declined")}
+          >
+            Got it
+          </Button>
+        </div>
+      ) : (
+        // Two choices, the same size and weight; the ghost one carries a border so it is
+        // plainly a button. Declining is what happens if nobody answers.
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-11 border-paper bg-paper px-5 text-ink hover:bg-parchment"
+            onClick={() => answer("declined")}
+          >
+            Decline non-essential
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-11 border-paper/60 bg-transparent px-5 text-paper hover:bg-paper/10 hover:text-paper"
+            onClick={() => answer("accepted")}
+          >
+            Accept non-essential
+          </Button>
+        </div>
+      )}
     </section>
   );
 }

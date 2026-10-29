@@ -3,13 +3,20 @@ import path from "node:path";
 import * as React from "react";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ClauseBlock } from "@/components/document/clause-block";
 import { ClientReader } from "@/components/document/client-reader";
 import { PaletteProvider } from "@/components/shared/command-palette";
 import { shapeClientDocument } from "./api/client/shape-document";
 import { mockDocuments } from "./mock/documents.mock";
 import type { ClientSettlementNote, DocumentStatus } from "./types";
+
+// The workspace header is a PageHeader, whose back control reads the router; there is no app
+// router in a static render, so it is given the smallest one that answers.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ back: () => {}, push: () => {}, replace: () => {} }),
+  usePathname: () => "/documents/doc-nda-settled",
+}));
 
 // The tests compile JSX the classic way, which looks for React in scope (see clientScreens.test.ts).
 (globalThis as { React?: typeof React }).React = React;

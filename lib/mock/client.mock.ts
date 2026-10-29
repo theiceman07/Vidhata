@@ -6,3 +6,13 @@ export const MOCK_CLIENT_ORG = {
   id: "org-anaya-textiles",
   name: "Anaya Textiles Pvt Ltd",
 };
+
+/**
+ * The person signed in to the client portal. The greeting and Settings both read
+ * this name, so the portal never greets one person and shows another. The
+ * organisation is a company; this is who works there.
+ */
+export const MOCK_CLIENT_PERSON = {
+  name: "Meera Shah",
+  email: "meera@anaya-textiles.example",
+};

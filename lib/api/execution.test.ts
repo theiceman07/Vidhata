@@ -64,7 +64,7 @@ async function refusal(promise: Promise<unknown>): Promise<string> {
   return caught;
 }
 
-// Signed off by Ananya Rao. Stamping is done and carries its proof, registration
+// Signed off by Ishita Rao. Stamping is done and carries its proof, registration
 // does not apply (in this file only: see the test-only fixture above), and the
 // e-signature is the one step left.
 const id = "doc-nda-settled-2";

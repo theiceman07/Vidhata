@@ -42,7 +42,7 @@ describe("what the banner says", () => {
     // the banner's wording, the version and counsel's review all follow.
     expect(NON_ESSENTIAL_IN_USE).toEqual([]);
     expect(consentStatement()).toBe(
-      "This site doesn't use cookies beyond what it needs to work. Nothing is tracked.",
+      "This site only uses the cookies it needs to work. It sets no analytics or tracking cookies.",
     );
   });
 

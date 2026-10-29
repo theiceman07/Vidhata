@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getMetrics } from "@/lib/api/metrics";
 import { percent } from "@/lib/metrics";
 import type { Metrics, Ratio } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 /**
  * Metrics. Internal, and only in the advocate portal.
@@ -30,33 +31,48 @@ function Figure({
   none: string;
 }) {
   const value = percent(ratio);
+  const share =
+    ratio.denominator > 0 ? Math.round((ratio.numerator / ratio.denominator) * 100) : 0;
   return (
-    <section className="flex flex-col rounded-card bg-parchment p-6">
-      <h2 className="text-label font-medium text-muted-fg">{label}</h2>
+    <section className="flex flex-col rounded-card bg-parchment p-6 md:p-8">
+      <h2 className="text-body font-medium text-ink">{label}</h2>
       {value ? (
         <>
-          <p className="mt-3 font-display text-h1 tabular-nums text-ink">{value}</p>
-          <p className="mt-1 text-meta tabular-nums text-ink">
-            {ratio.numerator} of {ratio.denominator}
-          </p>
+          <div className="mt-4 flex items-baseline gap-3">
+            <p className="font-display text-h1 tabular-nums text-ink">{value}</p>
+            <p className="text-meta tabular-nums text-muted-fg">
+              {ratio.numerator} of {ratio.denominator}
+            </p>
+          </div>
+          <div
+            className="mt-4 h-2 w-full overflow-hidden rounded-full bg-line"
+            role="img"
+            aria-label={`${ratio.numerator} of ${ratio.denominator}`}
+          >
+            <div className="h-full rounded-full bg-ink" style={{ width: `${share}%` }} />
+          </div>
         </>
       ) : (
         <>
-          <p className="mt-3 font-display text-h2 text-ink">None yet</p>
+          <p className="mt-4 font-display text-h2 text-ink">None yet</p>
           <p className="mt-1 text-meta text-muted-fg">{none}</p>
         </>
       )}
-      <p className="mt-4 max-w-measure text-label text-muted-fg">{definition}</p>
+      <p className="mt-5 max-w-measure text-meta text-muted-fg">{definition}</p>
     </section>
   );
 }
 
 function NoSource({ label, why }: { label: string; why: string }) {
   return (
-    <section className="flex flex-col rounded-card bg-parchment p-6">
-      <h2 className="text-label font-medium text-muted-fg">{label}</h2>
-      <p className="mt-3 font-display text-h2 text-ink">No data source yet</p>
-      <p className="mt-4 max-w-measure text-label text-muted-fg">{why}</p>
+    <section className="flex flex-col gap-2 rounded-card border border-dashed border-line p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-meta font-medium text-ink">{label}</h3>
+        <span className="rounded-full bg-sand px-2.5 py-0.5 text-label text-muted-fg">
+          No data source yet
+        </span>
+      </div>
+      <p className="max-w-measure text-meta text-muted-fg">{why}</p>
     </section>
   );
 }
@@ -99,13 +115,12 @@ export default function MetricsPage() {
 
   return (
     <div className="w-full">
-      <h1 className="font-display text-h1 text-ink">Metrics</h1>
-      <p className="mt-2 max-w-measure text-body text-muted-fg">
-        How the first pass is doing, from the work advocates have recorded.
-        Internal.
-      </p>
+      <PageHeader
+        title="Metrics"
+        description="How the first pass is doing, from the work advocates have recorded. Internal."
+      />
 
-      <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <Figure
           label="Override rate"
           ratio={metrics.overrides}
@@ -118,6 +133,15 @@ export default function MetricsPage() {
           none="There are no findings on the record yet."
           definition="Of every finding on the record, the share an advocate added because the first pass missed it."
         />
+      </div>
+
+      {/* What cannot be measured yet is said plainly and kept quiet: a figure
+          with nothing behind it is never shown (CLAUDE.md, Metrics). */}
+      <h2 className="mb-1 mt-12 text-body font-medium text-ink">Not measured yet</h2>
+      <p className="mb-4 text-meta text-muted-fg">
+        These have nothing behind them, so no figure is shown.
+      </p>
+      <div className="grid gap-4 md:grid-cols-3">
         <NoSource
           label="Triage override rate"
           why="No screen lets an advocate change a tier, so an override is not recorded. It has to be logged when that exists."
@@ -132,7 +156,7 @@ export default function MetricsPage() {
         />
       </div>
 
-      <p className="mt-12 max-w-measure text-label text-muted-fg">
+      <p className="mt-10 border-t border-line pt-4 text-meta text-muted-fg">
         Counted over {metrics.documentsCounted} documents in the queue and the sample data they
         carry. A document still awaiting payment is not counted.
       </p>

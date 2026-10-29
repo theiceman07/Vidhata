@@ -2,7 +2,7 @@ import type { AdvocateEnrolment } from "@/lib/types";
 
 export const CURRENT_ADVOCATE = {
   id: "adv-current",
-  name: "Ananya Rao",
+  name: "Ishita Rao",
   bar: "MH/2210/2018",
 };
 

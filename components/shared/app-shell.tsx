@@ -1,13 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/session";
 import { BrandLogo } from "@/components/shared/brand-logo";
-import { PreviewBanner } from "@/components/shared/preview-banner";
+import {
+  SIDEBAR_ITEM,
+  Sidebar,
+  SidebarBody,
+  SidebarButton,
+  SidebarLabel,
+  SidebarLink,
+} from "@/components/ui/sidebar";
 import { Icon, type IconName } from "@/components/shared/icon";
 import {
   PaletteProvider,
@@ -15,12 +22,7 @@ import {
   useRegisterCommands,
   type PaletteCommand,
 } from "@/components/shared/command-palette";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,27 +44,18 @@ export interface ShellSection {
   links: ShellLink[];
 }
 
-const PIN_KEY = "vidhata-rail-pinned";
-/** How long the rail waits after the pointer leaves before tucking away. */
-const TUCK_DELAY_MS = 280;
-
 /**
  * The application shell.
  *
  * One navigation structure for both portals: the work a person does
  * differs, the furniture does not.
  *
- * The rail tucks away, as Arc's sidebar does. At rest it is a sliver of
- * the ink capsule standing at the left edge, enough to say something is
- * there. Pointing at it (or tabbing into it) opens it in full, with the
- * wordmark, search, the sections and who you are, and the page makes room
- * rather than being covered. It tucks away again when the pointer leaves.
- * Each visit lands with it kept open, so the sliver is never a mystery;
- * tucking it away holds for the rest of the visit, because a reviewer
- * working a document wants the width.
+ * The rail is a slim icon column at the left edge. Pointing at it (or
+ * tabbing into it) widens it over the page, with the wordmark, search,
+ * section labels and who you are; it narrows again when the pointer leaves.
  *
  * There is no role control here, not even in the identity menu. Identity
- * is a person and their standing ("Ananya Rao, advocate"). The preview
+ * is a person and their standing ("Ishita Rao, advocate"). The preview
  * reaches each portal through "Use the preview workspace" on that
  * portal's sign-in page; to move between them, sign out.
  */
@@ -147,10 +140,11 @@ function ShellBody({
           isActive={isActive}
           isMac={isMac}
           onSearch={openPalette}
-          renderIdentity={(onOpenChange) => (
+          renderIdentity={(onOpenChange, railOpen) => (
             <IdentityMenu
               identity={identity}
               onInk
+              collapsed={!railOpen}
               onOpenChange={onOpenChange}
               onSignOut={handleSignOut}
             />
@@ -161,8 +155,8 @@ function ShellBody({
         {/* Opaque behind the pill, so a page scrolling beneath it passes under
             the bar and is not seen at its sides. */}
         <header className="sticky top-0 z-30 bg-paper px-3 pb-2 pt-3 md:hidden">
-          <div className="flex h-14 items-center justify-between rounded-full bg-ink pl-6 pr-2 text-paper">
-            <Link href={homeHref} className="text-paper">
+          <div className="flex h-14 items-center justify-between rounded-full border border-line bg-shell pl-6 pr-2 text-ink">
+            <Link href={homeHref} className="text-ink">
               <BrandLogo size="md" />
             </Link>
             <IdentityMenu
@@ -176,13 +170,13 @@ function ShellBody({
         {/* The page and the preview banner share one column, so the banner
             takes its own row and the page scrolls beneath it. */}
         <div className="flex min-w-0 flex-1 flex-col md:h-screen">
-          <PreviewBanner />
+          {/* PreviewBanner hidden for now. */}
           <main
             className={cn(
               "min-h-0 min-w-0 flex-1",
               fullBleed
-                ? "md:overflow-y-auto lg:overflow-hidden"
-                : "px-4 py-6 pb-24 md:overflow-y-auto md:px-8 md:py-8",
+                ? "relative md:overflow-y-auto lg:overflow-hidden"
+                : "px-4 pb-24 pt-3 md:overflow-y-auto md:overscroll-y-contain md:px-8 md:pb-8 md:pt-3",
             )}
           >
             {children}
@@ -223,23 +217,14 @@ function ShellBody({
 }
 
 /**
- * The desktop rail. At rest, a sliver of ink (RAIL_REST wide with its
- * gutter); open, the full capsule (RAIL_OPEN). A spacer in the page's
- * flow takes the same width, so opening the rail moves the page over
- * rather than covering it.
+ * The desktop rail: a slim icon column that widens on hover or focus, over
+ * the page (components/ui/sidebar.tsx). Wordmark and section labels show
+ * only while it is open.
  */
-const RAIL_GUTTER = 8;
-const RAIL_SLIVER = 8;
-const RAIL_CAPSULE = 248;
-const RAIL_REST = RAIL_GUTTER * 2 + RAIL_SLIVER;
-const RAIL_OPEN = RAIL_GUTTER * 2 + RAIL_CAPSULE;
-const RAIL_EASE = "duration-[240ms] ease-[cubic-bezier(0.2,0,0,1)]";
-
 function Rail({
   sections,
   homeHref,
   isActive,
-  isMac,
   onSearch,
   renderIdentity,
 }: {
@@ -249,189 +234,69 @@ function Rail({
   isMac: boolean;
   onSearch: () => void;
   /** The identity menu, told when it opens so the rail stays open under it. */
-  renderIdentity: (onOpenChange: (open: boolean) => void) => React.ReactNode;
+  renderIdentity: (onOpenChange: (open: boolean) => void, open: boolean) => React.ReactNode;
 }) {
-  const [pinned, setPinned] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const [focused, setFocused] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const tuck = useRef<number | null>(null);
-
-  // Each visit lands with the rail open, so the sliver it tucks into is
-  // never a mystery. Tucking it away holds for the rest of the visit.
-  useEffect(() => {
-    try {
-      setPinned(window.sessionStorage.getItem(PIN_KEY) !== "0");
-    } catch {
-      // Storage unavailable: the rail starts open.
-      setPinned(true);
-    }
-  }, []);
-
-  const togglePin = useCallback(() => {
-    setPinned((was) => {
-      try {
-        window.sessionStorage.setItem(PIN_KEY, was ? "0" : "1");
-      } catch {
-        // Storage unavailable: the choice lasts for this page only.
-      }
-      return !was;
-    });
-  }, []);
-
-  // Ctrl+\ (Cmd+\ on a Mac) keeps it open or lets it tuck away.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "\\" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        togglePin();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [togglePin]);
-
-  useEffect(
-    () => () => {
-      if (tuck.current) window.clearTimeout(tuck.current);
-    },
-    [],
-  );
-
-  function enter() {
-    if (tuck.current) window.clearTimeout(tuck.current);
-    setHovered(true);
-  }
-
-  function leave() {
-    if (tuck.current) window.clearTimeout(tuck.current);
-    tuck.current = window.setTimeout(() => setHovered(false), TUCK_DELAY_MS);
-  }
-
-  const open = pinned || hovered || focused || menuOpen;
-  const pinKeys = isMac ? "⌘\\" : "Ctrl \\";
+  const open = hovered || menuOpen;
 
   return (
-    <>
-      {/* Holds the rail's width in the page's flow. */}
-      <div
-        aria-hidden
-        className={cn("hidden shrink-0 transition-[width] md:block", RAIL_EASE)}
-        style={{ width: open ? RAIL_OPEN : RAIL_REST }}
-      />
-
-      <div
-        className="fixed inset-y-0 left-0 z-40 hidden md:block"
-        style={{ padding: RAIL_GUTTER }}
-        onMouseEnter={enter}
-        onMouseLeave={leave}
-        onFocus={() => setFocused(true)}
-        onBlur={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocused(false);
-        }}
-      >
-        <nav
-          aria-label="Main"
-          className={cn(
-            "relative h-full overflow-hidden rounded-modal bg-ink text-paper transition-[width]",
-            RAIL_EASE,
-          )}
-          style={{ width: open ? RAIL_CAPSULE : RAIL_SLIVER }}
-        >
-          {/* The grip on the sliver: the one mark that says it opens. */}
-          <span
-            aria-hidden
-            className={cn(
-              "absolute left-1/2 top-1/2 h-8 w-[2px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-paper/45 transition-opacity duration-150",
-              open ? "opacity-0" : "opacity-100",
+    <Sidebar open={open} setOpen={setHovered}>
+      <SidebarBody>
+        <div className="flex h-9 items-center overflow-hidden pl-2.5">
+          <Link href={homeHref} aria-label="Vidhata home" className="rounded-full text-ink">
+            {open ? (
+              <BrandLogo size="md" />
+            ) : (
+              <span className="inline-block font-wordmark text-h2 font-normal leading-none tracking-[-0.02em]">
+                Vi
+              </span>
             )}
-          />
+          </Link>
+        </div>
 
-          {/* A fixed width inside, so nothing rewraps while the capsule
-              opens. Still reachable by Tab while tucked: focus opens it. */}
-          <div
-            className={cn(
-              "flex h-full flex-col px-3 py-5 transition-opacity",
-              open ? "opacity-100 delay-75 duration-200" : "pointer-events-none opacity-0 duration-100",
-            )}
-            style={{ width: RAIL_CAPSULE }}
-          >
-            <div className="flex items-center justify-between pl-3">
-              <Link href={homeHref} aria-label="Vidhata home" className="rounded-full text-paper">
-                <BrandLogo size="md" />
-              </Link>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={togglePin}
-                    aria-pressed={pinned}
-                    aria-label={pinned ? "Let the sidebar tuck away" : "Keep the sidebar open"}
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-paper/60 transition-colors hover:bg-paper/10 hover:text-paper"
-                  >
-                    <Icon name={pinned ? "left_panel_close" : "left_panel_open"} size={20} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  {pinned ? "Tuck away" : "Keep open"} · {pinKeys}
-                </TooltipContent>
-              </Tooltip>
+        <div className="mt-6">
+          <SidebarButton label="Search" icon="search" onClick={onSearch} />
+        </div>
+
+        <div className="mt-4 space-y-3 overflow-y-auto overflow-x-hidden">
+          {sections.map((section) => (
+            <div key={section.label}>
+              <p
+                aria-hidden={!open}
+                className={cn(
+                  "h-6 truncate whitespace-pre px-2.5 pb-1.5 text-label text-ink/60 transition-opacity duration-150",
+                  open ? "opacity-100" : "opacity-0",
+                )}
+              >
+                {section.label}
+              </p>
+              <ul className="space-y-0.5">
+                {section.links.map((link) => (
+                  <li key={link.href}>
+                    <SidebarLink
+                      href={link.href}
+                      label={link.label}
+                      icon={link.icon}
+                      active={isActive(link.href)}
+                    />
+                  </li>
+                ))}
+              </ul>
             </div>
+          ))}
+        </div>
 
-            <button
-              type="button"
-              onClick={onSearch}
-              className="mt-6 flex h-11 items-center gap-3 rounded-full px-3 text-meta text-paper/70 transition-colors hover:bg-paper/10 hover:text-paper"
-            >
-              <Icon name="search" size={20} />
-              Search
-              <kbd className="ml-auto font-mono text-label text-paper/45">
-                {isMac ? "⌘K" : "Ctrl K"}
-              </kbd>
-            </button>
-
-            <div className="mt-4 space-y-5">
-              {sections.map((section) => (
-                <div key={section.label}>
-                  <p className="px-3 pb-1.5 text-label text-paper/45">{section.label}</p>
-                  <ul className="space-y-0.5">
-                    {section.links.map((link) => {
-                      const active = isActive(link.href);
-                      return (
-                        <li key={link.href}>
-                          <Link
-                            href={link.href}
-                            aria-current={active ? "page" : undefined}
-                            className={cn(
-                              "flex h-11 items-center gap-3 rounded-full px-3 text-meta transition-colors",
-                              active
-                                ? "bg-paper font-medium text-ink"
-                                : "text-paper/70 hover:bg-paper/10 hover:text-paper",
-                            )}
-                          >
-                            <Icon name={link.icon} size={20} />
-                            {link.label}
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-auto">{renderIdentity(setMenuOpen)}</div>
-          </div>
-        </nav>
-      </div>
-    </>
+        <div className="mt-auto">{renderIdentity(setMenuOpen, open)}</div>
+      </SidebarBody>
+    </Sidebar>
   );
 }
 
-const ITEM_ON_INK = "text-paper focus:bg-paper/10";
+const ITEM_ON_INK = "text-ink focus:bg-ink/10";
 
 function iconTone(onInk: boolean): string {
-  return onInk ? "text-paper/55" : "text-muted-fg";
+  return onInk ? "text-ink/55" : "text-muted-fg";
 }
 
 /** Initials for the identity disc. The one place a circle is allowed. */
@@ -447,6 +312,7 @@ function IdentityMenu({
   identity,
   inHeader = false,
   onInk = false,
+  collapsed = false,
   onOpenChange,
   onSignOut,
 }: {
@@ -455,6 +321,8 @@ function IdentityMenu({
   inHeader?: boolean;
   /** The open rail: the disc with the name and standing, set on ink. */
   onInk?: boolean;
+  /** The rail is narrow: the disc alone. */
+  collapsed?: boolean;
   onOpenChange?: (open: boolean) => void;
   onSignOut: () => void;
 }) {
@@ -462,25 +330,25 @@ function IdentityMenu({
     <DropdownMenu onOpenChange={onOpenChange}>
       <DropdownMenuTrigger
         className={cn(
-          "flex items-center gap-3 rounded-full text-left transition-colors hover:bg-paper/10",
-          inHeader ? "p-1" : "w-full p-2",
+          "flex items-center gap-3 rounded-full text-left transition-colors hover:bg-ink/10",
+          inHeader ? "p-1" : "w-full px-1 py-2",
         )}
         aria-label={`${identity.name}, ${identity.standing}`}
       >
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-parchment font-mono text-notation text-ink">
           {initials(identity.name)}
         </span>
-        {onInk && (
+        {onInk && !collapsed && (
           <>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-meta font-medium text-paper">
+              <span title={identity.name} className="block truncate text-meta font-medium text-ink">
                 {identity.name}
               </span>
-              <span className="block truncate text-label text-paper/55">
+              <span className="block truncate text-label text-ink/55">
                 {identity.standing}
               </span>
             </span>
-            <Icon name="expand_more" size={18} className="text-paper/55" />
+            <Icon name="expand_more" size={18} className="text-ink/55" />
           </>
         )}
       </DropdownMenuTrigger>
@@ -495,7 +363,7 @@ function IdentityMenu({
         className={cn(
           "rounded-card",
           onInk
-            ? "rounded-control w-[var(--radix-dropdown-menu-trigger-width)] min-w-0 border-paper/15 bg-ink text-paper"
+            ? "rounded-control w-[var(--radix-dropdown-menu-trigger-width)] min-w-0 border-line bg-shell text-ink"
             : "w-64 shadow-float",
         )}
       >
@@ -509,7 +377,7 @@ function IdentityMenu({
                 <span className="block truncate text-meta font-medium text-ink">
                   {identity.name}
                 </span>
-                <span className="block text-label text-muted-fg">
+                <span className="block text-meta text-muted-fg">
                   Signed in as {identity.standing.toLowerCase()}
                 </span>
               </span>
@@ -524,7 +392,7 @@ function IdentityMenu({
           </Link>
         </DropdownMenuItem>
 
-        <DropdownMenuSeparator className={cn(onInk && "bg-paper/15")} />
+        <DropdownMenuSeparator className={cn(onInk && "bg-ink/15")} />
         <DropdownMenuItem className={cn(onInk && ITEM_ON_INK)} onSelect={onSignOut}>
           <Icon name="logout" size={18} className={iconTone(onInk)} />
           Sign out

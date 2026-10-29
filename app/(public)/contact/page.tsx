@@ -32,7 +32,7 @@ export default function ContactPage() {
                 Use the{" "}
                 <Link
                   href="/advocate-login"
-                  className="text-accent underline underline-offset-2 hover:no-underline"
+                  className="link"
                 >
                   advocate sign-in
                 </Link>{" "}

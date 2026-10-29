@@ -58,7 +58,7 @@ export default function ComponentsPage() {
           <StateLabel state="revision" />
           <StateLabel state="settled" />
           <StateLabel state="open" />
-          <StateLabel state="settled" tone="solid" />
+          <StateLabel state="settled" variant="solid" />
         </div>
       </Section>
 

@@ -1,4 +1,4 @@
-import type { DeliveryResult, SummaryResult } from "@/lib/types";
+import type { DeliveryResult, DocumentStatus, SummaryResult } from "@/lib/types";
 import { getDelivery } from "../delivery";
 import { getSettledSummary } from "../summaries";
 import { ownDocument } from "./own";
@@ -23,8 +23,9 @@ export function getClientDelivery(orgId: string, id: string): Promise<DeliveryRe
 export async function getClientSummary(
   orgId: string,
   id: string,
-): Promise<{ title: string | null; result: SummaryResult }> {
+): Promise<{ title: string | null; status: DocumentStatus | null; result: SummaryResult }> {
   const doc = await ownDocument(orgId, id);
   const result = await getSettledSummary(id);
-  return { title: result.state === "not_available" ? null : doc.title, result };
+  const ready = result.state !== "not_available";
+  return { title: ready ? doc.title : null, status: ready ? doc.status : null, result };
 }

@@ -62,10 +62,26 @@ Brand Board V2.0 (22 Sep 2026). This supersedes the earlier warm rust
 palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
 
 - Product name: Vidhata. "AI drafts. Advocates decide."
-- One accent, earned: accent #1B4332 (hover #265E4A). Colour appears
-  where a decision has been made, and nowhere else.
-- Ink #141414, muted-fg #5A5A5A, line #E5E5E0, paper #FFFFFF,
-  parchment #F0F0F0. The page is white: canvas is #FFFFFF too.
+- Design board "Before, and a safe After" (v1 conservative) supersedes the
+  one-accent monotone look. Colour carries meaning, one colour per meaning:
+  green is done or brand, blue is in progress (advocate-side work),
+  marigold is "your move" (the client has something to do), vermilion is
+  blocked or a finding. Amber appears only when the client has something to
+  do. State is never signalled by colour alone: StateLabel (lib/tone.ts maps
+  state to tone) is a tinted chip plus an icon plus text.
+- Palette: paper (page) #FBF9F4, surface #FFFFFF, sand (panels) #F2EEE5,
+  line #E4DED1, ink #14211C, muted #4F5B55, brand #0F5C45 (hover brand-deep
+  #0B4A37, brand-tint #E2F0E8), done #1B7F5A (text #146B4D, done-tint
+  #E3F4EB), progress #1F5E99 (progress-tint #E6EFF9), move marigold #F2A71B
+  (move-text #7A4E00, move-tint #FDF1D6), blocked #B63A2B (blocked-tint
+  #FBE7E3), night #0E1F1A with mint #5FC79A for ticks on night. Tokens only,
+  never raw hex in a component. The tokens are measured by a contrast test.
+- Links are brand colour with an underline at rest (.link / TextLink),
+  thicker on hover, with a focus ring. Brand green on body text is only
+  2.1:1, so colour alone never marks a link. No hover-only underlines.
+- Done is a green tick: a filled green circle with a white check, in the
+  stepper and in every checklist and list. The current step is a blue ring
+  with a dot; later steps are muted outlines.
 - Board V3 (23 Sep 2026), reference 7shifts.com. The wordmark is the
   word "Vidhata" in Apfel Grotezk (font-wordmark, self-hosted in
   app/fonts), with no symbol. Brygada 1918 (font-display and
@@ -75,9 +91,10 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
   Plex Mono, Archivo Narrow, uppercase mono eyebrows or datelines like
   "Vidhata · New Delhi".
 - Headings are 500, never bold. Body never exceeds 600.
-- Status colors are semantic only, never decorative: verified #2D6A4F,
-  flagged #9B2C2C, caution #B7791F (badge fills only; use caution-fg
-  #92600A for text), info #2C5282 (layer badges only). Critical severity is ink, drawn as a diamond (SeverityGlyph), so it never reads as a deeper high.
+- Status colors are semantic only, never decorative: the done, progress,
+  move and blocked families above (use move-text, not marigold, for text on
+  move-tint). Critical severity is ink, drawn as a diamond (SeverityGlyph),
+  so it never reads as a deeper high.
 - Shape: round everywhere, never square. Buttons and labels are pills;
   rounded-control 12px, rounded-card 20px, rounded-modal 28px. No
   shadows: shadow-float is an ink hairline, not elevation.
@@ -191,8 +208,12 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
   An advocate's override note on a finding stays unshown to the client.
 - The client rail has no "New document": a document starts from the
   DealPrompt on Documents.
-- Avoid: purple/violet/indigo, gradients, glassmorphism, heavy shadows,
+- Avoid: purple/violet/indigo, gradients, glassmorphism, shadows,
   decorative icon treatments, scales, gavels, sepia parchment graphics.
+  The one shadow allowed is the inner shadow set into the footer wordmark
+  (components/marketing/site-footer.tsx), by the owner's explicit call.
+  Icons are allowed where they carry meaning (a state icon in StateLabel, a
+  tick, an icon that replaces an explanatory paragraph), never as decoration.
 - The seal appears once per document, at sign-off. That is the only place
   the mark is used inside the product.
 - No em dashes in product copy. The separator is the middle dot.
@@ -304,10 +325,12 @@ Three systems, each with its own state. Never fold them into one label.
   centred column; spread content into columns and side-by-side panels
   where the screen allows. Reading measures (max-w-measure) still apply
   to running prose.
-- Sections are divided by space and tint (parchment panels,
-  rounded-card), not by hairline rules between content. A coloured
-  margin rule is kept only where it carries status (caution on an
-  advocate's request).
+- Sections are divided by space and tint (sand panels, rounded-card), not
+  by hairline rules between content. A coloured margin rule is kept only
+  where it carries status (move on an advocate's request to the client).
+- Inner pages lead with a status hero (state, who has the move, what
+  happens next); the record (details, activity) sits in quieter sand panels,
+  with secondary detail behind expandable sections.
 - Back goes where the reader came from (components/shared/back-button),
   falling back to the parent route.
 - Annotation, not cards. A finding is a note in the margin of a clause,

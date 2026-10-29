@@ -63,7 +63,7 @@ function Neighbour({
   className?: string;
 }) {
   return (
-    <div aria-hidden className={cn("max-w-measure select-none opacity-60", className)}>
+    <div aria-hidden className={cn("max-w-measure select-none opacity-75", className)}>
       <p className="font-display text-meta text-ink">
         <span className="mr-2 font-mono text-label text-ink">{clause.number}</span>
         {clause.heading}
@@ -112,7 +112,7 @@ function Sheet({ stage, reduced }: { stage: number; reduced: boolean }) {
         <span
           className={cn(
             "font-mono text-label transition-colors",
-            settled ? "text-accent" : flagged ? "text-caution-fg" : "text-muted-fg",
+            settled ? "text-accent" : flagged ? "text-ink" : "text-muted-fg",
           )}
         >
           {STAGES[stage].caption}

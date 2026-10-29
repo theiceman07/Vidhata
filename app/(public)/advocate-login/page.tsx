@@ -92,7 +92,7 @@ export default function LawyerLoginPage() {
       footer={
         <>
           Not on the panel yet?{" "}
-          <Link href="/advocate-invite" className="text-accent underline underline-offset-2 hover:no-underline">
+          <Link href="/advocate-invite" className="link">
             Request an invitation
           </Link>
         </>
@@ -138,7 +138,7 @@ export default function LawyerLoginPage() {
             id="advocate-login-error"
             role="alert"
             aria-live="polite"
-            className="text-small text-flagged"
+            className="text-small text-ink"
           >
             {error}
           </p>
@@ -147,7 +147,7 @@ export default function LawyerLoginPage() {
           <p
             role="alert"
             aria-live="polite"
-            className="text-small text-caution-fg"
+            className="text-small text-ink"
           >
             Too many attempts. Try again in {LOCKOUT_SECONDS} seconds.
           </p>
@@ -157,27 +157,19 @@ export default function LawyerLoginPage() {
           Sign in
         </Button>
 
-        {/* The preview workspace is the mock portal. With the real backend on it has no session to
-            use, so it is not offered. */}
-        {!backendDataEnabled() && (
-          <Button type="button" variant="outline" size="lg" className="w-full" onClick={signIn}>
-            Use the preview workspace
-          </Button>
-        )}
-
         {!backendDataEnabled() && (
           <p className="text-center text-meta text-muted-fg">
             Preview: open a sample invitation,{" "}
             <Link
               href={`/advocate-onboarding/${VALID_INVITE_TOKEN}`}
-              className="text-accent underline underline-offset-2 hover:no-underline"
+              className="link"
             >
               a valid one
             </Link>{" "}
             or{" "}
             <Link
               href={`/advocate-onboarding/${EXPIRED_INVITE_TOKEN}`}
-              className="text-accent underline underline-offset-2 hover:no-underline"
+              className="link"
             >
               an expired one
             </Link>

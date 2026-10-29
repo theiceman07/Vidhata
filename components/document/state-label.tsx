@@ -1,85 +1,79 @@
 import { cn } from "@/lib/utils";
 import type { DocumentStatus } from "@/lib/types";
 import type { FindingState } from "@/lib/findings";
+import { Icon, type IconName } from "@/components/shared/icon";
+import { DOCUMENT_TONE, FINDING_TONE, TONE, type Tone } from "@/lib/tone";
 
 /**
- * A workflow state, set in the notation voice.
+ * A workflow state: a tinted chip, an icon and the words.
  *
  * Document and finding states each have their own words here, and they
  * are never merged into one "status": a document can be with the client
  * while one of its findings is still open with the advocate, and the
  * screen has to be able to say both.
  *
- * Colour is carried by the semantic tokens and is always paired with the
- * word, never a substitute for it.
+ * Colour is carried by the tone (lib/tone.ts) and is never the only signal:
+ * the icon and the word say the same thing.
  */
 export type LabelState = DocumentStatus | FindingState;
 
-const CAUTION = {
-  tone: "text-caution-fg border-caution/40",
-  solid: "bg-caution text-paper border-transparent",
-};
-const VERIFIED = {
-  tone: "text-verified border-verified/30",
-  solid: "bg-verified text-paper border-transparent",
-};
-const QUIET = {
-  tone: "text-muted-fg border-line",
-  solid: "bg-muted-fg text-paper border-transparent",
-};
-
-const LABEL: Record<LabelState, { text: string; tone: string; solid: string }> =
-  {
-    draft: { text: "Draft", ...QUIET },
-    analysing: {
-      text: "Screening",
-      tone: "text-info border-info/30",
-      solid: "bg-info text-paper border-transparent",
-    },
-    // The client's move: the fee is the only thing between a screened
-    // document and the advocate queue.
-    awaiting_payment: { text: "Awaiting payment", ...CAUTION },
-    pending_review: { text: "Awaiting advocate", ...CAUTION },
-    under_review: { text: "Advocate review", ...CAUTION },
-    // An advocate asked the client for something. Whose move it is, not a
-    // severity, so it is caution rather than flagged: nothing is wrong.
-    revision: { text: "Changes requested", ...CAUTION },
-    settled: { text: "Settled", ...VERIFIED },
-    executed: { text: "Executed", ...VERIFIED },
-    open: { text: "Open", ...CAUTION },
-    with_client: { text: "With client", ...QUIET },
-  };
+function read(state: LabelState) {
+  return state in DOCUMENT_TONE
+    ? DOCUMENT_TONE[state as DocumentStatus]
+    : FINDING_TONE[state as FindingState];
+}
 
 export function stateText(state: LabelState): string {
-  return LABEL[state].text;
+  return read(state).text;
+}
+
+/** The chip itself, for states that are not a document or finding state. */
+export function Chip({
+  tone,
+  icon,
+  children,
+  variant = "tinted",
+  className,
+}: {
+  tone: Tone;
+  icon: IconName;
+  children: React.ReactNode;
+  variant?: "tinted" | "solid";
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border py-0.5 pl-1.5 pr-2.5",
+        "text-label font-medium",
+        variant === "solid" ? TONE[tone].solid : TONE[tone].chip,
+        className,
+      )}
+    >
+      <Icon name={icon} size={16} className="[font-variation-settings:'wght'_500]" />
+      {children}
+    </span>
+  );
 }
 
 export function StateLabel({
   state,
-  tone = "outline",
+  variant = "tinted",
   className,
 }: {
   state: LabelState;
   /**
    * Solid is reserved for the one authoritative moment on a screen,
-   * in practice sign-off. Everywhere else the outline keeps colour quiet
+   * in practice sign-off. Everywhere else the tinted chip keeps colour quiet
    * enough that it still means something when it appears.
    */
-  tone?: "outline" | "solid";
+  variant?: "tinted" | "solid";
   className?: string;
 }) {
-  const label = LABEL[state];
-
+  const { text, tone, icon } = read(state);
   return (
-    <span
-      className={cn(
-        "inline-flex shrink-0 items-center whitespace-nowrap rounded-full border px-2.5 py-0.5",
-        "text-label font-medium",
-        tone === "solid" ? label.solid : label.tone,
-        className,
-      )}
-    >
-      {label.text}
-    </span>
+    <Chip tone={tone} icon={icon} variant={variant} className={className}>
+      {text}
+    </Chip>
   );
 }

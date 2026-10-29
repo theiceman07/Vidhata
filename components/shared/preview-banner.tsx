@@ -26,7 +26,7 @@ export function PreviewBanner() {
     <aside
       aria-label="Preview notice"
       data-preview-banner
-      className="shrink-0 bg-parchment px-4 py-1.5 text-center text-label text-muted-fg print:hidden"
+      className="relative shrink-0 bg-parchment px-4 py-0.5 text-center text-label text-muted-fg print:hidden"
     >
       <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
         <span>
@@ -39,14 +39,14 @@ export function PreviewBanner() {
             <button
               type="button"
               onClick={resetDemoData}
-              className="inline-flex min-h-6 items-center rounded-full bg-ink px-3 font-medium text-paper hover:bg-ink/85"
+              className="inline-flex min-h-8 items-center rounded-full bg-ink px-3 font-medium text-paper hover:bg-ink/85"
             >
               Reset
             </button>
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className="inline-flex min-h-6 items-center rounded-full px-2 text-ink underline underline-offset-2 hover:no-underline"
+              className="inline-flex min-h-8 items-center rounded-full px-2 link"
             >
               Keep it
             </button>
@@ -55,7 +55,7 @@ export function PreviewBanner() {
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className="inline-flex min-h-6 items-center text-ink underline underline-offset-2 hover:no-underline"
+            className="inline-flex min-h-8 items-center link"
           >
             Reset demo data
           </button>

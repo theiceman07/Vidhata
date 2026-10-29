@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { Icon } from "@/components/shared/icon";
 import { agentAvailable } from "@/lib/chatAccess";
+import { documentIdentity } from "@/lib/documentTitle";
+import { StateLabel } from "@/components/document/state-label";
 import { PageHeader } from "@/components/shared/page-header";
 import { ErrorState } from "@/components/shared/error-state";
 import { ChatMessage } from "@/components/domain/chat-message";
@@ -30,6 +32,8 @@ import type {
 } from "@/lib/types";
 import { scrollBehavior } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+import { DocumentTabs } from "@/components/document/document-tabs";
+import { PageSkeleton } from "@/components/shared/page-skeleton";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -127,10 +131,12 @@ export default function ChatPage() {
 
   if (state === "loading") {
     return (
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-[280px_1fr]">
-        <Skeleton className="h-96 rounded-card" />
-        <Skeleton className="h-96 rounded-card" />
-      </div>
+      <PageSkeleton tabs description={false}>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-[280px_1fr]">
+          <Skeleton className="h-60 rounded-card" />
+          <Skeleton className="h-[26rem] rounded-card" />
+        </div>
+      </PageSkeleton>
     );
   }
 
@@ -146,11 +152,10 @@ export default function ChatPage() {
     // Says only that it is not open yet: the document is not named, as the
     // delivery and the summary do not name one that is not signed off.
     return (
-      <div className="mx-auto w-full max-w-2xl">
+      <div className="w-full">
         <PageHeader
           title="Ask about this document"
-          backHref={`/documents/${doc.id}`}
-          backLabel="Document"
+          back={{ fallbackHref: `/documents/${doc.id}`, label: "Document" }}
         />
         <p className="border-l-2 border-line pl-4 text-body text-ink">
           Questions open once an advocate has settled and signed off this
@@ -163,10 +168,12 @@ export default function ChatPage() {
   return (
     <div>
       <PageHeader
-        title="Ask about this document"
-        description={doc.title}
-        backHref={`/documents/${doc.id}`}
-        backLabel={doc.title}
+        stacked
+        status={<StateLabel state={doc.status} />}
+        title={documentIdentity(doc.title).name}
+        meta={[documentIdentity(doc.title).with]}
+        back={{ fallbackHref: `/documents/${doc.id}`, label: doc.title }}
+        tabs={<DocumentTabs documentId={doc.id} signedOff={Boolean(doc.signOff)} checklist={doc.checklist} />}
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[280px_1fr]">
@@ -216,8 +223,7 @@ export default function ChatPage() {
             aria-live="polite"
             aria-label="Conversation about this document"
             tabIndex={0}
-            className="flex-1 space-y-3 overflow-y-auto p-4 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
-            style={{ maxHeight: 480 }}
+            className="max-h-[calc(100dvh-26rem)] min-h-[18rem] flex-1 space-y-3 overflow-y-auto p-4 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
           >
             {messages.map((m) =>
               m.isEscalation ? (

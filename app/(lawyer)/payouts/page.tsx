@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
@@ -10,6 +11,7 @@ import { getPayoutStatement } from "@/lib/api/consultations";
 import { PRICE_BASIS, rupees } from "@/lib/config/pricing";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import type { PayoutStatement } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -62,19 +64,26 @@ export default function PayoutsPage() {
 
   return (
     <div className="w-full">
-      <header className="max-w-measure">
-        <h1 className="font-display text-h1 text-ink">Payout statement</h1>
-        <p className="mt-2 text-lead text-muted-fg">
-          The configured consultation fee for each consultation you have answered, {PRICE_BASIS}. In
-          this preview it is one amount for every consultation. Only you see this.
-        </p>
-      </header>
+      <PageHeader
+        title="Payout statement"
+        description={
+          <>
+            The configured consultation fee for each consultation you have answered, {PRICE_BASIS}.
+            In this preview it is one amount for every consultation. Only you see this.
+          </>
+        }
+      />
 
       {statement.lines.length === 0 ? (
-        <div className="mt-10 max-w-xl">
+        <div className="max-w-xl">
           <EmptyState
             title="Nothing on your statement yet."
             description="When you answer a consultation, its fee is listed here with the document and the day."
+            action={
+              <Button asChild variant="outline">
+                <Link href="/consultations">See consultation requests</Link>
+              </Button>
+            }
           />
         </div>
       ) : (
@@ -87,7 +96,7 @@ export default function PayoutsPage() {
               >
                 <Link
                   href={`/consultations/${line.consultationId}`}
-                  className="line-clamp-2 min-w-0 font-display text-h3 text-ink hover:underline"
+                  className="line-clamp-2 min-w-0 font-display text-h3 text-ink hover:text-brand"
                 >
                   {line.documentTitle}
                 </Link>

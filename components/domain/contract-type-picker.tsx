@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Icon } from "@/components/shared/icon";
 import { Input } from "@/components/ui/input";
 import {
@@ -31,7 +31,8 @@ export function ContractTypePicker({
   error?: string;
 }) {
   const [query, setQuery] = useState("");
-  const [availableOnly, setAvailableOnly] = useState(false);
+  // Opens on what can be drafted today; the types still to come are one click away.
+  const [availableOnly, setAvailableOnly] = useState(true);
   const needle = query.trim().toLowerCase();
   const shown = CONTRACT_CATALOGUE.filter(
     (e) =>
@@ -58,8 +59,8 @@ export function ContractTypePicker({
         </div>
         <div className="flex h-12 min-w-0 basis-full gap-1 rounded-full bg-parchment p-1 sm:flex-1 sm:basis-auto" role="group" aria-label="Show">
           {[
-            { label: "All types", only: false },
             { label: "Available now", only: true },
+            { label: "All types", only: false },
           ].map((f) => (
             <button
               key={f.label}
@@ -84,8 +85,13 @@ export function ContractTypePicker({
       )}
 
       {CONTRACT_GROUPS.map((group) => {
-        const entries = shown.filter((e) => e.group === group.id);
+        // What can be drafted first, then what is coming, in the one grid.
+        const entries = [
+          ...shown.filter((e) => e.group === group.id && e.available),
+          ...shown.filter((e) => e.group === group.id && !e.available),
+        ];
         if (entries.length === 0) return null;
+        const availableCount = entries.filter((e) => e.available).length;
         return (
           <section key={group.id} aria-labelledby={`contract-group-${group.id}`}>
             <h3
@@ -95,11 +101,16 @@ export function ContractTypePicker({
               {group.label}
             </h3>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {entries.map((entry) => {
+              {entries.map((entry, index) => {
                 const selected = entry.available && entry.draftType === value;
                 return (
+                  <Fragment key={entry.id}>
+                    {/* An odd number of available types leaves a gap, so the types still to
+                        come begin on a row of their own. */}
+                    {index === availableCount && availableCount % 2 === 1 && (
+                      <div aria-hidden className="hidden sm:block" />
+                    )}
                   <button
-                    key={entry.id}
                     type="button"
                     disabled={!entry.available}
                     aria-pressed={selected}
@@ -125,6 +136,7 @@ export function ContractTypePicker({
                       </span>
                     )}
                   </button>
+                  </Fragment>
                 );
               })}
             </div>
@@ -133,7 +145,7 @@ export function ContractTypePicker({
       })}
 
       {error && (
-        <p role="alert" className="text-small text-flagged">
+        <p role="alert" className="text-small text-ink">
           {error}
         </p>
       )}

@@ -55,6 +55,6 @@ export function serialiseConsent(choice: ConsentChoice, now: number): string {
  */
 export function consentStatement(inUse: readonly string[] = NON_ESSENTIAL_IN_USE): string {
   return inUse.length === 0
-    ? "This site doesn't use cookies beyond what it needs to work. Nothing is tracked."
+    ? "This site only uses the cookies it needs to work. It sets no analytics or tracking cookies."
     : `This site would use ${inUse.join(", ")}, which it does not need to work. Decline and it will not run.`;
 }

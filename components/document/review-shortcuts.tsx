@@ -1,19 +1,15 @@
 "use client";
 
-import { Icon } from "@/components/shared/icon";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
 /**
  * Keyboard shortcuts are an enhancement, not the way through the work.
  *
  * Every one of them has a visible control elsewhere on the screen, so
- * this is a reference rather than an instruction. It sits behind one
- * quiet button instead of scattering loose letter labels across the
- * chrome, where they read as notation nobody asked for.
+ * this is a reference rather than an instruction. It opens from the
+ * workspace's More menu, or from the ? key, instead of scattering loose
+ * letter labels across the chrome, where they read as notation nobody
+ * asked for.
  */
 const SHORTCUTS: { keys: string[]; action: string }[] = [
   { keys: ["J"], action: "Next finding" },
@@ -39,18 +35,11 @@ export function ReviewShortcuts({
     : SHORTCUTS.filter((s) => s.keys[0] !== "C");
 
   return (
-    <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger
-        className="inline-flex items-center gap-2 rounded-control px-2 py-1.5 text-meta text-muted-fg transition-colors hover:bg-canvas hover:text-ink"
-        aria-label="Keyboard shortcuts"
-      >
-        <Icon name="keyboard" size={18} />
-        <span className="hidden sm:inline">Shortcuts</span>
-      </PopoverTrigger>
-
-      <PopoverContent>
-        <p className="text-label font-medium text-muted-fg">Review controls</p>
-        <dl className="mt-3 space-y-2">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogTitle className="text-label font-medium text-muted-fg">Review controls</DialogTitle>
+        <DialogDescription className="sr-only">The keys that move through the review.</DialogDescription>
+        <dl className="space-y-2">
           {shortcuts.map((shortcut) => (
             <div key={shortcut.action} className="flex items-baseline gap-3">
               <dt className="flex w-20 shrink-0 gap-1">
@@ -67,10 +56,8 @@ export function ReviewShortcuts({
             </div>
           ))}
         </dl>
-        <p className="mt-4 border-t border-line pt-3 text-small text-muted-fg">
-          Shortcuts stand down while you are typing.
-        </p>
-      </PopoverContent>
-    </Popover>
+        <p className="text-meta text-muted-fg">Shortcuts stand down while you are typing.</p>
+      </DialogContent>
+    </Dialog>
   );
 }

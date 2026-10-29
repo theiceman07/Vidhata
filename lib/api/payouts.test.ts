@@ -29,7 +29,7 @@ async function settle<T>(promise: Promise<T>): Promise<T> {
 const seeded = (advocateId: string) =>
   mockConsultations.filter((c) => c.advocateId === advocateId && c.status === "answered");
 
-// Settled by Rhea Kapoor (adv-1) and by Ananya Rao (adv-current).
+// Settled by Rhea Kapoor (adv-1) and by Ishita Rao (adv-current).
 const rheaDoc = "doc-nda-settled";
 const ananyaDoc = "doc-nda-settled-2";
 const rhea = "adv-1";
@@ -111,7 +111,7 @@ describe("an advocate's payout statement", () => {
   });
 
   it("is each advocate's own, and another's lines are not in it", async () => {
-    const hers = await earn(ananyaDoc, ananya, "A question for Ananya.");
+    const hers = await earn(ananyaDoc, ananya, "A question for Ishita.");
     const mine = (await settle(getPayoutStatement(rhea))).lines.map((l) => l.consultationId);
     const theirs = (await settle(getPayoutStatement(ananya))).lines.map((l) => l.consultationId);
     // Hers: the one just earned, beside any the preview starts her with.
@@ -122,7 +122,7 @@ describe("an advocate's payout statement", () => {
   });
 
   it("reaches another advocate's request no more than a made-up one: the same not-found", async () => {
-    const hers = await earn(ananyaDoc, ananya, "Another question for Ananya.");
+    const hers = await earn(ananyaDoc, ananya, "Another question for Ishita.");
     const other = await settle(getAdvocateConsultation(rhea, hers.id));
     const missing = await settle(getAdvocateConsultation(rhea, "consultation-does-not-exist"));
     expect(other).toBeNull();

@@ -5,6 +5,8 @@
 @layer base {
   body {
     @apply bg-paper text-ink font-sans text-body;
+    /* Hanken Grotesk's "ff" ligature fuses the two stems. */
+    font-variant-ligatures: no-common-ligatures;
   }
 
   /* No visible scrollbars anywhere. Every scroll region still scrolls
@@ -44,6 +46,12 @@
 }
 
 @layer components {
+  /* Inline links: brand colour, underlined at rest with an offset, thicker
+     on hover. Colour alone is not enough (brand on body text is 2.1:1). */
+  .link {
+    @apply rounded-sm text-brand underline decoration-1 underline-offset-4 transition-colors hover:text-brand-deep hover:decoration-2;
+  }
+
   /* A bare field inside a composed control (the prompt box, the palette,
      the agent). The control shows focus as a whole, so the field inside
      it draws nothing of its own. */
@@ -78,8 +86,8 @@
    markup — this block only resets colours and page-break behaviour. */
 @media print {
   body {
-    background: #fff;
-    color: #141414;
+    background: theme("colors.paper");
+    color: theme("colors.ink");
   }
 
   [data-sonner-toaster] {
@@ -235,5 +243,55 @@
     animation: none !important;
     opacity: 1;
     transform: none;
+  }
+}
+
+/* TRIAL: a moving gradient behind the hero. Three soft blobs of the palette's
+   tints drift on transform alone (compositor only, no repaint per frame).
+   Remove with the wrapper in components/marketing/hero.tsx. */
+.hero-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.hero-glow > span {
+  position: absolute;
+  width: min(70vw, 960px);
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  will-change: transform;
+}
+.hero-glow > span:nth-child(1) {
+  left: -12%;
+  top: -25%;
+  background: radial-gradient(closest-side, theme("colors.brand.tint"), transparent);
+  animation: glow-a 22s ease-in-out infinite alternate;
+}
+.hero-glow > span:nth-child(2) {
+  right: -14%;
+  top: 0;
+  background: radial-gradient(closest-side, theme("colors.move.tint"), transparent);
+  animation: glow-b 27s ease-in-out infinite alternate;
+}
+.hero-glow > span:nth-child(3) {
+  left: 22%;
+  bottom: -45%;
+  background: radial-gradient(closest-side, theme("colors.progress.tint"), transparent);
+  animation: glow-c 31s ease-in-out infinite alternate;
+}
+@keyframes glow-a {
+  to { transform: translate3d(22vw, 12vh, 0) scale(1.2); }
+}
+@keyframes glow-b {
+  to { transform: translate3d(-24vw, 14vh, 0) scale(0.9); }
+}
+@keyframes glow-c {
+  to { transform: translate3d(-18vw, -16vh, 0) scale(1.25); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-glow > span {
+    animation: none !important;
   }
 }

@@ -13,24 +13,45 @@
 export function CitationBlock({
   citation,
   large = false,
+  bare = false,
 }: {
   citation: string;
   /** Reading size, for a source shown as the subject rather than beside a finding. */
   large?: boolean;
+  /** Under a heading that already says "Source": the line alone, its label kept for assistive technology. */
+  bare?: boolean;
 }) {
+  if (bare) {
+    return (
+      <dl>
+        <dt className="sr-only">Source</dt>
+        <dd className="text-meta text-ink">{citation}</dd>
+      </dl>
+    );
+  }
   return (
     <dl className={large ? "border-l-2 border-transparent pl-3" : undefined}>
       <div
         className={
-          large
-            ? "flex items-baseline gap-5 py-3"
-            : "flex gap-4 py-1.5"
+          large ? "flex items-baseline gap-5 py-3" : "flex gap-4 py-1.5"
         }
       >
-        <dt className={large ? "w-28 shrink-0 text-meta text-muted-fg" : "w-24 shrink-0 text-label text-muted-fg"}>
+        <dt
+          className={
+            large
+              ? "w-28 shrink-0 text-meta text-muted-fg"
+              : "w-24 shrink-0 text-label text-muted-fg"
+          }
+        >
           Source
         </dt>
-        <dd className={large ? "min-w-0 flex-1 text-body text-ink" : "min-w-0 flex-1 text-meta text-ink"}>
+        <dd
+          className={
+            large
+              ? "min-w-0 flex-1 text-body text-ink"
+              : "min-w-0 flex-1 text-meta text-ink"
+          }
+        >
           {citation}
         </dd>
       </div>

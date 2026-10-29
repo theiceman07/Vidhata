@@ -1,3 +1,4 @@
+import { TextLink } from "@/components/shared/text-link";
 import type { Metadata } from "next";
 import { AuditTrail } from "@/components/document/audit-trail";
 import { CitationBlock } from "@/components/document/citation-block";
@@ -66,7 +67,7 @@ function Step({ step, number }: { step: ExecutionStep; number: number }) {
       <p className="mt-2 max-w-measure text-meta text-ink">
         {step.applicable ? step.detail : step.reason}
       </p>
-      <p className="mt-3 text-label text-muted-fg">
+      <p className="mt-3 text-meta text-muted-fg">
         {!step.applicable ? "Not required" : step.complete ? "Complete" : "Not done"}
       </p>
     </li>
@@ -158,13 +159,13 @@ export default function SamplePage() {
                         <span className="font-mono text-label text-muted-fg">{clause.number}</span>
                         {clause.heading}
                         {notes.map((finding) => (
-                          <a
+                          <TextLink
                             key={finding.findingId}
                             href={`#finding-${finding.findingId}`}
                             className="rounded-full bg-paper px-2.5 py-0.5 font-sans text-label font-medium text-accent transition-colors hover:bg-accent hover:text-accent-fg"
                           >
                             Finding {numbers[finding.findingId]}
-                          </a>
+                          </TextLink>
                         ))}
                       </h3>
                       <div className="mt-2 font-clause text-body leading-relaxed text-ink">
@@ -203,12 +204,12 @@ export default function SamplePage() {
                         {clause && (
                           <>
                             {" · "}
-                            <a
+                            <TextLink
                               href={`#clause-${clause.id}`}
-                              className="text-ink underline underline-offset-2"
+                              className="link"
                             >
                               Clause {clause.number}
-                            </a>
+                            </TextLink>
                           </>
                         )}
                       </p>

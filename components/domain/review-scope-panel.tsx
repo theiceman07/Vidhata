@@ -70,7 +70,7 @@ export function ReviewScopePanel({
   return (
     <section
       aria-label={`Round ${scope.round} review scope`}
-      className="border-t border-line bg-parchment px-5 py-2 md:px-8"
+      className="bg-parchment px-5 py-1 md:px-8"
     >
       {/* One slim row at rest: round, comparison, undecided count, chevron. */}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
@@ -133,14 +133,14 @@ export function ReviewScopePanel({
                 )}
               >
                 <span className="text-label text-muted-fg">{m.label}</span>
-                <span className="font-display text-xl font-medium leading-none text-ink">
+                <span className="font-display text-h3 font-medium leading-none text-ink">
                   {m.count}
                 </span>
               </button>
             ))}
           </div>
 
-          <p className="mt-1 text-label leading-snug text-muted-fg" aria-live="polite">
+          <p className="mt-1 text-meta leading-snug text-muted-fg" aria-live="polite">
             {showAll
               ? `All ${plural(total, "finding", "findings")} shown`
               : `${total - hidden} of ${plural(total, "finding", "findings")} shown`}
@@ -241,7 +241,7 @@ function JumpButton({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-control text-left text-meta text-ink underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      className="link rounded-control text-left text-meta focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
     >
       {children}
     </button>

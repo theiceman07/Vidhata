@@ -105,7 +105,7 @@ describe("the findings a client is handed, after sign-off", () => {
             changeRequest: {
               request: "Please confirm.",
               requestedAt: "2026-08-03T08:00:00.000Z",
-              requestedBy: "Ananya Rao",
+              requestedBy: "Ishita Rao",
               response: null,
               respondedAt: null,
             },

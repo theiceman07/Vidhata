@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { payClientFee } from "@/lib/api/client/documents";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { PRICE_BASIS, TIER_PRICING, rupees } from "@/lib/config/pricing";
@@ -24,9 +25,11 @@ import type { ClientDocument } from "@/lib/types";
 export function PaymentPanel({
   doc,
   onPaid,
+  className,
 }: {
   doc: Pick<ClientDocument, "id" | "type" | "tier" | "deal">;
   onPaid: (paid: ClientDocument) => void;
+  className?: string;
 }) {
   const [paying, setPaying] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
@@ -54,7 +57,10 @@ export function PaymentPanel({
   return (
     <section
       aria-labelledby="pay-title"
-      className="grid items-start gap-x-8 gap-y-6 self-start rounded-card bg-parchment p-5 md:px-6 md:py-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]"
+      className={cn(
+        "grid items-stretch gap-x-10 gap-y-6 rounded-card bg-parchment p-5 md:px-6 md:py-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]",
+        className,
+      )}
     >
       <div className="min-w-0">
         <p className="text-label font-medium text-muted-fg">Screened</p>
@@ -68,20 +74,18 @@ export function PaymentPanel({
           Nothing reaches an advocate until the fee is paid.
         </p>
 
-        <h3 className="mt-5 text-label font-medium text-muted-fg">The deal facts behind the tier</h3>
-        <dl className="mt-3 grid max-w-md grid-cols-[10rem_minmax(0,1fr)] gap-x-4 gap-y-2.5 text-meta">
-          <dt className="text-muted-fg">Agreement</dt>
-          <dd className="text-ink">{typeLabel}</dd>
-          {doc.deal.transactionValue > 0 && (
-            <>
-              <dt className="text-muted-fg">Deal value</dt>
-              <dd className="text-ink">{rupees(doc.deal.transactionValue)}</dd>
-            </>
-          )}
-          <dt className="text-muted-fg">Counterparty</dt>
-          <dd className="text-ink">
-            {doc.deal.counterpartyIsMsme ? "A registered MSME" : "Not a registered MSME"}
-          </dd>
+        <h3 className="mt-5 text-meta font-medium text-ink">The deal facts behind the tier</h3>
+        <dl className="mt-3 grid gap-2 sm:grid-cols-3">
+          {[
+            ["Agreement", typeLabel],
+            ...(doc.deal.transactionValue > 0 ? [["Deal value", rupees(doc.deal.transactionValue)]] : []),
+            ["Counterparty", doc.deal.counterpartyIsMsme ? "A registered MSME" : "Not a registered MSME"],
+          ].map(([term, value]) => (
+            <div key={term} className="min-w-0 rounded-control bg-paper px-4 py-3">
+              <dt className="text-label text-muted-fg">{term}</dt>
+              <dd className="mt-0.5 text-body font-medium text-ink">{value}</dd>
+            </div>
+          ))}
         </dl>
       </div>
 
@@ -98,10 +102,10 @@ export function PaymentPanel({
         <p className="mt-4 text-meta text-ink">
           One fee for the document. It covers every revision round.
         </p>
-        <p className="mt-1 text-label text-muted-fg">GST is added at the rate in force.</p>
+        <p className="mt-1 text-meta text-muted-fg">GST is added at the rate in force.</p>
 
         {failed && (
-          <p role="alert" className="mt-4 text-meta text-flagged">
+          <p role="alert" className="mt-4 text-meta text-ink">
             {failed}
           </p>
         )}
@@ -109,7 +113,7 @@ export function PaymentPanel({
         <Button className="mt-5 w-full" size="lg" onClick={pay} disabled={paying || !tier}>
           {paying ? "Paying" : failed ? "Try again" : "Pay (preview)"}
         </Button>
-        <p className="mt-3 text-label text-muted-fg">Preview. No payment is taken.</p>
+        <p className="mt-3 text-meta text-muted-fg">Preview. No payment is taken.</p>
       </div>
     </section>
   );

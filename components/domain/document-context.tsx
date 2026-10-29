@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Icon } from "@/components/shared/icon";
+import { CalmDisclosure, useCalm } from "@/components/domain/calm";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listClientDocuments } from "@/lib/api/client/documents";
 import { tierLabel } from "@/lib/config/pricing";
@@ -18,8 +19,8 @@ import { cn } from "@/lib/utils";
  * the client described it, the advocate answerable for it, what happens
  * after the current move, and what else is waiting on the client.
  *
- * Every panel is a parchment sheet with a small label; space and tint
- * divide them, never rules.
+ * Every panel is a sand sheet with a small label; space and tint divide
+ * them, never rules. Secondary panels are collapsible.
  */
 
 export function ContextPanel({
@@ -28,6 +29,8 @@ export function ContextPanel({
   children,
   className,
   compact = false,
+  collapsible = false,
+  hint,
 }: {
   title: string;
   /** A small note or link set against the title. */
@@ -36,11 +39,88 @@ export function ContextPanel({
   className?: string;
   /** Less padding and a shorter gap under the title, for panels whose content is short. */
   compact?: boolean;
+  /**
+   * Secondary detail: closed until opened, with the title as the toggle. A
+   * native details element, so it works without script and by keyboard.
+   */
+  collapsible?: boolean;
+  /** What is inside, said beside the toggle while it is closed. */
+  hint?: string;
 }) {
+  const pad = compact ? "p-4 md:p-5" : "p-5 md:p-6";
+  const calm = useCalm();
+
+  // Calm: no card. A rule above, equal padding, the title as a small label.
+  const labelClass =
+    "text-label font-semibold uppercase leading-4 tracking-[0.08em] text-calm-secondary";
+
+  if (calm && collapsible) {
+    return (
+      <CalmDisclosure
+        id={`panel-${title.replace(/\W+/g, "-").toLowerCase()}`}
+        className={cn("border-t border-calm-border first:border-t-0", className)}
+        buttonClassName="flex w-full cursor-pointer items-center justify-between gap-3 rounded-calm-control py-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-calm-focus"
+        header={(open) => (
+          <>
+            <span role="heading" aria-level={2} className={labelClass}>
+              {title}
+            </span>
+            <span className="flex items-center gap-2 text-meta text-calm-secondary">
+              {hint && !open && <span>{hint}</span>}
+              <Icon
+                name="expand_more"
+                size={16}
+                className={cn("transition-transform motion-reduce:transition-none", open && "rotate-180")}
+              />
+            </span>
+          </>
+        )}
+      >
+        <div className="pb-4">{children}</div>
+      </CalmDisclosure>
+    );
+  }
+
+  if (calm) {
+    return (
+      <section className={cn("border-t border-calm-border py-4 first:border-t-0 first:pt-0", className)}>
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className={labelClass}>{title}</h2>
+          {aside}
+        </div>
+        <div className="mt-3">{children}</div>
+      </section>
+    );
+  }
+
+  if (collapsible) {
+    return (
+      <details className={cn("group rounded-card bg-sand", className)}>
+        <summary
+          className={cn(
+            "flex cursor-pointer list-none items-center justify-between gap-3 rounded-card [&::-webkit-details-marker]:hidden",
+            pad,
+          )}
+        >
+          <h2 className="font-display text-h3 text-ink">{title}</h2>
+          <span className="flex items-center gap-2 text-label text-muted">
+            {hint && <span className="group-open:hidden">{hint}</span>}
+            <Icon
+              name="expand_more"
+              size={20}
+              className="transition-transform group-open:rotate-180 motion-reduce:transition-none"
+            />
+          </span>
+        </summary>
+        <div className={cn("px-4 pb-4 md:px-5 md:pb-5", compact && "pt-0")}>{children}</div>
+      </details>
+    );
+  }
+
   return (
-    <section className={cn("rounded-card bg-parchment", compact ? "p-4 md:p-5" : "p-5 md:p-6", className)}>
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-h3 text-ink">{title}</h2>
+    <section className={cn("rounded-card bg-sand", pad, className)}>
+      <div className="flex min-h-8 items-center justify-between gap-3">
+        <h2 className="font-display text-h3 text-ink">{title}</h2>
         {aside}
       </div>
       <div className={compact ? "mt-3" : "mt-4"}>{children}</div>
@@ -54,18 +134,13 @@ const rupees = new Intl.NumberFormat("en-IN", {
   maximumFractionDigits: 0,
 });
 
-/** The deal as the client stated it at intake. Nothing here is inferred. */
-export function DealOnFile({
-  doc,
-  className,
-  compact = false,
-}: {
-  doc: Pick<ClientDocument, "deal" | "tier">;
-  className?: string;
-  compact?: boolean;
-}) {
+/**
+ * The facts of the deal, as the client stated them at intake, in the order they
+ * are read. One list for every place that shows them, so none can drift.
+ */
+export function dealRows(doc: Pick<ClientDocument, "deal" | "tier">): [string, string][] {
   const { deal } = doc;
-  const rows: [string, React.ReactNode][] = [
+  const rows: [string, string][] = [
     ["Parties", `${deal.clientName} · ${deal.counterpartyName}`],
     ["Executed in", deal.stateOfExecution],
     ["Governing law", deal.governingLaw],
@@ -74,21 +149,74 @@ export function DealOnFile({
   rows.push(["Term", termLabel(deal.durationMonths)]);
   if (deal.counterpartyIsMsme) rows.push(["Counterparty", "Registered MSME"]);
   rows.push(["Review", tierLabel(doc.tier)]);
+  return rows;
+}
+
+/** The deal as the client stated it at intake. Nothing here is inferred. */
+export function DealOnFile({
+  doc,
+  className,
+  compact = false,
+  collapsible = false,
+}: {
+  doc: Pick<ClientDocument, "deal" | "tier">;
+  className?: string;
+  compact?: boolean;
+  collapsible?: boolean;
+}) {
+  const { deal } = doc;
+  const calm = useCalm();
+  const rows = dealRows(doc);
 
   return (
-    <ContextPanel title="The deal on file" className={className} compact={compact}>
-      <dl className="grid gap-x-8 gap-y-3 sm:grid-cols-2 xl:grid-cols-4">
+    <ContextPanel
+      title="The deal on file"
+      className={className}
+      compact={compact}
+      collapsible={collapsible}
+      hint="Parties, law, term"
+    >
+      <dl
+        className={
+          calm
+            ? "grid gap-x-6 gap-y-2.5"
+            : "grid grid-cols-2 gap-2"
+        }
+      >
         {rows.map(([term, value]) => (
-          <div key={term} className={term === "Parties" ? "min-w-0 sm:col-span-2 xl:col-span-4" : "min-w-0"}>
-            <dt className="text-label text-muted-fg">{term}</dt>
-            <dd className="mt-0.5 text-body font-medium text-ink">{value}</dd>
+          <div
+            key={term}
+            className={cn(
+              "min-w-0",
+              !calm && "rounded-control bg-surface px-3 py-2.5",
+              !calm && term === "Parties" && "col-span-2",
+            )}
+          >
+            <dt className={calm ? "text-meta text-calm-secondary" : "text-label text-muted-fg"}>{term}</dt>
+            <dd
+              className={cn(
+                "mt-0.5 font-medium",
+                calm ? "text-meta leading-5 text-calm-ink" : "text-body text-ink",
+              )}
+            >
+              {value}
+            </dd>
           </div>
         ))}
       </dl>
       {deal.keyTerms && (
-        <div className={cn("rounded-control bg-paper px-4 py-3", "mt-3")}>
-          <p className="text-label text-muted-fg">Key terms, as you stated them</p>
-          <p className="mt-1 text-body font-medium text-ink">{deal.keyTerms}</p>
+        <div
+          className={cn(
+            "mt-3",
+            calm ? "rounded-calm-control border border-calm-border bg-calm-surface px-3 py-2.5" : "rounded-control bg-surface px-4 py-3",
+          )}
+        >
+          <p className={calm ? "text-meta text-calm-secondary" : "text-meta text-muted-fg"}>
+            Key terms, as you stated them
+          </p>
+          <p className={cn("mt-1 font-medium", calm ? "text-meta leading-5 text-calm-ink" : "text-body text-ink")}>
+            {deal.keyTerms}
+          </p>
         </div>
       )}
     </ContextPanel>
@@ -120,6 +248,12 @@ export function AdvocatePanel({
   className?: string;
 }) {
   const { signOff } = doc;
+  const calm = useCalm();
+  const body = calm ? "text-meta leading-5 text-calm-ink" : "text-meta text-ink";
+  const note = calm ? "text-meta leading-5 text-calm-secondary" : "text-label text-muted-fg";
+  const rows = calm
+    ? "mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1 text-meta leading-5"
+    : "mt-4 grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1.5 text-meta";
 
   return (
     <ContextPanel title="Your advocate" className={className}>
@@ -128,43 +262,43 @@ export function AdvocatePanel({
           <div className="flex items-center gap-3.5">
             <span
               aria-hidden
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-paper font-display text-[17px] text-ink"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface font-display text-body text-ink"
             >
               {initials(signOff.advocate)}
             </span>
             <div className="min-w-0">
               <p className="truncate text-body font-medium text-ink">{signOff.advocate}</p>
-              <p className="text-label text-muted-fg">
+              <p className="text-meta text-muted-fg">
                 Empanelled advocate · <span className="font-mono">{signOff.enrolment}</span>
               </p>
             </div>
           </div>
-          <dl className="mt-4 grid grid-cols-[7.5rem_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-meta">
+          <dl className={rows}>
             {doc.claimedAt && (
               <>
-                <dt className="text-muted-fg">Claimed</dt>
-                <dd className="text-ink">{format(new Date(doc.claimedAt), "d MMM yyyy")}</dd>
+                <dt className={calm ? "text-calm-secondary" : "text-muted-fg"}>Claimed</dt>
+                <dd className={calm ? "text-calm-ink" : "text-ink"}>{format(new Date(doc.claimedAt), "d MMM yyyy")}</dd>
               </>
             )}
-            <dt className="text-muted-fg">Signed off</dt>
-            <dd className="text-ink">{format(new Date(signOff.at), "d MMM yyyy")}</dd>
+            <dt className={calm ? "text-calm-secondary" : "text-muted-fg"}>Signed off</dt>
+            <dd className={calm ? "text-calm-ink" : "text-ink"}>{format(new Date(signOff.at), "d MMM yyyy")}</dd>
           </dl>
         </>
       ) : doc.claimedAt ? (
         <>
-          <p className="text-meta text-ink">
+          <p className={body}>
             An empanelled advocate has claimed this document and holds it alone until sign-off.
           </p>
-          <dl className="mt-4 grid grid-cols-[7.5rem_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-meta">
-            <dt className="text-muted-fg">Claimed</dt>
-            <dd className="text-ink">{format(new Date(doc.claimedAt), "d MMM yyyy")}</dd>
+          <dl className={rows}>
+            <dt className={calm ? "text-calm-secondary" : "text-muted-fg"}>Claimed</dt>
+            <dd className={calm ? "text-calm-ink" : "text-ink"}>{format(new Date(doc.claimedAt), "d MMM yyyy")}</dd>
           </dl>
-          <p className="mt-4 text-label text-muted-fg">
+          <p className={cn("mt-3", note)}>
             Their name and enrolment number are recorded with the sign-off.
           </p>
         </>
       ) : (
-        <p className="text-meta text-muted-fg">
+        <p className={note}>
           No advocate has claimed this document yet. The advocate who does holds it alone,
           and is named with their enrolment number when they sign it off.
         </p>
@@ -261,60 +395,131 @@ export function WhatHappensNext({
   compact = false,
   wide = false,
   footer,
+  collapsible = false,
+  columns = 4,
 }: {
   doc: ClientDocument;
   className?: string;
+  /** Steps per row at lg when wide: 4 for a full-width panel, 2 for a half-width one. */
+  columns?: 2 | 4;
   compact?: boolean;
   /** Steps run left to right in one row at lg and up, for a panel the full width of the page. */
   wide?: boolean;
   /** Further context set under the steps, inside the same panel. */
   footer?: React.ReactNode;
+  collapsible?: boolean;
 }) {
   const stations = stationsFor(doc);
+  const calm = useCalm();
+
+  if (calm) {
+    // One connected track. The heading is kept for assistive technology only:
+    // the status strip above already says "What happens next" once, in view.
+    return (
+      <section aria-labelledby="next-steps-title" className={className}>
+        <h2 id="next-steps-title" className="sr-only">
+          What happens next
+        </h2>
+        <ol
+          className="grid gap-y-5 min-[600px]:grid-cols-[repeat(var(--steps),minmax(0,1fr))] min-[600px]:gap-x-6"
+          style={{ "--steps": stations.length } as React.CSSProperties}
+        >
+          {stations.map((station, i) => (
+            <li
+              key={station.title}
+              className="relative grid grid-cols-[24px_minmax(0,1fr)] gap-x-3 min-[600px]:block"
+            >
+              {i < stations.length - 1 && (
+                <>
+                  <span
+                    aria-hidden
+                    className="absolute bottom-[-20px] left-[11.5px] top-8 w-px bg-calm-border-strong min-[600px]:hidden"
+                  />
+                  <span
+                    aria-hidden
+                    className="absolute left-9 right-[-12px] top-[11.5px] hidden h-px bg-calm-border-strong min-[600px]:block"
+                  />
+                </>
+              )}
+              <span
+                aria-hidden
+                className={cn(
+                  "relative z-10 flex h-6 w-6 items-center justify-center rounded-full text-label font-semibold tabular-nums",
+                  station.current
+                    ? "bg-calm-strong text-white"
+                    : "bg-calm-canvas text-calm-secondary ring-1 ring-inset ring-calm-border-strong",
+                )}
+              >
+                {i + 1}
+              </span>
+              <div className="min-w-0 min-[600px]:mt-3">
+                <p
+                  className={cn(
+                    "flex flex-wrap items-center gap-x-2 gap-y-1 text-meta font-medium leading-6",
+                    station.current ? "text-calm-strong" : "text-calm-ink",
+                  )}
+                >
+                  {station.title}
+                  {station.current && (
+                    <span className="rounded-calm-badge bg-calm-warning-muted px-1.5 py-px text-label font-semibold leading-4 text-ink">
+                      Now
+                    </span>
+                  )}
+                </p>
+                <p className="mt-1 max-w-[30ch] text-meta leading-[1.5] text-calm-secondary">
+                  {station.body}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ol>
+        {footer}
+      </section>
+    );
+  }
 
   return (
-    <ContextPanel title="What happens next" className={className} compact={compact}>
-      <ol className={cn(wide && "lg:grid lg:grid-cols-[repeat(4,minmax(0,1fr))] lg:gap-x-5")}>
+    <ContextPanel
+      title="What happens next"
+      className={className}
+      compact={compact}
+      collapsible={collapsible}
+      hint="All the steps"
+    >
+      <ol
+        className={cn(
+          "grid gap-2.5 sm:grid-cols-2",
+          wide && columns === 4 && "lg:grid-cols-4",
+        )}
+      >
         {stations.map((station, i) => (
           <li
             key={station.title}
             className={cn(
-              "relative grid grid-cols-[1.75rem_minmax(0,1fr)] gap-x-3.5 last:pb-0",
-              compact ? "pb-3.5" : "pb-4",
-              wide && "lg:grid-cols-1 lg:gap-y-3 lg:pb-0",
+              "flex min-w-0 flex-col gap-2 rounded-control bg-surface p-4",
+              station.current && "ring-1 ring-inset ring-ink/20",
             )}
           >
-            {i < stations.length - 1 && (
+            <span className="flex items-center justify-between gap-2">
               <span
                 aria-hidden
                 className={cn(
-                  "absolute bottom-0.5 left-[11px] top-8 w-0.5 rounded-full bg-line",
-                  wide && "lg:bottom-auto lg:left-8 lg:right-2 lg:top-[11px] lg:h-0.5 lg:w-auto",
+                  "flex h-6 w-6 items-center justify-center rounded-full font-mono text-label",
+                  station.current ? "bg-ink text-paper" : "bg-paper text-muted-fg ring-1 ring-inset ring-line",
                 )}
-              />
-            )}
-            <span
-              aria-hidden
-              className={cn(
-                "flex h-6 w-6 items-center justify-center rounded-full font-mono text-label",
-                station.current
-                  ? "bg-ink text-paper"
-                  : "bg-paper text-muted-fg ring-1 ring-inset ring-line",
+              >
+                {i + 1}
+              </span>
+              {station.current && (
+                <span className="rounded-full bg-progress-tint px-2 py-0.5 text-label font-medium text-progress">
+                  Now
+                </span>
               )}
-            >
-              {i + 1}
             </span>
-            <div className="min-w-0 pt-0.5">
-              <p className={cn("text-meta font-medium", station.current ? "text-ink" : "text-ink/80")}>
-                {station.title}
-                {station.current && (
-                  <span className="ml-2 rounded-full bg-paper px-2 py-0.5 text-label font-normal text-muted-fg">
-                    Now
-                  </span>
-                )}
-              </p>
-              <p className="mt-0.5 text-meta leading-[1.45] text-muted-fg">{station.body}</p>
-            </div>
+            <p className={cn("text-meta font-medium", station.current ? "text-ink" : "text-ink/80")}>
+              {station.title}
+            </p>
+            <p className="text-meta leading-[1.45] text-muted-fg">{station.body}</p>
           </li>
         ))}
       </ol>
@@ -347,6 +552,7 @@ export function OnYourDesk({ currentId, className }: { currentId: string; classN
     load();
   }, [load]);
 
+  const calm = useCalm();
   const others = docs.filter((d) => d.id !== currentId);
   const waiting = others.filter((d) => groupOf(d) === "you");
   const withAdvocate = others.filter((d) => groupOf(d) === "advocate").length;
@@ -358,7 +564,7 @@ export function OnYourDesk({ currentId, className }: { currentId: string; classN
       aside={
         <Link
           href="/documents"
-          className="text-label text-ink underline-offset-2 hover:underline"
+          className="link inline-flex min-h-8 items-center text-label"
         >
           All documents
         </Link>
@@ -375,7 +581,7 @@ export function OnYourDesk({ currentId, className }: { currentId: string; classN
           <button
             type="button"
             onClick={load}
-            className="text-ink underline underline-offset-2"
+            className="link"
           >
             Try again
           </button>
@@ -387,28 +593,33 @@ export function OnYourDesk({ currentId, className }: { currentId: string; classN
             ` ${withAdvocate} ${withAdvocate === 1 ? "document is" : "documents are"} with an advocate.`}
         </p>
       ) : (
-        <ul className="space-y-1">
+        <ul className="space-y-2">
           {waiting.map((d) => {
             const move = yourMove(d);
             return (
               <li key={d.id}>
                 <Link
                   href={move?.href ?? `/documents/${d.id}`}
-                  className="group flex items-center gap-3 rounded-control px-3 py-2 transition-colors hover:bg-paper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className={cn(
+                    "group flex items-center gap-3 transition-colors focus-visible:outline-none focus-visible:ring-2",
+                    calm
+                      ? "-mx-2 rounded-calm-control px-2 py-1.5 hover:bg-calm-muted focus-visible:ring-calm-focus"
+                      : "rounded-control bg-surface px-4 py-3 hover:bg-paper focus-visible:ring-accent",
+                  )}
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-meta font-medium text-ink">
+                    <span className={cn("block truncate font-medium", calm ? "text-meta text-calm-ink" : "text-meta text-ink")}>
                       {d.title}
                     </span>
                     {move && (
-                      <span className="block truncate text-label text-muted-fg">
+                      <span className={cn("block truncate", calm ? "text-meta text-calm-secondary" : "text-label text-muted-fg")}>
                         {move.note}
                       </span>
                     )}
                   </span>
                   <Icon
                     name="arrow_forward"
-                    size={18}
+                    size={calm ? 16 : 18}
                     className="text-muted-fg transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
                   />
                 </Link>

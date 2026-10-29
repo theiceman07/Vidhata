@@ -86,7 +86,7 @@ export function UploadContractPanel({
       </div>
 
       {problem && (
-        <p id="upload-problem" role="alert" aria-live="polite" className="text-small text-flagged">
+        <p id="upload-problem" role="alert" aria-live="polite" className="text-small text-ink">
           {problem}
         </p>
       )}

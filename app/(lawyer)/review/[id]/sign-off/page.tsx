@@ -21,6 +21,7 @@ import { signOffBlockers } from "@/lib/findings";
 import { buildAuditTrail } from "@/lib/audit";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import type { ContractDocument, SettlementNote } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -182,24 +183,13 @@ export default function SignOffPage() {
     // What was released to the client, read back from the record, as written.
     const released = (doc.settlementNotes ?? []).filter((n) => n.releasedAt !== null);
     return (
-      <div className="mx-auto w-full max-w-3xl">
-        <Link
-          href="/queue"
-          className="inline-flex items-center gap-0.5 text-meta text-muted-fg transition-colors hover:text-ink"
-        >
-          <Icon name="chevron_left" size={18} />
-          Queue
-        </Link>
-
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <StateLabel state={doc.status} tone="solid" />
-        </div>
-        <h1 className="mt-2 font-display text-h1 text-ink">{doc.title}</h1>
-        <p className="mt-1 text-meta text-muted-fg">
-          {doc.clientName}
-          <span aria-hidden className="mx-1.5 text-muted-fg">·</span>
-          {doc.counterpartyName}
-        </p>
+      <div className="w-full">
+        <PageHeader
+          back={{ fallbackHref: "/queue", label: "Queue" }}
+          title={doc.title}
+          meta={[doc.clientName, doc.counterpartyName]}
+          actions={<StateLabel state={doc.status} variant="solid" />}
+        />
 
         <section className="mt-8 grid items-start gap-6 rounded-card border border-line bg-paper p-5 sm:grid-cols-[minmax(0,1fr)_auto] md:p-6">
           <div className="min-w-0">
@@ -221,7 +211,7 @@ export default function SignOffPage() {
 
         {released.length > 0 && (
           <section className="mt-8">
-            <h2 className="text-label font-medium text-muted-fg">Shared with the client at sign-off</h2>
+            <h2 className="text-body font-medium text-ink">Shared with the client at sign-off</h2>
             <ul className="mt-2 space-y-3">
               {released.map((n) => (
                 <li key={n.id}>
@@ -276,59 +266,59 @@ export default function SignOffPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
-      <Link
-        href={`/review/${doc.id}`}
-        className="inline-flex items-center gap-0.5 text-meta text-muted-fg transition-colors hover:text-ink"
-      >
-        <Icon name="chevron_left" size={18} />
-        Back to the document
-      </Link>
-
-      <p className="mt-4 text-label font-medium text-muted-fg">Sign-off</p>
-      {/* The one display moment on this screen. */}
-      <h1 className="mt-1 font-display text-h1 text-ink">{doc.title}</h1>
-      <p className="mt-1 text-meta text-muted-fg">
-        {doc.clientName}
-        <span aria-hidden className="mx-1.5 text-muted-fg">·</span>
-        {doc.counterpartyName}
-      </p>
-
-      <section className="mt-8 rounded-card border border-line bg-paper p-5">
-        <h2 className="mb-3 text-label font-medium text-muted-fg">What you are signing</h2>
-        <RecordList doc={doc} />
-      </section>
+    <div className="w-full">
+      <PageHeader
+        back={{ fallbackHref: `/review/${doc.id}`, label: "the document" }}
+        eyebrow="Sign-off"
+        title={doc.title}
+        meta={[doc.clientName, doc.counterpartyName]}
+      />
 
       {blockers.length > 0 && (
         // State the fact, then where it is resolved. No document reaches a
         // client without a recorded sign-off, and none is signed off over
-        // an undecided finding.
-        <section className="mt-6">
-          <h2 className="text-label font-medium text-flagged">
-            {plural(blockers.length, "item stands", "items stand")} between this document and sign-off
-          </h2>
-          <ul className="mt-2 divide-y divide-line border-y border-line">
-            {blockers.map((b) => (
-              <li key={b.label}>
-                <Link
-                  href={
-                    b.findingId
-                      ? `/review/${doc.id}?finding=${encodeURIComponent(b.findingId)}`
-                      : `/review/${doc.id}`
-                  }
-                  className="flex items-center justify-between gap-3 py-2.5 text-meta text-ink transition-colors hover:bg-parchment/60"
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <Icon name="error" size={16} className="text-flagged" />
-                    {b.label}
-                  </span>
-                  <Icon name="arrow_forward" size={18} className="text-muted-fg" />
-                </Link>
-              </li>
-            ))}
-          </ul>
+        // an undecided finding. The blockers come from signOffBlockers().
+        <section
+          role="alert"
+          aria-labelledby="blockers-title"
+          className="mt-8 rounded-card bg-blocked-tint p-5 md:p-6"
+        >
+          <div className="flex items-start gap-3">
+            <Icon name="error" size={24} className="mt-0.5 shrink-0 text-ink" />
+            <div className="min-w-0 flex-1">
+              <h2 id="blockers-title" className="text-h3 text-ink">
+                {plural(blockers.length, "item stands", "items stand")} between this document and sign-off
+              </h2>
+              <p className="mt-1 text-meta text-ink">
+                Resolve {blockers.length === 1 ? "it" : "each"} in the document, then come back to sign.
+              </p>
+              <ul className="mt-4 space-y-2">
+                {blockers.map((b) => (
+                  <li key={b.label}>
+                    <Link
+                      href={
+                        b.findingId
+                          ? `/review/${doc.id}?finding=${encodeURIComponent(b.findingId)}`
+                          : `/review/${doc.id}`
+                      }
+                      className="flex items-center justify-between gap-3 rounded-control bg-paper px-4 py-3 text-meta text-ink transition-colors hover:bg-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    >
+                      <span>{b.label}</span>
+                      <Icon name="arrow_forward" size={18} className="text-muted-fg" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </section>
       )}
+
+      <section className="mt-8 rounded-card border border-line bg-paper p-5">
+        <h2 className="mb-3 text-body font-medium text-ink">What you are signing</h2>
+        <RecordList doc={doc} />
+      </section>
+
 
       {/* Only the advocate who holds the document writes notes to its client. */}
       {doc.advocate?.id === CURRENT_ADVOCATE.id && (
@@ -342,7 +332,7 @@ export default function SignOffPage() {
       )}
 
       <section className="mt-8">
-        <h2 className="text-label font-medium text-muted-fg">Confirmations</h2>
+        <h2 className="text-body font-medium text-ink">Confirmations</h2>
         <ul className="mt-2 border-t border-line">
           {CONFIRMATIONS.map((confirmation) => (
             <li

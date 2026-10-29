@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { format } from "date-fns";
 import { AddedByLabel } from "@/components/document/added-by-label";
-import { ContextPanel } from "@/components/domain/document-context";
 import { ErrorState } from "@/components/shared/error-state";
 import { Icon, type IconName } from "@/components/shared/icon";
 import { Label } from "@/components/ui/label";
@@ -23,6 +21,7 @@ import {
   type ClientVersionDiffResult,
 } from "@/lib/clientVersions";
 import { cn } from "@/lib/utils";
+import { wordDiff, type WordPart } from "@/lib/wordDiff";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type {
   ClientClauseRow,
@@ -41,14 +40,15 @@ import type {
  * is one, so no change is told by colour alone.
  */
 
-const CLAUSE_CHANGE: Record<ClientClauseRow["kind"], { word: string; icon: IconName | null }> = {
+const CLAUSE_CHANGE: Record<
+  ClientClauseRow["kind"],
+  { word: string; icon: IconName | null }
+> = {
   changed: { word: "Changed", icon: "edit" },
   added: { word: "Added", icon: "add" },
   removed: { word: "Removed", icon: "remove" },
   unchanged: { word: "Unchanged", icon: null },
 };
-
-const day = (iso: string) => format(new Date(iso), "d MMM yyyy");
 
 type DiffLoad =
   | { phase: "idle" }
@@ -59,9 +59,12 @@ type DiffLoad =
 export function VersionHistory({
   documentId,
   rows,
+  header,
 }: {
   documentId: string;
   rows: ClientVersionList;
+  /** Draws the page's header. */
+  header: () => React.ReactNode;
 }) {
   // The latest two drafts, or nothing when there is nothing earlier to compare.
   const initial = useMemo(() => defaultComparison(rows), [rows]);
@@ -90,7 +93,10 @@ export function VersionHistory({
         if (!current) return;
         setLoad({
           phase: "error",
-          message: err instanceof Error ? err.message : "Could not load this comparison.",
+          message:
+            err instanceof Error
+              ? err.message
+              : "Could not load this comparison.",
         });
       });
     return () => {
@@ -98,73 +104,31 @@ export function VersionHistory({
     };
   }, [documentId, from, to, attempt]);
 
+  const picker = (
+    <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-x-3 rounded-card bg-surface p-4">
+      <DraftPicker id="compare-from" label="From" value={from} otherValue={to} rows={rows} onChange={setFrom} />
+      <span aria-hidden className="flex h-10 items-center text-muted-fg">
+        <Icon name="arrow_forward" size={20} />
+      </span>
+      <DraftPicker id="compare-to" label="To" value={to} otherValue={from} rows={rows} onChange={setTo} />
+    </div>
+  );
+
   if (rows.length === 0) {
     return (
-      <p className="max-w-2xl rounded-card bg-parchment p-6 text-body text-ink">
-        No drafts are recorded yet. A draft is recorded each time it is handed
-        on, so the first appears once the first pass has finished.
-      </p>
+      <>
+        {header()}
+        <p className="max-w-2xl rounded-card bg-parchment p-6 text-body text-ink">
+          No drafts are recorded yet. A draft is recorded each time it is handed
+          on, so the first appears once the first pass has finished.
+        </p>
+      </>
     );
   }
 
   return (
-    <div className="grid gap-x-7 gap-y-6 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
-      {/* Stretches to the foot of the comparison beside it, so the rail is a
-          full-height panel rather than a short one with a gap beneath. */}
-      <ContextPanel title="Drafts" className="lg:self-stretch">
-        {/* A row of drafts to pick from on a narrow screen, a column in the
-            rail from lg up. */}
-        <ol className="-mx-2 flex gap-2 overflow-x-auto lg:block lg:space-y-1 lg:overflow-visible">
-          {rows.map((row) => {
-            // The draft this one is compared from: the one before it, or the
-            // next one when this is the first and there is nothing earlier.
-            // The list is newest first, so the nearest draft is found by number.
-            const earlier = rows
-              .filter((r) => r.number < row.number)
-              .sort((a, b) => b.number - a.number)[0];
-            const later = rows
-              .filter((r) => r.number > row.number)
-              .sort((a, b) => a.number - b.number)[0];
-            const selected = row.number === to;
-            const choose = () => {
-              if (earlier) {
-                setFrom(earlier.number);
-                setTo(row.number);
-              } else if (later) {
-                setFrom(row.number);
-                setTo(later.number);
-              }
-            };
-
-            return (
-              <li key={row.number} className="min-w-[11rem] shrink-0 lg:min-w-0">
-                <button
-                  type="button"
-                  onClick={choose}
-                  disabled={rows.length < 2}
-                  aria-pressed={selected}
-                  className={cn(
-                    "block w-full rounded-control border-l-2 px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-                    selected
-                      ? "border-ink bg-paper"
-                      : "border-transparent hover:bg-paper/60 disabled:hover:bg-transparent",
-                  )}
-                >
-                  <span className="block text-body font-medium text-ink">{row.label}</span>
-                  <span className="mt-0.5 block text-small text-muted-fg">
-                    {row.madeBy} · {day(row.createdAt)}
-                  </span>
-                  <span className="mt-0.5 block text-small tabular-nums text-muted-fg">
-                    {row.clauseCount} {row.clauseCount === 1 ? "clause" : "clauses"} ·{" "}
-                    {row.findingCount} {row.findingCount === 1 ? "finding" : "findings"}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ol>
-      </ContextPanel>
-
+    <>
+      {header()}
       <div className="min-w-0">
         {rows.length === 1 ? (
           <p className="max-w-2xl rounded-card bg-parchment p-6 text-body text-ink">
@@ -173,35 +137,10 @@ export function VersionHistory({
           </p>
         ) : (
           <>
-            {/* One toolbar: the two drafts chosen and what comparing them
-                found, on a single baseline. The count sits beside the
-                selectors rather than at the far edge, because it belongs
-                to them. */}
-            <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
-              <DraftPicker
-                id="compare-from"
-                label="From"
-                value={from}
-                otherValue={to}
-                rows={rows}
-                onChange={setFrom}
-              />
-              <DraftPicker
-                id="compare-to"
-                label="To"
-                value={to}
-                otherValue={from}
-                rows={rows}
-                onChange={setTo}
-              />
-              {load.phase === "loaded" && load.result.ok && (
-                <p className="flex h-10 items-center pl-2 text-meta tabular-nums text-muted-fg">
-                  {comparisonSummary(load.result.diff)}
-                </p>
+            <div className="mt-4" aria-live="polite">
+              {!(load.phase === "loaded" && load.result.ok) && (
+                <div className="mb-4 max-w-md">{picker}</div>
               )}
-            </div>
-
-            <div className="mt-6" aria-live="polite">
               {load.phase === "loading" ? (
                 <div className="space-y-4" aria-busy="true">
                   <Skeleton className="h-8 w-1/2" />
@@ -209,12 +148,17 @@ export function VersionHistory({
                   <Skeleton className="h-24 w-full rounded-card" />
                 </div>
               ) : load.phase === "error" ? (
-                <ErrorState message={load.message} onRetry={() => setAttempt((n) => n + 1)} />
+                <ErrorState
+                  message={load.message}
+                  onRetry={() => setAttempt((n) => n + 1)}
+                />
               ) : load.phase === "loaded" && load.result.ok ? (
-                <DiffView diff={load.result.diff} />
+                <DiffView diff={load.result.diff} picker={picker} />
               ) : (
                 <p className="max-w-2xl rounded-card bg-parchment p-6 text-body text-ink">
-                  {load.phase === "loaded" && !load.result.ok && load.result.reason === "same_draft"
+                  {load.phase === "loaded" &&
+                  !load.result.ok &&
+                  load.result.reason === "same_draft"
                     ? "Choose two different drafts to compare."
                     : "Choose the two drafts to compare."}
                 </p>
@@ -223,7 +167,7 @@ export function VersionHistory({
           </>
         )}
       </div>
-    </div>
+    </>
   );
 }
 
@@ -243,7 +187,7 @@ function DraftPicker({
   onChange: (n: number) => void;
 }) {
   return (
-    <div className="w-60">
+    <div className="min-w-0">
       <Label htmlFor={id}>{label}</Label>
       <Select
         value={value === null ? undefined : String(value)}
@@ -256,7 +200,11 @@ function DraftPicker({
           {rows.map((row) => (
             // The draft already chosen on the other side cannot be chosen
             // here, so a draft is never compared with itself.
-            <SelectItem key={row.number} value={String(row.number)} disabled={row.number === otherValue}>
+            <SelectItem
+              key={row.number}
+              value={String(row.number)}
+              disabled={row.number === otherValue}
+            >
               {row.label}
             </SelectItem>
           ))}
@@ -269,7 +217,7 @@ function DraftPicker({
 function ChangeWord({ kind }: { kind: ClientClauseRow["kind"] }) {
   const { word, icon } = CLAUSE_CHANGE[kind];
   return (
-    <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-line bg-paper px-2.5 py-0.5 text-small font-medium text-ink">
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-line bg-paper px-2.5 py-0.5 text-label font-medium text-ink">
       {icon && <Icon name={icon} size={16} />}
       {word}
     </span>
@@ -292,135 +240,222 @@ function plural(n: number, one: string, many: string) {
   return `${n} ${n === 1 ? one : many}`;
 }
 
-/** "9 clauses compared · 1 changed", over every clause, shown or only counted. */
-function comparisonSummary(diff: ClientDiff): string {
-  const o = diff.otherClauses;
-  const total = diff.clauses.length + o.added + o.removed + o.changed + o.unchanged;
-  const changed =
-    diff.clauses.filter((c) => c.kind !== "unchanged").length + o.added + o.removed + o.changed;
-  return `${plural(total, "clause", "clauses")} compared · ${changed} changed`;
-}
-
-function DiffView({ diff }: { diff: ClientDiff }) {
-  const shown = diff.clauses.filter((c) => c.kind !== "unchanged" || !diff.signedOff);
-  const quiet = diff.clauses.filter((c) => c.kind === "unchanged" && diff.signedOff);
+function DiffView({ diff, picker }: { diff: ClientDiff; picker: React.ReactNode }) {
+  const shown = diff.clauses.filter(
+    (c) => c.kind !== "unchanged" || !diff.signedOff,
+  );
+  const quiet = diff.clauses.filter(
+    (c) => c.kind === "unchanged" && diff.signedOff,
+  );
   const others = diff.otherClauses;
-  const otherCount = others.added + others.removed + others.changed + others.unchanged;
+  const otherCount =
+    others.added + others.removed + others.changed + others.unchanged;
+  const total = diff.clauses.length + otherCount;
+  const changed =
+    diff.clauses.filter((c) => c.kind !== "unchanged").length +
+    others.added +
+    others.removed +
+    others.changed;
+  const stats: { label: string; value: number }[] = [
+    { label: "Clauses compared", value: total },
+    { label: "Changed", value: changed },
+    ...findingFigures(diff).map((f) => ({
+      label: `Findings: ${f.label.toLowerCase()}`,
+      value: Number(f.value),
+    })),
+  ];
 
   return (
-    <section aria-labelledby="diff-title" className="space-y-6">
-      {/* One summary surface: which drafts, the three finding counts, and
-          what is and is not shown of the clauses. */}
-      <div className="rounded-card bg-parchment p-5">
-        <h2 id="diff-title" className="font-display text-[21px] font-medium leading-[1.2] text-ink">
-          {diff.fromLabel} to {diff.toLabel}
-        </h2>
-        <dl className="mt-3 flex flex-wrap gap-2">
-          {findingFigures(diff).map((figure) => (
-            <div
-              key={figure.label}
-              className="flex min-w-[8.5rem] items-baseline gap-2.5 rounded-control bg-paper px-4 py-2.5"
-            >
-              <dd className="font-display text-h3 tabular-nums text-ink">{figure.value}</dd>
-              <dt className="text-meta text-muted-fg">{figure.label}</dt>
+    <section aria-labelledby="diff-title" className="space-y-4">
+      <h2 id="diff-title" className="sr-only">
+        {diff.fromLabel} to {diff.toLabel}
+      </h2>
+
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
+        {picker}
+        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {stats.map((stat) => (
+            <div key={stat.label} className="flex flex-col justify-between gap-3 rounded-card bg-surface p-4">
+              <dd
+                className={cn(
+                  "font-display text-h1 leading-none tabular-nums",
+                  stat.value === 0 ? "text-muted-fg" : "text-ink",
+                )}
+              >
+                {stat.value}
+              </dd>
+              <dt className="text-label leading-4 text-muted-fg">{stat.label}</dt>
             </div>
           ))}
         </dl>
-        {(!diff.signedOff || otherCount > 0) && (
-          <p className="mt-3 max-w-measure text-meta text-muted-fg">
-            {otherCount > 0 && (
-              <>
-                <span className="font-medium text-ink">
-                  {[
-                    others.changed > 0 &&
-                      `${plural(others.changed, "other clause", "other clauses")} changed`,
-                    others.added > 0 && `${plural(others.added, "clause", "clauses")} added`,
-                    others.removed > 0 && `${plural(others.removed, "clause", "clauses")} removed`,
-                    `${others.unchanged} unchanged`,
-                  ]
-                    .filter(Boolean)
-                    .join(", ")}
-                </span>
-                {diff.signedOff
-                  ? ". Their wording is not shown."
-                  : ". Until this document is signed off you see the wording only of the clauses your advocate has asked you about."}
-              </>
-            )}
-            {otherCount === 0 &&
-              !diff.signedOff &&
-              "Until this document is signed off you see the wording only of the clauses your advocate has asked you about. Every other clause is only counted."}
-          </p>
-        )}
       </div>
 
-      <div>
-        <h3 className="text-meta font-medium text-ink">Clauses</h3>
-        <div className="mt-3 space-y-3">
-          {/* What changed first, then what did not. */}
-          {[...shown]
-            .sort((a, b) => Number(a.kind === "unchanged") - Number(b.kind === "unchanged"))
-            .map((clause) => (
-              <ClauseDiff key={clause.number} clause={clause} diff={diff} />
-            ))}
+      <p className="max-w-3xl text-label leading-5 text-muted-fg">
+        {otherCount > 0 && (
+          <>
+            <span className="font-medium text-ink">
+              {[
+                others.changed > 0 &&
+                  `${plural(others.changed, "other clause", "other clauses")} changed`,
+                others.added > 0 &&
+                  `${plural(others.added, "clause", "clauses")} added`,
+                others.removed > 0 &&
+                  `${plural(others.removed, "clause", "clauses")} removed`,
+                `${others.unchanged} unchanged`,
+              ]
+                .filter(Boolean)
+                .join(", ")}
+            </span>
+            {diff.signedOff
+              ? ". Their wording is not shown. "
+              : ". Until this document is signed off you see the wording only of the clauses your advocate has asked you about. "}
+          </>
+        )}
+        {otherCount === 0 &&
+          !diff.signedOff &&
+          "Until this document is signed off you see the wording only of the clauses your advocate has asked you about. Every other clause is only counted. "}
+        New means first raised in the later draft; it may already be decided.
+      </p>
 
-          {shown.length === 0 && otherCount === 0 && (
-            <p className="rounded-card bg-parchment p-5 text-meta text-ink">
-              Neither draft has any clauses to compare.
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="min-w-0">
+          <h3 className="flex items-baseline gap-2 font-display text-h3 text-ink">
+            Clauses
+            <span className="font-sans text-meta text-muted-fg">{shown.length}</span>
+          </h3>
+          <div className="mt-3 space-y-3">
+            {/* What changed first, then what did not. */}
+            {[...shown]
+              .sort(
+                (a, b) =>
+                  Number(a.kind === "unchanged") -
+                  Number(b.kind === "unchanged"),
+              )
+              .map((clause) => (
+                <ClauseDiff key={clause.number} clause={clause} diff={diff} />
+              ))}
+
+            {shown.length === 0 && otherCount === 0 && (
+              <p className="rounded-card bg-surface p-5 text-meta text-ink">
+                Neither draft has any clauses to compare.
+              </p>
+            )}
+          </div>
+
+          {quiet.length > 0 && <UnchangedList clauses={quiet} />}
+        </div>
+
+        <div className="min-w-0">
+          <h3 className="flex items-baseline gap-2 font-display text-h3 text-ink">
+            Findings
+            <span className="font-sans text-meta text-muted-fg">{diff.findingRows.length}</span>
+          </h3>
+          {diff.findingRows.length > 0 ? (
+            <ul className="mt-3 space-y-3">
+              {diff.findingRows.map((finding) => (
+                <FindingChange
+                  key={`${finding.number}-${finding.clauseReference}`}
+                  finding={finding}
+                />
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-3 rounded-card bg-surface p-5 text-meta text-ink">
+              {diff.signedOff
+                ? "Neither draft has any findings."
+                : "No finding behind a request to you changed between these drafts."}
             </p>
           )}
         </div>
-
-        {quiet.length > 0 && (
-          <p className="mt-4 max-w-measure text-meta text-muted-fg">
-            <span className="font-medium text-ink">Unchanged:</span>{" "}
-            {quiet.map((c) => `${c.number} ${c.heading}`).join(" · ")}
-          </p>
-        )}
-
-      </div>
-
-      <div>
-        <h3 className="text-meta font-medium text-ink">Findings</h3>
-        {diff.findingRows.length > 0 ? (
-          <ul className="mt-3 space-y-2">
-            {diff.findingRows.map((finding) => (
-              <FindingChange key={`${finding.number}-${finding.clauseReference}`} finding={finding} />
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-3 max-w-measure rounded-control bg-parchment px-4 py-3 text-meta text-ink">
-            {diff.signedOff
-              ? "Neither draft has any findings."
-              : "No finding behind a request to you changed between these drafts."}
-          </p>
-        )}
       </div>
     </section>
   );
 }
 
-function ClauseDiff({ clause, diff }: { clause: ClientClauseRow; diff: ClientDiff }) {
+/** The clauses that did not change, counted, with their names one press away. */
+function UnchangedList({ clauses }: { clauses: ClientClauseRow[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-4 text-meta text-muted-fg">
+      <p className="flex flex-wrap items-center gap-x-3">
+        <span className="font-medium text-ink">
+          {plural(clauses.length, "unchanged clause", "unchanged clauses")}
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-controls="unchanged-clauses"
+          className="link inline-flex min-h-6 items-center rounded-control text-label focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          {open ? "Hide" : "Show"}
+        </button>
+      </p>
+      {open && (
+        <ul
+          id="unchanged-clauses"
+          className="mt-2 grid gap-x-8 gap-y-1 sm:grid-cols-2"
+        >
+          {clauses.map((c) => (
+            <li key={c.number}>
+              <span className="font-mono">{c.number}</span> {c.heading}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function ClauseDiff({
+  clause,
+  diff,
+}: {
+  clause: ClientClauseRow;
+  diff: ClientDiff;
+}) {
   const quiet = clause.kind === "unchanged";
+  // Both sides are in full; only the words that differ are marked, so the clause keeps its context.
+  const words =
+    clause.kind === "changed" && clause.before !== null && clause.after !== null
+      ? wordDiff(clause.before, clause.after)
+      : undefined;
 
   return (
     // A changed clause is a full parchment sheet; an unchanged one is set back,
     // half the tint and its wording muted, so what moved reads first.
-    <article className={cn("rounded-card", quiet ? "bg-parchment/50 p-4" : "bg-parchment p-5")}>
-      <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <span className="font-mono text-label text-muted-fg">Clause {clause.number}</span>
-        <h4 className="text-meta font-medium text-ink">{clause.heading}</h4>
-        <ChangeWord kind={clause.kind} />
+    <article
+      className={cn(
+        "rounded-card",
+        quiet ? "bg-surface/60 p-4" : "bg-surface p-5",
+      )}
+    >
+      <header className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <h4 className="font-display text-h3 text-ink">{clause.heading}</h4>
+        <span className="text-label tabular-nums text-muted-fg">Clause {clause.number}</span>
+        <span className="ml-auto">
+          <ChangeWord kind={clause.kind} />
+        </span>
       </header>
 
       {clause.kind === "unchanged" ? (
-        <div className="mt-2 max-w-measure font-clause text-body text-muted-fg">
+        <div className="mt-2 max-w-3xl font-clause text-meta leading-6 text-muted-fg">
           <Paragraphs text={clause.after ?? ""} />
-          <p className="mt-2 font-sans text-small text-muted-fg">The same in both drafts.</p>
         </div>
       ) : (
         <div className="mt-3 grid gap-4 md:grid-cols-2">
-          <DraftText label={diff.fromLabel} text={clause.before} absent="Not in this draft" />
-          <DraftText label={diff.toLabel} text={clause.after} absent="Not in this draft" />
+          <DraftText
+            label={diff.fromLabel}
+            text={clause.before}
+            absent="Not in this draft"
+            parts={words?.before}
+          />
+          <DraftText
+            label={diff.toLabel}
+            text={clause.after}
+            absent="Not in this draft"
+            parts={words?.after}
+          />
         </div>
       )}
     </article>
@@ -431,10 +466,13 @@ function DraftText({
   label,
   text,
   absent,
+  parts,
 }: {
   label: string;
   text: string | null;
   absent: string;
+  /** The text split into words, with the ones that differ marked. */
+  parts?: WordPart[];
 }) {
   return (
     <div className="min-w-0 rounded-control bg-paper p-4">
@@ -443,29 +481,91 @@ function DraftText({
         <p className="mt-2 text-meta text-muted-fg">{absent}</p>
       ) : (
         <div className="mt-2 font-clause text-body text-ink">
-          <Paragraphs text={text} />
+          {parts ? <MarkedText parts={parts} /> : <Paragraphs text={text} />}
         </div>
       )}
     </div>
   );
 }
 
+/** Words that differ are marked by more than colour: struck through when lost, ruled beneath when gained. */
+function MarkedText({ parts }: { parts: WordPart[] }) {
+  return (
+    <p className="whitespace-pre-line">
+      {parts.map((part, i) =>
+        part.kind === "removed" ? (
+          <del key={i} className="rounded-sm bg-blocked-tint line-through">
+            {part.text}
+          </del>
+        ) : part.kind === "added" ? (
+          <ins
+            key={i}
+            className="rounded-sm border-b-2 border-brand bg-brand-tint no-underline"
+          >
+            {part.text}
+          </ins>
+        ) : (
+          <span key={i}>{part.text}</span>
+        ),
+      )}
+    </p>
+  );
+}
+
+const DISPOSITION_MEANING: Record<string, string> = {
+  confirmed: "The advocate confirmed the concern was real.",
+  overridden: "The advocate decided the concern did not apply.",
+};
+
 function FindingChange({ finding }: { finding: ClientFindingRow }) {
   return (
-    <li className="rounded-control bg-parchment px-4 py-3">
-      <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="font-mono text-small text-muted-fg">
-          Finding {finding.number} · {finding.clauseReference}
+    <li className="rounded-card bg-surface p-4">
+      <p className="text-body font-medium text-ink">
+        Finding {finding.number}
+        <span className="text-meta font-normal text-muted-fg">
+          {" "}
+          · {finding.clauseReference}
         </span>
-        <span className="text-meta font-medium text-ink">{finding.change}</span>
-        {finding.advocateAdded && <AddedByLabel />}
       </p>
       {finding.description && (
-        <p className="mt-1 max-w-measure text-meta text-ink">{finding.description}</p>
+        <p className="mt-1.5 text-meta text-muted-fg">{finding.description}</p>
       )}
-      {finding.disposition && (
-        <p className="mt-1 text-small text-muted-fg">{dispositionText(finding.disposition)}</p>
-      )}
+      {/* Three different things, said apart and in the same place on every card: what changed in this draft, who raised it, and what the advocate decided. */}
+      <dl className="mt-3 space-y-2.5 rounded-control bg-paper p-3.5 text-meta">
+        <div className="flex items-baseline justify-between gap-4">
+          <dt className="text-label text-muted-fg">Change</dt>
+          <dd className="font-medium text-ink">{finding.change}</dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-4">
+          <dt className="text-label text-muted-fg">Source</dt>
+          <dd>
+            {finding.advocateAdded ? (
+              <AddedByLabel />
+            ) : (
+              <span className="text-ink">Not stated</span>
+            )}
+          </dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-4">
+          <dt className="shrink-0 text-label text-muted-fg">Advocate&apos;s decision</dt>
+          <dd className="min-w-0 text-right text-ink">
+            {finding.disposition ? (
+              <>
+                <span className="font-medium">
+                  {dispositionText(finding.disposition)}
+                </span>
+                {DISPOSITION_MEANING[finding.disposition] && (
+                  <span className="mt-0.5 block text-muted-fg">
+                    {DISPOSITION_MEANING[finding.disposition]}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="text-muted-fg">None yet</span>
+            )}
+          </dd>
+        </div>
+      </dl>
     </li>
   );
 }

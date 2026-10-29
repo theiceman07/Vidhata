@@ -6,6 +6,8 @@ import Link from "next/link";
 import { differenceInCalendarDays, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/shared/icon";
+import { TextLink } from "@/components/shared/text-link";
+import { Tick } from "@/components/shared/tick";
 import { toast } from "sonner";
 import { ClaimDialog } from "@/components/domain/claim-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -30,6 +32,7 @@ import {
 } from "@/lib/findings";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import { PIPELINE_LAYERS, type ContractDocument } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 type LoadState = "loading" | "error" | "loaded";
 type Filter = "open" | "mine" | "unclaimed" | "client" | "settled";
@@ -195,8 +198,8 @@ export default function QueuePage() {
       <div className="w-full">
         <Skeleton className="h-4 w-48" />
         <Skeleton className="mt-3 h-10 w-72" />
-        <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => (
+        <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-3">
+          {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-28 rounded-card" />
           ))}
         </div>
@@ -271,50 +274,50 @@ export default function QueuePage() {
 
   return (
     <div className="w-full">
-      <header className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
-        <div className="min-w-0">
-          <p className="text-meta text-muted-fg">
+      <PageHeader
+        eyebrow={
+          <>
             {CURRENT_ADVOCATE.name}
             <span className="mx-1.5 text-muted-fg/50">·</span>
             <span className="font-mono">{CURRENT_ADVOCATE.bar}</span>
-          </p>
-          {/* The one display moment on this screen. */}
-          <h1 className="mt-1 font-display text-h1 text-ink">
+          </>
+        }
+        title={
+          <>
             {greeting()}, {firstName}
-          </h1>
-          <p className="mt-2 text-lead text-muted-fg">
-            {buckets.unclaimed.length > 0
-              ? `${buckets.unclaimed.length} ${buckets.unclaimed.length === 1 ? "document is" : "documents are"} waiting for an advocate. Oldest open document: ${oldest} ${oldest === 1 ? "day" : "days"}.`
-              : buckets.mine.length > 0
-                ? `${buckets.mine.length} ${buckets.mine.length === 1 ? "review is" : "reviews are"} in your hands.`
-                : "The queue is clear."}
-          </p>
-        </div>
-
-        <Link
-          href="/profile"
-          className={cn(
-            "inline-flex items-center gap-2 rounded-full px-4 py-2 text-meta transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-            available
-              ? "bg-parchment text-ink hover:bg-parchment/70"
-              : "bg-caution/15 text-caution-fg hover:bg-caution/25",
-          )}
-        >
-          <span
-            aria-hidden
-            className={cn("h-2 w-2 rounded-full", available ? "bg-verified" : "bg-caution")}
-          />
-          {available ? "Available for new claims" : "Unavailable for new claims"}
-          <Icon name="chevron_right" size={18} className="text-muted-fg" />
-        </Link>
-      </header>
+          </>
+        }
+        description={
+          buckets.unclaimed.length > 0
+            ? `${buckets.unclaimed.length} ${buckets.unclaimed.length === 1 ? "document is" : "documents are"} waiting for an advocate. Oldest open document: ${oldest} ${oldest === 1 ? "day" : "days"}.`
+            : buckets.mine.length > 0
+              ? `${buckets.mine.length} ${buckets.mine.length === 1 ? "review is" : "reviews are"} in your hands.`
+              : "The queue is clear."
+        }
+        actions={
+          <Link
+            href="/profile"
+            className={cn(
+              "inline-flex items-center gap-2 rounded-full px-4 py-2 text-meta transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+              available
+                ? "bg-sand text-ink hover:bg-sand/70"
+                : "bg-sand text-muted hover:bg-sand/70",
+            )}
+          >
+            <span
+              aria-hidden
+              className={cn("h-2 w-2 rounded-full", available ? "bg-done" : "bg-muted")}
+            />
+            {available ? "Available for new claims" : "Unavailable for new claims"}
+            <Icon name="chevron_right" size={18} className="text-muted-fg" />
+          </Link>
+        }
+      />
 
       {!available && (
-        <p className="mt-6 border-l-2 border-caution pl-3 text-meta text-ink">
+        <p className="mt-6 border-l-2 border-muted pl-3 text-meta text-ink">
           You are marked unavailable, so you cannot claim new documents.{" "}
-          <Link href="/profile" className="text-accent underline underline-offset-2">
-            Change this in your profile
-          </Link>
+          <TextLink href="/profile">Change this in your profile</TextLink>
           .
         </p>
       )}
@@ -339,9 +342,9 @@ export default function QueuePage() {
           value={undecided}
           note={
             undecided > 0 ? (
-              <span className="inline-flex items-center gap-2">
+              <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <SeverityCounts labelled counts={severityCounts(openFindings)} />
-                <span>across open documents</span>
+                <span className="whitespace-nowrap">across open documents</span>
               </span>
             ) : (
               "Every finding decided"
@@ -363,8 +366,8 @@ export default function QueuePage() {
 
       {/* The working table takes the full width; the reading of the
           queue sits beneath it in three even columns. */}
-      <div id="queue-table" className="mt-10 min-w-0 scroll-mt-6">
-      <div className="flex flex-col gap-3">
+      <div id="queue-table" className="mt-6 min-w-0 scroll-mt-6">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div role="group" aria-label="Filter the queue" className="flex flex-wrap gap-1">
           {FILTERS.map((f) => (
             <button
@@ -393,7 +396,7 @@ export default function QueuePage() {
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
           <label className="relative flex min-w-[14rem] flex-1 items-center sm:max-w-md">
             <span className="sr-only">Search the queue</span>
             <Icon
@@ -446,7 +449,7 @@ export default function QueuePage() {
           <div
             role="row"
             className={cn(
-              "hidden gap-x-6 px-6 pb-1 pt-2 text-meta font-medium text-ink lg:grid",
+              "hidden gap-x-6 px-6 pb-1 pt-2 text-label text-muted-fg lg:grid",
               COLUMNS,
             )}
           >
@@ -467,7 +470,7 @@ export default function QueuePage() {
       )}
       </div>
 
-      <div className="mt-10 grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-10 grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
         <YourDesk
           mine={buckets.mine}
           client={buckets.client}
@@ -504,17 +507,15 @@ function Figure({
   label,
   value,
   note,
-  tone,
   onSelect,
 }: {
   label: string;
   value: number;
   note: React.ReactNode;
-  tone?: "flagged";
   onSelect: () => void;
 }) {
   return (
-    <div className="group relative flex flex-col gap-1.5 rounded-card bg-parchment px-5 py-4 transition-colors hover:bg-parchment/70">
+    <div className="group relative flex flex-col gap-2 rounded-card bg-parchment p-6 transition-colors hover:bg-parchment/70">
       <dt className="flex items-center justify-between gap-2 text-meta font-medium text-ink">
         <button
           type="button"
@@ -529,16 +530,13 @@ function Figure({
           className="text-muted-fg opacity-0 transition-opacity group-hover:opacity-100 motion-reduce:transition-none"
         />
       </dt>
-      <dd>
+      <dd className="flex flex-1 flex-col">
         <span
-          className={cn(
-            "block font-mono text-h2 leading-none tabular-nums",
-            tone === "flagged" ? "text-flagged" : "text-ink",
-          )}
+          className="block font-mono text-h2 leading-none tabular-nums text-ink"
         >
           {value}
         </span>
-        <span className="mt-2 block truncate text-meta text-muted-fg">{note}</span>
+        <span className="mt-2 block text-meta text-muted-fg">{note}</span>
       </dd>
     </div>
   );
@@ -591,7 +589,7 @@ function UpNext({
   return (
     <section
       aria-label="Up next"
-      className="flex flex-col gap-4 rounded-modal bg-parchment p-5 md:p-6"
+      className="flex flex-col gap-4 rounded-modal bg-parchment p-6"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-meta font-medium text-ink">
@@ -620,7 +618,7 @@ function UpNext({
       <div className="min-w-0">
         <Link
           href={`/review/${doc.id}`}
-          className="font-display text-h2 text-ink hover:underline"
+          className="font-display text-h2 text-ink hover:text-brand"
         >
           {doc.title}
         </Link>
@@ -638,7 +636,7 @@ function UpNext({
       </div>
 
       {shown.length > 0 ? (
-        <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(18rem,1fr))]">
           {shown.map((finding) => (
             <li key={finding.findingId} className="flex min-w-0 flex-col rounded-card bg-paper p-4">
               <div className="flex items-center justify-between gap-2">
@@ -647,7 +645,7 @@ function UpNext({
                   {finding.clauseReference}
                 </span>
               </div>
-              <p className="mt-2 text-meta text-ink">{finding.description}</p>
+              <p className="mt-2 line-clamp-3 text-meta text-ink">{finding.description}</p>
               <p className="mt-auto truncate pt-3 text-meta text-muted-fg">
                 {finding.source === "advocate"
                   ? "Added by advocate"
@@ -664,7 +662,7 @@ function UpNext({
 
       <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-2">
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-meta">
-          <span className="text-ink">
+          <span className="font-medium text-ink">
             {pending.length} undecided {pending.length === 1 ? "finding" : "findings"}
             {pending.length > shown.length && ` · ${pending.length - shown.length} more inside`}
           </span>
@@ -741,7 +739,7 @@ function YourDesk({
               <span className="w-8 shrink-0 text-right font-mono text-h3 tabular-nums text-ink">{line.value}</span>
               <span className="min-w-0 flex-1">
                 <span className="block text-meta text-ink">{line.label}</span>
-                <span className="block truncate text-label text-muted-fg">{line.note}</span>
+                <span className="block truncate text-meta text-muted-fg">{line.note}</span>
               </span>
               <Icon
                 name="chevron_right"
@@ -775,14 +773,14 @@ function TierMix({ docs }: { docs: ContractDocument[] }) {
   const severities: { key: keyof typeof findings; label: string; fill: string }[] = [
     { key: "critical", label: "Critical", fill: "bg-ink" },
     { key: "high", label: "High", fill: "bg-flagged" },
-    { key: "medium", label: "Medium", fill: "bg-caution" },
+    { key: "medium", label: "Medium", fill: "bg-blocked/50" },
     { key: "low", label: "Low", fill: "bg-muted-fg" },
   ];
   const maxFinding = Math.max(1, findings.critical + findings.high + findings.medium + findings.low);
 
   return (
     <SidePanel title="Shape of the queue">
-      <p className="text-label text-muted-fg">Open work by tier, in the order it is offered</p>
+      <p className="text-meta text-muted-fg">Open work by tier, in the order it is offered</p>
       <ul className="mt-2 space-y-2">
         {counts.map((c) => (
           <li key={c.tier} className="grid grid-cols-[6.5rem_minmax(0,1fr)_1.5rem] items-center gap-3">
@@ -798,7 +796,7 @@ function TierMix({ docs }: { docs: ContractDocument[] }) {
         ))}
       </ul>
 
-      <p className="mt-4 text-label text-muted-fg">Undecided findings by severity</p>
+      <p className="mt-4 text-meta text-muted-fg">Undecided findings by severity</p>
       <ul className="mt-2 space-y-2">
         {severities.map((s) => (
           <li key={s.key} className="grid grid-cols-[6.5rem_minmax(0,1fr)_1.5rem] items-center gap-3">
@@ -833,7 +831,7 @@ function SignedOffByYou({ docs, onShow }: { docs: ContractDocument[]; onShow: ()
           <button
             type="button"
             onClick={onShow}
-            className="text-label text-ink underline-offset-2 hover:underline"
+            className="link inline-flex min-h-8 items-center text-label"
           >
             All {docs.length}
           </button>
@@ -853,7 +851,7 @@ function SignedOffByYou({ docs, onShow }: { docs: ContractDocument[]; onShow: ()
                 href={`/review/${doc.id}`}
                 className="flex items-center gap-3 rounded-control bg-paper px-4 py-3 transition-colors hover:bg-paper/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
-                <Icon name="check_circle" size={18} className="text-accent" />
+                <Tick state="done" size="sm" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-meta text-ink">{doc.title}</span>
                   <span className="block truncate text-meta text-muted-fg">
@@ -862,7 +860,7 @@ function SignedOffByYou({ docs, onShow }: { docs: ContractDocument[]; onShow: ()
                       : "Signed off"}
                   </span>
                 </span>
-                <span className="shrink-0 text-meta text-ink">View document</span>
+                <span className="shrink-0 text-meta text-muted-fg">View document</span>
               </Link>
             </li>
           ))}
@@ -935,7 +933,7 @@ function QueueRow({ doc, action }: { doc: ContractDocument; action: React.ReactN
       <div role="cell" className="min-w-0">
         <Link
           href={`/review/${doc.id}`}
-          className="line-clamp-2 font-display text-h3 text-ink hover:underline"
+          className="line-clamp-2 font-display text-h3 text-ink hover:text-brand"
         >
           {doc.title}
         </Link>

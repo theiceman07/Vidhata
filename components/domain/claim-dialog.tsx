@@ -81,7 +81,7 @@ export function ClaimDialog({
             </p>
             <p className="text-muted-fg">
               If the entry is a mistake, correct it in your{" "}
-              <Link href="/profile" className="text-ink underline underline-offset-2">
+              <Link href="/profile" className="link">
                 declared conflicts
               </Link>
               .
@@ -102,7 +102,7 @@ export function ClaimDialog({
                 {doc.counterpartyName}.
               </label>
             </div>
-            <p className="pl-7 text-label text-muted-fg">
+            <p className="pl-7 text-meta text-muted-fg">
               Your declaration is recorded with the claim.
             </p>
           </div>

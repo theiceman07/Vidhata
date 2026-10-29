@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { BackButton } from "@/components/shared/back-button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { SummaryView } from "@/components/domain/summary-view";
@@ -11,12 +10,17 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getClientSummary } from "@/lib/api/client/delivery";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
-import type { SummaryResult } from "@/lib/types";
+import type { DocumentStatus, SummaryResult } from "@/lib/types";
+import { StateLabel } from "@/components/document/state-label";
+import { documentIdentity } from "@/lib/documentTitle";
+import { PageHeader } from "@/components/shared/page-header";
+import { DocumentTabs } from "@/components/document/document-tabs";
+import { PageSkeleton } from "@/components/shared/page-skeleton";
 
 type Load =
   | { phase: "loading" }
   | { phase: "error"; message: string }
-  | { phase: "loaded"; title: string | null; result: SummaryResult };
+  | { phase: "loaded"; title: string | null; status: DocumentStatus | null; result: SummaryResult };
 
 /**
  * A one-page summary of the settled document's key terms.
@@ -34,8 +38,8 @@ export default function SummaryPage() {
     setLoad({ phase: "loading" });
     try {
       // The call owns the gate, and gives the title only once the summary is the client's to read.
-      const { title, result } = await getClientSummary(MOCK_CLIENT_ORG.id, params.id);
-      setLoad({ phase: "loaded", title, result });
+      const { title, status, result } = await getClientSummary(MOCK_CLIENT_ORG.id, params.id);
+      setLoad({ phase: "loaded", title, status, result });
     } catch (err) {
       setLoad({
         phase: "error",
@@ -50,11 +54,9 @@ export default function SummaryPage() {
 
   if (load.phase === "loading") {
     return (
-      <div className="w-full">
-        <Skeleton className="h-4 w-48" />
-        <Skeleton className="mt-4 h-10 w-1/3" />
-        <Skeleton className="mt-10 h-72 w-full max-w-4xl rounded-card" />
-      </div>
+      <PageSkeleton tabs>
+        <Skeleton className="h-96 w-full rounded-card" />
+      </PageSkeleton>
     );
   }
 
@@ -62,23 +64,30 @@ export default function SummaryPage() {
     return <ErrorState message={load.message} onRetry={fetchSummary} />;
   }
 
-  const { result, title } = load;
+  const { result, title, status } = load;
 
   return (
     <div className="w-full">
-      <header className="flex items-start gap-4">
-        <BackButton fallbackHref={`/documents/${params.id}`} label="Document" />
-        <div className="min-w-0">
-          {/* Before sign-off the page says only that it is not available. */}
-          {title && <p className="truncate text-meta text-muted-fg">{title}</p>}
-          <h1 className="mt-1 font-display text-h1 text-ink">Summary</h1>
-        </div>
-      </header>
+      {/* Before sign-off the page says only that it is not available, so no
+          title is passed down until there is one. */}
+      <PageHeader
+        stacked
+        status={status ? <StateLabel state={status} /> : undefined}
+        back={{ fallbackHref: `/documents/${params.id}`, label: "Document" }}
+        title={title ? documentIdentity(title).name : "Summary"}
+        meta={title ? [documentIdentity(title).with] : undefined}
+        tabs={
+          <DocumentTabs
+            documentId={params.id}
+            signedOff={result.state === "ready"}
+          />
+        }
+      />
 
-      <div className="mt-10">
+      <div>
         {result.state === "ready" && (
-          <div className="rounded-card bg-parchment p-6 md:p-8">
-            <SummaryView summary={result.summary} />
+          <div className="pb-8">
+            <SummaryView summary={result.summary} showLabel layout="bento" />
           </div>
         )}
 

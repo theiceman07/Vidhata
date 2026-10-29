@@ -8,6 +8,7 @@ import { Accountability } from "@/components/marketing/accountability";
 import { Faq } from "@/components/marketing/faq";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { PublicEntry } from "@/components/marketing/public-entry";
+import { GlowBackdrop } from "@/components/marketing/glow-backdrop";
 
 /**
  * The landing page says one thing on arrival and the rest in order as
@@ -45,6 +46,7 @@ export default function LandingPage() {
           </div>
         </section>
 
+        <GlowBackdrop>
         <section className="mx-auto w-full max-w-6xl px-6">
           <div className="flex flex-col items-center py-28 text-center md:py-36">
             <h2 className="max-w-3xl font-display text-display text-ink">
@@ -57,6 +59,7 @@ export default function LandingPage() {
             <PublicEntry className="mt-12" />
           </div>
         </section>
+        </GlowBackdrop>
       </main>
       <SiteFooter />
     </>

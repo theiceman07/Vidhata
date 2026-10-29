@@ -115,7 +115,7 @@ export default function UploadDevPage() {
   return (
     <main className="mx-auto w-full max-w-2xl space-y-8 px-4 py-10 text-ink">
       <header className="space-y-1">
-        <h1 className="font-display text-2xl">File routes</h1>
+        <h1 className="font-display text-h2">File routes</h1>
         <p className="text-meta text-muted-fg">Development only. The real backend and S3, signed in as the test account. Nothing here is a mock.</p>
       </header>
 
@@ -163,7 +163,7 @@ export default function UploadDevPage() {
         />
         <p className="text-meta text-muted-fg">PDF, DOCX, PNG or JPEG, 25 MB at most.</p>
         {fileProblem && (
-          <p role="alert" className="text-meta text-flagged">
+          <p role="alert" className="text-meta text-ink">
             {fileProblem}
           </p>
         )}
@@ -185,7 +185,7 @@ export default function UploadDevPage() {
             return (
               <li key={name} className="flex flex-wrap gap-x-3 text-meta">
                 <span className="w-44 text-ink">{LABEL[name]}</span>
-                <span className={s.state === "ok" ? "text-verified" : s.state === "failed" ? "text-flagged" : "text-muted-fg"}>{s.state}</span>
+                <span className={s.state === "ok" ? "text-ink" : s.state === "failed" ? "text-ink" : "text-muted-fg"}>{s.state}</span>
                 <span className="break-all text-muted-fg">{s.note}</span>
               </li>
             );

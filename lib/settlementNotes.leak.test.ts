@@ -148,7 +148,7 @@ describe("the notes to the client, in every fixture at every status", () => {
 
 describe("the real client reads, against the store", () => {
   const org = "org-anaya-textiles";
-  // Signed off by Rhea Kapoor (adv-1), and held and not signed off by Ananya Rao (adv-current).
+  // Signed off by Rhea Kapoor (adv-1), and held and not signed off by Ishita Rao (adv-current).
   const signed = { id: "doc-nda-settled", holder: "adv-1" };
   const unsigned = { id: "doc-employment-rereview", holder: "adv-current" };
 

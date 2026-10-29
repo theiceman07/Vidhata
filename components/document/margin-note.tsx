@@ -50,7 +50,7 @@ export function MarginNote({
 
   return (
     <div className="group/note rounded-control bg-parchment px-3.5 py-3">
-      <p className="flex items-center gap-1.5 text-label text-muted-fg">
+      <p className="flex items-center gap-1.5 text-meta text-muted-fg">
         <Icon name="sticky_note_2" size={16} />
         Your note · {format(new Date(note.updatedAt), "d MMM")}
         {edited && " · edited"}
@@ -67,7 +67,7 @@ export function MarginNote({
           disabled={blocked !== null}
           aria-describedby={blocked ? reasonId : undefined}
           onClick={() => setEditing(true)}
-          className="text-label text-muted-fg underline-offset-2 hover:text-ink hover:underline disabled:pointer-events-none disabled:opacity-50"
+          className="text-meta text-muted-fg hover:text-ink disabled:pointer-events-none disabled:opacity-50"
         >
           Edit
         </button>
@@ -76,12 +76,12 @@ export function MarginNote({
           disabled={blocked !== null}
           aria-describedby={blocked ? reasonId : undefined}
           onClick={() => onDelete()}
-          className="text-label text-muted-fg underline-offset-2 hover:text-flagged hover:underline disabled:pointer-events-none disabled:opacity-50"
+          className="text-meta text-muted-fg hover:text-ink disabled:pointer-events-none disabled:opacity-50"
         >
           Remove
         </button>
         {blocked && (
-          <span id={reasonId} className="text-label text-muted-fg">
+          <span id={reasonId} className="text-meta text-muted-fg">
             {blocked}
           </span>
         )}
@@ -135,13 +135,13 @@ export function AddMarginNote({
         disabled={blocked !== null}
         aria-describedby={blocked ? reasonId : undefined}
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-label text-muted-fg transition-opacity hover:bg-parchment hover:text-ink focus-visible:opacity-100 disabled:pointer-events-none disabled:opacity-50"
+        className="inline-flex min-h-8 items-center gap-1.5 rounded-full px-3 text-meta text-muted-fg transition-opacity hover:bg-parchment hover:text-ink focus-visible:opacity-100 disabled:pointer-events-none disabled:opacity-50"
       >
         <Icon name="sticky_note_2" size={16} />
         Add a note
       </button>
       {blocked && (
-        <span id={reasonId} className="text-label text-muted-fg">
+        <span id={reasonId} className="text-meta text-muted-fg">
           {blocked}
         </span>
       )}

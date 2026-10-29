@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { canWriteNotes, NOTES_SIGNED_OFF } from "./noteAccess";
 
 const me = "adv-me";
-const mine = { id: me, name: "Ananya Rao", bar: "XX/0001/2020" };
+const mine = { id: me, name: "Ishita Rao", bar: "XX/0001/2020" };
 const theirs = { id: "adv-2", name: "Farhan Sheikh", bar: "XX/0002/2020" };
 
 const allowed = { allowed: true };

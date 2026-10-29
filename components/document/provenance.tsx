@@ -1,6 +1,8 @@
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Tick } from "@/components/shared/tick";
 import { Icon } from "@/components/shared/icon";
+import { useCalm } from "@/components/domain/calm";
 import type { ClientDocumentSummary } from "@/lib/types";
 
 /**
@@ -120,15 +122,13 @@ export function stageCaption(doc: LifecycleSource): string {
 }
 
 /**
- * Colour is earned. Sign-off and execution are decisions, so they are the
- * only stages that carry the accent; a request for changes is the one
- * stage that needs the client, so it alone carries caution.
+ * One colour, one meaning: a done stage is green, the stage in hand is blue,
+ * a request for changes (the one stage that needs the client) is marigold.
  */
 function segmentClass(stage: Stage): string {
-  if (stage.state === "attention") return "bg-caution";
-  if (stage.state === "current") return "bg-muted-fg/40";
+  if (stage.state === "attention") return "bg-move";
   if (stage.state === "ahead") return "bg-line";
-  return stage.key === "signed" || stage.key === "executed" ? "bg-accent" : "bg-ink";
+  return "bg-ink";
 }
 
 /** The compact reading, for a row in a list. */
@@ -159,7 +159,7 @@ export function LifecycleStrip({
       <span
         className={cn(
           "truncate text-label",
-          doc.status === "revision" ? "text-caution-fg" : "text-muted-fg",
+          doc.status === "revision" ? "text-ink" : "text-muted-fg",
         )}
       >
         {caption}
@@ -174,8 +174,6 @@ const SHORT_LABEL: Record<StageKey, string> = {
   signed: "Signed off",
   executed: "Executed",
 };
-
-const isDecision = (key: StageKey) => key === "signed" || key === "executed";
 
 /**
  * A stage in a few words, for a stepper with no room for the full detail:
@@ -206,32 +204,16 @@ function stageNote(doc: LifecycleSource, stage: Stage): string {
 }
 
 /**
- * One station on the line. Done stages carry a tick, ink for the work and
- * accent for the decisions; the stage in hand is ringed; a request for
- * changes is the one caution fill; stages ahead show only their number.
+ * One station on the line: a done stage is the green tick, the stage in
+ * hand is a blue ring with a dot, a request for changes is marigold, and
+ * stages ahead are muted outlines holding their number.
  */
 function StageNode({ stage, index }: { stage: Stage; index: number }) {
+  const state = stage.state === "attention" ? "move" : stage.state;
   return (
-    <span
-      aria-hidden
-      className={cn(
-        "relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
-        stage.state === "done" &&
-          (isDecision(stage.key) ? "bg-accent text-accent-fg" : "bg-ink text-paper"),
-        stage.state === "current" && "bg-paper ring-2 ring-inset ring-ink",
-        stage.state === "attention" && "bg-caution text-paper ring-4 ring-caution/20",
-        stage.state === "ahead" && "bg-parchment text-muted-fg ring-1 ring-inset ring-line",
-      )}
-    >
-      {stage.state === "done" && <Icon name="check" size={16} />}
-      {stage.state === "current" && <span className="h-2 w-2 rounded-full bg-ink" />}
-      {stage.state === "attention" && (
-        <span className="text-label font-semibold leading-none">!</span>
-      )}
-      {stage.state === "ahead" && (
-        <span className="font-mono text-label leading-none">{index + 1}</span>
-      )}
-    </span>
+    <Tick state={state} size="lg" className="relative z-10">
+      {state === "ahead" ? index + 1 : undefined}
+    </Tick>
   );
 }
 
@@ -244,26 +226,18 @@ type Fill = "none" | "half" | "full";
  */
 function connectorFill(next: Stage): { fill: Fill; tone: string } {
   if (next.state === "ahead") return { fill: "none", tone: "" };
-  if (next.state === "attention") return { fill: "half", tone: "bg-caution" };
-  if (next.state === "current") return { fill: "half", tone: "bg-ink" };
-  return { fill: "full", tone: isDecision(next.key) ? "bg-accent" : "bg-ink" };
+  if (next.state === "attention") return { fill: "half", tone: "bg-move" };
+  if (next.state === "current") return { fill: "half", tone: "bg-progress" };
+  return { fill: "full", tone: "bg-done" };
 }
 
-const FILL_WIDTH: Record<Fill, string> = { none: "w-0", half: "w-1/2", full: "w-full" };
 const FILL_HEIGHT: Record<Fill, string> = { none: "h-0", half: "h-1/2", full: "h-full" };
 
-function stateWords(stage: Stage): string {
-  if (stage.state === "done") return "complete";
-  if (stage.state === "ahead") return "not started";
-  if (stage.state === "attention") return "waiting on you";
-  return "in progress";
-}
-
 /**
- * The lifecycle as a labelled stepper, for rows with room to say it:
- * four stations on one line, each named, each with its date, person or
- * what it waits on beneath. Decisions (sign-off, execution) carry the
- * accent; a request for changes carries caution.
+ * The lifecycle as one row of equal segments, always visible. Done is ink,
+ * the stage in hand fills by its own progress, and each segment is labelled
+ * with its name and who or when. The signed-off label alone carries the
+ * green seal, because that is the step that means approval.
  */
 export function LifecycleStepper({
   doc,
@@ -273,55 +247,79 @@ export function LifecycleStepper({
   className?: string;
 }) {
   const stages = lifecycle(doc);
+  const { done, total } = doc.checklist;
+  const left = total - done;
+  const summary =
+    doc.status === "settled" && left > 0
+      ? `${left} ${left === 1 ? "step" : "steps"} left on the execution checklist`
+      : stageCaption(doc);
+  const currentNote = stages
+    .filter((s) => s.state !== "done" && s.state !== "ahead")
+    .map((s) => stageNote(doc, s))[0];
 
   return (
-    <ol
-      aria-label={`${stageCaption(doc)}. ${stages
-        .map((s) => `${s.label} ${stateWords(s)}`)
-        .join(", ")}.`}
-      className={cn("grid grid-cols-4", className)}
-    >
-      {stages.map((stage, i) => {
-        const next = stages[i + 1];
-        const line = next ? connectorFill(next) : null;
-        const reached = stage.state !== "ahead";
+    <div className={className}>
+      <div className="mb-3">
+        <span className="text-meta font-medium text-ink">{summary}</span>
+      </div>
+      <ol
+        aria-label="Execution progress"
+        className="grid gap-x-2"
+        style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))` }}
+      >
+        {stages.map((stage) => {
+          const current = stage.state === "current" || stage.state === "attention";
+          const progress =
+            stage.state === "done"
+              ? 1
+              : current
+                ? stage.key === "executed" && total > 0
+                  ? done / total
+                  : 0.5
+                : 0;
+          const note = stageNote(doc, stage);
+          const words = stage.state === "done" ? "done" : current ? "in progress" : "upcoming";
 
-        return (
-          <li key={stage.key} className="relative flex min-w-0 flex-col items-start">
-            {line && (
-              <span
-                aria-hidden
-                className="absolute left-9 right-2 top-[12.5px] h-[3px] overflow-hidden rounded-full bg-line"
-              >
+          return (
+            <li key={stage.key} aria-current={current ? "step" : undefined} className="min-w-0">
+              <span className="sr-only">{`${SHORT_LABEL[stage.key]}, ${words}, ${note}`}</span>
+              <span aria-hidden className="block h-1.5 overflow-hidden rounded-full bg-ink/10">
                 <span
-                  className={cn("block h-full rounded-full", FILL_WIDTH[line.fill], line.tone)}
+                  className={cn(
+                    "block h-full rounded-full motion-safe:transition-[width] motion-safe:duration-200 motion-safe:ease-out",
+                    stage.state === "attention" ? "bg-move" : "bg-done",
+                  )}
+                  style={{ width: `${progress * 100}%` }}
                 />
               </span>
-            )}
-            <StageNode stage={stage} index={i} />
-            <span
-              aria-hidden
-              className={cn(
-                "mt-2.5 text-meta font-medium leading-tight",
-                reached ? "text-ink" : "text-muted-fg",
-                stage.state === "attention" && "text-caution-fg",
-              )}
-            >
-              {SHORT_LABEL[stage.key]}
-            </span>
-            <span
-              aria-hidden
-              className={cn(
-                "mt-0.5 w-full truncate pr-2 text-label tabular-nums",
-                stage.state === "attention" ? "text-caution-fg" : "text-muted-fg",
-              )}
-            >
-              {stageNote(doc, stage)}
-            </span>
-          </li>
-        );
-      })}
-    </ol>
+              <span
+                aria-hidden
+                className={cn(
+                  "mt-2.5 flex items-center gap-1 truncate text-meta leading-tight text-ink",
+                  current ? "font-semibold" : "font-medium",
+                )}
+              >
+                {stage.key === "signed" && (
+                  <Icon name="check_circle" size={16} className="shrink-0 text-done" />
+                )}
+                <span className="truncate">{SHORT_LABEL[stage.key]}</span>
+              </span>
+              <span
+                aria-hidden
+                className="mt-0.5 hidden truncate text-label leading-tight tabular-nums text-muted sm:block"
+              >
+                {note}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+      {currentNote && (
+        <p aria-hidden className="mt-1 text-label text-muted sm:hidden">
+          {currentNote}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -337,41 +335,96 @@ export function Provenance({
   className?: string;
 }) {
   const stages = lifecycle(doc);
+  const calm = useCalm();
+
+  if (calm) {
+    return (
+      <ol className={cn("relative", className)}>
+        {stages.map((stage, i) => {
+          const next = stages[i + 1];
+          const line = next ? connectorFill(next) : null;
+          const tone =
+            line?.tone === "bg-done"
+              ? "bg-calm-success"
+              : line?.tone === "bg-move"
+                ? "bg-calm-accent"
+                : "bg-calm-strong";
+
+          return (
+            <li
+              key={stage.key}
+              className="relative grid grid-cols-[22px_minmax(0,1fr)] gap-x-3 pb-3.5 last:pb-0"
+            >
+              {line && (
+                <span
+                  aria-hidden
+                  className="absolute bottom-0.5 left-[10.5px] top-[26px] w-px overflow-hidden bg-calm-border-strong"
+                >
+                  <span className={cn("block w-full", FILL_HEIGHT[line.fill], tone)} />
+                </span>
+              )}
+              <span
+                aria-hidden
+                className={cn(
+                  "relative z-10 flex h-[22px] w-[22px] items-center justify-center rounded-full text-label font-semibold tabular-nums",
+                  stage.state === "done" && "bg-calm-success text-white",
+                  stage.state === "attention" && "bg-calm-accent text-white",
+                  stage.state === "current" && "bg-calm-strong text-white",
+                  stage.state === "ahead" &&
+                    "bg-calm-canvas text-calm-secondary ring-1 ring-inset ring-calm-border-strong",
+                )}
+              >
+                {stage.state === "done" && <Icon name="check" size={16} />}
+                {stage.state === "attention" && <Icon name="reply" size={16} />}
+                {stage.state === "current" && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                {stage.state === "ahead" && i + 1}
+              </span>
+              <div className="min-w-0 pt-px">
+                <p
+                  className={cn(
+                    "text-meta font-medium leading-5",
+                    stage.state === "ahead" ? "text-calm-secondary" : "text-calm-ink",
+                    stage.state === "attention" && "text-ink",
+                  )}
+                >
+                  {stage.label}
+                  {stage.state === "attention" && " · changes requested"}
+                </p>
+                <p className="text-meta leading-5 text-calm-secondary">
+                  {stage.detail ?? stageNote(doc, stage)}
+                </p>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    );
+  }
 
   return (
-    <ol className={cn("relative", className)}>
+    <ol className={cn("space-y-2", className)}>
       {stages.map((stage, i) => {
-        const next = stages[i + 1];
-        const line = next ? connectorFill(next) : null;
-
         return (
           <li
             key={stage.key}
-            className="relative grid grid-cols-[1.75rem_minmax(0,1fr)] gap-x-3.5 pb-4 last:pb-0"
-          >
-            {line && (
-              <span
-                aria-hidden
-                className="absolute bottom-1 left-[12.5px] top-9 w-[3px] overflow-hidden rounded-full bg-line"
-              >
-                <span
-                  className={cn("block w-full rounded-full", FILL_HEIGHT[line.fill], line.tone)}
-                />
-              </span>
+            className={cn(
+              "flex items-center gap-3.5 rounded-control bg-surface px-4 py-3",
+              (stage.state === "current" || stage.state === "attention") && "ring-1 ring-inset ring-ink/20",
             )}
+          >
             <StageNode stage={stage} index={i} />
-            <div className="min-w-0 pt-0.5">
+            <div className="min-w-0">
               <p
                 className={cn(
                   "text-meta font-medium",
                   stage.state === "ahead" ? "text-muted-fg" : "text-ink",
-                  stage.state === "attention" && "text-caution-fg",
+                  stage.state === "attention" && "text-ink",
                 )}
               >
                 {stage.label}
                 {stage.state === "attention" && " · changes requested"}
               </p>
-              <p className="mt-0.5 text-label text-muted-fg">
+              <p className="mt-0.5 text-meta text-muted-fg">
                 {stage.detail ?? stageNote(doc, stage)}
               </p>
             </div>

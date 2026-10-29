@@ -61,7 +61,7 @@ export function ReviewAgent({
       <div ref={threadRef} className="min-h-0 flex-1 overflow-y-auto px-6">
         {thread.length === 0 ? (
           <div className="flex min-h-full flex-col justify-center pb-6 pt-8">
-            <h2 className="font-display text-[30px] font-medium leading-tight tracking-[-0.015em] text-ink">
+            <h2 className="font-display text-h2 font-medium leading-tight tracking-[-0.015em] text-ink">
               Where should we start?
             </h2>
             <p className="mt-3 text-body text-muted-fg">
@@ -92,11 +92,11 @@ export function ReviewAgent({
 
                 <div
                   className={cn(
-                    reply.decision && "rounded-card border border-caution/30 bg-caution/10 px-4 py-3",
+                    reply.decision && "rounded-card border border-progress/30 bg-progress-tint px-4 py-3",
                   )}
                 >
                   {reply.decision && (
-                    <p className="mb-1 text-meta font-medium text-caution-fg">Your decision</p>
+                    <p className="mb-1 text-meta font-medium text-progress">Your decision</p>
                   )}
                   <p className="whitespace-pre-line text-body leading-relaxed text-ink">
                     {reply.text}
@@ -134,11 +134,7 @@ export function ReviewAgent({
         }}
         className="group relative m-4 mt-0"
       >
-        <div
-          aria-hidden
-          className="prompt-ring pointer-events-none absolute -inset-[2px] rounded-[22px] opacity-0 transition-opacity duration-500 group-focus-within:opacity-100"
-        />
-        <div className="relative rounded-card border border-ink/15 bg-paper p-2 pl-4 transition-colors group-focus-within:border-transparent">
+        <div className="relative rounded-card border border-ink/15 bg-paper p-2 pl-4 transition-colors group-focus-within:border-ink/40">
           <textarea
             id="review-agent-input"
             aria-label="Ask about this review"

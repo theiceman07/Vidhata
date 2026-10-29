@@ -1,13 +1,10 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { BackButton } from "@/components/shared/back-button";
-import { format, formatDistanceToNowStrict } from "date-fns";
+import { format } from "date-fns";
 import { toast } from "sonner";
-import { AuditTrail } from "@/components/document/audit-trail";
 import {
   AdvocatePanel,
   ContextPanel,
@@ -16,7 +13,7 @@ import {
   WhatHappensNext,
 } from "@/components/domain/document-context";
 import { CoveragePanel } from "@/components/domain/coverage-panel";
-import { DraftBanner } from "@/components/domain/draft-banner";
+import { Assurances, StatusHero, StatusStrip } from "@/components/domain/status-hero";
 import { PaymentPanel } from "@/components/domain/payment-panel";
 import { ErrorState } from "@/components/shared/error-state";
 import { Icon } from "@/components/shared/icon";
@@ -27,7 +24,6 @@ import { ClientReader } from "@/components/document/client-reader";
 import { Provenance } from "@/components/document/provenance";
 import { ChangeRequests } from "@/components/document/change-requests";
 import { DocumentAgent } from "@/components/document/document-agent";
-import { StateLabel } from "@/components/document/state-label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,9 +33,13 @@ import {
 } from "@/lib/api/client/documents";
 import { getClientSettlementNotes } from "@/lib/api/client/settlement-notes";
 import { getClientTrail } from "@/lib/api/client/trail";
-import { tierLabel } from "@/lib/config/pricing";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { ClientAuditEntry, ClientDocument, ClientSettlementNote } from "@/lib/types";
+import { outstandingSteps } from "@/lib/moves";
+import { documentIdentity } from "@/lib/documentTitle";
+import { StateLabel } from "@/components/document/state-label";
+import { PageHeader } from "@/components/shared/page-header";
+import { DocumentTabs } from "@/components/document/document-tabs";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -208,17 +208,19 @@ export default function DocumentPage() {
   if (doc.status === "awaiting_payment") {
     return (
       <Frame>
-        <header className="flex min-w-0 items-start gap-4">
-          <BackButton fallbackHref="/documents" label="Back" />
-          <div className="min-w-0">
-            <StateLabel state={doc.status} />
-            <h1 className="mt-2 font-display text-h1 text-ink">{doc.title}</h1>
-            <p className="mt-1 text-meta text-muted-fg">{doc.deal.counterpartyName}</p>
-          </div>
-        </header>
+        <PageHeader
+          stacked
+          status={<StateLabel state={doc.status} />}
+          back={{ fallbackHref: "/documents", label: "Documents" }}
+          title={documentIdentity(doc.title).name}
+          meta={[documentIdentity(doc.title).with]}
+          tabs={<DocumentTabs documentId={doc.id} signedOff={Boolean(doc.signOff)} />}
+        />
 
-        <div className="mt-10 grid items-start gap-x-8 gap-y-6 lg:grid-cols-[minmax(0,13fr)_minmax(0,7fr)]">
-          <PaymentPanel
+        <StatusHero doc={doc} />
+
+        <div className="mt-4 grid items-stretch gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          <PaymentPanel className="lg:col-span-2"
             doc={doc}
             onPaid={(paid) => {
               setDoc(paid);
@@ -226,22 +228,31 @@ export default function DocumentPage() {
               toast.success("Fee paid. Your document is in the advocate queue.");
             }}
           />
-          <ContextPanel title="Where it is" compact>
+          <ContextPanel title="Where it is" compact className="h-full">
             <Provenance doc={doc} />
           </ContextPanel>
-          <div className="min-w-0 lg:col-span-2">
+          <div className="min-w-0">
             <WhatHappensNext
               doc={doc}
+              className="h-full"
               wide
+              columns={2}
               compact
               footer={
-                <div className="mt-4 rounded-control bg-paper px-4 py-3">
-                  <h3 className="text-label font-medium text-muted-fg">What you receive at the end</h3>
-                  <ul className="mt-2 grid gap-x-8 gap-y-1.5 text-meta leading-[1.45] text-muted-fg md:grid-cols-2">
-                    <li>The settled document, with your advocate&apos;s sign-off recorded on it.</li>
-                    <li>A summary that explains the settled clauses in plain words.</li>
-                    <li>An execution checklist: stamping, registration and e-signature validity.</li>
-                    <li>The version history, with your advocate&apos;s dispositions, read-only.</li>
+                <div className="mt-2.5 rounded-control bg-surface p-4">
+                  <h3 className="text-meta font-medium text-ink">What you receive at the end</h3>
+                  <ul className="mt-3 grid gap-x-6 gap-y-2.5 text-meta leading-[1.45] text-muted-fg sm:grid-cols-2">
+                    {[
+                      "The settled document, with your advocate's sign-off recorded on it.",
+                      "A summary that explains the settled clauses in plain words.",
+                      "An execution checklist: stamping, registration and e-signature validity.",
+                      "The version history, with your advocate's dispositions, read-only.",
+                    ].map((line) => (
+                      <li key={line} className="flex items-start gap-2">
+                        <Icon name="check" size={16} className="mt-0.5 shrink-0 text-done" />
+                        {line}
+                      </li>
+                    ))}
                   </ul>
                 </div>
               }
@@ -254,113 +265,99 @@ export default function DocumentPage() {
 
   return (
     <Frame>
-      {/* Full width: who and what on the left, the terms of the review
-          on the right, the way the settled workspace sets its header. */}
-      <header className="flex flex-wrap items-start justify-between gap-x-10 gap-y-4">
-        <div className="flex min-w-0 items-start gap-4">
-          <BackButton fallbackHref="/documents" label="Back" />
-          <div className="min-w-0">
-            <StateLabel state={doc.status} />
-            {/* The one display moment on this screen. */}
-            <h1 className="mt-1.5 font-display text-h1 text-ink">{doc.title}</h1>
-            <p className="mt-1 text-meta text-muted-fg">
-              {doc.deal.counterpartyName}
-              <span className="mx-1.5 text-muted-fg/50">·</span>
-              Draft {doc.version}
-              <span className="mx-1.5 text-muted-fg/50">·</span>
-              <Link
-                href={`/documents/${doc.id}/history`}
-                className="text-ink underline underline-offset-2 hover:no-underline"
-              >
-                Version history
-              </Link>
-            </p>
-          </div>
-        </div>
-        <dl className="grid grid-cols-[auto_auto] gap-x-4 gap-y-1 text-meta sm:pt-9 sm:text-right">
-          <dt className="text-muted-fg">Review</dt>
-          <dd className="text-ink">{tierLabel(doc.tier)}</dd>
-          <dt className="text-muted-fg">Submitted</dt>
-          <dd className="text-ink">{format(new Date(doc.createdAt), "d MMM yyyy")}</dd>
-        </dl>
-      </header>
+      <PageHeader
+        stacked
+        status={<StateLabel state={doc.status} />}
+        back={{ fallbackHref: "/documents", label: "Documents" }}
+        title={documentIdentity(doc.title).name}
+        meta={[documentIdentity(doc.title).with]}
+        tabs={<DocumentTabs documentId={doc.id} signedOff={Boolean(doc.signOff)} />}
+      />
 
-      {/* Everything on this view is before sign-off, so say so up front. */}
-      <DraftBanner className="mt-4" />
+      {/* The state, who has the move and what comes next lead the page. */}
+      <StatusStrip doc={doc} />
 
-      {/* With an advocate, the summary and the client's responses lead at the
-          full width of the page; the record and the rest sit below it. */}
-      {doc.status !== "revision" && (
-        <div className="mt-5">
-          <WithAdvocate doc={doc} />
-        </div>
-      )}
-
-      {/* The move in hand and everything that explains it on the left;
-          the record the document carries on the right. */}
-      <div className="mt-5 grid items-start gap-x-6 gap-y-5 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
-        <div className="min-w-0">
-          {doc.status === "revision" && (
+      {/* The move in hand beside who holds the document; then the plan, the record and the checks, each a tile. */}
+      <div className="mt-4 grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_288px] min-[1100px]:grid-cols-[minmax(0,1fr)_336px] [&>*]:min-w-0">
+        <div className="space-y-4">
+          {doc.status === "revision" ? (
+            <ChangeRequests doc={doc} onSubmit={handleRespond} submitting={submitting} />
+          ) : (
             <>
-              <MoveSummary doc={doc} />
-              <div className="mt-4">
-                <ChangeRequests doc={doc} onSubmit={handleRespond} submitting={submitting} />
-              </div>
+              <Assurances />
+              <WithAdvocate doc={doc} />
             </>
           )}
-
-          <div className={cn("space-y-4", doc.status === "revision" && "mt-5")}>
-            <WhatHappensNext doc={doc} wide compact />
-            <DealOnFile doc={doc} compact />
-            <CoveragePanel doc={doc} />
-          </div>
         </div>
-
-        {/* Plain flow: the record is taller than the screen, so holding it
-            in place would add a second scroll inside the page's own. */}
-        <aside className="min-w-0 space-y-4">
-          <ContextPanel title="Where it is">
+        <aside className="space-y-4">
+          <AdvocatePanel doc={doc} />
+          <ContextPanel title="Where it is" compact>
             <Provenance doc={doc} />
           </ContextPanel>
-          <AdvocatePanel doc={doc} />
-          <ContextPanel title="Activity">
-            <AuditTrail entries={trail} title={null} />
-          </ContextPanel>
-          <OnYourDesk currentId={doc.id} />
         </aside>
+      </div>
+
+      <div className="mt-4 space-y-4 pb-8">
+        <WhatHappensNext doc={doc} wide />
+        <div className="grid items-stretch gap-4 lg:grid-cols-3 [&>*]:min-w-0">
+          <DealOnFile doc={doc} compact className="h-full" />
+          <OnYourDesk currentId={doc.id} className="h-full" />
+          <ActivityTile trail={trail} />
+        </div>
+        <CoveragePanel doc={doc} collapsible />
       </div>
     </Frame>
   );
 }
 
-/**
- * The move, stated once in a sentence and then in one line of facts: how
- * many requests are open, how long they have waited, and what the document
- * becomes once they are answered.
- */
-function MoveSummary({ doc }: { doc: ClientDocument }) {
-  const open = doc.findingList.filter((f) => f.request && !f.request.response);
-  const asked = open
-    .map((f) => f.request?.requestedAt)
-    .filter((d): d is string => Boolean(d))
-    .sort()[0];
-
-  const waiting = asked ? formatDistanceToNowStrict(new Date(asked)) : "today";
+/** What has happened on the document, newest first: one line per event, the date at the right. */
+function ActivityTile({ trail }: { trail: ClientAuditEntry[] }) {
+  const [all, setAll] = useState(false);
+  const entries = [...trail].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+  const shown = all ? entries : entries.slice(0, 5);
+  const more = entries.length - shown.length;
 
   return (
-    <section className="flex flex-wrap items-baseline justify-between gap-x-10 gap-y-2">
-      <p className="max-w-2xl text-lead text-muted-fg">
-        Your advocate asked for your answer before this document can be settled. The
-        rest of the review continues in the meantime.
-      </p>
-      <p className="text-meta text-muted-fg">
-        {open.length} {open.length === 1 ? "request" : "requests"} open
-        <span aria-hidden className="mx-1.5">·</span>
-        Waiting {waiting}
-        <span aria-hidden className="mx-1.5">·</span>
-        Then Draft {doc.version + 1}, then sign-off
-      </p>
-    </section>
+    <ContextPanel title="Activity" compact className="h-full">
+      {entries.length === 0 ? (
+        <p className="text-meta text-muted-fg">Nothing has been recorded yet.</p>
+      ) : (
+        <>
+          <ol>
+            {shown.map((entry, i) => (
+              <li key={`${entry.at}-${i}`} className="relative grid grid-cols-[1rem_minmax(0,1fr)_auto] gap-x-3 pb-4 last:pb-0">
+                {i < shown.length - 1 && (
+                  <span aria-hidden className="absolute bottom-0 left-[7px] top-5 w-px bg-line" />
+                )}
+                <span
+                  aria-hidden
+                  className={
+                    entry.kind === "decision"
+                      ? "relative mt-1 h-4 w-4 rounded-full border-4 border-sand bg-progress ring-1 ring-progress"
+                      : "relative mt-1 h-4 w-4 rounded-full border-4 border-sand bg-muted-fg/40"
+                  }
+                />
+                <div className="min-w-0">
+                  <p className="text-meta font-medium leading-snug text-ink">
+                    {entry.action}
+                    {entry.kind === "decision" && <span className="sr-only"> (decision by the advocate)</span>}
+                  </p>
+                  <p className="truncate text-label text-muted-fg">{entry.ref ? `${entry.ref} · ` : ""}{entry.actor}</p>
+                </div>
+                <time dateTime={entry.at} className="mt-0.5 shrink-0 rounded-full bg-surface px-2 py-0.5 text-label tabular-nums text-muted">
+                  {format(new Date(entry.at), "d MMM")}
+                </time>
+              </li>
+            ))}
+          </ol>
+          {more > 0 && (
+            <button type="button" onClick={() => setAll(true)} className="link mt-3 text-label">
+              Show {more} earlier
+            </button>
+          )}
+        </>
+      )}
+    </ContextPanel>
   );
 }
 
@@ -371,7 +368,7 @@ function MoveSummary({ doc }: { doc: ClientDocument }) {
  */
 function Frame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="h-full overflow-y-auto px-4 py-5 md:px-8 md:py-6">
+    <div className="px-4 pb-24 pt-3 md:absolute md:inset-0 md:overflow-y-auto md:px-8 md:pb-8 md:pt-3">
       <div className="w-full">{children}</div>
     </div>
   );
@@ -383,35 +380,28 @@ function WithAdvocate({ doc }: { doc: ClientDocument }) {
 
   return (
     <div className="space-y-5">
-      <p className="max-w-measure text-lead text-ink">
-        {doc.status === "pending_review"
-          ? "The first pass has drafted and screened this document. It is in the advocate queue, and an empanelled advocate will claim it for review."
-          : "An advocate is reviewing the findings the first pass raised."}{" "}
-        You will read the document once it is settled and signed off. Nothing
-        reaches you before an advocate has recorded a sign-off.
-      </p>
-
       {answered.length > 0 && (
         <section>
-          <h2 className="text-label font-medium text-muted-fg">Your responses</h2>
-          <ul className="mt-3 space-y-2">
+          <h2 className="font-display text-h3 text-ink">Your responses</h2>
+          <ul className="mt-3 space-y-4">
             {answered.map((f) => (
-              <li key={f.number} className="rounded-card bg-parchment p-4">
-                <p className="text-label text-muted-fg">
+              <li key={f.number} className="rounded-modal border border-line bg-surface p-6 md:p-8">
+                <p className="text-meta text-muted">
                   <span className="font-mono">{f.clauseReference}</span>
                   {f.request?.respondedAt && (
                     <> · {format(new Date(f.request.respondedAt), "d MMM yyyy")}</>
                   )}
                 </p>
-                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <div className="mt-4 flex gap-4 rounded-card bg-move-tint p-5">
+                  <Icon name="rate_review" size={24} className="mt-0.5 text-ink" />
                   <div className="min-w-0">
-                    <p className="text-label font-medium text-muted-fg">Your advocate asked</p>
-                    <p className="mt-1 text-meta text-ink">{f.request?.request}</p>
+                    <p className="text-label font-medium text-ink">Your advocate asked</p>
+                    <p className="mt-1 text-body leading-[1.6] text-ink">{f.request?.request}</p>
                   </div>
-                  <div className="min-w-0 rounded-control bg-paper px-4 py-3">
-                    <p className="text-label font-medium text-muted-fg">Your answer</p>
-                    <p className="mt-1 text-meta text-ink">{f.request?.response}</p>
-                  </div>
+                </div>
+                <div className="mt-3 rounded-card bg-sand px-5 py-4">
+                  <p className="text-label font-medium text-muted">Your answer</p>
+                  <p className="mt-1 text-body text-ink">{f.request?.response}</p>
                 </div>
               </li>
             ))}
@@ -432,65 +422,43 @@ function SettledDocument({
   trail: ClientAuditEntry[];
   notes: ClientSettlementNote[];
 }) {
-  const { done, total } = doc.checklist;
+  const stepsLeft = outstandingSteps(doc);
+  // The summary's clause references arrive as ?clause=4.1.
+  const initialClause = useSearchParams().get("clause");
 
   return (
     <ClientReader
       doc={doc}
       trail={trail}
       settlementNotes={notes}
+      initialClause={initialClause}
       back={{ href: "/documents", label: "Documents" }}
       aside={
         <>
           {doc.signOff && (
-            <span className="inline-flex items-center gap-1 text-label text-verified">
-              <Icon name="check_circle" size={16} />
+            <span
+              className="inline-flex items-center gap-1 text-meta text-muted-fg"
+              title={`Bar enrolment ${doc.signOff.enrolment}`}
+            >
               Signed off by {doc.signOff.advocate} ·{" "}
               {format(new Date(doc.signOff.at), "d MMM yyyy")}
             </span>
           )}
-          <Link
-            href={`/documents/${doc.id}/delivery`}
-            className="text-label text-ink underline-offset-2 hover:underline"
-          >
-            Delivery
-          </Link>
-          <Link
-            href={`/documents/${doc.id}/checklist`}
-            className="text-label text-ink underline-offset-2 hover:underline"
-          >
-            Execution checklist · {done} of {total}
-          </Link>
-          <Link
-            href={`/documents/${doc.id}/summary`}
-            className="text-label text-ink underline-offset-2 hover:underline"
-          >
-            Summary
-          </Link>
-          <Link
-            href={`/documents/${doc.id}/history`}
-            className="text-label text-ink underline-offset-2 hover:underline"
-          >
-            Version history
-          </Link>
-          {doc.signOff && (
-            <Link
-              href={`/documents/${doc.id}/consultation`}
-              className="text-label text-ink underline-offset-2 hover:underline"
-            >
-              Consultation
-            </Link>
-          )}
         </>
       }
-      companion={({ goToClause }) => <DocumentAgent doc={doc} onCite={goToClause} />}
-      actions={
-        <>
-          <Button variant="outline" onClick={() => window.print()}>
-            <Icon name="print" size={18} />
-            Print this page (browser)
+      tabs={<DocumentTabs documentId={doc.id} signedOff={Boolean(doc.signOff)} checklist={doc.checklist} />}
+      companion={({ goToClause, activeClause }) => (
+        <DocumentAgent doc={doc} onCite={goToClause} activeClause={activeClause} />
+      )}
+      next={
+        stepsLeft > 0 ? (
+          <Button asChild size="sm" variant="primary">
+            <Link href={`/documents/${doc.id}/checklist`}>
+              Continue checklist
+              <Icon name="arrow_forward" size={18} />
+            </Link>
           </Button>
-        </>
+        ) : undefined
       }
     />
   );

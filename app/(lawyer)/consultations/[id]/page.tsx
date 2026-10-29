@@ -6,7 +6,6 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ConsultationStatus } from "@/components/domain/consultation-status";
-import { BackButton } from "@/components/shared/back-button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { Icon } from "@/components/shared/icon";
@@ -24,6 +23,7 @@ import {
 import { CONSULTATION, PRICE_BASIS } from "@/lib/config/pricing";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import type { AdvocateConsultation } from "@/lib/types";
+import { PageHeader } from "@/components/shared/page-header";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -105,11 +105,11 @@ export default function ConsultationRequestPage() {
   if (!request) {
     return (
       <div className="w-full">
-        <div className="flex items-start gap-4">
-          <BackButton fallbackHref="/consultations" label="Consultations" />
-          <h1 className="font-display text-h1 text-ink">Request not found</h1>
-        </div>
-        <div className="mt-8 max-w-xl">
+        <PageHeader
+          back={{ fallbackHref: "/consultations", label: "Consultations" }}
+          title="Request not found"
+        />
+        <div className="max-w-xl">
           <EmptyState
             title="Request not found."
             description="It may have been removed, or the link may be wrong."
@@ -128,25 +128,21 @@ export default function ConsultationRequestPage() {
 
   return (
     <div className="w-full">
-      <div className="flex items-start gap-4">
-        <BackButton fallbackHref="/consultations" label="Consultations" />
-        <div className="min-w-0">
-          <h1 className="font-display text-h1 text-ink">Consultation request</h1>
-          <p className="mt-1 text-meta text-muted-fg">
-            {request.documentTitle}
-            <span className="mx-1.5 text-muted-fg/50">·</span>
-            {clientName}
-            <span className="mx-1.5 text-muted-fg/50">·</span>
-            requested {format(new Date(request.requestedAt), "d MMM yyyy")}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        back={{ fallbackHref: "/consultations", label: "Consultations" }}
+        title="Consultation request"
+        meta={[
+          request.documentTitle,
+          clientName,
+          `requested ${format(new Date(request.requestedAt), "d MMM yyyy")}`,
+        ]}
+      />
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-8">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-8">
         <section className="min-w-0 space-y-6">
           <div className="rounded-card bg-parchment/50 p-6">
             <div className="flex items-center gap-3">
-              <h2 className="text-label font-medium text-muted-fg">Client&apos;s question</h2>
+              <h2 className="text-body font-medium text-ink">Client&apos;s question</h2>
               <ConsultationStatus consultation={request} audience="advocate" />
             </div>
             <p className="mt-3 max-w-measure whitespace-pre-line break-words text-body text-ink">
@@ -156,12 +152,12 @@ export default function ConsultationRequestPage() {
 
           {request.status === "answered" && request.answer && (
             <div className="rounded-card bg-parchment p-6">
-              <h2 className="text-label font-medium text-muted-fg">Your response</h2>
+              <h2 className="text-body font-medium text-ink">Your response</h2>
               <p className="mt-3 max-w-measure whitespace-pre-line break-words text-body leading-relaxed text-ink">
                 {request.answer}
               </p>
               {request.answeredAt && (
-                <p className="mt-2 text-label text-muted-fg">
+                <p className="mt-2 text-meta text-muted-fg">
                   Answered {format(new Date(request.answeredAt), "d MMM yyyy")}
                 </p>
               )}
@@ -190,7 +186,7 @@ export default function ConsultationRequestPage() {
                 maxLength={MAX_ANSWER_LENGTH}
                 aria-describedby="consultation-answer-note"
               />
-              <p id="consultation-answer-note" className="mt-1.5 text-label text-muted-fg">
+              <p id="consultation-answer-note" className="mt-1.5 text-meta text-muted-fg">
                 It goes to {clientName} and stays with the request. {answer.length} of{" "}
                 {MAX_ANSWER_LENGTH} characters.
               </p>
@@ -206,7 +202,7 @@ export default function ConsultationRequestPage() {
           )}
 
           {failed && (
-            <p role="alert" className="mt-6 text-meta text-flagged">
+            <p role="alert" className="mt-6 text-meta text-ink">
               {failed}
             </p>
           )}
@@ -214,7 +210,7 @@ export default function ConsultationRequestPage() {
 
         <aside className="min-w-0 self-start space-y-4">
           <div className="rounded-card bg-parchment p-6">
-            <h2 className="text-label font-medium text-muted-fg">Where it stands</h2>
+            <h2 className="text-body font-medium text-ink">Where it stands</h2>
 
             {request.status === "requested" && (
               <div className="mt-4 space-y-4">
@@ -305,7 +301,7 @@ export default function ConsultationRequestPage() {
           </div>
 
           <div className="rounded-card bg-parchment/50 p-6">
-            <h2 className="flex items-center gap-2 text-label font-medium text-muted-fg">
+            <h2 className="flex items-center gap-2 text-body font-medium text-ink">
               <Icon name="lock" size={16} />
               Private consultation
             </h2>
@@ -316,11 +312,11 @@ export default function ConsultationRequestPage() {
           </div>
 
           <div className="rounded-card bg-parchment/50 p-6">
-            <h2 className="text-label font-medium text-muted-fg">Related document</h2>
+            <h2 className="text-body font-medium text-ink">Related document</h2>
             <p className="mt-2 text-meta text-ink">{request.documentTitle}</p>
             <Link
               href={`/review/${request.documentId}`}
-              className="mt-1 inline-block text-meta text-ink underline"
+              className="link mt-1 inline-block text-meta"
             >
               Open the settled document
             </Link>

@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 import { TIER_PENDING_LABEL } from "@/lib/config/pricing";
 import { cn } from "@/lib/utils";
 import { Icon, type IconName } from "@/components/shared/icon";
+import { Tick } from "@/components/shared/tick";
 import {
   usePalette,
   useRegisterCommands,
@@ -40,6 +40,8 @@ import { DocumentSurface } from "./document-surface";
 import { FindingDetail } from "./finding-detail";
 import { AuditTrail, type TrailEntry } from "./audit-trail";
 import { ReviewShortcuts } from "./review-shortcuts";
+import { PageHeader } from "@/components/shared/page-header";
+import { WorkspaceMenu } from "@/components/document/workspace-menu";
 
 /**
  * The document workspace.
@@ -62,11 +64,14 @@ export function DocumentWorkspace({
   canAdjudicate = false,
   claim,
   actions,
+  next,
   blockers,
   aside,
+  tabs,
   companion,
   commands,
   initialFindingId = null,
+  initialClause = null,
   notice: callerNotice = null,
   onSettle,
   onReopen,
@@ -85,18 +90,28 @@ export function DocumentWorkspace({
   /** Who holds the document, as a phrase: "Claimed by you". */
   owner?: string;
   canAdjudicate?: boolean;
-  claim?: { onClaim: () => void; claiming: boolean; disabledReason: string | null };
+  claim?: {
+    onClaim: () => void;
+    claiming: boolean;
+    disabledReason: string | null;
+  };
   actions?: React.ReactNode;
+  /** A client's next step as one control, at the right of the header. */
+  next?: React.ReactNode;
   /** What stands between this document and sign-off. Advocate only. */
   blockers?: Blocker[];
   /** Right side of the status strip when there are no blockers to show. */
   aside?: React.ReactNode;
+  /** The way between the document's pages (DocumentTabs), under the status strip. */
+  tabs?: React.ReactNode;
   /**
    * What the right pane holds when no finding or activity is open, e.g.
    * the document agent. It keeps the full height of the pane, so it stays
    * beside the reader while the document scrolls.
    */
   companion?: (api: {
+    /** The number of the clause in view, or null. */
+    activeClause: string | null;
     goToClause: (clauseNumber: string) => void;
     openFinding: (findingId: string) => void;
   }) => React.ReactNode;
@@ -104,6 +119,8 @@ export function DocumentWorkspace({
   commands?: PaletteCommand[];
   /** Open on this finding, e.g. when arriving from a sign-off blocker. */
   initialFindingId?: string | null;
+  /** A clause number to carry the document to on arrival ("4.1"), from a link such as the summary's. */
+  initialClause?: string | null;
   /**
    * A plain line for the status strip, e.g. that some findings could not be shown. It sits
    * with the revision notice and reads the same way: said once, and not an alarm.
@@ -111,7 +128,10 @@ export function DocumentWorkspace({
   notice?: string | null;
   onSettle?: (findingId: string, note: string | null) => void | Promise<void>;
   onReopen?: (findingId: string) => void | Promise<void>;
-  onRequestChange?: (findingId: string, request: string) => void | Promise<void>;
+  onRequestChange?: (
+    findingId: string,
+    request: string,
+  ) => void | Promise<void>;
   /** The advocate's own margin notes. Never passed on the client's side. */
   notes?: MarginNotes;
   /**
@@ -142,12 +162,17 @@ export function DocumentWorkspace({
 }) {
   const reduced = useReducedMotion();
   const { open: openPalette } = usePalette();
-  const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null);
+  const [selectedFindingId, setSelectedFindingId] = useState<string | null>(
+    null,
+  );
   const [hoveredFindingId, setHoveredFindingId] = useState<string | null>(null);
   const [activeClauseId, setActiveClauseId] = useState<string | null>(
     doc.clauses[0]?.id ?? null,
   );
   const [activityOpen, setActivityOpen] = useState(false);
+  // Below xl the assistant is not beside the document; it opens from the More menu, over it.
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const assistantRef = useRef<HTMLElement>(null);
   const [indexOpen, setIndexOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -164,7 +189,9 @@ export function DocumentWorkspace({
   // many rounds the advocate has left.
   const cycle = role === "advocate" ? (revisions ?? null) : null;
   const counter = cycle ? revisionCounter(cycle) : null;
-  const notices = [callerNotice, cycle ? revisionNotice(cycle) : null].filter((n): n is string => Boolean(n));
+  const notices = [callerNotice, cycle ? revisionNotice(cycle) : null].filter(
+    (n): n is string => Boolean(n),
+  );
 
   // What the panes show. The counts below it are over the whole document
   // (what sign-off checks); every finding needing a decision is in scope, so
@@ -220,7 +247,10 @@ export function DocumentWorkspace({
         setShowAll(true);
         // A tick later, so it also lands when the page itself opens on this
         // finding, before the toaster has mounted.
-        window.setTimeout(() => toast("Showing all findings to open this one"), 0);
+        window.setTimeout(
+          () => toast("Showing all findings to open this one"),
+          0,
+        );
       }
       setSelectedFindingId(findingId);
       const clause = doc.clauses.find((c) => c.findingIds.includes(findingId));
@@ -233,7 +263,11 @@ export function DocumentWorkspace({
     (next: boolean) => {
       setShowAll(next);
       // Narrowing again puts down a finding the scoped view does not hold.
-      if (!next && selectedFindingId && activeScope?.tags[selectedFindingId] === "carried_forward") {
+      if (
+        !next &&
+        selectedFindingId &&
+        activeScope?.tags[selectedFindingId] === "carried_forward"
+      ) {
         setSelectedFindingId(null);
       }
     },
@@ -259,6 +293,14 @@ export function DocumentWorkspace({
     }
   }, [initialFindingId, doc.findings, selectFinding]);
 
+  // The same for a clause: a link that names one carries the document to it, once.
+  const openedClause = useRef(false);
+  useEffect(() => {
+    if (openedClause.current || !initialClause) return;
+    openedClause.current = true;
+    goToClauseNumber(initialClause);
+  }, [initialClause, goToClauseNumber]);
+
   const stepFinding = useCallback(
     (direction: 1 | -1) => {
       if (view.findings.length === 0) return;
@@ -276,7 +318,28 @@ export function DocumentWorkspace({
   const closePanel = useCallback(() => {
     setSelectedFindingId(null);
     setActivityOpen(false);
+    setAssistantOpen(false);
   }, []);
+
+  // A finding or the activity record takes the pane; the assistant steps aside.
+  useEffect(() => {
+    if (panel) setAssistantOpen(false);
+  }, [panel]);
+
+  // Opening the drawer puts the keyboard in its field; closing it gives the keyboard back to
+  // the menu it came from, so focus is never left on a hidden element.
+  const assistantWasOpen = useRef(false);
+  useEffect(() => {
+    if (assistantOpen) {
+      window.setTimeout(
+        () => assistantRef.current?.querySelector("textarea")?.focus(),
+        300,
+      );
+    } else if (assistantWasOpen.current) {
+      document.querySelector<HTMLElement>('[aria-label="More"]')?.focus();
+    }
+    assistantWasOpen.current = assistantOpen;
+  }, [assistantOpen]);
 
   const toggleActivity = useCallback(() => {
     setSelectedFindingId(null);
@@ -311,7 +374,7 @@ export function DocumentWorkspace({
         setShortcutsOpen((open) => !open);
         return;
       }
-      if (e.key === "Escape" && panel) {
+      if (e.key === "Escape" && (panel || assistantOpen)) {
         closePanel();
         return;
       }
@@ -333,7 +396,16 @@ export function DocumentWorkspace({
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [view.findings.length, panel, closePanel, stepFinding, canAdjudicate, selectedFinding, onSettle]);
+  }, [
+    view.findings.length,
+    panel,
+    assistantOpen,
+    closePanel,
+    stepFinding,
+    canAdjudicate,
+    selectedFinding,
+    onSettle,
+  ]);
 
   const paletteCommands = useMemo<PaletteCommand[]>(() => {
     const clauseCommands: PaletteCommand[] = doc.clauses.map((clause) => ({
@@ -348,10 +420,7 @@ export function DocumentWorkspace({
       id: `finding-${f.findingId}`,
       group: "Findings",
       label: `Finding ${findingNumbers[f.findingId]} · ${f.clauseReference} · ${f.description}`,
-      hint:
-        findingState(f) === "settled"
-          ? "Settled"
-          : f.severity,
+      hint: findingState(f) === "settled" ? "Settled" : f.severity,
       searchText: f.clauseText,
       onSelect: () => selectFinding(f.findingId),
     }));
@@ -391,14 +460,21 @@ export function DocumentWorkspace({
             {
               id: "show-all-findings",
               group: "Document",
-              label: showAll ? "Show this round's findings" : "Show all findings",
+              label: showAll
+                ? "Show this round's findings"
+                : "Show all findings",
               icon: "visibility" as IconName,
               onSelect: () => changeShowAll(!showAll),
             },
           ]
         : []),
     ];
-    return [...(commands ?? []), ...documentCommands, ...findingCommands, ...clauseCommands];
+    return [
+      ...(commands ?? []),
+      ...documentCommands,
+      ...findingCommands,
+      ...clauseCommands,
+    ];
   }, [
     doc.clauses,
     view.findings,
@@ -416,326 +492,396 @@ export function DocumentWorkspace({
 
   const counts = severityCounts(unsettled);
 
+  // The advocate needs both parties and the revision count; a client reads the
+  // counterparty in the title and their own name on the rail, so only the draft
+  // and the tier are left for them, and they sit beside the title.
+  const facts = [
+    role === "advocate" ? owner : null,
+    role === "advocate" ? doc.clientName : null,
+    role === "advocate" ? doc.counterpartyName : null,
+    `Draft ${doc.version}`,
+    counter,
+    doc.tier ? (
+      <span key="tier">
+        <span className="capitalize">{doc.tier}</span> tier
+      </span>
+    ) : (
+      `Tier ${TIER_PENDING_LABEL.toLowerCase()}`
+    ),
+    // A client is told who signed off with the document's other facts, not in the row of tabs.
+    role === "client" ? aside : null,
+  ];
+
+  const statusStrip = (
+    <>
+            {/* A client reading a signed-off document is told so on the right; "all
+              settled" would say it twice. */}
+            {!(
+              role === "client" &&
+              view.findings.length > 0 &&
+              unsettled.length === 0
+            ) && (
+              <span className="flex items-center gap-3">
+                <span className="text-meta text-muted-fg">
+                  {view.findings.length === 0
+                    ? scoped
+                      ? "No findings in this round"
+                      : "No findings raised"
+                    : unsettled.length === 0
+                      ? `All ${view.findings.length} findings ${scoped ? "in this round " : ""}settled`
+                      : `${unsettled.length} of ${view.findings.length} findings ${scoped ? "in this round " : ""}undecided`}
+                </span>
+                {unsettled.length > 0 && <SeverityCounts counts={counts} />}
+              </span>
+            )}
+
+            {withClient > 0 && (
+              <span className="text-meta text-muted-fg">
+                {withClient} with the client
+              </span>
+            )}
+
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 md:ml-auto">
+              {blockers ? (
+                blockers.length === 0 ? (
+                  <span className="inline-flex items-center gap-1 text-meta text-ink">
+                    <Tick state="done" size="sm" />
+                    Ready for sign-off
+                  </span>
+                ) : (
+                  <>
+                    <span className="text-meta text-muted-fg">
+                      Before sign-off:
+                    </span>
+                    {blockers.slice(0, 3).map((b) =>
+                      b.findingId ? (
+                        <button
+                          key={b.label}
+                          type="button"
+                          onClick={() => selectFinding(b.findingId as string)}
+                          className="rounded-full border border-line bg-paper px-3 py-1 text-meta text-ink transition-colors hover:border-muted-fg/50"
+                        >
+                          {b.label}
+                        </button>
+                      ) : (
+                        <span key={b.label} className="text-meta text-ink">
+                          {b.label}
+                        </span>
+                      ),
+                    )}
+                    {blockers.length > 3 && (
+                      <span className="text-meta text-muted-fg">
+                        +{blockers.length - 3} more
+                      </span>
+                    )}
+                  </>
+                )
+              ) : role === "client" ? null : (
+                aside
+              )}
+            </div>
+    </>
+  );
+
   return (
     <ReviewScopeProvider value={activeScope}>
-    {/* Height-bound only where the three panes scroll for themselves (lg and up).
+      {/* Height-bound only where the three panes scroll for themselves (lg and up).
         Below that the page stacks and scrolls as one, so the clauses and findings
         dropdown has room to open. */}
-    <div className="flex min-h-0 flex-col lg:h-full">
-      <header className="border-b border-line bg-paper">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4 md:px-8">
-          <Link
-            href={back.href}
-            aria-label={`Back to ${back.label}`}
-            title={back.label}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line text-ink transition-colors hover:bg-parchment"
-          >
-            <Icon name="arrow_back" size={20} />
-          </Link>
-
-          <div className="min-w-0 flex-1 basis-72">
-            <h1 className="truncate font-display text-[26px] font-medium leading-tight tracking-[-0.015em] text-ink">
-              {doc.title}
-            </h1>
-            <p className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-meta text-muted-fg">
-              <span>{doc.clientName}</span>
-              <span aria-hidden className="h-1 w-1 rounded-full bg-line" />
-              <span>{doc.counterpartyName}</span>
-              <span aria-hidden className="h-1 w-1 rounded-full bg-line" />
-              <span>Draft {doc.version}</span>
-              {counter && (
-                <>
-                  <span aria-hidden className="h-1 w-1 rounded-full bg-line" />
-                  <span>{counter}</span>
-                </>
-              )}
-              <span aria-hidden className="h-1 w-1 rounded-full bg-line" />
-              <span>
-                {doc.tier ? (
+      <div className="flex min-h-0 flex-col lg:h-full">
+        <header className="border-b border-line bg-paper">
+          {/* The title is a PageHeader like every other page's, so it wraps
+            instead of truncating and its separators never dangle. */}
+          <div className="px-5 pt-3 md:px-8">
+            {role === "client" ? (
+              // A client's header: the way back above, the title and its state, who it is with
+              // beneath, and the next step at the right, level with the facts. The tabs follow.
+              <PageHeader
+                stacked
+                back={{ fallbackHref: back.href, label: back.label }}
+                title={doc.title.split(" · ")[0]}
+                status={<StateLabel state={doc.status} />}
+                meta={[`with ${doc.counterpartyName}`]}
+                actions={
                   <>
-                    <span className="capitalize">{doc.tier}</span> tier
+                    {next}
+                    <WorkspaceMenu
+                      activityOpen={panel === "activity"}
+                      onActivity={toggleActivity}
+                      onSearch={openPalette}
+                      onShortcuts={() => setShortcutsOpen(true)}
+                      onAssistant={companion ? () => setAssistantOpen(true) : undefined}
+                      onPrint={() => window.print()}
+                    />
+                    <ReviewShortcuts
+                      open={shortcutsOpen}
+                      onOpenChange={setShortcutsOpen}
+                      includeSettle={canAdjudicate}
+                    />
+                    {actions}
                   </>
-                ) : (
-                  `Tier ${TIER_PENDING_LABEL.toLowerCase()}`
-                )}
-              </span>
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <StateLabel state={doc.status} />
-            {owner && <span className="text-meta text-muted-fg">{owner}</span>}
-            <span aria-hidden className="mx-2 hidden h-6 w-px bg-line md:block" />
-            <HeaderButton
-              icon="history"
-              label="Activity"
-              pressed={panel === "activity"}
-              onClick={toggleActivity}
-            />
-            <HeaderButton icon="search" label="Search" onClick={openPalette} />
-            <ReviewShortcuts
-              open={shortcutsOpen}
-              onOpenChange={setShortcutsOpen}
-              includeSettle={canAdjudicate}
-            />
-            {actions}
-          </div>
-        </div>
-
-        {/* The status strip. The shape of the remaining work on the left,
-            what stands between it and sign-off on the right. */}
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line bg-paper px-5 py-3 md:px-8">
-          <span className="flex items-center gap-3">
-            <span className="text-meta text-muted-fg">
-              {view.findings.length === 0
-                ? scoped
-                  ? "No findings in this round"
-                  : "No findings raised"
-                : unsettled.length === 0
-                  ? `All ${view.findings.length} findings ${scoped ? "in this round " : ""}settled`
-                  : `${unsettled.length} of ${view.findings.length} findings ${scoped ? "in this round " : ""}undecided`}
-            </span>
-            {unsettled.length > 0 && <SeverityCounts counts={counts} />}
-          </span>
-
-          {withClient > 0 && (
-            <span className="text-meta text-muted-fg">{withClient} with the client</span>
-          )}
-
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 md:ml-auto">
-            {blockers ? (
-              blockers.length === 0 ? (
-                <span className="inline-flex items-center gap-1 text-meta text-verified">
-                  <Icon name="check_circle" size={16} />
-                  Ready for sign-off
-                </span>
-              ) : (
-                <>
-                  <span className="text-meta text-muted-fg">Before sign-off:</span>
-                  {blockers.slice(0, 3).map((b) =>
-                    b.findingId ? (
-                      <button
-                        key={b.label}
-                        type="button"
-                        onClick={() => selectFinding(b.findingId as string)}
-                        className="rounded-control border border-line bg-paper px-1.5 py-px text-meta text-ink transition-colors hover:border-muted-fg/50"
-                      >
-                        {b.label}
-                      </button>
-                    ) : (
-                      <span key={b.label} className="text-meta text-ink">
-                        {b.label}
-                      </span>
-                    ),
-                  )}
-                  {blockers.length > 3 && (
-                    <span className="text-meta text-muted-fg">
-                      +{blockers.length - 3} more
-                    </span>
-                  )}
-                </>
-              )
-            ) : (
-              aside
-            )}
-          </div>
-        </div>
-
-        {notices.map((text) => (
-          <div
-            key={text}
-            role="status"
-            className="flex items-start gap-2 border-t border-line bg-parchment px-5 py-3 text-meta text-ink md:px-8"
-          >
-            <Icon name="info" size={18} />
-            <span className="max-w-measure">{text}</span>
-          </div>
-        ))}
-
-        {activeScope && (
-          <ReviewScopePanel
-            scope={activeScope}
-            findings={doc.findings}
-            findingNumbers={findingNumbers}
-            showAll={showAll}
-            onShowAllChange={changeShowAll}
-            onGoToClause={goToClauseNumber}
-            onOpenFinding={selectFinding}
-          />
-        )}
-      </header>
-
-      <div className="lg:hidden">
-        <button
-          type="button"
-          onClick={() => setIndexOpen((v) => !v)}
-          aria-expanded={indexOpen}
-          className="flex w-full items-center gap-2 border-b border-line px-4 py-2 text-left text-meta text-muted-fg"
-        >
-          <Icon name={indexOpen ? "expand_less" : "expand_more"} size={18} />
-          {indexOpen ? "Hide clauses and findings" : "Clauses and findings"}
-        </button>
-      </div>
-
-      <div
-        className={cn(
-          "grid transition-[grid-template-columns] duration-200 ease-out motion-reduce:transition-none lg:min-h-0 lg:flex-1",
-          panel
-            ? "lg:grid-cols-[272px_minmax(0,1fr)_minmax(340px,400px)]"
-            : companion
-              ? "lg:grid-cols-[272px_minmax(0,1fr)_minmax(360px,440px)]"
-              : "lg:grid-cols-[272px_minmax(0,1fr)_0px]",
-        )}
-      >
-        {/* Left · the document's own structure, and the work on it. */}
-        <aside
-          className={cn(
-            "order-first border-line bg-canvas lg:block lg:overflow-hidden lg:border-r",
-            indexOpen ? "block max-h-[60svh] overflow-y-auto border-b" : "hidden",
-          )}
-        >
-          <ClauseIndex
-            clauses={view.clauses}
-            findings={view.findings}
-            findingNumbers={findingNumbers}
-            activeClauseId={activeClauseId}
-            selectedFindingId={selectedFindingId}
-            onSelectClause={(id) => {
-              scrollToClause(id);
-              setIndexOpen(false);
-            }}
-            onSelectFinding={(id) => {
-              selectFinding(id);
-              setIndexOpen(false);
-            }}
-            onHoverFinding={setHoveredFindingId}
-          />
-        </aside>
-
-        {/* Centre · the contract. */}
-        <section aria-label="Contract text" className="min-w-0 bg-paper lg:overflow-y-auto">
-          <DocumentSurface
-            doc={view}
-            findingNumbers={findingNumbers}
-            selectedFindingId={selectedFindingId}
-            hoveredFindingId={hoveredFindingId}
-            onSelectFinding={selectFinding}
-            onHoverFinding={setHoveredFindingId}
-            onActiveClauseChange={setActiveClauseId}
-            notes={role === "advocate" ? notes : undefined}
-            settlementNotes={settlementNotes}
-          />
-        </section>
-
-        {/* Right, when nothing else is open · the companion, full height.
-            It is hidden rather than unmounted while a finding is open, so
-            the conversation is still there when the reader comes back. */}
-        {companion && (
-          <aside
-            aria-label="Document assistant"
-            className={cn(
-              "hidden min-h-0 border-l border-line bg-paper lg:overflow-hidden",
-              !panel && "lg:block",
-            )}
-          >
-            {companion({
-              goToClause: goToClauseNumber,
-              openFinding: selectFinding,
-            })}
-          </aside>
-        )}
-
-        {/* Right · the finding in hand, or the record. On a small screen
-            it is a sheet over the foot of the document. */}
-        {panel && (
-          <aside
-            aria-label={panel === "finding" ? "Finding" : "Activity"}
-            className={cn(
-              "border-line bg-canvas",
-              "fixed inset-x-0 bottom-0 z-40 max-h-[75svh] overflow-y-auto rounded-t-modal border-t shadow-float",
-              "lg:static lg:max-h-none lg:rounded-none lg:border-l lg:border-t-0 lg:shadow-none",
-            )}
-          >
-            <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-line bg-canvas px-3 py-1.5">
-              {panel === "finding" && selectedFinding ? (
-                <div className="flex items-center gap-1">
-                  <PaneButton icon="keyboard_arrow_up" label="Previous finding" onClick={() => stepFinding(-1)} />
-                  <PaneButton icon="keyboard_arrow_down" label="Next finding" onClick={() => stepFinding(1)} />
-                  <span className="ml-1 font-mono text-label text-muted-fg">
-                    {scoped
-                      ? String(
-                          view.findings.findIndex((f) => f.findingId === selectedFinding.findingId) + 1,
-                        ).padStart(2, "0")
-                      : findingNumbers[selectedFinding.findingId]}{" "}
-                    of {String(view.findings.length).padStart(2, "0")}
-                  </span>
-                </div>
-              ) : (
-                <span className="px-1 text-label font-medium text-muted-fg">Activity</span>
-              )}
-              <PaneButton icon="close" label="Close the panel" onClick={closePanel} />
-            </div>
-
-            {panel === "finding" && selectedFinding ? (
-              <FindingDetail
-                doc={doc}
-                finding={selectedFinding}
-                number={findingNumbers[selectedFinding.findingId]}
-                role={role}
-                canAdjudicate={canAdjudicate}
-                claim={claim}
-                onSettle={(note) => onSettle?.(selectedFinding.findingId, note)}
-                onReopen={() => onReopen?.(selectedFinding.findingId)}
-                onRequestChange={(request) =>
-                  onRequestChange?.(selectedFinding.findingId, request)
                 }
-                requestBlockedReason={cycle ? revisionBlockedReason(cycle) : null}
-                busy={busy}
-                trail={trail}
               />
             ) : (
-              <div className="p-4 lg:p-5">
-                <AuditTrail
-                  entries={trail}
-                  title={null}
-                  onSelectFinding={selectFinding}
+              <PageHeader
+                stacked
+                dense
+                back={{ fallbackHref: back.href, label: back.label }}
+                title={doc.title}
+                status={<StateLabel state={doc.status} />}
+                meta={facts}
+                actions={
+                  <>
+                    <WorkspaceMenu
+                      activityOpen={panel === "activity"}
+                      onActivity={toggleActivity}
+                      onSearch={openPalette}
+                      onShortcuts={() => setShortcutsOpen(true)}
+                      onAssistant={
+                        companion ? () => setAssistantOpen(true) : undefined
+                      }
+                    />
+                    <ReviewShortcuts
+                      open={shortcutsOpen}
+                      onOpenChange={setShortcutsOpen}
+                      includeSettle={canAdjudicate}
+                    />
+                    {actions}
+                  </>
+                }
+              />
+            )}
+          </div>
+
+          {/* The second row: the document's tabs when it has them, then the
+            status strip. The shape of the remaining work, and what stands
+            between it and sign-off on the right. One row, so the header
+            leaves the reading column as much height as it can. */}
+          {tabs && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 bg-paper px-5 pb-2 pt-1 md:px-8">
+              {tabs}
+              {role === "client" && statusStrip}
+            </div>
+          )}
+          {role === "advocate" && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line bg-paper px-5 py-2 md:px-8">
+              {statusStrip}
+            </div>
+          )}
+
+          {notices.map((text) => (
+            <div
+              key={text}
+              role="status"
+              className="flex items-start gap-2 border-t border-line bg-parchment px-5 py-3 text-meta text-ink md:px-8"
+            >
+              <Icon name="info" size={18} />
+              <span className="max-w-measure">{text}</span>
+            </div>
+          ))}
+
+          {activeScope && (
+            <ReviewScopePanel
+              scope={activeScope}
+              findings={doc.findings}
+              findingNumbers={findingNumbers}
+              showAll={showAll}
+              onShowAllChange={changeShowAll}
+              onGoToClause={goToClauseNumber}
+              onOpenFinding={selectFinding}
+            />
+          )}
+        </header>
+
+        <div className="lg:hidden">
+          <button
+            type="button"
+            onClick={() => setIndexOpen((v) => !v)}
+            aria-expanded={indexOpen}
+            className="flex w-full items-center gap-2 border-b border-line px-4 py-2 text-left text-meta text-muted-fg"
+          >
+            <Icon name={indexOpen ? "expand_less" : "expand_more"} size={18} />
+            {indexOpen ? "Hide clauses and findings" : "Clauses and findings"}
+          </button>
+        </div>
+
+        <div
+          className={cn(
+            "grid transition-[grid-template-columns] duration-200 ease-out motion-reduce:transition-none lg:min-h-0 lg:flex-1",
+            // The reader gets the room: about a fifth for the clauses, a little over a
+            // quarter for the assistant or the finding, the rest for the text. The
+            // assistant sits beside the text only from xl; narrower, it is a drawer.
+            panel
+              ? "lg:grid-cols-[clamp(220px,20%,264px)_minmax(0,1fr)_clamp(320px,30%,400px)]"
+              : companion
+                ? "lg:grid-cols-[clamp(220px,20%,264px)_minmax(0,1fr)_0px] xl:grid-cols-[clamp(220px,20%,264px)_minmax(0,1fr)_clamp(300px,28%,380px)]"
+                : "lg:grid-cols-[clamp(220px,20%,264px)_minmax(0,1fr)_0px]",
+          )}
+        >
+          {/* Left · the document's own structure, and the work on it. */}
+          <aside
+            className={cn(
+              "order-first border-line bg-canvas lg:block lg:overflow-hidden lg:border-r",
+              indexOpen
+                ? "block max-h-[60svh] overflow-y-auto border-b"
+                : "hidden",
+            )}
+          >
+            <ClauseIndex
+              clauses={view.clauses}
+              findings={view.findings}
+              findingNumbers={findingNumbers}
+              activeClauseId={activeClauseId}
+              selectedFindingId={selectedFindingId}
+              onSelectClause={(id) => {
+                scrollToClause(id);
+                setIndexOpen(false);
+              }}
+              onSelectFinding={(id) => {
+                selectFinding(id);
+                setIndexOpen(false);
+              }}
+              onHoverFinding={setHoveredFindingId}
+            />
+          </aside>
+
+          {/* Centre · the contract. */}
+          <section
+            aria-label="Contract text"
+            className="min-w-0 bg-paper lg:overflow-y-auto"
+          >
+            <DocumentSurface
+              doc={view}
+              findingNumbers={findingNumbers}
+              selectedFindingId={selectedFindingId}
+              hoveredFindingId={hoveredFindingId}
+              onSelectFinding={selectFinding}
+              onHoverFinding={setHoveredFindingId}
+              onActiveClauseChange={setActiveClauseId}
+              notes={role === "advocate" ? notes : undefined}
+              settlementNotes={settlementNotes}
+            />
+          </section>
+
+          {/* Right, when nothing else is open · the companion, full height.
+            It is hidden rather than unmounted while a finding is open, so
+            the conversation is still there when the reader comes back. */}
+          {companion && (
+            <aside
+              ref={assistantRef}
+              aria-label="Document assistant"
+              className={cn(
+                "min-h-0 flex-col overflow-hidden border-line bg-paper",
+                assistantOpen && !panel
+                  ? // The drawer: a sheet over the foot of the page, a panel at the right from lg.
+                    "fixed inset-x-0 bottom-0 z-40 flex h-[75svh] rounded-t-modal border-t shadow-float lg:inset-x-auto lg:right-0 lg:top-9 lg:h-auto lg:w-[26rem] lg:rounded-none lg:border-l lg:border-t-0"
+                  : "hidden",
+                // Beside the text from xl, whenever nothing else holds the pane.
+                !panel &&
+                  "xl:static xl:z-auto xl:flex xl:h-auto xl:w-auto xl:rounded-none xl:border-l xl:border-t-0 xl:shadow-none",
+              )}
+            >
+              {assistantOpen && !panel && (
+                <div className="flex shrink-0 items-center justify-end border-b border-line px-2 py-1 xl:hidden">
+                  <PaneButton
+                    icon="close"
+                    label="Close assistant"
+                    onClick={() => setAssistantOpen(false)}
+                  />
+                </div>
+              )}
+              <div className="min-h-0 flex-1 [&>*]:h-full">
+                {companion({
+                  activeClause: doc.clauses.find((c) => c.id === activeClauseId)?.number ?? null,
+                  goToClause: goToClauseNumber,
+                  openFinding: selectFinding,
+                })}
+              </div>
+            </aside>
+          )}
+
+          {/* Right · the finding in hand, or the record. On a small screen
+            it is a sheet over the foot of the document. */}
+          {panel && (
+            <aside
+              aria-label={panel === "finding" ? "Finding" : "Activity"}
+              className={cn(
+                "border-line bg-canvas",
+                "fixed inset-x-0 bottom-0 z-40 max-h-[75svh] overflow-y-auto rounded-t-modal border-t shadow-float",
+                "lg:static lg:max-h-none lg:rounded-none lg:border-l lg:border-t-0 lg:shadow-none",
+              )}
+            >
+              <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-line bg-canvas px-3 py-1.5">
+                {panel === "finding" && selectedFinding ? (
+                  <div className="flex items-center gap-1">
+                    <PaneButton
+                      icon="keyboard_arrow_up"
+                      label="Previous finding"
+                      onClick={() => stepFinding(-1)}
+                    />
+                    <PaneButton
+                      icon="keyboard_arrow_down"
+                      label="Next finding"
+                      onClick={() => stepFinding(1)}
+                    />
+                    <span className="ml-1 font-mono text-label text-muted-fg">
+                      {scoped
+                        ? String(
+                            view.findings.findIndex(
+                              (f) => f.findingId === selectedFinding.findingId,
+                            ) + 1,
+                          ).padStart(2, "0")
+                        : findingNumbers[selectedFinding.findingId]}{" "}
+                      of {String(view.findings.length).padStart(2, "0")}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="px-1 text-label font-medium text-muted-fg">
+                    Activity
+                  </span>
+                )}
+                <PaneButton
+                  icon="close"
+                  label="Close the panel"
+                  onClick={closePanel}
                 />
               </div>
-            )}
-          </aside>
-        )}
-      </div>
-    </div>
-    </ReviewScopeProvider>
-  );
-}
 
-function HeaderButton({
-  icon,
-  label,
-  onClick,
-  pressed,
-}: {
-  icon: IconName;
-  label: string;
-  onClick: () => void;
-  pressed?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={pressed}
-      aria-label={label}
-      title={label}
-      className={cn(
-        "inline-flex h-10 items-center gap-2 rounded-full px-3 text-meta font-medium transition-colors",
-        pressed ? "bg-ink text-paper" : "text-muted-fg hover:bg-parchment hover:text-ink",
-      )}
-    >
-      <Icon name={icon} size={18} />
-      <span className="hidden xl:inline">{label}</span>
-    </button>
+              {panel === "finding" && selectedFinding ? (
+                <FindingDetail
+                  doc={doc}
+                  finding={selectedFinding}
+                  number={findingNumbers[selectedFinding.findingId]}
+                  role={role}
+                  canAdjudicate={canAdjudicate}
+                  claim={claim}
+                  onSettle={(note) =>
+                    onSettle?.(selectedFinding.findingId, note)
+                  }
+                  onReopen={() => onReopen?.(selectedFinding.findingId)}
+                  onRequestChange={(request) =>
+                    onRequestChange?.(selectedFinding.findingId, request)
+                  }
+                  requestBlockedReason={
+                    cycle ? revisionBlockedReason(cycle) : null
+                  }
+                  busy={busy}
+                  trail={trail}
+                />
+              ) : (
+                <div className="p-4 lg:p-5">
+                  <AuditTrail
+                    entries={trail}
+                    title={null}
+                    onSelectFinding={selectFinding}
+                  />
+                </div>
+              )}
+            </aside>
+          )}
+        </div>
+      </div>
+    </ReviewScopeProvider>
   );
 }
 

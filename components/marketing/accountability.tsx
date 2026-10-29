@@ -76,7 +76,7 @@ export function Accountability() {
           <ul className="space-y-3 px-7 py-6">
             {record.map((line) => (
               <li key={line} className="flex items-start gap-3">
-                <Icon name="check" size={18} className="mt-0.5 text-verified" />
+                <Icon name="check" size={18} className="mt-0.5 text-ink" />
                 <span className="text-meta text-ink">{line}</span>
               </li>
             ))}
