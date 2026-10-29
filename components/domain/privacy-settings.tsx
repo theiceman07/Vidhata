@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Chip } from "@/components/document/state-label";
+import { Icon } from "@/components/shared/icon";
 import { ErrorState } from "@/components/shared/error-state";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -30,6 +31,7 @@ import {
   DELETION_STATUS,
 } from "@/lib/config/privacy";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
+import { cn } from "@/lib/utils";
 import type { PrivacyState } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
@@ -56,7 +58,11 @@ export function PrivacySettings() {
       setPrivacy(await getPrivacy(MOCK_CLIENT_ORG.id));
       setState("loaded");
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Could not load your privacy settings.");
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : "Could not load your privacy settings.",
+      );
       setState("error");
     }
   }, []);
@@ -83,15 +89,15 @@ export function PrivacySettings() {
 
   return (
     <div className="w-full">
-      <p className="mb-6 max-w-measure text-body text-muted-fg">
-        What Vidhata may do with your documents, what you can take with you, and how to ask for
-        deletion.
+      <p className="mb-4 text-meta text-muted-fg">
+        What Vidhata may do with your documents, what you can take with you, and
+        how to ask for deletion.
       </p>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid items-stretch gap-4 lg:grid-cols-2">
         <TrainingPanel privacy={privacy} onChange={setPrivacy} />
         <ExportPanel />
-        <div className="min-w-0 md:col-span-2">
+        <div className="min-w-0 lg:col-span-2">
           <DeletionPanel privacy={privacy} onChange={setPrivacy} />
         </div>
       </div>
@@ -103,17 +109,26 @@ function Panel({
   title,
   children,
   id,
+  aside,
 }: {
   title: string;
   children: React.ReactNode;
   id: string;
+  /** Beside the title, on its line: the section's one status marker. */
+  aside?: React.ReactNode;
 }) {
   return (
-    <section aria-labelledby={id} className="min-w-0 rounded-card bg-parchment p-6">
-      <h2 id={id} className="font-display text-h3 text-ink">
-        {title}
-      </h2>
-      {children}
+    <section
+      aria-labelledby={id}
+      className="h-full min-w-0 rounded-card bg-surface p-5"
+    >
+      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <h2 id={id} className="font-display text-h3 text-ink">
+          {title}
+        </h2>
+        {aside}
+      </div>
+      <div className="min-w-0 [&>*:first-child]:mt-0">{children}</div>
     </section>
   );
 }
@@ -137,7 +152,9 @@ function TrainingPanel({
     try {
       onChange(await setTrainingOptIn(MOCK_CLIENT_ORG.id, granted));
     } catch (err) {
-      setFailed(err instanceof Error ? err.message : "Could not save your choice.");
+      setFailed(
+        err instanceof Error ? err.message : "Could not save your choice.",
+      );
     } finally {
       setSaving(false);
       inFlight.current = false;
@@ -146,31 +163,41 @@ function TrainingPanel({
 
   return (
     <Panel id="training-title" title="Training use">
-      <p className="mt-2 text-meta text-ink">
-        Vidhata does not use your documents to train models unless you opt in. It is off by
-        default, and you can turn it off again at any time.
+      <p className="text-body text-ink">
+        Vidhata does not use your documents to train models unless you opt in.
+        It is off by default, and you can turn it off again at any time.
       </p>
 
       <label
         htmlFor="training-opt-in"
-        className="mt-5 flex cursor-pointer items-center gap-3 text-body text-ink"
+        className="mt-4 flex cursor-pointer items-center gap-3 text-body text-ink"
       >
         <Switch
           id="training-opt-in"
           checked={privacy.trainingOptIn}
           disabled={saving}
           onCheckedChange={toggle}
+          className="data-[state=checked]:border-ink data-[state=checked]:bg-ink data-[state=unchecked]:border-muted-fg/60 data-[state=unchecked]:bg-surface"
         />
-        {privacy.trainingOptIn ? "On: you have opted in" : "Off"}
+        <span>
+          {privacy.trainingOptIn ? "On: you have opted in" : "Off"}
+          {privacy.consentLog.length > 0 && (
+            <span className="text-meta text-muted-fg">
+              {" "}
+              · changed{" "}
+              {stamp(privacy.consentLog[privacy.consentLog.length - 1].at)}
+            </span>
+          )}
+        </span>
       </label>
 
       {failed && (
-        <p role="alert" className="mt-3 text-meta text-flagged">
+        <p role="alert" className="mt-3 text-meta text-ink">
           {failed}
         </p>
       )}
 
-      <h3 className="mt-6 text-meta font-medium text-ink">Consent log</h3>
+      <h3 className="mt-4 text-meta font-medium text-ink">Consent log</h3>
       {privacy.consentLog.length === 0 ? (
         <p className="mt-2 text-meta text-muted-fg">
           No changes yet. Training use has never been on.
@@ -186,8 +213,8 @@ function TrainingPanel({
         </ol>
       )}
       <p className="mt-3 text-meta text-muted-fg">
-        This log is kept even if you ask for deletion, so a change you made can be shown to have
-        happened.
+        This log is kept even if you ask for deletion, so a change you made can
+        be shown to have happened.
       </p>
     </Panel>
   );
@@ -207,7 +234,9 @@ function ExportPanel() {
     setDone(null);
     try {
       const file = await requestDataExport(MOCK_CLIENT_ORG.id);
-      const url = URL.createObjectURL(new Blob([file.contents], { type: "application/json" }));
+      const url = URL.createObjectURL(
+        new Blob([file.contents], { type: "application/json" }),
+      );
       const link = document.createElement("a");
       link.href = url;
       link.download = file.fileName;
@@ -216,7 +245,9 @@ function ExportPanel() {
       setDone(file.fileName);
       toast.success("Export prepared");
     } catch (err) {
-      setFailed(err instanceof Error ? err.message : "Could not prepare your export.");
+      setFailed(
+        err instanceof Error ? err.message : "Could not prepare your export.",
+      );
     } finally {
       setBusy(false);
       inFlight.current = false;
@@ -225,17 +256,18 @@ function ExportPanel() {
 
   return (
     <Panel id="export-title" title="Export your data">
-      <p className="mt-2 text-meta text-ink">
-        A file of what you can read in Vidhata: your documents as far as you can read them, your
-        invoices, the questions you have asked an advocate, and your consent log.
+      <p className="text-body text-ink">
+        A file of what you can read in Vidhata: your documents as far as you can
+        read them, your invoices, the questions you have asked an advocate, and
+        your consent log.
       </p>
       <p className="mt-2 text-meta text-muted-fg">
-        Before a document is signed off, that is only the passages your advocate has asked you
-        about. It is a preview file, with sample data.
+        Before a document is signed off, that is only the passages your advocate
+        has asked you about. It is a preview file, with sample data.
       </p>
 
       {failed && (
-        <p role="alert" className="mt-3 text-meta text-flagged">
+        <p role="alert" className="mt-3 text-meta text-ink">
           {failed}
         </p>
       )}
@@ -245,7 +277,12 @@ function ExportPanel() {
         </p>
       )}
 
-      <Button className="mt-5" variant="outline" onClick={download} disabled={busy}>
+      <Button
+        className="mt-4"
+        variant="outline"
+        onClick={download}
+        disabled={busy}
+      >
         {busy ? "Preparing" : failed ? "Try again" : "Export my data"}
       </Button>
     </Panel>
@@ -274,7 +311,9 @@ function DeletionPanel({
       onChange(await requestDeletion(MOCK_CLIENT_ORG.id, { understood: true }));
       setOpen(false);
     } catch (err) {
-      setFailed(err instanceof Error ? err.message : "Could not record your request.");
+      setFailed(
+        err instanceof Error ? err.message : "Could not record your request.",
+      );
     } finally {
       setBusy(false);
       inFlight.current = false;
@@ -289,7 +328,9 @@ function DeletionPanel({
     try {
       onChange(await withdrawDeletion(MOCK_CLIENT_ORG.id));
     } catch (err) {
-      setFailed(err instanceof Error ? err.message : "Could not withdraw your request.");
+      setFailed(
+        err instanceof Error ? err.message : "Could not withdraw your request.",
+      );
     } finally {
       setBusy(false);
       inFlight.current = false;
@@ -297,57 +338,78 @@ function DeletionPanel({
   }
 
   const scope = (columns: boolean) => (
-    <div className={columns ? "grid gap-6 md:grid-cols-2" : "space-y-5"}>
-      <List title="Would be removed" items={DELETION_SCOPE.removed} />
-      <div className="space-y-5">
-        <List title="Would be kept" items={DELETION_SCOPE.kept} />
-        <List title="Not yet decided" items={DELETION_SCOPE.undecided} />
-      </div>
+    <div
+      className={columns ? "grid gap-x-6 gap-y-4 md:grid-cols-3" : "space-y-5"}
+    >
+      <List
+        title="Would be removed"
+        items={DELETION_SCOPE.removed}
+        marker="remove"
+      />
+      <List title="Would be kept" items={DELETION_SCOPE.kept} marker="lock" />
+      <List
+        title="Not yet decided"
+        items={DELETION_SCOPE.undecided}
+        marker="hourglass_top"
+        tone="text-ink"
+      />
     </div>
   );
 
   return (
-    <Panel id="delete-title" title="Delete your data">
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <Chip tone="progress" icon="hourglass_top">
+    <Panel
+      id="delete-title"
+      title="Delete your data"
+      aside={
+        <Chip tone="move" icon="hourglass_top">
           {DELETION_STATUS}
         </Chip>
-        <p className="min-w-0 max-w-measure text-meta text-ink">
-          You can ask for your data to be deleted. This is a request. What it would and would not
-          remove is below, and the wording is waiting for counsel to confirm it.
-        </p>
-      </div>
+      }
+    >
+      <p className="text-body text-ink">
+        You can ask for deletion. This is a request, and you will confirm before
+        anything is recorded.
+      </p>
+      <p className="mt-1 text-meta text-muted-fg">
+        The wording below is waiting for counsel to confirm it.
+      </p>
 
-      <div className="mt-6">{scope(true)}</div>
+      <div className="mt-4">{scope(true)}</div>
 
       {failed && !open && (
-        <p role="alert" className="mt-4 text-meta text-flagged">
+        <p role="alert" className="mt-4 text-meta text-ink">
           {failed}
         </p>
       )}
 
       {privacy.deletionRequestedAt ? (
-        <div role="status" className="mt-6 space-y-2">
+        <div role="status" className="mt-4 space-y-2">
           <p className="text-meta font-medium text-ink">{DELETION_RECORDED}</p>
           <p className="text-meta text-muted-fg">
             Asked on {stamp(privacy.deletionRequestedAt)}.
           </p>
-          <Button variant="outline" size="sm" onClick={withdraw} disabled={busy}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={withdraw}
+            disabled={busy}
+          >
             Withdraw request
           </Button>
         </div>
       ) : (
-        <Button
-          className="mt-6"
-          variant="outline"
-          onClick={() => {
-            setUnderstood(false);
-            setFailed(null);
-            setOpen(true);
-          }}
-        >
-          Request deletion
-        </Button>
+        <div className="mt-4 flex justify-end">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setUnderstood(false);
+              setFailed(null);
+              setOpen(true);
+            }}
+          >
+            Request deletion
+          </Button>
+        </div>
       )}
 
       <Dialog open={open} onOpenChange={(next) => !busy && setOpen(next)}>
@@ -355,8 +417,8 @@ function DeletionPanel({
           <DialogHeader>
             <DialogTitle>Request deletion of your data</DialogTitle>
             <DialogDescription>
-              {DELETION_STATUS}. Read what would and would not be removed, then confirm. Nothing
-              is deleted in this preview.
+              {DELETION_STATUS}. Read what would and would not be removed, then
+              confirm. Nothing is deleted in this preview.
             </DialogDescription>
           </DialogHeader>
 
@@ -370,20 +432,27 @@ function DeletionPanel({
               disabled={busy}
               className="mt-1"
             />
-            <label htmlFor="deletion-understood" className="text-meta font-medium text-ink">
-              I have read what would be removed and what would be kept, and I understand the
-              wording is pending counsel confirmation.
+            <label
+              htmlFor="deletion-understood"
+              className="text-meta font-medium text-ink"
+            >
+              I have read what would be removed and what would be kept, and I
+              understand the wording is pending counsel confirmation.
             </label>
           </div>
 
           {failed && (
-            <p role="alert" className="text-meta text-flagged">
+            <p role="alert" className="text-meta text-ink">
               {failed}
             </p>
           )}
 
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setOpen(false)} disabled={busy}>
+            <Button
+              variant="ghost"
+              onClick={() => setOpen(false)}
+              disabled={busy}
+            >
               Cancel
             </Button>
             <Button onClick={confirm} disabled={busy || !understood}>
@@ -396,13 +465,32 @@ function DeletionPanel({
   );
 }
 
-function List({ title, items }: { title: string; items: readonly string[] }) {
+function List({
+  title,
+  items,
+  marker,
+  tone,
+}: {
+  title: string;
+  items: readonly string[];
+  marker: "remove" | "lock" | "hourglass_top";
+  /** Colour for the title and marks, where the column is the open question. */
+  tone?: string;
+}) {
   return (
     <div>
-      <h3 className="text-meta font-medium text-ink">{title}</h3>
-      <ul className="mt-2 space-y-2">
+      <h3
+        className={cn(
+          "flex items-center gap-2 text-meta font-medium",
+          tone ?? "text-ink",
+        )}
+      >
+        <Icon name={marker} size={18} />
+        {title}
+      </h3>
+      <ul className="mt-2 divide-y divide-line border-y border-line">
         {items.map((item) => (
-          <li key={item} className="text-meta text-muted-fg">
+          <li key={item} className="py-2.5 text-meta text-ink">
             {item}
           </li>
         ))}

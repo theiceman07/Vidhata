@@ -108,7 +108,7 @@ export default function OnboardingPage() {
   if (load.phase === "error") {
     return (
       <AuthScreen portal="advocate" title="Join the panel." intro="By invitation only.">
-        <p role="alert" className="text-body text-flagged">
+        <p role="alert" className="text-body text-ink">
           {load.message}
         </p>
         <Button className="mt-6 w-full" variant="outline" onClick={check}>
@@ -326,7 +326,7 @@ export default function OnboardingPage() {
         )}
 
         {problem && (
-          <p role="alert" className="text-small text-flagged">
+          <p role="alert" className="text-small text-ink">
             {problem}
           </p>
         )}

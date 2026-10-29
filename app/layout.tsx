@@ -5,6 +5,7 @@ import { SessionProvider } from "@/lib/session";
 import { Toaster } from "@/components/ui/sonner";
 import { ConsentBanner } from "@/components/shared/consent-banner";
 import { MATERIAL_SYMBOLS_HREF } from "@/components/shared/icon";
+import { hexOf } from "@/lib/palette";
 
 // QA 4.1: every route used to share one <title>/description with no
 // robots.txt or sitemap.xml. metadataBase + a title template let each
@@ -38,7 +39,7 @@ export const metadata: Metadata = {
 // The browser chrome takes the accent: the one colour the product uses,
 // shown where the product meets the operating system.
 export const viewport: Viewport = {
-  themeColor: "#1B4332",
+  themeColor: hexOf("bg-canvas", "light"),
 };
 
 export default function RootLayout({

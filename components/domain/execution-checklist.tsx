@@ -64,8 +64,8 @@ interface ExecutionChecklistProps {
  * relying on, not an absence worth hiding.
  *
  * The steps run down a rail, one station each, so the sheet reads as a
- * sequence. Each is a parchment sheet: what to do on the left, the record
- * set into it on paper on the right. The step up next is marked.
+ * sequence. What to do sits on the left and the record on the right, divided
+ * by a hairline; the step up next carries a quiet tint, the rest sit on rules.
  */
 export function ExecutionChecklist({
   steps,
@@ -78,13 +78,12 @@ export function ExecutionChecklist({
   const next = nextStep(steps);
 
   return (
-    <ol className="print:space-y-6">
+    <ol className="space-y-4 print:space-y-6">
       {ordered.map((step, i) => (
         <StepRow
           key={step.kind}
           step={step}
           number={i + 1}
-          last={i === ordered.length - 1}
           isNext={next?.kind === step.kind}
           owner={owners[step.kind]}
           busy={busyKind === step.kind}
@@ -105,35 +104,62 @@ function StepNode({ step, number, isNext }: { step: ExecutionStep; number: numbe
         ? "current"
         : "ahead";
   return (
-    <Tick state={state} size="xl" className="relative z-10 text-meta print:hidden">
+    <Tick state={state} size="lg" className="relative z-10 ml-1 print:hidden">
       {state === "current" || state === "ahead" ? number : undefined}
     </Tick>
   );
 }
 
 function StatusPill({ step, isNext }: { step: ExecutionStep; isNext: boolean }) {
+  const text = !step.applicable
+    ? "Not required"
+    : step.complete
+      ? "Complete"
+      : isNext
+        ? "Up next"
+        : "Not done";
   return (
-    <span className="flex flex-wrap items-center gap-1.5">
-      {isNext && (
-        <span className="rounded-full bg-ink px-2.5 py-1 text-label text-paper">Up next</span>
+    <span
+      className={cn(
+        "ml-auto rounded-control border px-2.5 py-0.5 text-label font-medium",
+        step.applicable && step.complete
+          ? "border-done text-done-text"
+          : isNext
+            ? "border-ink text-ink"
+            : "border-line text-muted-fg",
       )}
-      <span
-        className={cn(
-          "inline-flex items-center gap-1 rounded-full bg-paper px-2.5 py-1 text-label",
-          !step.applicable ? "text-muted-fg" : step.complete ? "text-done-text" : "text-muted",
-        )}
-      >
-        {step.applicable && step.complete && <Tick state="done" size="sm" />}
-        {!step.applicable ? "Not required" : step.complete ? "Complete" : "Not done"}
-      </span>
+    >
+      {text}
     </span>
+  );
+}
+
+/** One cell of a step's facts: a small label over its value. */
+function Fact({
+  label,
+  children,
+  compact = false,
+}: {
+  label: string;
+  children: React.ReactNode;
+  compact?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "min-w-0",
+        compact ? "flex items-baseline justify-between gap-4 py-2.5" : "px-4 py-3",
+      )}
+    >
+      <dt className={cn("shrink-0 text-muted-fg", compact ? "text-meta" : "text-label")}>{label}</dt>
+      <dd className={cn("leading-snug", compact ? "min-w-0 text-right" : "mt-0.5")}>{children}</dd>
+    </div>
   );
 }
 
 function StepRow({
   step,
   number,
-  last,
   isNext,
   owner,
   busy,
@@ -142,7 +168,6 @@ function StepRow({
 }: {
   step: ExecutionStep;
   number: number;
-  last: boolean;
   isNext: boolean;
   owner: string;
   busy: boolean;
@@ -151,212 +176,234 @@ function StepRow({
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const fileId = `evidence-${step.kind}`;
+  const title = STEP_TITLE[step.kind];
+  // The headline names the step ("Stamp duty: Rs 100 (Delhi)"); the fact is what follows the colon.
+  const requirement = step.headline.includes(": ")
+    ? step.headline.slice(step.headline.indexOf(": ") + 2)
+    : step.headline;
 
-  return (
-    <li
-      id={`step-${step.kind}`}
-      className="relative grid scroll-mt-6 grid-cols-[2.25rem_minmax(0,1fr)] gap-x-4 pb-4 last:pb-0 md:gap-x-6 print:block print:break-inside-avoid print:pb-0"
-    >
-      {/* The rail. It fills in accent as each step is done. */}
-      {!last && (
-        <span
-          aria-hidden
-          className={cn(
-            "absolute bottom-0 left-[16.5px] top-11 w-[3px] rounded-full print:hidden",
-            step.applicable && step.complete ? "bg-accent" : "bg-line",
+  const esign = step.kind === "esignature";
+  const val = esign ? "text-meta" : "text-body";
+  const facts = (
+        <dl
+    className={
+      esign
+        ? "divide-y divide-line"
+        : "mt-4 grid divide-line overflow-hidden rounded-control border border-line bg-paper max-md:divide-y md:grid-cols-[1.5fr_1fr_1fr_1fr] md:divide-x"
+    }
+  >
+        <Fact compact={esign} label="Requirement">
+          <span className={cn(val, "font-medium text-ink")}>{requirement}</span>
+        </Fact>
+        <Fact compact={esign} label="Owner">
+          <span className={cn(val, "font-medium text-ink")}>{owner}</span>
+        </Fact>
+        <Fact compact={esign} label="Proof">
+          {step.evidence ? (
+            <span className={cn("flex min-w-0 items-center gap-2 font-medium text-ink", val)}>
+              <Icon name="description" size={18} className="shrink-0 text-muted-fg" />
+              <span className="truncate">{step.evidence.name}</span>
+            </span>
+          ) : step.complete ? (
+            <span className={cn("flex items-center gap-2 font-medium text-ink", val)}>
+              <Icon name="error" size={18} className="shrink-0 text-move-text" />
+              Not attached
+            </span>
+          ) : (
+            <span className={cn(val, "text-muted-fg")}>Not attached yet</span>
           )}
-        />
-      )}
-      <StepNode step={step} number={number} isNext={isNext} />
-
-      {!step.applicable ? (
-        <div className="rounded-card bg-parchment/50 p-6 md:px-7 print:p-0">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="text-body font-medium text-ink">
-                {String(number).padStart(2, "0")} · {STEP_TITLE[step.kind]}
-              </h2>
-              <p className="mt-1 font-display text-h3 text-muted-fg">{step.headline}</p>
-            </div>
-            <StatusPill step={step} isNext={false} />
-          </div>
-          <p className="mt-3 max-w-prose text-meta text-muted-fg">
-            <span className="text-ink">Why it does not apply.</span> {step.reason}
-          </p>
-        </div>
-      ) : (
-        <div
-          className={cn(
-            "grid gap-x-8 gap-y-6 rounded-card bg-parchment p-6 md:p-7 xl:grid-cols-[minmax(0,1.15fr)_minmax(19rem,0.85fr)] print:block print:p-0",
-            isNext && "ring-1 ring-inset ring-ink/15",
+        </Fact>
+        <Fact compact={esign} label={step.complete ? "Completed" : "Status"}>
+          {step.complete ? (
+            <span className={cn("block font-medium text-ink", val)}>
+              {step.completedAt ? format(new Date(step.completedAt), "d MMM yyyy") : "Complete"}
+              {step.completedBy && (
+                <span className="block truncate text-label text-muted-fg">by {step.completedBy}</span>
+              )}
+            </span>
+          ) : (
+            <span className={cn(val, "text-muted-fg")}>{isNext ? "Up next" : "Not started"}</span>
           )}
-        >
-          {/* What to do. */}
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <h2 className="text-body font-medium text-ink">
-                {String(number).padStart(2, "0")} · {STEP_TITLE[step.kind]}
-                <span className="mx-1.5 text-muted-fg/50">·</span>
-                <span className="font-normal">Owner · {owner}</span>
-              </h2>
-              <span className="xl:hidden">
-                <StatusPill step={step} isNext={isNext} />
-              </span>
-            </div>
+        </Fact>
+      </dl>
+  );
 
-            <p className="mt-2 font-display text-h3 text-ink">
-              {step.headline}
-            </p>
-            <p className="mt-2 max-w-prose text-body text-ink">{step.detail}</p>
-
+  const instructionList = (
+    <>
             {step.instructions.length > 0 && (
-              <ol className="mt-5 space-y-2.5">
+              <ol className={esign ? "space-y-3" : "space-y-1.5"}>
                 {step.instructions.map((instruction, index) => (
-                  <li key={index} className="flex items-start gap-3 text-meta text-ink">
-                    <span
-                      aria-hidden
-                      className="mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-paper font-mono text-label text-muted-fg"
-                    >
-                      {index + 1}
-                    </span>
-                    <span className="pt-0.5">{instruction}</span>
+                  <li
+                    key={index}
+                    className={cn(
+                      "flex items-start gap-3 text-body leading-snug",
+                      step.complete ? "text-muted-fg" : "text-ink",
+                    )}
+                  >
+                    {esign ? (
+                      <span
+                        aria-hidden
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-parchment text-label font-medium tabular-nums text-muted-fg"
+                      >
+                        {step.complete ? <Icon name="check" size={16} /> : index + 1}
+                      </span>
+                    ) : step.complete ? (
+                      <Icon name="check" size={18} className="mt-px shrink-0" />
+                    ) : (
+                      <span aria-hidden className="mt-0.5 h-4 w-4 shrink-0 rounded-[4px] border border-line" />
+                    )}
+                    <span>{instruction}</span>
                   </li>
                 ))}
               </ol>
             )}
+    </>
+  );
 
-            {step.kind === "esignature" && (
-              <div className="mt-6 max-w-prose">
-                <EsignGuide />
-              </div>
-            )}
-          </div>
-
-          {/* The record: proof, and who marked it done. */}
-          <div className="flex min-w-0 flex-col gap-3">
-            <div className="hidden justify-end xl:flex">
-              <StatusPill step={step} isNext={isNext} />
-            </div>
-
-            <div className="flex flex-1 flex-col rounded-control bg-paper p-5 print:p-0">
-              <p className="text-label font-medium text-muted-fg">Proof</p>
-              <input
-                ref={fileRef}
-                id={fileId}
-                type="file"
-                aria-label={`Attach proof for ${STEP_TITLE[step.kind]}`}
-                className="sr-only"
-                tabIndex={-1}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) onAttach(file.name);
-                  e.target.value = "";
-                }}
-              />
-              {step.evidence ? (
-                <div className="mt-2 flex items-center gap-3 rounded-control bg-parchment px-3.5 py-3">
-                  <span
-                    aria-hidden
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-paper text-ink"
-                  >
-                    <Icon name="description" size={18} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-meta text-ink">{step.evidence.name}</span>
-                    <span className="block text-meta text-muted-fg">
-                      Attached {format(new Date(step.evidence.attachedAt), "d MMM yyyy")}
-                    </span>
-                  </span>
-                  <span className="flex shrink-0 items-center print:hidden">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={busy}
-                      onClick={() => fileRef.current?.click()}
-                    >
+  const proofControls = (
+    <>
+            {/* The record's controls: take the proof back, replace it, or undo the step. */}
+            {step.complete ? (
+              <div className="flex flex-wrap items-center justify-end gap-1 print:hidden">
+                {step.evidence ? (
+                  <>
+                    <Button size="sm" variant="ghost" disabled={busy} onClick={() => fileRef.current?.click()}>
                       Replace
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={busy}
-                      onClick={() => onAttach(null)}
-                    >
+                    <Button size="sm" variant="ghost" disabled={busy} onClick={() => onAttach(null)}>
                       Remove
                     </Button>
-                  </span>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => fileRef.current?.click()}
-                  className="mt-2 flex items-center gap-3 rounded-control border border-dashed border-ink/20 px-3.5 py-3 text-left transition-colors hover:border-ink/40 hover:bg-parchment/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50 motion-reduce:transition-none print:hidden"
-                >
-                  <span
-                    aria-hidden
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-parchment text-muted-fg"
-                  >
-                    <Icon name="attach_file" size={18} />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-meta text-ink">Attach proof</span>
-                    <span className="block text-meta text-muted-fg">
-                      {EVIDENCE_HINT[step.kind]} is enough. It stays with this document.
-                    </span>
-                  </span>
-                </button>
-              )}
-
-              <div className="mt-auto pt-5">
-                {step.complete ? (
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="inline-flex items-start gap-1.5 text-meta text-ink">
-                      <Tick state="done" size="sm" className="mt-px" />
-                      <span>
-                        Marked complete
-                        {step.completedBy && ` by ${step.completedBy}`}
-                        {step.completedAt && (
-                          <span className="block text-meta text-muted-fg">
-                            {format(new Date(step.completedAt), "d MMM yyyy, HH:mm")}
-                          </span>
-                        )}
-                      </span>
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={busy}
-                      onClick={() => onToggle(false)}
-                      className="print:hidden"
-                    >
-                      <Icon name="undo" size={18} />
-                      Undo
-                    </Button>
-                  </div>
+                  </>
                 ) : (
-                  <div className="space-y-3">
-                    <Button
-                      variant={isNext ? "default" : "outline"}
-                      disabled={busy}
-                      onClick={() => onToggle(true)}
-                      className="w-full print:hidden"
-                    >
-                      <Icon name="check" size={18} />
-                      {step.kind === "esignature" ? "Both have signed" : "Mark complete"}
-                    </Button>
-                    <p className="text-meta text-muted-fg">
-                      {step.kind === "esignature"
-                        ? "This says both signatories have signed. "
-                        : ""}
-                      Who marked it, and when, is recorded. It can be taken back.
-                    </p>
-                  </div>
+                  <Button size="sm" variant="ghost" disabled={busy} onClick={() => fileRef.current?.click()}>
+                    Attach proof
+                  </Button>
                 )}
+                <Button size="sm" variant="ghost" disabled={busy} onClick={() => onToggle(false)}>
+                  <Icon name="undo" size={18} />
+                  Undo
+                </Button>
+              </div>
+            ) : step.evidence ? (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-control border border-line px-4 py-2.5 print:hidden">
+                <span className="text-meta leading-snug text-ink">
+                  {step.evidence.name}
+                  <span className="block text-label text-muted-fg">
+                    Attached {format(new Date(step.evidence.attachedAt), "d MMM yyyy")}
+                  </span>
+                </span>
+                <span className="flex items-center">
+                  <Button size="sm" variant="ghost" disabled={busy} onClick={() => fileRef.current?.click()}>
+                    Replace
+                  </Button>
+                  <Button size="sm" variant="ghost" disabled={busy} onClick={() => onAttach(null)}>
+                    Remove
+                  </Button>
+                </span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => fileRef.current?.click()}
+                className="flex items-center gap-3 rounded-control border border-dashed border-ink/25 px-4 py-2.5 text-left transition-colors hover:border-ink/40 hover:bg-paper/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50 motion-reduce:transition-none print:hidden"
+              >
+                <Icon name="attach_file" size={18} className="shrink-0 text-muted-fg" />
+                <span className="min-w-0 leading-snug">
+                  <span className="block text-meta font-medium text-ink">Attach proof</span>
+                  <span className="block text-label text-muted-fg">
+                    {EVIDENCE_HINT[step.kind]} is enough. It stays with this document.
+                  </span>
+                </span>
+              </button>
+            )}
+    </>
+  );
+
+  const header = (muted: boolean) => (
+    <div className="flex items-center gap-3">
+      <StepNode step={step} number={number} isNext={isNext} />
+      <span className="text-meta tabular-nums text-muted-fg">{String(number).padStart(2, "0")}</span>
+      <h2 className={cn("font-display text-h3", muted ? "text-muted-fg" : "text-ink")}>{title}</h2>
+      <StatusPill step={step} isNext={isNext} />
+    </div>
+  );
+
+  return (
+    <li
+      id={`step-${step.kind}`}
+      className={cn(
+        "scroll-mt-6 rounded-card border bg-surface p-5 print:break-inside-avoid print:p-0",
+        isNext ? "border-brand" : "border-transparent",
+      )}
+    >
+      {!step.applicable ? (
+        <>
+          {header(true)}
+          <p className="mt-3 text-body text-muted-fg">{step.headline}</p>
+          <p className="mt-2 max-w-prose text-meta text-muted-fg">
+            <span className="text-ink">Why it does not apply.</span> {step.reason}
+          </p>
+        </>
+      ) : (
+        <>
+          {header(false)}
+
+          <p className="mt-2 max-w-prose text-meta leading-snug text-muted-fg">{step.detail}</p>
+
+
+          <input
+            ref={fileRef}
+            id={fileId}
+            type="file"
+            aria-label={`Attach proof for ${title}`}
+            className="sr-only"
+            tabIndex={-1}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onAttach(file.name);
+              e.target.value = "";
+            }}
+          />
+
+          {!esign && facts}
+
+          {esign ? (
+            <div className="mt-3 grid items-stretch gap-3 lg:grid-cols-3">
+              <div className="min-w-0 rounded-control bg-paper p-4">
+                <h3 className="mb-3 text-body font-medium text-ink">Steps</h3>
+                {instructionList}
+              </div>
+              <div className="min-w-0 rounded-control bg-paper p-4">
+                <h3 className="mb-2 text-body font-medium text-ink">Status</h3>
+                {facts}
+                <div className="mt-3">{proofControls}</div>
+              </div>
+              <div className="min-w-0 rounded-control bg-paper p-4">
+                <h3 className="mb-3 text-body font-medium text-ink">Electronic signing</h3>
+                <EsignGuide />
               </div>
             </div>
-          </div>
-        </div>
+          ) : (
+            <div className="mt-4 grid items-start gap-x-6 gap-y-3 md:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)]">
+              <div className="min-w-0">{instructionList}</div>
+              <div className="min-w-0">{proofControls}</div>
+            </div>
+          )}
+
+          {!step.complete && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-line pt-3 print:hidden">
+              <p className="max-w-prose text-meta leading-snug text-muted-fg">
+                {step.kind === "esignature" ? "This says both signatories have signed. " : ""}
+                Who marked it, and when, is recorded. It can be taken back.
+              </p>
+              <Button variant={isNext ? "default" : "outline"} disabled={busy} onClick={() => onToggle(true)}>
+                <Icon name="check" size={18} />
+                {step.kind === "esignature" ? "Both have signed" : "Mark complete"}
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </li>
   );

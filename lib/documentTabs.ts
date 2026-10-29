@@ -11,6 +11,8 @@
 export interface DocumentTab {
   key: "overview" | "summary" | "checklist" | "history" | "consultation" | "delivery";
   label: string;
+  /** Small count beside the label, such as "2/3" on the checklist. */
+  badge?: string;
   href: string;
 }
 
@@ -32,7 +34,8 @@ export function documentTabs({
     tabs.push({ key: "summary", label: "Summary", href: `${base}/summary` });
     tabs.push({
       key: "checklist",
-      label: checklist ? `Execution checklist · ${checklist.done} of ${checklist.total}` : "Execution checklist",
+      label: "Checklist",
+      badge: checklist ? `${checklist.done}/${checklist.total}` : undefined,
       href: `${base}/checklist`,
     });
   }

@@ -5,14 +5,14 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { ErrorState } from "@/components/shared/error-state";
 import { Icon } from "@/components/shared/icon";
-import { LifecycleStepper, stageCaption } from "@/components/document/provenance";
+import { LifecycleStepper } from "@/components/document/provenance";
 import { StateLabel } from "@/components/document/state-label";
 import { DealPrompt } from "@/components/marketing/deal-prompt";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listClientDocuments } from "@/lib/api/client/documents";
 import { MOCK_CLIENT_ORG, MOCK_CLIENT_PERSON } from "@/lib/mock/client.mock";
-import { groupOf, yourMove, youSummary, type Move, type MoveGroup } from "@/lib/moves";
+import { groupOf, yourMove, type Move, type MoveGroup } from "@/lib/moves";
 import { TONE, type Tone } from "@/lib/tone";
 import type { ClientDocumentSummary } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -74,7 +74,7 @@ export default function DocumentsPage() {
   if (state === "loading") {
     return (
       <div className="w-full">
-        <div className="flex flex-col items-center pt-16">
+        <div className="flex flex-col items-center pt-24">
           <Skeleton className="h-12 w-[28rem] max-w-full rounded-full" />
           <Skeleton className="mt-8 h-32 w-full max-w-2xl rounded-modal" />
         </div>
@@ -135,17 +135,14 @@ export default function DocumentsPage() {
   return (
     <div className="w-full">
       {/* The greeting and the way in: the one display moment. */}
-      <section className="flex flex-col items-center px-2 pb-10 pt-2 text-center md:pt-4">
+      <section className="flex flex-col items-center px-2 pb-10 pt-8 text-center md:pt-14">
         {/* The one page that is not a PageHeader: a greeting and a prompt, centred. */}
-        <h1 className="font-display text-greeting text-ink">
+        <h1 className="font-display text-h1 text-ink">
           {greeting()}, {MOCK_CLIENT_PERSON.name.split(" ")[0]}
         </h1>
-        <p className="mt-3 text-body text-muted-fg">
-          {youSummary(docs) ??
-            (docs.length === 0 ? "Describe your first deal to begin." : "Nothing is waiting on you.")}
-        </p>
         <DealPrompt
-          className="mt-6"
+          className="mt-6 max-w-2xl"
+          compact
           destination="draft"
           restore
           placeholder="Describe a new deal: who it is with, what it covers, where it will be signed"
@@ -209,7 +206,7 @@ function EmptyGroup({
         {title}
         <span
           className={cn(
-            "inline-flex h-6 min-w-6 items-center justify-center rounded-full border px-2 font-sans text-label font-medium tabular-nums",
+            "inline-flex h-6 min-w-6 items-center justify-center rounded-full border px-2 pt-px font-sans text-label font-medium leading-none",
             TONE[tone].chip,
           )}
         >
@@ -240,19 +237,22 @@ function YourRecord({ docs }: { docs: ClientDocumentSummary[] }) {
     new Set(signedOff.map((d) => d.signOff?.advocate).filter((n): n is string => Boolean(n))),
   );
 
-  const figures: { label: string; value: number; note: string }[] = [
+  const figures: { label: string; value: number; note: string; dot: string }[] = [
     {
       label: "Documents",
+      dot: "bg-brand",
       value: docs.length,
       note: "Drafted from your briefs",
     },
     {
       label: "Findings raised",
+      dot: "bg-blocked",
       value: findings,
       note: `Across ${screened.length} screened ${screened.length === 1 ? "draft" : "drafts"}`,
     },
     {
       label: "Signed off",
+      dot: "bg-done",
       value: signedOff.length,
       note:
         signedOff.length > 0
@@ -261,6 +261,7 @@ function YourRecord({ docs }: { docs: ClientDocumentSummary[] }) {
     },
     {
       label: "Execution steps done",
+      dot: "bg-progress",
       value: stepsDone,
       note: stepsInAll > 0 ? `Of ${stepsInAll} that apply` : "None apply yet",
     },
@@ -287,9 +288,12 @@ function YourRecord({ docs }: { docs: ClientDocumentSummary[] }) {
       {figures.map((figure) => (
         <div
           key={figure.label}
-          className="flex flex-col justify-between gap-6 rounded-card bg-surface p-6"
+          className="flex flex-col justify-between gap-6 rounded-card border border-line bg-surface p-6"
         >
-          <p className="text-label font-medium text-muted-fg">{figure.label}</p>
+          <p className="flex items-center gap-2 text-label font-medium text-muted-fg">
+            <span aria-hidden className={cn("h-2 w-2 rounded-full", figure.dot)} />
+            {figure.label}
+          </p>
           <div>
             <p className="font-display text-h1 tabular-nums text-ink">{figure.value}</p>
             <p className="mt-1 truncate text-meta text-muted-fg">{figure.note}</p>
@@ -317,7 +321,7 @@ function Section({
         {title}
         <span
           className={cn(
-            "inline-flex h-7 min-w-7 items-center justify-center rounded-full border px-2 font-sans text-meta font-medium tabular-nums",
+            "inline-flex h-7 min-w-7 items-center justify-center rounded-full border px-2 pt-px font-sans text-meta font-medium leading-none",
             TONE[tone].chip,
           )}
         >
@@ -338,9 +342,16 @@ function DocumentRow({ doc, move }: { doc: ClientDocumentSummary; move: Move | n
   const date = since(doc);
 
   return (
-    <li className="relative grid items-center gap-x-10 gap-y-5 rounded-card border border-line bg-surface px-6 py-6 transition-colors hover:border-ink/25 lg:px-8 xl:grid-cols-[minmax(0,1fr)_12rem] 2xl:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)_12rem]">
+    <li className={cn("relative grid items-center gap-x-10 gap-y-5 rounded-card bg-surface px-6 py-6 lg:px-8 xl:grid-cols-[minmax(0,1fr)_12rem] 2xl:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)_12rem]")}>
       <div className="min-w-0">
-        <StateLabel state={doc.status} className="mb-2" />
+        {doc.status === "settled" && doc.checklist.done < doc.checklist.total ? (
+          <span className="mb-2 inline-flex h-6 items-center gap-1.5 rounded-full bg-move pl-2 pr-3 text-label font-medium leading-none text-white">
+            <Icon name="schedule" size={16} filled />
+            Execution pending
+          </span>
+        ) : doc.status === "settled" ? null : (
+          <StateLabel state={doc.status} className="mb-2" />
+        )}
         <Link
           href={`/documents/${doc.id}`}
           className="block truncate font-display text-h3 font-medium leading-snug tracking-[-0.01em] text-ink after:absolute after:inset-0 after:content-['']"
@@ -354,30 +365,24 @@ function DocumentRow({ doc, move }: { doc: ClientDocumentSummary; move: Move | n
           {date && (
             <>
               <span aria-hidden className="h-1 w-1 rounded-full bg-line" />
-              <span>Since {date}</span>
+              <span>{doc.signOff ? `Signed off ${date}` : `Since ${date}`}</span>
             </>
           )}
         </p>
-        <p className={`mt-3 text-body ${move ? "text-ink" : "text-muted-fg"}`}>
-          {move ? move.note : stageCaption(doc)}
-        </p>
+        {move && doc.status !== "settled" && <p className="mt-3 text-body text-ink">{move.note}</p>}
       </div>
 
-      {/* Three columns only where the title keeps room to be read: with the rail
-          open the page is about 950px wide at 1280, and a third column left the
-          title 136px, so two different NDAs both read "Mutual ND…". Below that
-          the stepper takes its own row. */}
-      <div className="xl:col-span-2 xl:row-start-2 2xl:col-span-1 2xl:row-start-auto">
+      <div className="rounded-control bg-sand px-5 py-4 xl:col-span-2 2xl:col-span-1">
         <LifecycleStepper doc={doc} />
       </div>
 
       <div className="relative z-10 xl:col-start-2 xl:row-start-1 xl:justify-self-end 2xl:col-start-auto 2xl:row-start-auto">
         {move ? (
-          <Button asChild size="lg" variant={doc.status === "revision" ? "default" : "outline"}>
+          <Button asChild size="lg" variant="primary">
             <Link href={move.href}>{move.action}</Link>
           </Button>
         ) : (
-          <span className="inline-flex items-center gap-1 text-meta font-medium text-muted-fg">
+          <span className="inline-flex items-center gap-1 text-meta font-medium text-brand">
             Open
             <Icon name="arrow_forward" size={18} />
           </span>

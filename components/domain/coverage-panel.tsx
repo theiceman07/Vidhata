@@ -107,73 +107,48 @@ export function CoveragePanel({
           : `All ${ran.length} layers ran on the ${clauseCount} clauses of Draft ${doc.version}. The full pipeline runs again on every revision.`}
       </p>
 
-      {/* Three sections, set apart by tint and space. A tick means a layer
-          ran on this draft, not that a clause passed it. */}
-      <div className="mt-3 space-y-3">
-        {ran.length > 0 && (
-          <Section number="01" title="Layers that ran" note="A tick means the layer ran on this draft.">
-            <ol className="grid gap-x-8 gap-y-1 md:grid-cols-2 xl:grid-cols-3">
-              {ran.map((layer) => (
-                <li key={layer} className="flex items-baseline gap-2.5 text-meta">
-                  <Tick state="done" size="sm" className="translate-y-0.5" />
-                  <span className="text-ink">{PIPELINE_LAYERS[layer].name}</span>
-                </li>
-              ))}
-            </ol>
-          </Section>
-        )}
+      {/* The pipeline as one strip, then what it checked and what it did not.
+          A tick means a layer ran on this draft, not that a clause passed it. */}
+      {ran.length > 0 && (
+        <div className="mt-5">
+          <p className="text-label font-medium text-muted">Layers that ran</p>
+          <ol className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-7">
+            {ran.map((layer, i) => (
+              <li key={layer} className="flex flex-col gap-2 rounded-control bg-surface p-3">
+                <span className="flex items-center justify-between">
+                  <span className="text-label tabular-nums text-muted-fg">Layer {i + 1}</span>
+                  <Tick state="done" size="sm" />
+                </span>
+                <span className="text-meta font-medium leading-snug text-ink">
+                  {PIPELINE_LAYERS[layer].name}
+                </span>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-2 text-label text-muted-fg">A tick means the layer ran on this draft.</p>
+        </div>
+      )}
 
-        <Section number="02" title="Rules and references" note="The same for every document.">
-          <div className="grid gap-x-8 gap-y-5 md:grid-cols-2">
-            <CoverageList
-              title="Statutory checks"
-              scope="Layer 2"
-              items={COVERAGE.statutory}
-              note={COVERAGE.statutoryNote}
-            />
-            <CoverageList
-              title="Cross-clause checks"
-              scope="Layers 3 and 4"
-              items={COVERAGE.crossClause}
-            />
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] [&>*]:min-w-0">
+        <div className="rounded-control bg-surface p-5">
+          <p className="text-label font-medium text-muted">Rules and references, the same for every document</p>
+          <div className="mt-4 grid gap-6 sm:grid-cols-2">
+            <CoverageList title="Statutory checks" scope="Layer 2" items={COVERAGE.statutory} note={COVERAGE.statutoryNote} />
+            <CoverageList title="Cross-clause checks" scope="Layers 3 and 4" items={COVERAGE.crossClause} />
           </div>
-        </Section>
-
-        <Section number="03" title="Outside the review" note="Not covered by this review.">
-          <ul className="grid gap-x-8 gap-y-0.5 sm:grid-cols-2 lg:grid-cols-3">
+        </div>
+        <div className="p-1 lg:p-2">
+          <p className="text-label font-medium text-muted">Outside the review</p>
+          <ul className="mt-4 flex flex-wrap gap-2">
             {COVERAGE.outOfScope.map((item) => (
-              <li key={item} className="text-meta text-muted-fg">
+              <li key={item} className="rounded-full border border-line px-3 py-1 text-meta text-muted-fg">
                 {item}
               </li>
             ))}
           </ul>
-        </Section>
+        </div>
       </div>
     </ContextPanel>
-  );
-}
-
-/** One numbered section of the panel: a paper inset, a heading, what it is. */
-function Section({
-  number,
-  title,
-  note,
-  children,
-}: {
-  number: string;
-  title: string;
-  note: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-control bg-surface px-4 py-3">
-      <h3 className="flex flex-wrap items-baseline gap-x-2.5 text-meta font-semibold text-ink">
-        <span className="tabular-nums text-muted-fg">{number}</span>
-        {title}
-        <span className="text-small font-normal text-muted-fg">{note}</span>
-      </h3>
-      <div className="mt-2.5">{children}</div>
-    </section>
   );
 }
 
@@ -191,16 +166,16 @@ function CoverageList({
 }) {
   return (
     <div>
-      <h3 className="text-meta font-semibold text-ink">{title}</h3>
-      <p className="min-h-[1.25rem] text-small text-muted-fg">{scope}</p>
-      <ul className="mt-1.5 space-y-0.5">
+      <h3 className="text-meta font-medium text-ink">{title}</h3>
+      <p className="min-h-[1.25rem] text-label text-muted-fg">{scope}</p>
+      <ul className="mt-2 flex flex-wrap gap-2">
         {items.map((item) => (
-          <li key={item} className="text-meta text-muted-fg">
+          <li key={item} className="rounded-full bg-sand px-3 py-1 text-meta text-ink">
             {item}
           </li>
         ))}
       </ul>
-      {note && <p className="mt-2.5 text-small text-muted-fg">{note}</p>}
+      {note && <p className="mt-3 text-label text-muted-fg">{note}</p>}
     </div>
   );
 }

@@ -202,7 +202,7 @@ export default function ConsultationRequestPage() {
           )}
 
           {failed && (
-            <p role="alert" className="mt-6 text-meta text-flagged">
+            <p role="alert" className="mt-6 text-meta text-ink">
               {failed}
             </p>
           )}

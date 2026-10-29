@@ -58,7 +58,7 @@ export function PricingTable() {
                     <ul className="mt-1.5 space-y-1.5">
                       {t.adds.map((a) => (
                         <li key={a} className="flex items-center gap-2 text-ink">
-                          <Icon name="check" size={16} className="text-verified" />
+                          <Icon name="check" size={16} className="text-ink" />
                           {a}
                         </li>
                       ))}
@@ -76,7 +76,7 @@ export function PricingTable() {
         <ul className="mt-5 grid gap-x-8 gap-y-3 text-body text-ink sm:grid-cols-2">
           {EVERY_TIER.map((item) => (
             <li key={item} className="flex items-center gap-2">
-              <Icon name="check" size={18} className="text-verified" />
+              <Icon name="check" size={18} className="text-ink" />
               {item}
             </li>
           ))}

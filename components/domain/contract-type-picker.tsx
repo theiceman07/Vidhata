@@ -145,7 +145,7 @@ export function ContractTypePicker({
       })}
 
       {error && (
-        <p role="alert" className="text-small text-flagged">
+        <p role="alert" className="text-small text-ink">
           {error}
         </p>
       )}

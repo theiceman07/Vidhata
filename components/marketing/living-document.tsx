@@ -112,7 +112,7 @@ function Sheet({ stage, reduced }: { stage: number; reduced: boolean }) {
         <span
           className={cn(
             "font-mono text-label transition-colors",
-            settled ? "text-accent" : flagged ? "text-caution-fg" : "text-muted-fg",
+            settled ? "text-accent" : flagged ? "text-ink" : "text-muted-fg",
           )}
         >
           {STAGES[stage].caption}

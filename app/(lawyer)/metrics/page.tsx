@@ -31,33 +31,48 @@ function Figure({
   none: string;
 }) {
   const value = percent(ratio);
+  const share =
+    ratio.denominator > 0 ? Math.round((ratio.numerator / ratio.denominator) * 100) : 0;
   return (
-    <section className="flex flex-col rounded-card bg-parchment p-6">
+    <section className="flex flex-col rounded-card bg-parchment p-6 md:p-8">
       <h2 className="text-body font-medium text-ink">{label}</h2>
       {value ? (
         <>
-          <p className="mt-3 font-display text-h1 tabular-nums text-ink">{value}</p>
-          <p className="mt-1 text-meta tabular-nums text-ink">
-            {ratio.numerator} of {ratio.denominator}
-          </p>
+          <div className="mt-4 flex items-baseline gap-3">
+            <p className="font-display text-h1 tabular-nums text-ink">{value}</p>
+            <p className="text-meta tabular-nums text-muted-fg">
+              {ratio.numerator} of {ratio.denominator}
+            </p>
+          </div>
+          <div
+            className="mt-4 h-2 w-full overflow-hidden rounded-full bg-line"
+            role="img"
+            aria-label={`${ratio.numerator} of ${ratio.denominator}`}
+          >
+            <div className="h-full rounded-full bg-ink" style={{ width: `${share}%` }} />
+          </div>
         </>
       ) : (
         <>
-          <p className="mt-3 font-display text-h2 text-ink">None yet</p>
+          <p className="mt-4 font-display text-h2 text-ink">None yet</p>
           <p className="mt-1 text-meta text-muted-fg">{none}</p>
         </>
       )}
-      <p className="mt-4 max-w-measure text-meta text-muted-fg">{definition}</p>
+      <p className="mt-5 max-w-measure text-meta text-muted-fg">{definition}</p>
     </section>
   );
 }
 
 function NoSource({ label, why }: { label: string; why: string }) {
   return (
-    <section className="flex flex-col rounded-card bg-parchment/60 p-5">
-      <h3 className="text-meta font-medium text-ink">{label}</h3>
-      <p className="mt-1 text-meta font-medium text-muted-fg">No data source yet</p>
-      <p className="mt-3 max-w-measure text-meta text-muted-fg">{why}</p>
+    <section className="flex flex-col gap-2 rounded-card border border-dashed border-line p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-meta font-medium text-ink">{label}</h3>
+        <span className="rounded-full bg-sand px-2.5 py-0.5 text-label text-muted-fg">
+          No data source yet
+        </span>
+      </div>
+      <p className="max-w-measure text-meta text-muted-fg">{why}</p>
     </section>
   );
 }
@@ -122,7 +137,10 @@ export default function MetricsPage() {
 
       {/* What cannot be measured yet is said plainly and kept quiet: a figure
           with nothing behind it is never shown (CLAUDE.md, Metrics). */}
-      <h2 className="mb-3 mt-10 text-body font-medium text-ink">Not measured yet</h2>
+      <h2 className="mb-1 mt-12 text-body font-medium text-ink">Not measured yet</h2>
+      <p className="mb-4 text-meta text-muted-fg">
+        These have nothing behind them, so no figure is shown.
+      </p>
       <div className="grid gap-4 md:grid-cols-3">
         <NoSource
           label="Triage override rate"
@@ -138,7 +156,7 @@ export default function MetricsPage() {
         />
       </div>
 
-      <p className="mt-12 max-w-measure text-meta text-muted-fg">
+      <p className="mt-10 border-t border-line pt-4 text-meta text-muted-fg">
         Counted over {metrics.documentsCounted} documents in the queue and the sample data they
         carry. A document still awaiting payment is not counted.
       </p>

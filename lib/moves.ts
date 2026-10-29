@@ -102,7 +102,7 @@ export function yourMove(doc: MoveSource): Move | null {
     const n = outstandingSteps(doc);
     return {
       note: `${n} ${n === 1 ? "step" : "steps"} left on the execution checklist`,
-      action: "Execution checklist",
+      action: "Continue checklist",
       href: `/documents/${doc.id}/checklist`,
     };
   }

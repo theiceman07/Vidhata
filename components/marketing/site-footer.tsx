@@ -49,7 +49,7 @@ export function SiteFooter() {
     <footer className="px-3 pb-3 sm:px-4 sm:pb-4">
       <div
         data-nav-tone="dark"
-        className="tile-grain tile-grain-ink overflow-hidden rounded-modal bg-shell text-paper"
+        className="tile-grain tile-grain-ink overflow-hidden rounded-modal bg-night text-paper"
       >
         <div className="mx-auto w-full max-w-6xl px-6 pt-14 md:pt-16">
           {/* One grid: the brand column and the three link groups share a

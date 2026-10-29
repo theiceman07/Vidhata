@@ -68,8 +68,11 @@ export function DocumentSurface({
     const scrollRoot = root.parentElement;
     if (!scrollRoot) return;
 
-    // Matches scroll-mt-12 on ClauseBlock plus the sticky readout.
-    const ANCHOR = 24;
+    // A clause that is scrolled to lands scroll-mt-12 (48px) below the top of the
+    // pane, so the line a heading must pass to count as "reached" sits just under
+    // that. At 24 the clause the reader chose was one short of it, and the
+    // clause before it stayed marked.
+    const ANCHOR = 56;
 
     const report = () => {
       const top = scrollRoot.getBoundingClientRect().top + ANCHOR;
@@ -78,6 +81,12 @@ export function DocumentSurface({
         if (node.getBoundingClientRect().top <= top) current = node;
         else break;
       }
+      // At the foot of the pane the last clause may be too short to reach the
+      // line above, so the end of the document counts as being on it.
+      const atEnd =
+        scrollRoot.scrollTop > 0 &&
+        scrollRoot.scrollTop + scrollRoot.clientHeight >= scrollRoot.scrollHeight - 2;
+      if (atEnd) current = nodes[nodes.length - 1];
       const id = current?.dataset.clause;
       if (id) reportRef.current(id);
     };
@@ -98,7 +107,7 @@ export function DocumentSurface({
   return (
     <article
       ref={containerRef}
-      className="@container mx-auto max-w-[76rem] px-6 pb-10 pt-4 md:px-10"
+      className="@container mx-auto max-w-[76rem] px-6 pb-10 pt-4 md:px-8"
     >
       <div className="divide-y divide-line">
         {doc.clauses.map((clause) => (

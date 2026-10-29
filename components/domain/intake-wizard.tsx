@@ -209,7 +209,7 @@ export function IntakeWizard() {
   const columnWidth = step === 0 ? "max-w-[90rem]" : "max-w-4xl";
 
   const stepper = (
-    <ol aria-label="Progress" className="flex w-full items-center lg:ml-auto lg:max-w-2xl">
+    <ol aria-label="Progress" className="ml-auto flex w-full max-w-2xl items-center">
       {STEP_LABELS.map((label, i) => (
         <li
           key={label}
@@ -300,7 +300,7 @@ export function IntakeWizard() {
                 placeholder="Vendor agreement · packaging supply"
               />
               {errors.title && (
-                <p className="mt-1 text-small text-flagged">
+                <p className="mt-1 text-small text-ink">
                   {errors.title.message}
                 </p>
               )}
@@ -310,7 +310,7 @@ export function IntakeWizard() {
               <Label htmlFor="clientName">Your company name</Label>
               <Input className="h-12" id="clientName" {...register("clientName")} />
               {errors.clientName && (
-                <p className="mt-1 text-small text-flagged">
+                <p className="mt-1 text-small text-ink">
                   {errors.clientName.message}
                 </p>
               )}
@@ -319,7 +319,7 @@ export function IntakeWizard() {
               <Label htmlFor="counterpartyName">Counterparty name</Label>
               <Input className="h-12" id="counterpartyName" {...register("counterpartyName")} />
               {errors.counterpartyName && (
-                <p className="mt-1 text-small text-flagged">
+                <p className="mt-1 text-small text-ink">
                   {errors.counterpartyName.message}
                 </p>
               )}
@@ -360,7 +360,7 @@ export function IntakeWizard() {
                 {...register("transactionValue")}
               />
               {errors.transactionValue && (
-                <p className="mt-1 text-small text-flagged">
+                <p className="mt-1 text-small text-ink">
                   {errors.transactionValue.message}
                 </p>
               )}
@@ -374,7 +374,7 @@ export function IntakeWizard() {
                 {...register("durationMonths")}
               />
               {errors.durationMonths && (
-                <p className="mt-1 text-small text-flagged">
+                <p className="mt-1 text-small text-ink">
                   {errors.durationMonths.message}
                 </p>
               )}
@@ -397,7 +397,7 @@ export function IntakeWizard() {
                 </SelectContent>
               </Select>
               {errors.stateOfExecution && (
-                <p className="mt-1 text-small text-flagged">
+                <p className="mt-1 text-small text-ink">
                   {errors.stateOfExecution.message}
                 </p>
               )}
@@ -411,7 +411,7 @@ export function IntakeWizard() {
                 placeholder="Laws of India"
               />
               {errors.governingLaw && (
-                <p className="mt-1 text-small text-flagged">
+                <p className="mt-1 text-small text-ink">
                   {errors.governingLaw.message}
                 </p>
               )}
@@ -440,7 +440,7 @@ export function IntakeWizard() {
         )}
 
         {submitError && (
-          <p className="text-small text-flagged">{submitError}</p>
+          <p className="text-small text-ink">{submitError}</p>
         )}
         </div>
         </div>

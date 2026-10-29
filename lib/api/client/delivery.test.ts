@@ -58,7 +58,7 @@ describe("the summary, asked for by a client's own organisation", () => {
   it("says only that it is not available before sign-off, without the title", async () => {
     for (const d of notSignedOff) {
       const result = await settle(getClientSummary(ORG, d.id));
-      expect(result, d.id).toEqual({ title: null, result: { state: "not_available" } });
+      expect(result, d.id).toEqual({ title: null, status: null, result: { state: "not_available" } });
     }
   });
 

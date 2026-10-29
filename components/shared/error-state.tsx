@@ -20,7 +20,7 @@ export function ErrorState({ message, onRetry }: ErrorStateProps) {
         {/* The label is for a message that does not say so itself: most start with
             "Could not", and the same words twice read as a stutter. */}
         {!/^could not/i.test(message) && (
-          <p className="mb-2 text-label font-medium text-flagged">Could not load</p>
+          <p className="mb-2 text-label font-medium text-ink">Could not load</p>
         )}
         <p className="max-w-prose text-body text-ink">{message}</p>
         <Button variant="outline" className="mt-6" onClick={onRetry}>

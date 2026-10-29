@@ -93,7 +93,7 @@ export function ChangeRequests({
           const fieldId = `response-${finding.number}`;
 
           return (
-            <li key={finding.number} className="overflow-hidden rounded-modal border border-line bg-surface">
+            <li key={finding.number} className="overflow-hidden rounded-card bg-surface">
               <div className="px-6 pb-6 pt-5 md:px-8">
                 <p className="text-meta text-muted">
                   Request {i + 1} of {requested.length}
@@ -111,10 +111,10 @@ export function ChangeRequests({
 
                 {/* The advocate's words: marigold, because it is the client's move. */}
                 <div className="mt-3 flex gap-4 rounded-card bg-move-tint px-5 py-3.5">
-                  <Icon name="rate_review" size={24} className="mt-0.5 text-move-text" />
+                  <Icon name="rate_review" size={24} className="mt-0.5 text-ink" />
                   <div className="min-w-0">
                     <p className="text-body leading-[1.6] text-ink">{request.request}</p>
-                    <p className="mt-2 text-small text-move-text">
+                    <p className="mt-2 text-small text-ink">
                       Your advocate asked for your answer ·{" "}
                       {format(new Date(request.requestedAt), "d MMM yyyy")}
                     </p>
@@ -123,12 +123,12 @@ export function ChangeRequests({
               </div>
 
               {request.response ? (
-                <div className="border-t border-line bg-sand p-6 md:px-8">
+                <div className="bg-sand p-6 md:px-8">
                   <p className="text-meta font-medium text-ink">Your response</p>
                   <p className="mt-1 text-body text-ink">{request.response}</p>
                 </div>
               ) : (
-                <div className="border-t border-line bg-sand px-6 py-4 md:px-8">
+                <div className="bg-sand px-6 py-4 md:px-8">
                   <label htmlFor={fieldId} className="block font-display text-h3 text-ink">
                     Your response
                   </label>

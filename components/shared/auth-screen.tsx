@@ -66,7 +66,7 @@ export function AuthScreen({
                   className={cn(
                     "rounded-full py-2.5 text-center text-body font-medium transition-colors",
                     active
-                      ? "bg-shell text-paper"
+                      ? "bg-night text-paper"
                       : "text-muted-fg hover:text-ink",
                   )}
                 >

@@ -75,19 +75,17 @@ export function PaymentPanel({
         </p>
 
         <h3 className="mt-5 text-meta font-medium text-ink">The deal facts behind the tier</h3>
-        <dl className="mt-3 grid grid-cols-[7rem_minmax(0,1fr)] gap-x-4 gap-y-2.5 text-meta">
-          <dt className="text-muted-fg">Agreement</dt>
-          <dd className="text-ink">{typeLabel}</dd>
-          {doc.deal.transactionValue > 0 && (
-            <>
-              <dt className="text-muted-fg">Deal value</dt>
-              <dd className="text-ink">{rupees(doc.deal.transactionValue)}</dd>
-            </>
-          )}
-          <dt className="text-muted-fg">Counterparty</dt>
-          <dd className="text-ink">
-            {doc.deal.counterpartyIsMsme ? "A registered MSME" : "Not a registered MSME"}
-          </dd>
+        <dl className="mt-3 grid gap-2 sm:grid-cols-3">
+          {[
+            ["Agreement", typeLabel],
+            ...(doc.deal.transactionValue > 0 ? [["Deal value", rupees(doc.deal.transactionValue)]] : []),
+            ["Counterparty", doc.deal.counterpartyIsMsme ? "A registered MSME" : "Not a registered MSME"],
+          ].map(([term, value]) => (
+            <div key={term} className="min-w-0 rounded-control bg-paper px-4 py-3">
+              <dt className="text-label text-muted-fg">{term}</dt>
+              <dd className="mt-0.5 text-body font-medium text-ink">{value}</dd>
+            </div>
+          ))}
         </dl>
       </div>
 
@@ -107,7 +105,7 @@ export function PaymentPanel({
         <p className="mt-1 text-meta text-muted-fg">GST is added at the rate in force.</p>
 
         {failed && (
-          <p role="alert" className="mt-4 text-meta text-flagged">
+          <p role="alert" className="mt-4 text-meta text-ink">
             {failed}
           </p>
         )}

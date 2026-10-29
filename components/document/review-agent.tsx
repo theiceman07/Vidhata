@@ -134,11 +134,7 @@ export function ReviewAgent({
         }}
         className="group relative m-4 mt-0"
       >
-        <div
-          aria-hidden
-          className="prompt-ring pointer-events-none absolute -inset-[2px] rounded-[22px] opacity-0 transition-opacity duration-500 group-focus-within:opacity-100"
-        />
-        <div className="relative rounded-card border border-ink/15 bg-paper p-2 pl-4 transition-colors group-focus-within:border-transparent">
+        <div className="relative rounded-card border border-ink/15 bg-paper p-2 pl-4 transition-colors group-focus-within:border-ink/40">
           <textarea
             id="review-agent-input"
             aria-label="Ask about this review"

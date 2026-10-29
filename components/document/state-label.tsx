@@ -50,7 +50,7 @@ export function Chip({
         className,
       )}
     >
-      <Icon name={icon} size={16} />
+      <Icon name={icon} size={16} className="[font-variation-settings:'wght'_500]" />
       {children}
     </span>
   );

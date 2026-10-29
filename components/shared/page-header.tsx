@@ -34,8 +34,20 @@ export interface PageHeaderProps {
   meta?: ReactNode;
   /** Buttons on the right of the title. */
   actions?: ReactNode;
+  /** Beside the title, so a state sits next to what it describes. */
+  status?: ReactNode;
+  /** At the right of the title's own line, level with the title. */
+  titleActions?: ReactNode;
+  /** A full-width strip under the title and above the tabs. */
+  strip?: ReactNode;
   /** A row of tabs under the header, the same on every page of a set (a document's pages). */
   tabs?: ReactNode;
+  /**
+   * Keep the tabs in view as the page scrolls (from md up, where the page
+   * scrolls inside the shell). The large title scrolls away; the way between
+   * the document's pages does not.
+   */
+  stickyTabs?: boolean;
   /**
    * The way back. `fallbackHref` is where it goes when there is nothing to go
    * back to; `label` names that place for assistive technology.
@@ -48,6 +60,16 @@ export interface PageHeaderProps {
    * here is a pixel off the reading column.
    */
   compact?: boolean;
+  /**
+   * The workspace's stacked header: the way back on a slim line, the title and
+   * state beneath it, the facts under that, and the actions at the right,
+   * level with the bottom of the block. No space is spent below.
+   */
+  stacked?: boolean;
+  /** In the compact header, the title at the size every other page's title has. */
+  largeTitle?: boolean;
+  /** In the stacked header, the title one step down (h2), so a long title leaves room for the actions on its line. */
+  dense?: boolean;
   className?: string;
 }
 
@@ -101,12 +123,36 @@ export function PageHeader({
   description,
   meta,
   actions,
+  status,
+  titleActions,
+  strip,
   tabs,
+  stickyTabs,
   back,
   compact,
+  stacked,
+  largeTitle,
+  dense,
   className,
 }: PageHeaderProps) {
   const facts = toFacts(meta);
+
+  if (stacked) {
+    return (
+      <header className={cn("pb-1", tabs && "mb-6", className)}>
+        {back && <BackButton fallbackHref={back.fallbackHref} label={back.label} />}
+        <div className="mt-2 flex items-center justify-between gap-x-6 gap-y-2 max-md:flex-wrap">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1">
+            <h1 className={cn("font-display text-ink", dense ? "text-h2" : "text-h1")}>{title}</h1>
+            {status}
+          </div>
+          {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+        </div>
+        <PageFacts facts={facts} className="mt-2" />
+        {tabs && <div className="-mx-4 mt-3 border-b border-line px-4 md:-mx-8 md:px-8">{tabs}</div>}
+      </header>
+    );
+  }
 
   if (compact) {
     return (
@@ -114,31 +160,58 @@ export function PageHeader({
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1">
           <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
             {back && <BackButton fallbackHref={back.fallbackHref} label={back.label} />}
-            <h1 className="font-display text-h2 text-ink">{title}</h1>
+            <h1 className={cn("font-display text-ink", largeTitle ? "text-h1" : "text-h2")}>{title}</h1>
+            {status}
             <PageFacts facts={facts} dense />
           </div>
-          {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+          {actions && (
+            // A large serif title's visual middle sits a little below its box's, so the actions follow it.
+            <div className={cn("flex flex-wrap items-center gap-2", largeTitle && "translate-y-0.5")}>{actions}</div>
+          )}
         </div>
       </header>
     );
   }
 
+  const barApart = Boolean(stickyTabs && tabs);
+
   return (
-    <header className={cn("mb-8", className)}>
-      {/* One line above the title: the way back and the page's actions. Kept at
-          one height whether or not either is there, and the actions sit here, on
-          the right, so a long row of them never squeezes the title. */}
-      <div className="mb-1 flex min-h-10 flex-wrap items-center justify-between gap-x-6 gap-y-2">
-        <div className="flex min-w-0 items-center gap-3">
+    <>
+    <header className={cn(barApart ? "mb-2" : "mb-6", className)}>
+      {/* The way back (and an eyebrow) on a slim line; the page's actions sit
+          at the right of the title's own line, so the header spends no row on them. */}
+      {(back || eyebrow) && (
+        <div className="flex items-center gap-3">
           {back && <BackButton fallbackHref={back.fallbackHref} label={back.label} />}
           {eyebrow && <p className="min-w-0 truncate text-meta text-muted-fg">{eyebrow}</p>}
         </div>
-        {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+      )}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+          <h1 className="font-display text-h1 text-ink">{title}</h1>
+          {status}
+        </div>
+        {(actions || titleActions) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {titleActions}
+            {actions}
+          </div>
+        )}
       </div>
-      <h1 className="font-display text-h1 text-ink">{title}</h1>
-      {description && <p className="mt-2 max-w-measure text-body text-muted-fg">{description}</p>}
+      {description && <p className="mt-2 max-w-2xl text-meta text-muted-fg">{description}</p>}
       <PageFacts facts={facts} className="mt-2" />
-      {tabs && <div className="mt-4">{tabs}</div>}
+      {strip && <div className="mt-3">{strip}</div>}
+      {tabs && !barApart && (
+        <div className="-mx-4 mt-5 border-b border-line px-4 md:-mx-8 md:px-8">{tabs}</div>
+      )}
     </header>
+    {barApart && (
+      // A sibling of the header, not inside it: a sticky box stays only within
+      // its parent, and the header ends where the title does. The shell pads its
+      // scroll area by 2rem (py-8) and a sticky box sticks inside that padding,
+      // so the offset is -2rem to sit flush at the top rather than 2rem down.
+      <div className="-mx-4 mb-6 bg-paper px-4 md:sticky md:-top-8 md:z-20 md:-mx-8 md:px-8">{tabs}</div>
+    )}
+    </>
   );
 }

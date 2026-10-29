@@ -79,7 +79,7 @@ export function ContactForm() {
       </div>
 
       {state === "error" && (
-        <p role="alert" className="text-small text-flagged">
+        <p role="alert" className="text-small text-ink">
           Could not send your message. Try again.
         </p>
       )}

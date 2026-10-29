@@ -9,6 +9,8 @@ import { getClientDocument } from "@/lib/api/client/documents";
 import { getClientVersions } from "@/lib/api/client/versions";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { ClientDocument, ClientVersionList } from "@/lib/types";
+import { documentIdentity } from "@/lib/documentTitle";
+import { StateLabel } from "@/components/document/state-label";
 import { PageHeader } from "@/components/shared/page-header";
 import { DocumentTabs } from "@/components/document/document-tabs";
 import { PageSkeleton } from "@/components/shared/page-skeleton";
@@ -73,17 +75,20 @@ export default function VersionHistoryPage() {
 
   return (
     <div className="w-full">
-      <PageHeader
-        back={{ fallbackHref: `/documents/${doc.id}` }}
-        eyebrow={doc.title}
-        title="Version history"
-        description="Each draft as it was handed on, and what changed between any two."
-        tabs={<DocumentTabs documentId={doc.id} signedOff={Boolean(doc.signOff)} checklist={doc.checklist} />}
+      <VersionHistory
+        documentId={doc.id}
+        rows={rows}
+        header={() => (
+          <PageHeader
+            stacked
+            status={<StateLabel state={doc.status} />}
+            back={{ fallbackHref: `/documents/${doc.id}` }}
+            title={documentIdentity(doc.title).name}
+            meta={[documentIdentity(doc.title).with]}
+            tabs={<DocumentTabs documentId={doc.id} signedOff={Boolean(doc.signOff)} checklist={doc.checklist} />}
+          />
+        )}
       />
-
-      <div>
-        <VersionHistory documentId={doc.id} rows={rows} />
-      </div>
     </div>
   );
 }

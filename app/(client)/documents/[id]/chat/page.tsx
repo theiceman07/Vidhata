@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { Icon } from "@/components/shared/icon";
 import { agentAvailable } from "@/lib/chatAccess";
+import { documentIdentity } from "@/lib/documentTitle";
+import { StateLabel } from "@/components/document/state-label";
 import { PageHeader } from "@/components/shared/page-header";
 import { ErrorState } from "@/components/shared/error-state";
 import { ChatMessage } from "@/components/domain/chat-message";
@@ -166,8 +168,10 @@ export default function ChatPage() {
   return (
     <div>
       <PageHeader
-        title="Ask about this document"
-        eyebrow={doc.title}
+        stacked
+        status={<StateLabel state={doc.status} />}
+        title={documentIdentity(doc.title).name}
+        meta={[documentIdentity(doc.title).with]}
         back={{ fallbackHref: `/documents/${doc.id}`, label: doc.title }}
         tabs={<DocumentTabs documentId={doc.id} signedOff={Boolean(doc.signOff)} checklist={doc.checklist} />}
       />

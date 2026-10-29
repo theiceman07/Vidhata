@@ -1,64 +1,79 @@
 import type { Config } from "tailwindcss";
 import animate from "tailwindcss-animate";
 import containerQueries from "@tailwindcss/container-queries";
+import plugin from "tailwindcss/plugin";
+import { PALETTE, hexToChannels } from "./lib/palette";
 
-// Design board "Before, and a safe After" (v1 conservative). One colour,
-// one meaning: green is done or brand, blue is in progress (advocate-side
-// work), marigold is "your move" (the client has something to do), vermilion
-// is blocked or a finding. These hex values are the single source of truth;
-// the contrast test (lib/contrast.test.ts) reads them from here.
+/** A palette token as a CSS-variable colour, so opacity modifiers still work. */
+const v = (token: string) => `rgb(var(--c-${token}) / <alpha-value>)`;
+
+const channels = (mode: "light" | "dark") =>
+  Object.fromEntries(
+    Object.entries(PALETTE).map(([k, m]) => [`--c-${k}`, hexToChannels(m[mode])]),
+  );
+
+// Advocate AI colour board, light and dark: black, white, one blue; status is
+// a solid fill with a white label. The hex values live in lib/palette.ts, the
+// single source of truth; the contrast test reads them from there.
 const config: Config = {
   darkMode: ["class"],
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./lib/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        paper: "#FBF9F4", // the page
-        surface: "#FFFFFF",
-        sand: "#F2EEE5", // quiet panels
-        line: "#E4DED1",
-        ink: "#14211C",
-        muted: "#4F5B55",
-        brand: { DEFAULT: "#0F5C45", deep: "#0B4A37", tint: "#E2F0E8" },
-        done: { DEFAULT: "#1B7F5A", text: "#146B4D", tint: "#E3F4EB" },
-        progress: { DEFAULT: "#1F5E99", tint: "#E6EFF9" },
-        move: { DEFAULT: "#F2A71B", text: "#7A4E00", tint: "#FDF1D6" },
-        blocked: { DEFAULT: "#B63A2B", tint: "#FBE7E3" },
-        night: "#0E1F1A",
-        shell: "#000000", // the portal rail and its mobile bar
+        paper: v("bg-canvas"), // the page
+        surface: v("tile-default"),
+        sand: v("bg-subtle"), // quiet panels
+        line: { DEFAULT: v("border-default"), strong: v("border-strong") },
+        ink: v("text-primary"),
+        muted: v("text-secondary"),
+        subtle: v("text-muted"),
+        tile: { hover: v("tile-hover"), selected: v("tile-selected"), inverse: v("tile-inverse") },
+        brand: { DEFAULT: v("accent-text"), deep: v("accent-hover"), tint: v("tile-selected") },
+        // Status is a solid fill with a white label, never a text colour or a
+        // panel tint: the text keys point at text/primary and the tint keys at
+        // tile/default.
+        done: { DEFAULT: v("status-accepted"), text: v("text-primary"), tint: v("tile-default") },
+        progress: { DEFAULT: v("status-verified"), text: v("accent-text"), tint: v("tile-default") },
+        move: { DEFAULT: v("status-pending"), text: v("text-primary"), tint: v("tile-default") },
+        blocked: { DEFAULT: v("status-rejected"), text: v("text-primary"), tint: v("tile-default") },
+        highlight: { DEFAULT: v("highlight-bg"), text: v("highlight-text") },
+        night: v("tile-inverse"), // dark bands: tile/inverse with bg/canvas as the text
+        shell: v("bg-subtle"), // the portal rail and its mobile bar, edged with border/default
         // The calmer document page (app/(client)/documents/[id]). Scoped to it
-        // through CalmProvider; nothing else reads these.
+        // through CalmProvider; nothing else reads these. It shares the one
+        // palette, mapped onto its own names.
         calm: {
-          canvas: "#F5F3ED",
-          surface: "#FFFFFF",
-          muted: "#EFEEE8",
-          ink: "#343A40",
-          strong: "#263B33",
-          secondary: "#5F6965", // 4.9:1 on sand, 5.1:1 on the calm canvas (was #68716D, 4.35:1 on sand)
-          border: "#DFDDD5",
-          "border-strong": "#C8C8BE",
-          divider: "#E8E6DF",
-          accent: "#B58A49",
-          "accent-muted": "#F1E8D8",
-          success: "#356A50",
-          "success-muted": "#E7EFE8",
-          warning: "#88652F",
-          "warning-muted": "#F5EEDC",
-          focus: "#547C69",
+          canvas: v("bg-subtle"),
+          surface: v("bg-canvas"),
+          muted: v("tile-default"),
+          ink: v("text-primary"),
+          strong: v("text-primary"),
+          secondary: v("text-secondary"),
+          border: v("border-default"),
+          "border-strong": v("border-default"),
+          divider: v("border-default"),
+          accent: v("accent-fill"),
+          "accent-muted": v("tile-default"),
+          success: v("status-accepted"),
+          "success-muted": v("tile-default"),
+          warning: v("text-primary"),
+          "warning-muted": v("tile-default"),
+          focus: v("accent-fill"),
         },
-        mint: "#5FC79A", // ticks on night
+        mint: v("bg-canvas"), // ticks on night
 
         // Aliases for the pre-board names, kept because about 100 files and
         // the home page still use them. Each points at its new meaning and
         // goes when its last user is migrated.
-        accent: { DEFAULT: "#0F5C45", hover: "#0B4A37", fg: "#FFFFFF" }, // brand, brand-deep, white
-        "muted-fg": "#4F5B55", // muted
-        canvas: "#FBF9F4", // paper
-        parchment: "#F2EEE5", // sand
-        verified: "#1B7F5A", // done
-        flagged: "#B63A2B", // blocked
-        caution: { DEFAULT: "#F2A71B", fg: "#7A4E00" }, // move, move-text
-        info: "#1F5E99", // progress
+        accent: { DEFAULT: v("accent-fill"), hover: v("accent-hover"), fg: v("accent-on") },
+        "muted-fg": v("text-secondary"),
+        canvas: v("bg-canvas"),
+        parchment: v("bg-subtle"),
+        verified: v("status-accepted"),
+        flagged: v("status-rejected"),
+        caution: { DEFAULT: v("status-pending"), fg: v("status-pending") },
+        info: v("status-verified"),
       },
       fontFamily: {
         // Board V3. A serif for headlines and contract text, a grotesk
@@ -88,26 +103,32 @@ const config: Config = {
         ],
         // The greeting on Documents, the one centred hero inside the product.
         greeting: [
-          "clamp(36px, 4.6vw, 60px)",
-          { lineHeight: "1.05", fontWeight: "500", letterSpacing: "-0.02em" },
+          "clamp(32px, 3.4vw, 48px)",
+          { lineHeight: "1.1", fontWeight: "500", letterSpacing: "-0.02em" },
         ],
+        // Material 3 typography, applied to the scale without changing a
+        // size or a family: line height follows M3's ratios (tight on
+        // headlines, 1.5 body, 1.43 meta, 1.33 label), tracking opens up as
+        // the text gets smaller (M3 body and label carry +0.25 to +0.5px),
+        // and label text is medium, as M3's label styles are. Emphasis
+        // (selected, active, primary action) is 500 to 600 on the same size.
         // The product has six type steps and no others: 12 label, 14 meta,
         // 16 body, 20 h3, 26 h2, 40 h1 (the display sizes above are the
         // marketing headlines). `lead`, `small` and `notation` are aliases of
         // the nearest step, kept so older screens keep compiling; do not use
         // them in new code. Held by lib/typeScale.test.ts.
-        h1: ["clamp(30px, 3vw, 40px)", { lineHeight: "1.08", fontWeight: "500", letterSpacing: "-0.02em" }],
-        h2: ["26px", { lineHeight: "1.2", fontWeight: "500", letterSpacing: "-0.015em" }],
-        h3: ["20px", { lineHeight: "1.3", fontWeight: "500", letterSpacing: "-0.01em" }],
-        lead: ["20px", { lineHeight: "1.55", fontWeight: "400" }], // alias of h3's size
-        body: ["16px", { lineHeight: "1.6", fontWeight: "400" }],
-        meta: ["14px", { lineHeight: "1.5", fontWeight: "400" }],
-        small: ["14px", { lineHeight: "1.5", fontWeight: "400" }], // alias of meta
-        notation: ["14px", { lineHeight: "1.5", fontWeight: "400" }], // alias of meta
+        h1: ["clamp(30px, 3vw, 40px)", { lineHeight: "1.2", fontWeight: "500", letterSpacing: "-0.02em" }],
+        h2: ["26px", { lineHeight: "1.25", fontWeight: "500", letterSpacing: "-0.015em" }],
+        h3: ["20px", { lineHeight: "1.3", fontWeight: "500", letterSpacing: "-0.005em" }],
+        lead: ["20px", { lineHeight: "1.4", fontWeight: "400" }], // alias of h3's size
+        body: ["16px", { lineHeight: "1.5", fontWeight: "400", letterSpacing: "0.03em" }],
+        meta: ["14px", { lineHeight: "1.43", fontWeight: "400", letterSpacing: "0.018em" }],
+        small: ["14px", { lineHeight: "1.43", fontWeight: "400", letterSpacing: "0.018em" }], // alias of meta
+        notation: ["14px", { lineHeight: "1.43", fontWeight: "400", letterSpacing: "0.018em" }], // alias of meta
         // Chips, state text, counts and short metadata only. Anything a
         // person has to read (a finding, a note, a checklist row, a table
         // cell) is `meta` or larger.
-        label: ["12px", { lineHeight: "16px", fontWeight: "400" }],
+        label: ["12px", { lineHeight: "16px", fontWeight: "500", letterSpacing: "0.04em" }],
       },
       letterSpacing: {
         notation: "0.08em",
@@ -138,7 +159,7 @@ const config: Config = {
         // layer that sits over the work (menus, the palette, a sheet) is
         // outlined in ink rather than lifted.
         card: "none",
-        float: "0 0 0 1px #14211C",
+        float: "0 0 0 1px rgb(var(--c-text-primary))",
       },
       keyframes: {
         "accordion-down": {
@@ -162,7 +183,15 @@ const config: Config = {
   //
   // Imported, not required: when the dev server reloads this file Node loads
   // it as an ES module, where `require` does not exist, and the server died.
-  plugins: [animate, containerQueries],
+  plugins: [
+    animate,
+    containerQueries,
+    plugin(({ addBase }) =>
+      addBase({
+        ":root": { ...channels("light"), colorScheme: "light" },
+      }),
+    ),
+  ],
 };
 
 export default config;

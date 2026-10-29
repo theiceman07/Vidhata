@@ -36,8 +36,11 @@ export function DealPrompt({
   note = "An advocate signs off before anything reaches you",
   restore = false,
   autoFocus = false,
+  compact = false,
 }: {
   className?: string;
+  /** One line that grows with the brief, for inside the portal where the box is not the page. */
+  compact?: boolean;
   /**
    * "draft" from inside the portal. From the public site, the route that
    * comes first (sign-in), with the brief kept for after it.
@@ -56,6 +59,14 @@ export function DealPrompt({
   const [brief, setBrief] = useState("");
   const [drafting, setDrafting] = useState(false);
   const ready = brief.trim().length > 0;
+
+  // Compact: the field is one line and grows to fit the brief, up to a limit.
+  useEffect(() => {
+    const field = fieldRef.current;
+    if (!compact || !field) return;
+    field.style.height = "auto";
+    field.style.height = `${Math.min(field.scrollHeight, 160)}px`;
+  }, [brief, compact]);
 
   useEffect(() => {
     if (!restore) return;
@@ -118,19 +129,13 @@ export function DealPrompt({
   }
 
   return (
-    <div className={cn("group relative w-full max-w-2xl", className)}>
-      {/* The travelling ring. */}
-      <div
-        aria-hidden
-        className="prompt-ring pointer-events-none absolute -inset-[2px] rounded-[30px] opacity-0 transition-opacity duration-500 group-focus-within:opacity-100"
-      />
-
+    <div className={cn("group relative w-full max-w-4xl", className)}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           start();
         }}
-        className="relative rounded-modal border border-ink/15 bg-paper p-3 pl-6 text-left transition-[transform,border-color] duration-300 ease-out group-focus-within:-translate-y-0.5 group-focus-within:border-transparent"
+        className={cn("relative border border-ink/15 bg-paper text-left transition-[transform,border-color] duration-300 ease-out group-focus-within:-translate-y-0.5 group-focus-within:border-ink/40", "rounded-card px-4 py-3")}
       >
         <label htmlFor={fieldId} className="sr-only">
           Describe the deal
@@ -138,7 +143,7 @@ export function DealPrompt({
         <textarea
           id={fieldId}
           ref={fieldRef}
-          rows={2}
+          rows={1}
           autoFocus={autoFocus}
           value={brief}
           onChange={(e) => setBrief(e.target.value)}
@@ -149,16 +154,21 @@ export function DealPrompt({
             }
           }}
           placeholder={placeholder}
-          className="caret-cycle field-bare block min-h-[6.25rem] w-full resize-none bg-transparent pt-3 text-lead text-ink outline-none placeholder:text-muted-fg sm:min-h-0"
+          className={cn(
+            "caret-cycle field-bare block w-full resize-none bg-transparent text-ink outline-none placeholder:text-muted-fg",
+            "text-body tracking-normal",
+            "pt-0.5",
+          )}
         />
-        <div className="mt-2 flex items-center justify-between gap-3">
-          <span className="hidden text-meta text-muted-fg sm:inline">{note}</span>
+        <div className={cn("flex items-center justify-between gap-3", "mt-2")}>
+          <span className={cn("hidden text-muted-fg tracking-normal sm:inline", "text-label")}>{note}</span>
           <button
             type="submit"
             aria-label="Draft a document"
             aria-busy={drafting}
             className={cn(
-              "ml-auto inline-flex h-12 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-6 text-body font-medium transition-all duration-300 ease-out",
+              "h-8 px-4 text-meta",
+              "ml-auto inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full font-medium transition-all duration-300 ease-out",
               ready
                 ? "scale-100 bg-accent text-accent-fg hover:bg-accent-hover"
                 : "scale-95 bg-brand-tint text-brand",
@@ -167,7 +177,7 @@ export function DealPrompt({
             {drafting ? "Drafting…" : "Draft a document"}
             <Icon
               name="arrow_forward"
-              size={18}
+              size={16}
               className={cn("transition-transform duration-300", ready && "translate-x-0.5")}
             />
           </button>

@@ -138,7 +138,7 @@ export default function LawyerLoginPage() {
             id="advocate-login-error"
             role="alert"
             aria-live="polite"
-            className="text-small text-flagged"
+            className="text-small text-ink"
           >
             {error}
           </p>
@@ -147,7 +147,7 @@ export default function LawyerLoginPage() {
           <p
             role="alert"
             aria-live="polite"
-            className="text-small text-blocked"
+            className="text-small text-ink"
           >
             Too many attempts. Try again in {LOCKOUT_SECONDS} seconds.
           </p>
@@ -156,14 +156,6 @@ export default function LawyerLoginPage() {
         <Button type="submit" size="lg" className="w-full" disabled={locked}>
           Sign in
         </Button>
-
-        {/* The preview workspace is the mock portal. With the real backend on it has no session to
-            use, so it is not offered. */}
-        {!backendDataEnabled() && (
-          <Button type="button" variant="outline" size="lg" className="w-full" onClick={signIn}>
-            Use the preview workspace
-          </Button>
-        )}
 
         {!backendDataEnabled() && (
           <p className="text-center text-meta text-muted-fg">

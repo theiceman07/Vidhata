@@ -284,7 +284,7 @@ export default function SignOffPage() {
           className="mt-8 rounded-card bg-blocked-tint p-5 md:p-6"
         >
           <div className="flex items-start gap-3">
-            <Icon name="error" size={24} className="mt-0.5 shrink-0 text-flagged" />
+            <Icon name="error" size={24} className="mt-0.5 shrink-0 text-ink" />
             <div className="min-w-0 flex-1">
               <h2 id="blockers-title" className="text-h3 text-ink">
                 {plural(blockers.length, "item stands", "items stand")} between this document and sign-off

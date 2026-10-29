@@ -166,7 +166,7 @@ export function FindingDetail({
 
         {/* Source sits directly under the concern: never behind a disclosure. */}
         <Section title="Source">
-          <CitationBlock citation={finding.citation} />
+          <CitationBlock citation={finding.citation} bare />
         </Section>
 
         {/* R1 may leave the quoted span and the remedy out; an empty section is not shown as a blank one. */}

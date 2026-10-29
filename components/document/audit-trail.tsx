@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { TimelineScroller } from "@/components/document/timeline-scroller";
+import { ActivityTrack } from "@/components/document/activity-track";
 
 /**
  * What the trail reads of an entry. The advocate's entries (AuditEntry) name a
@@ -26,8 +26,7 @@ export interface TrailEntry {
  * happened, then who did it, then when.
  *
  * Three shapes:
- * - `timeline`: one horizontal spine, newest on the left, scrolled sideways
- *   through the record.
+ * - `timeline`: one horizontal track, newest first (ActivityTrack), paged by arrows.
  * - `large`: a grid of tiles, for a page whose subject the record is.
  * - default: a compact list for a side panel.
  */
@@ -46,7 +45,7 @@ export function AuditTrail({
   className?: string;
   /** Tile grid for a record that is the page's subject rather than a side panel. */
   large?: boolean;
-  /** Horizontal scrolling timeline. Takes precedence over `large`. */
+  /** Horizontal track. Takes precedence over `large`. */
   timeline?: boolean;
 }) {
   if (entries.length === 0) {
@@ -68,94 +67,32 @@ export function AuditTrail({
           {/* What the two kinds of dot mean, stated once above the record. */}
           <p className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-meta text-muted-fg">
             <span className="inline-flex items-center gap-2">
-              <span aria-hidden className="h-3 w-3 rounded-full border border-accent bg-accent" />
+              <span
+                aria-hidden
+                className="h-3 w-3 rounded-full border border-accent bg-accent"
+              />
               Decision by the advocate
             </span>
             <span className="inline-flex items-center gap-2">
-              <span aria-hidden className="h-2.5 w-2.5 rounded-full border border-muted-fg bg-paper" />
+              <span
+                aria-hidden
+                className="h-2.5 w-2.5 rounded-full border border-muted-fg bg-paper"
+              />
               Event recorded
             </span>
           </p>
-          <TimelineScroller>
-            <ol className="relative flex w-max min-w-full gap-x-10 px-1">
-              {/* The spine runs behind the dots, through the whole record. */}
-              <span aria-hidden className="absolute left-0 right-0 top-[38px] h-px bg-line" />
-              {newestFirst.map((entry, i) => {
-                const findingKey = entry.findingId ?? entry.findingNumber ?? null;
-                const linkable = onSelectFinding && findingKey;
-                const [headline, ...rest] = entry.action.split(" · ");
-                const detail = rest.join(" · ");
-                const decision = entry.kind === "decision";
-
-                const content = (
-                  <>
-                    <p className="font-display text-h3 text-ink">{headline}</p>
-                    {(detail || entry.ref) && (
-                      <p className="mt-1 text-body text-ink">
-                        {detail}
-                        {entry.ref && (
-                          <span className="ml-1.5 text-meta text-muted-fg">{entry.ref}</span>
-                        )}
-                      </p>
-                    )}
-                    <p className="mt-2 text-meta text-muted-fg">{entry.actor}</p>
-                  </>
-                );
-
-                return (
-                  <li
-                    key={`${entry.at}-${i}`}
-                    className="relative w-60 shrink-0 snap-start pr-2 [scroll-snap-align:start]"
-                  >
-                    <div className="mb-3 flex h-5 items-center gap-2">
-                      <time
-                        dateTime={entry.at}
-                        className="tabular-nums text-small text-muted-fg"
-                      >
-                        {format(new Date(entry.at), "d MMM yyyy · HH:mm")}
-                      </time>
-                      {decision && (
-                        <span className="rounded-full border border-accent px-2 text-label font-medium text-accent">
-                          Decision
-                        </span>
-                      )}
-                    </div>
-                    {/* The dot sits on the spine: solid and larger for a decision, hollow for an event. */}
-                    <span className="relative flex h-3 w-3 items-center justify-center">
-                      <span
-                        aria-hidden
-                        className={cn(
-                          "block rounded-full border",
-                          decision
-                            ? "h-3 w-3 border-accent bg-accent"
-                            : "h-2.5 w-2.5 border-muted-fg bg-paper",
-                        )}
-                      />
-                    </span>
-                    <div className="mt-4 min-w-0">
-                      {linkable ? (
-                        <button
-                          type="button"
-                          onClick={() => onSelectFinding(findingKey as string)}
-                          className="-m-2 block w-[calc(100%+1rem)] rounded-control p-2 text-left transition-colors hover:bg-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                        >
-                          {content}
-                        </button>
-                      ) : (
-                        content
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
-          </TimelineScroller>
+          <ActivityTrack
+            entries={newestFirst}
+            onSelectFinding={onSelectFinding}
+          />
         </div>
       ) : (
         <ol
           className={cn(
             title && !timeline && "mt-3",
-            large ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-3" : "flex flex-col gap-1",
+            large
+              ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+              : "flex flex-col gap-1",
           )}
         >
           {newestFirst.map((entry, i) => {
@@ -166,12 +103,17 @@ export function AuditTrail({
                 aria-hidden
                 className={cn(
                   "inline-block h-2 w-2 shrink-0 rounded-full border",
-                  entry.kind === "decision" ? "border-accent bg-accent" : "border-muted-fg bg-paper",
+                  entry.kind === "decision"
+                    ? "border-accent bg-accent"
+                    : "border-muted-fg bg-paper",
                 )}
               />
             );
             const time = (
-              <time dateTime={entry.at} className="tabular-nums text-small text-muted-fg">
+              <time
+                dateTime={entry.at}
+                className="tabular-nums text-small text-muted-fg"
+              >
                 {format(new Date(entry.at), "d MMM yyyy · HH:mm")}
               </time>
             );
@@ -185,11 +127,17 @@ export function AuditTrail({
                   </span>
                   {time}
                 </span>
-                <span className="mt-4 block font-display text-h3 text-ink">{entry.action}</span>
+                <span className="mt-4 block font-display text-h3 text-ink">
+                  {entry.action}
+                </span>
                 {entry.ref && (
-                  <span className="mt-1 block tabular-nums text-small text-muted-fg">{entry.ref}</span>
+                  <span className="mt-1 block tabular-nums text-small text-muted-fg">
+                    {entry.ref}
+                  </span>
                 )}
-                <span className="mt-auto block pt-4 text-meta text-muted-fg">{entry.actor}</span>
+                <span className="mt-auto block pt-4 text-meta text-muted-fg">
+                  {entry.actor}
+                </span>
               </>
             ) : (
               <span className="flex items-start gap-3">
@@ -197,13 +145,17 @@ export function AuditTrail({
                 <span className="min-w-0 flex-1">
                   <span className="block text-meta text-ink">
                     {entry.action}
-                    {entry.ref && (
-                      <span className="ml-1.5 tabular-nums text-small text-muted-fg">{entry.ref}</span>
-                    )}
                   </span>
+                  {entry.ref && (
+                    <span className="mt-0.5 block tabular-nums text-small text-muted-fg">
+                      {entry.ref}
+                    </span>
+                  )}
                   <span className="mt-0.5 block text-small text-muted-fg">
                     {entry.actor}
-                    <span aria-hidden className="mx-1.5 text-muted-fg">·</span>
+                    <span aria-hidden className="mx-1.5 text-muted-fg">
+                      ·
+                    </span>
                     {time}
                   </span>
                 </span>

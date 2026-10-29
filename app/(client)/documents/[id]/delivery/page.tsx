@@ -6,9 +6,9 @@ import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import { DownloadOptions } from "@/components/domain/download-options";
 import { SummaryView } from "@/components/domain/summary-view";
+import { Icon } from "@/components/shared/icon";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
-import { Icon } from "@/components/shared/icon";
 import { Tick } from "@/components/shared/tick";
 import { SettlementNoteView } from "@/components/document/settlement-note-view";
 import { StateLabel } from "@/components/document/state-label";
@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getClientDelivery } from "@/lib/api/client/delivery";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { DeliveryResult } from "@/lib/types";
+import { documentIdentity } from "@/lib/documentTitle";
 import { PageHeader } from "@/components/shared/page-header";
 import { DocumentTabs } from "@/components/document/document-tabs";
 import { PageSkeleton } from "@/components/shared/page-skeleton";
@@ -101,13 +102,13 @@ export default function DeliveryPage() {
   const base = `/documents/${delivery.documentId}`;
 
   const links: { href: string; label: string; note: string }[] = [
-    { href: base, label: "Read the settled document", note: "The text the advocate signed off." },
+    { href: base, label: "Read the settled document", note: "The text as signed off." },
     {
       href: `${base}/checklist`,
       label: "Execution checklist",
       note: `${delivery.checklist.done} of ${delivery.checklist.total} steps complete.`,
     },
-    { href: `${base}/history`, label: "Version history", note: "Every draft, with the advocate's decisions." },
+    { href: `${base}/history`, label: "Version history", note: "Every draft and decision." },
     {
       href: `${base}/consultation`,
       label: "Consultation",
@@ -118,41 +119,69 @@ export default function DeliveryPage() {
   return (
     <div className="w-full">
       <PageHeader
+        stacked
         back={{ fallbackHref: `/documents/${delivery.documentId}`, label: "Document" }}
-        eyebrow={delivery.counterparty}
-        title={delivery.title}
-        actions={<StateLabel state={delivery.status} />}
+        title={documentIdentity(delivery.title).name}
+        meta={[documentIdentity(delivery.title).with ?? `with ${delivery.counterparty}`]}
+        actions={<DownloadOptions compact />}
+        status={<StateLabel state={delivery.status} />}
         tabs={<DocumentTabs documentId={delivery.documentId} signedOff={true} checklist={delivery.checklist} />}
       />
 
-      <div className="grid gap-x-10 gap-y-10 lg:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem]">
-        <div className="min-w-0 space-y-10">
-          {/* The sign-off is a decision, so it carries the accent. */}
-          <section aria-labelledby="signoff-title" className="rounded-card bg-parchment p-6 md:p-8">
-            <h2 id="signoff-title" className="text-body font-medium text-ink">
-              Sign-off
+      <div className="min-w-0 space-y-4">
+      <section
+        aria-labelledby="signoff-title"
+        className="grid grid-cols-[1fr_auto_auto] items-center gap-x-10 gap-y-1 rounded-card bg-parchment px-5 py-3.5 max-sm:grid-cols-1"
+      >
+        <h2 id="signoff-title" className="flex items-center gap-2 font-display text-h3 text-ink">
+          <Tick state="done" size="lg" />
+          Signed off by {delivery.signOff.advocate}
+        </h2>
+        <dl className="contents">
+          <div className="flex flex-col gap-0.5">
+            <dt className="text-label text-muted-fg">Bar enrolment</dt>
+            <dd className="font-mono text-meta text-ink">{delivery.signOff.enrolment}</dd>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <dt className="text-label text-muted-fg">Date</dt>
+            <dd className="text-meta text-ink">{format(new Date(delivery.signOff.at), "d MMMM yyyy")}</dd>
+          </div>
+        </dl>
+      </section>
+          <section aria-labelledby="next-title">
+            <h2 id="next-title" className="sr-only">
+              Around this document
             </h2>
-            <p className="mt-3 inline-flex items-center gap-2 font-display text-h2 text-ink">
-              <Tick state="done" size="lg" />
-              Signed off by {delivery.signOff.advocate}
-            </p>
-            <dl className="mt-4 grid max-w-md grid-cols-[10rem_minmax(0,1fr)] gap-x-4 gap-y-2.5 text-meta">
-              <dt className="text-muted-fg">Bar enrolment</dt>
-              <dd className="font-mono text-ink">{delivery.signOff.enrolment}</dd>
-              <dt className="text-muted-fg">Date</dt>
-              <dd className="text-ink">{format(new Date(delivery.signOff.at), "d MMMM yyyy")}</dd>
-            </dl>
+            <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {links.map((link) => (
+                <li key={link.href} className="flex">
+                  <Link
+                    href={link.href}
+                    className="group flex w-full flex-col justify-center gap-1 rounded-card bg-parchment px-5 py-4 transition-colors hover:bg-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  >
+                    <span className="flex items-center justify-between gap-3">
+                      <span className="text-body font-medium leading-6 text-ink">{link.label}</span>
+                      <Icon
+                        name="arrow_forward"
+                        size={18}
+                        className="shrink-0 text-muted-fg transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+                      />
+                    </span>
+                    <span className="text-meta leading-5 text-muted-fg">{link.note}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </section>
-
-          <section aria-labelledby="summary-title" className="rounded-card bg-parchment p-6 md:p-8">
-            <h2 id="summary-title" className="text-body font-medium text-ink">
+          <section aria-labelledby="summary-title">
+            <h2 id="summary-title" className="font-display text-h3 text-ink">
               Summary
             </h2>
-            <div className="mt-3">
+            <div className="mt-2">
               {delivery.summary ? (
-                <SummaryView summary={delivery.summary} />
+                <SummaryView summary={delivery.summary} layout="bento" />
               ) : (
-                <p className="max-w-measure text-body text-muted-fg">
+                <p className="rounded-card bg-parchment px-5 py-4 text-meta text-muted-fg">
                   No summary has been prepared for this document.
                 </p>
               )}
@@ -180,44 +209,6 @@ export default function DeliveryPage() {
               </ul>
             </section>
           )}
-        </div>
-
-        <aside className="min-w-0 space-y-4 self-start">
-          <section aria-labelledby="downloads-title" className="rounded-card bg-parchment p-6">
-            <h2 id="downloads-title" className="text-body font-medium text-ink">
-              Downloads
-            </h2>
-            <div className="mt-4">
-              <DownloadOptions />
-            </div>
-          </section>
-
-          <section aria-labelledby="next-title" className="rounded-card bg-parchment p-6">
-            <h2 id="next-title" className="text-body font-medium text-ink">
-              Around this document
-            </h2>
-            <ul className="mt-4 space-y-2">
-              {links.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="group flex items-center gap-3 rounded-control bg-paper px-4 py-3 transition-colors hover:bg-paper/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-meta text-ink">{link.label}</span>
-                      <span className="block text-meta text-muted-fg">{link.note}</span>
-                    </span>
-                    <Icon
-                      name="arrow_forward"
-                      size={18}
-                      className="text-muted-fg transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
-                    />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </aside>
       </div>
     </div>
   );

@@ -705,6 +705,10 @@ export interface ClientNotification {
   /** ISO 8601, when it happened. */
   at: string;
   documentId: string;
+  /** The document, named alone. */
+  title: string;
+  /** What happened to it, without the name. */
+  event: string;
   text: string;
   /** Where it opens, inside the client's own portal. */
   href: string;

@@ -17,7 +17,7 @@ export const DRAFT_STEPS_SLOT = "draft-steps-slot";
 export function DraftPaths({ children }: { children: React.ReactNode }) {
   return (
     <Tabs defaultValue="describe" className="flex flex-1 flex-col">
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
       <TabsList
         aria-label="How to start"
         className="h-auto shrink-0 flex-wrap justify-start gap-1 rounded-full bg-parchment p-1"
@@ -39,8 +39,8 @@ export function DraftPaths({ children }: { children: React.ReactNode }) {
           </span>
         </TabsTrigger>
       </TabsList>
-      {/* The intake wizard puts its step indicator here, on a row of its own so no step is clipped. */}
-      <div id={DRAFT_STEPS_SLOT} className="min-w-0 basis-full" />
+      {/* The intake wizard puts its step indicator here: level with the mode control and at the right edge, dropping to its own row when the two do not fit, so no step is clipped. */}
+      <div id={DRAFT_STEPS_SLOT} className="min-w-0 flex-1 basis-[40rem]" />
       </div>
 
       <TabsContent value="describe" className="mt-5 flex-1 flex-col data-[state=active]:flex">

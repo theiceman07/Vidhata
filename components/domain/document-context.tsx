@@ -102,7 +102,7 @@ export function ContextPanel({
             pad,
           )}
         >
-          <h2 className="text-h3 text-ink">{title}</h2>
+          <h2 className="font-display text-h3 text-ink">{title}</h2>
           <span className="flex items-center gap-2 text-label text-muted">
             {hint && <span className="group-open:hidden">{hint}</span>}
             <Icon
@@ -119,8 +119,8 @@ export function ContextPanel({
 
   return (
     <section className={cn("rounded-card bg-sand", pad, className)}>
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-h3 text-ink">{title}</h2>
+      <div className="flex min-h-8 items-center justify-between gap-3">
+        <h2 className="font-display text-h3 text-ink">{title}</h2>
         {aside}
       </div>
       <div className={compact ? "mt-3" : "mt-4"}>{children}</div>
@@ -133,6 +133,24 @@ const rupees = new Intl.NumberFormat("en-IN", {
   currency: "INR",
   maximumFractionDigits: 0,
 });
+
+/**
+ * The facts of the deal, as the client stated them at intake, in the order they
+ * are read. One list for every place that shows them, so none can drift.
+ */
+export function dealRows(doc: Pick<ClientDocument, "deal" | "tier">): [string, string][] {
+  const { deal } = doc;
+  const rows: [string, string][] = [
+    ["Parties", `${deal.clientName} · ${deal.counterpartyName}`],
+    ["Executed in", deal.stateOfExecution],
+    ["Governing law", deal.governingLaw],
+  ];
+  if (deal.transactionValue > 0) rows.push(["Value", rupees.format(deal.transactionValue)]);
+  rows.push(["Term", termLabel(deal.durationMonths)]);
+  if (deal.counterpartyIsMsme) rows.push(["Counterparty", "Registered MSME"]);
+  rows.push(["Review", tierLabel(doc.tier)]);
+  return rows;
+}
 
 /** The deal as the client stated it at intake. Nothing here is inferred. */
 export function DealOnFile({
@@ -148,15 +166,7 @@ export function DealOnFile({
 }) {
   const { deal } = doc;
   const calm = useCalm();
-  const rows: [string, React.ReactNode][] = [
-    ["Parties", `${deal.clientName} · ${deal.counterpartyName}`],
-    ["Executed in", deal.stateOfExecution],
-    ["Governing law", deal.governingLaw],
-  ];
-  if (deal.transactionValue > 0) rows.push(["Value", rupees.format(deal.transactionValue)]);
-  rows.push(["Term", termLabel(deal.durationMonths)]);
-  if (deal.counterpartyIsMsme) rows.push(["Counterparty", "Registered MSME"]);
-  rows.push(["Review", tierLabel(doc.tier)]);
+  const rows = dealRows(doc);
 
   return (
     <ContextPanel
@@ -170,7 +180,7 @@ export function DealOnFile({
         className={
           calm
             ? "grid gap-x-6 gap-y-2.5"
-            : "grid gap-x-8 gap-y-3 sm:grid-cols-2 xl:grid-cols-4"
+            : "grid grid-cols-2 gap-2"
         }
       >
         {rows.map(([term, value]) => (
@@ -178,7 +188,8 @@ export function DealOnFile({
             key={term}
             className={cn(
               "min-w-0",
-              !calm && term === "Parties" && "sm:col-span-2 xl:col-span-4",
+              !calm && "rounded-control bg-surface px-3 py-2.5",
+              !calm && term === "Parties" && "col-span-2",
             )}
           >
             <dt className={calm ? "text-meta text-calm-secondary" : "text-label text-muted-fg"}>{term}</dt>
@@ -385,9 +396,12 @@ export function WhatHappensNext({
   wide = false,
   footer,
   collapsible = false,
+  columns = 4,
 }: {
   doc: ClientDocument;
   className?: string;
+  /** Steps per row at lg when wide: 4 for a full-width panel, 2 for a half-width one. */
+  columns?: 2 | 4;
   compact?: boolean;
   /** Steps run left to right in one row at lg and up, for a panel the full width of the page. */
   wide?: boolean;
@@ -447,7 +461,7 @@ export function WhatHappensNext({
                 >
                   {station.title}
                   {station.current && (
-                    <span className="rounded-calm-badge bg-calm-warning-muted px-1.5 py-px text-label font-semibold leading-4 text-calm-warning">
+                    <span className="rounded-calm-badge bg-calm-warning-muted px-1.5 py-px text-label font-semibold leading-4 text-ink">
                       Now
                     </span>
                   )}
@@ -472,47 +486,40 @@ export function WhatHappensNext({
       collapsible={collapsible}
       hint="All the steps"
     >
-      <ol className={cn(wide && "lg:grid lg:grid-cols-[repeat(4,minmax(0,1fr))] lg:gap-x-5")}>
+      <ol
+        className={cn(
+          "grid gap-2.5 sm:grid-cols-2",
+          wide && columns === 4 && "lg:grid-cols-4",
+        )}
+      >
         {stations.map((station, i) => (
           <li
             key={station.title}
             className={cn(
-              "relative grid grid-cols-[1.75rem_minmax(0,1fr)] gap-x-3.5 last:pb-0",
-              compact ? "pb-3.5" : "pb-4",
-              wide && "lg:grid-cols-1 lg:content-start lg:gap-y-3 lg:pb-0",
+              "flex min-w-0 flex-col gap-2 rounded-control bg-surface p-4",
+              station.current && "ring-1 ring-inset ring-ink/20",
             )}
           >
-            {i < stations.length - 1 && (
+            <span className="flex items-center justify-between gap-2">
               <span
                 aria-hidden
                 className={cn(
-                  "absolute bottom-0.5 left-[11px] top-8 w-0.5 rounded-full bg-line",
-                  wide && "lg:bottom-auto lg:left-8 lg:right-2 lg:top-[11px] lg:h-0.5 lg:w-auto",
+                  "flex h-6 w-6 items-center justify-center rounded-full font-mono text-label",
+                  station.current ? "bg-ink text-paper" : "bg-paper text-muted-fg ring-1 ring-inset ring-line",
                 )}
-              />
-            )}
-            <span
-              aria-hidden
-              className={cn(
-                "flex h-6 w-6 items-center justify-center rounded-full font-mono text-label",
-                station.current
-                  ? "bg-ink text-paper"
-                  : "bg-paper text-muted-fg ring-1 ring-inset ring-line",
+              >
+                {i + 1}
+              </span>
+              {station.current && (
+                <span className="rounded-full bg-progress-tint px-2 py-0.5 text-label font-medium text-progress">
+                  Now
+                </span>
               )}
-            >
-              {i + 1}
             </span>
-            <div className="min-w-0 pt-0.5">
-              <p className={cn("text-meta font-medium", station.current ? "text-ink" : "text-ink/80")}>
-                {station.title}
-                {station.current && (
-                  <span className="ml-2 rounded-full bg-progress-tint px-2 py-0.5 text-label font-normal text-progress">
-                    Now
-                  </span>
-                )}
-              </p>
-              <p className="mt-0.5 text-meta leading-[1.45] text-muted-fg">{station.body}</p>
-            </div>
+            <p className={cn("text-meta font-medium", station.current ? "text-ink" : "text-ink/80")}>
+              {station.title}
+            </p>
+            <p className="text-meta leading-[1.45] text-muted-fg">{station.body}</p>
           </li>
         ))}
       </ol>
@@ -586,7 +593,7 @@ export function OnYourDesk({ currentId, className }: { currentId: string; classN
             ` ${withAdvocate} ${withAdvocate === 1 ? "document is" : "documents are"} with an advocate.`}
         </p>
       ) : (
-        <ul className="space-y-1">
+        <ul className="space-y-2">
           {waiting.map((d) => {
             const move = yourMove(d);
             return (
@@ -597,7 +604,7 @@ export function OnYourDesk({ currentId, className }: { currentId: string; classN
                     "group flex items-center gap-3 transition-colors focus-visible:outline-none focus-visible:ring-2",
                     calm
                       ? "-mx-2 rounded-calm-control px-2 py-1.5 hover:bg-calm-muted focus-visible:ring-calm-focus"
-                      : "rounded-control px-3 py-2 hover:bg-surface focus-visible:ring-accent",
+                      : "rounded-control bg-surface px-4 py-3 hover:bg-paper focus-visible:ring-accent",
                   )}
                 >
                   <span className="min-w-0 flex-1">

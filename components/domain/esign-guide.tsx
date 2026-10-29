@@ -29,9 +29,9 @@ export const ESIGN_PREVIEW_NOTE =
  */
 export function EsignGuide() {
   return (
-    <div className="rounded-control bg-paper p-5 print:hidden">
-      <p className="text-label font-medium text-muted-fg">Cannot be signed electronically</p>
-      <ul className="mt-2 flex flex-wrap gap-1.5">
+    <div className="print:hidden">
+      <p className="text-meta text-muted-fg">Cannot be signed electronically</p>
+      <ul className="mt-2.5 flex flex-wrap gap-2">
         {ESIGN_EXCLUSIONS.map((item) => (
           <li
             key={item}
@@ -41,11 +41,11 @@ export function EsignGuide() {
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-meta text-muted-fg">{ESIGN_LEGAL_NOTE}</p>
+      <p className="mt-4 text-meta leading-snug text-muted-fg">{ESIGN_LEGAL_NOTE}</p>
 
       <Dialog>
         <DialogTrigger asChild>
-          <Button variant="outline" className="mt-4 w-full">
+          <Button variant="outline" size="sm" className="mt-4">
             Sign electronically (preview)
           </Button>
         </DialogTrigger>

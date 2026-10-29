@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
-import { SUMMARY_LABEL, SummaryView } from "@/components/domain/summary-view";
+import { SummaryView } from "@/components/domain/summary-view";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getClientSummary } from "@/lib/api/client/delivery";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
-import type { SummaryResult } from "@/lib/types";
+import type { DocumentStatus, SummaryResult } from "@/lib/types";
+import { StateLabel } from "@/components/document/state-label";
+import { documentIdentity } from "@/lib/documentTitle";
 import { PageHeader } from "@/components/shared/page-header";
 import { DocumentTabs } from "@/components/document/document-tabs";
 import { PageSkeleton } from "@/components/shared/page-skeleton";
@@ -18,7 +20,7 @@ import { PageSkeleton } from "@/components/shared/page-skeleton";
 type Load =
   | { phase: "loading" }
   | { phase: "error"; message: string }
-  | { phase: "loaded"; title: string | null; result: SummaryResult };
+  | { phase: "loaded"; title: string | null; status: DocumentStatus | null; result: SummaryResult };
 
 /**
  * A one-page summary of the settled document's key terms.
@@ -36,8 +38,8 @@ export default function SummaryPage() {
     setLoad({ phase: "loading" });
     try {
       // The call owns the gate, and gives the title only once the summary is the client's to read.
-      const { title, result } = await getClientSummary(MOCK_CLIENT_ORG.id, params.id);
-      setLoad({ phase: "loaded", title, result });
+      const { title, status, result } = await getClientSummary(MOCK_CLIENT_ORG.id, params.id);
+      setLoad({ phase: "loaded", title, status, result });
     } catch (err) {
       setLoad({
         phase: "error",
@@ -62,24 +64,30 @@ export default function SummaryPage() {
     return <ErrorState message={load.message} onRetry={fetchSummary} />;
   }
 
-  const { result, title } = load;
+  const { result, title, status } = load;
 
   return (
     <div className="w-full">
       {/* Before sign-off the page says only that it is not available, so no
           title is passed down until there is one. */}
       <PageHeader
+        stacked
+        status={status ? <StateLabel state={status} /> : undefined}
         back={{ fallbackHref: `/documents/${params.id}`, label: "Document" }}
-        eyebrow={title || undefined}
-        title="Summary"
-        description={result.state === "ready" ? SUMMARY_LABEL : undefined}
-        tabs={<DocumentTabs documentId={params.id} signedOff={result.state === "ready"} />}
+        title={title ? documentIdentity(title).name : "Summary"}
+        meta={title ? [documentIdentity(title).with] : undefined}
+        tabs={
+          <DocumentTabs
+            documentId={params.id}
+            signedOff={result.state === "ready"}
+          />
+        }
       />
 
       <div>
         {result.state === "ready" && (
-          <div className="rounded-card bg-parchment p-6 md:p-8">
-            <SummaryView summary={result.summary} showLabel={false} />
+          <div className="pb-8">
+            <SummaryView summary={result.summary} showLabel layout="bento" />
           </div>
         )}
 

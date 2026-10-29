@@ -198,8 +198,8 @@ export default function QueuePage() {
       <div className="w-full">
         <Skeleton className="h-4 w-48" />
         <Skeleton className="mt-3 h-10 w-72" />
-        <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => (
+        <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-3">
+          {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-28 rounded-card" />
           ))}
         </div>
@@ -367,7 +367,7 @@ export default function QueuePage() {
       {/* The working table takes the full width; the reading of the
           queue sits beneath it in three even columns. */}
       <div id="queue-table" className="mt-6 min-w-0 scroll-mt-6">
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div role="group" aria-label="Filter the queue" className="flex flex-wrap gap-1">
           {FILTERS.map((f) => (
             <button
@@ -396,7 +396,7 @@ export default function QueuePage() {
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
           <label className="relative flex min-w-[14rem] flex-1 items-center sm:max-w-md">
             <span className="sr-only">Search the queue</span>
             <Icon
@@ -449,7 +449,7 @@ export default function QueuePage() {
           <div
             role="row"
             className={cn(
-              "hidden gap-x-6 px-6 pb-1 pt-2 text-meta font-medium text-ink lg:grid",
+              "hidden gap-x-6 px-6 pb-1 pt-2 text-label text-muted-fg lg:grid",
               COLUMNS,
             )}
           >
@@ -470,7 +470,7 @@ export default function QueuePage() {
       )}
       </div>
 
-      <div className="mt-10 grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-10 grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
         <YourDesk
           mine={buckets.mine}
           client={buckets.client}
@@ -507,17 +507,15 @@ function Figure({
   label,
   value,
   note,
-  tone,
   onSelect,
 }: {
   label: string;
   value: number;
   note: React.ReactNode;
-  tone?: "flagged";
   onSelect: () => void;
 }) {
   return (
-    <div className="group relative flex flex-col gap-1 rounded-card bg-parchment px-5 py-3 transition-colors hover:bg-parchment/70">
+    <div className="group relative flex flex-col gap-2 rounded-card bg-parchment p-6 transition-colors hover:bg-parchment/70">
       <dt className="flex items-center justify-between gap-2 text-meta font-medium text-ink">
         <button
           type="button"
@@ -532,12 +530,9 @@ function Figure({
           className="text-muted-fg opacity-0 transition-opacity group-hover:opacity-100 motion-reduce:transition-none"
         />
       </dt>
-      <dd>
+      <dd className="flex flex-1 flex-col">
         <span
-          className={cn(
-            "block font-mono text-h2 leading-none tabular-nums",
-            tone === "flagged" ? "text-flagged" : "text-ink",
-          )}
+          className="block font-mono text-h2 leading-none tabular-nums text-ink"
         >
           {value}
         </span>
@@ -594,7 +589,7 @@ function UpNext({
   return (
     <section
       aria-label="Up next"
-      className="flex flex-col gap-4 rounded-modal bg-parchment p-5 md:p-6"
+      className="flex flex-col gap-4 rounded-modal bg-parchment p-6"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-meta font-medium text-ink">
@@ -667,7 +662,7 @@ function UpNext({
 
       <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-2">
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-meta">
-          <span className="text-ink">
+          <span className="font-medium text-ink">
             {pending.length} undecided {pending.length === 1 ? "finding" : "findings"}
             {pending.length > shown.length && ` · ${pending.length - shown.length} more inside`}
           </span>
@@ -865,7 +860,7 @@ function SignedOffByYou({ docs, onShow }: { docs: ContractDocument[]; onShow: ()
                       : "Signed off"}
                   </span>
                 </span>
-                <span className="shrink-0 text-meta text-ink">View document</span>
+                <span className="shrink-0 text-meta text-muted-fg">View document</span>
               </Link>
             </li>
           ))}

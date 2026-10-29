@@ -2,7 +2,6 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Icon, type IconName } from "@/components/shared/icon";
 import { Gloss } from "@/components/shared/gloss";
-import { StateLabel } from "@/components/document/state-label";
 import { useCalm } from "@/components/domain/calm";
 import { tierLabel } from "@/lib/config/pricing";
 import { DOCUMENT_TONE, TONE, type Tone } from "@/lib/tone";
@@ -107,14 +106,13 @@ export function StatusHero({ doc, className }: { doc: ClientDocument; className?
   return (
     <section
       aria-labelledby="hero-title"
-      className={cn("rounded-modal border p-6 md:p-8", TONE[tone].panel, className)}
+      className={cn("rounded-modal border p-5 md:p-6", TONE[tone].panel, className)}
     >
-      <StateLabel state={doc.status} />
-      <h2 id="hero-title" className="mt-3 font-display text-h1 text-ink">
+      <h2 id="hero-title" className="font-display text-h2 text-ink">
         {hero.headline}
       </h2>
 
-      <div className="mt-6 grid gap-x-10 gap-y-5 md:grid-cols-2">
+      <div className="mt-4 grid gap-x-10 gap-y-4 md:grid-cols-2">
         <div className="flex items-start gap-3">
           <Icon name={MOVER_ICON[hero.mover]} size={24} className={cn("mt-0.5", TONE[tone].text)} />
           <div className="min-w-0">
@@ -134,7 +132,7 @@ export function StatusHero({ doc, className }: { doc: ClientDocument; className?
         </div>
       </div>
 
-      <p className="mt-6 text-meta text-muted">
+      <p className="mt-4 text-meta text-muted">
         Submitted {format(new Date(doc.createdAt), "d MMM yyyy")}
         <span aria-hidden className="mx-1.5">·</span>
         {tierLabel(doc.tier)} review
@@ -155,6 +153,7 @@ const BADGE_TONE: Record<Tone, string> = {
   progress: "bg-paper/15 text-paper",
   blocked: "bg-paper/15 text-paper",
   neutral: "bg-paper/15 text-paper",
+  outline: "bg-paper/15 text-paper",
 };
 
 export function StatusStrip({ doc, className }: { doc: ClientDocument; className?: string }) {

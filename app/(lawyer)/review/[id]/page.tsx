@@ -351,7 +351,7 @@ export default function ReviewPage() {
       blockers={settled ? undefined : blockers}
       aside={
         settled && doc.settledAt ? (
-          <span className="inline-flex items-center gap-1 text-label text-done-text">
+          <span className="inline-flex items-center gap-1 text-label text-ink">
             <Tick state="done" size="sm" />
             Signed off by {doc.advocate?.name}
           </span>

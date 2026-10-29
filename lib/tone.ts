@@ -15,7 +15,7 @@ import type { IconName } from "@/components/shared/icon";
  * that is the advocate's to move is progress, however long it has waited.
  * Tone is always paired with an icon and words (StateLabel), never alone.
  */
-export type Tone = "done" | "progress" | "move" | "blocked" | "neutral";
+export type Tone = "done" | "progress" | "move" | "blocked" | "neutral" | "outline";
 
 export interface ToneClasses {
   /** A tinted chip: tint fill, readable text, a fine border. */
@@ -35,44 +35,53 @@ export interface ToneClasses {
 // Class names are written out whole so Tailwind can see them.
 export const TONE: Record<Tone, ToneClasses> = {
   done: {
-    chip: "border-done/30 bg-done-tint text-done-text",
+    chip: "border-transparent bg-done text-white",
     solid: "border-transparent bg-done text-white",
-    text: "text-done-text",
+    text: "text-ink",
     fill: "bg-done",
     rule: "border-done",
-    panel: "border-done/30 bg-done-tint",
+    panel: "border-line bg-surface",
   },
   progress: {
-    chip: "border-progress/30 bg-progress-tint text-progress",
+    chip: "border-transparent bg-progress text-white",
     solid: "border-transparent bg-progress text-white",
-    text: "text-progress",
+    text: "text-ink",
     fill: "bg-progress",
     rule: "border-progress",
-    panel: "border-progress/30 bg-progress-tint",
+    panel: "border-line bg-surface",
   },
   move: {
-    chip: "border-move/50 bg-move-tint text-move-text",
-    solid: "border-transparent bg-move text-ink",
-    text: "text-move-text",
+    chip: "border-transparent bg-move text-white",
+    solid: "border-transparent bg-move text-white",
+    text: "text-ink",
     fill: "bg-move",
     rule: "border-move",
-    panel: "border-move/50 bg-move-tint",
+    panel: "border-line bg-surface",
   },
   blocked: {
-    chip: "border-blocked/30 bg-blocked-tint text-blocked",
+    chip: "border-transparent bg-blocked text-white",
     solid: "border-transparent bg-blocked text-white",
-    text: "text-blocked",
+    text: "text-ink",
     fill: "bg-blocked",
     rule: "border-blocked",
-    panel: "border-blocked/30 bg-blocked-tint",
+    panel: "border-line bg-surface",
+  },
+  // Executed and Draft: no status colour of their own. A hairline outline, no fill.
+  outline: {
+    chip: "border-line-strong bg-transparent text-ink",
+    solid: "border-line-strong bg-transparent text-ink",
+    text: "text-ink",
+    fill: "bg-ink",
+    rule: "border-line-strong",
+    panel: "border-line bg-surface",
   },
   neutral: {
     chip: "border-line bg-sand text-muted",
-    solid: "border-transparent bg-muted text-white",
+    solid: "border-transparent bg-muted text-paper",
     text: "text-muted",
     fill: "bg-muted",
     rule: "border-line",
-    panel: "border-line bg-sand",
+    panel: "border-line bg-surface",
   },
 };
 
@@ -88,14 +97,14 @@ export interface StateTone {
  * are the client's). Screening and both advocate states are the advocate's.
  */
 export const DOCUMENT_TONE: Record<DocumentStatus, StateTone> = {
-  draft: { text: "Draft", tone: "move", icon: "edit" },
+  draft: { text: "Draft", tone: "outline", icon: "edit" },
   analysing: { text: "Screening", tone: "progress", icon: "hourglass_top" },
   awaiting_payment: { text: "Awaiting payment", tone: "move", icon: "payments" },
   pending_review: { text: "Awaiting advocate", tone: "progress", icon: "schedule" },
   under_review: { text: "Advocate review", tone: "progress", icon: "rate_review" },
   revision: { text: "Changes requested", tone: "move", icon: "reply" },
   settled: { text: "Settled", tone: "done", icon: "check_circle" },
-  executed: { text: "Executed", tone: "done", icon: "task_alt" },
+  executed: { text: "Executed", tone: "outline", icon: "task_alt" },
 };
 
 /**

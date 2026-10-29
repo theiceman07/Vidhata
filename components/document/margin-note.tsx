@@ -76,7 +76,7 @@ export function MarginNote({
           disabled={blocked !== null}
           aria-describedby={blocked ? reasonId : undefined}
           onClick={() => onDelete()}
-          className="text-meta text-muted-fg hover:text-blocked disabled:pointer-events-none disabled:opacity-50"
+          className="text-meta text-muted-fg hover:text-ink disabled:pointer-events-none disabled:opacity-50"
         >
           Remove
         </button>

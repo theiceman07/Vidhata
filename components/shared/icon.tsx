@@ -21,6 +21,7 @@ export const ICON_NAMES = [
   "chevron_left",
   "chevron_right",
   "close",
+  "dark_mode",
   "description",
   "edit",
   "error",
@@ -35,6 +36,7 @@ export const ICON_NAMES = [
   "keyboard_arrow_up",
   "left_panel_close",
   "left_panel_open",
+  "light_mode",
   "lock",
   "logout",
   "mail",
@@ -64,7 +66,7 @@ export const ICON_NAMES = [
 export type IconName = (typeof ICON_NAMES)[number];
 
 /** One weight, no grade: icons carry function, not emphasis. FILL runs 0 to 1 so a state icon can be filled (Icon filled). */
-export const MATERIAL_SYMBOLS_HREF = `https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&icon_names=${ICON_NAMES.join(",")}&display=block`;
+export const MATERIAL_SYMBOLS_HREF = `https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400..500,0..1,0&icon_names=${ICON_NAMES.join(",")}&display=block`;
 
 export function Icon({
   name,

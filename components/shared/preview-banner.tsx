@@ -26,7 +26,7 @@ export function PreviewBanner() {
     <aside
       aria-label="Preview notice"
       data-preview-banner
-      className="shrink-0 bg-parchment px-4 py-0.5 text-center text-label text-muted-fg print:hidden"
+      className="relative shrink-0 bg-parchment px-4 py-0.5 text-center text-label text-muted-fg print:hidden"
     >
       <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
         <span>

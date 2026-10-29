@@ -5,6 +5,8 @@
 @layer base {
   body {
     @apply bg-paper text-ink font-sans text-body;
+    /* Hanken Grotesk's "ff" ligature fuses the two stems. */
+    font-variant-ligatures: no-common-ligatures;
   }
 
   /* No visible scrollbars anywhere. Every scroll region still scrolls
@@ -84,7 +86,7 @@
    markup — this block only resets colours and page-break behaviour. */
 @media print {
   body {
-    background: #fff;
+    background: theme("colors.paper");
     color: theme("colors.ink");
   }
 

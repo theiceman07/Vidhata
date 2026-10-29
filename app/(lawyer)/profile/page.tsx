@@ -60,68 +60,76 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="w-full max-w-xl">
+    <div className="w-full">
       <PageHeader title="Profile" description="Empanelment, conflicts and availability." />
 
-      <section className="mb-6 rounded-card border border-line bg-paper p-5 shadow-card">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-display text-h3 text-ink">
-              {CURRENT_ADVOCATE.name}
-            </p>
-            <p className="text-small text-muted-fg">
-              Bar enrolment: {CURRENT_ADVOCATE.bar}
-            </p>
-          </div>
-          <Badge className="border-transparent bg-done-tint text-done-text hover:bg-done-tint">
-            Empanelled
-          </Badge>
-        </div>
-      </section>
-
-      {loading ? (
-        <div className="space-y-3">
-          <Skeleton className="h-20 w-full rounded-card" />
-          <Skeleton className="h-32 w-full rounded-card" />
-        </div>
-      ) : (
-        <>
-          <section className="mb-6 rounded-card border border-line bg-paper p-5 shadow-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-ink">Available for new claims</p>
-                <p className="text-small text-muted-fg">
-                  Turn this off when you don&apos;t want new documents to
-                  appear claimable in the queue.
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <div className="space-y-4">
+          <section className="rounded-card bg-parchment p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="font-display text-h3 text-ink">{CURRENT_ADVOCATE.name}</p>
+                <p className="mt-1 text-meta text-muted-fg">
+                  Bar enrolment: {CURRENT_ADVOCATE.bar}
                 </p>
               </div>
-              <Switch
-                checked={available}
-                onCheckedChange={handleAvailabilityChange}
-                aria-label="Available for new claims"
-              />
+              <Badge className="shrink-0 border-transparent bg-done text-white hover:bg-done">
+                Empanelled
+              </Badge>
             </div>
           </section>
 
-          <section className="rounded-card border border-line bg-paper p-5 shadow-card">
-            <p className="mb-3 font-medium text-ink">Declared conflicts</p>
+          {loading ? (
+            <Skeleton className="h-28 w-full rounded-card" />
+          ) : (
+            <section className="rounded-card bg-parchment p-6">
+              <div className="flex items-start justify-between gap-6">
+                <div className="min-w-0">
+                  <p className="font-medium text-ink">Available for new claims</p>
+                  <p className="mt-1 max-w-measure text-meta text-muted-fg">
+                    Turn this off when you don&apos;t want new documents to appear claimable in
+                    the queue.
+                  </p>
+                </div>
+                <Switch
+                  className="shrink-0"
+                  checked={available}
+                  onCheckedChange={handleAvailabilityChange}
+                  aria-label="Available for new claims"
+                />
+              </div>
+            </section>
+          )}
+        </div>
+
+        {loading ? (
+          <Skeleton className="h-48 w-full rounded-card" />
+        ) : (
+          <section className="rounded-card bg-parchment p-6">
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="font-medium text-ink">Declared conflicts</p>
+              <p className="text-label tabular-nums text-muted-fg">{conflicts.length}</p>
+            </div>
+            <p className="mt-1 text-meta text-muted-fg">
+              A document naming one of these parties cannot be claimed by you.
+            </p>
             {conflicts.length === 0 ? (
-              <p className="mb-3 text-small text-muted-fg">
+              <p className="mt-4 rounded-control border border-dashed border-line px-4 py-3 text-meta text-muted-fg">
                 No conflicts declared.
               </p>
             ) : (
-              <ul className="mb-3 space-y-1">
+              <ul className="mt-4 flex flex-wrap gap-2">
                 {conflicts.map((name) => (
                   <li
                     key={name}
-                    className="flex items-center justify-between gap-2 text-body text-ink"
+                    className="inline-flex items-center gap-1 rounded-full border border-line bg-surface py-1 pl-3 pr-1.5 text-meta text-ink"
                   >
                     {name}
                     <button
                       type="button"
                       onClick={() => handleRemoveConflict(name)}
                       aria-label={`Remove declared conflict: ${name}`}
-                      className="text-muted-fg hover:text-flagged"
+                      className="inline-flex h-6 w-6 items-center justify-center rounded-full text-muted-fg hover:bg-sand hover:text-ink"
                     >
                       <Icon name="close" size={16} />
                     </button>
@@ -129,7 +137,7 @@ export default function ProfilePage() {
                 ))}
               </ul>
             )}
-            <form onSubmit={handleAddConflict} className="flex gap-2">
+            <form onSubmit={handleAddConflict} className="mt-4 flex gap-2">
               <Input
                 value={newConflict}
                 onChange={(e) => setNewConflict(e.target.value)}
@@ -141,8 +149,8 @@ export default function ProfilePage() {
               </Button>
             </form>
           </section>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 }

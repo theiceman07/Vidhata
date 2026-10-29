@@ -48,7 +48,7 @@ export function Tick({
         s.box,
         state === "done" && "bg-done text-white",
         state === "current" && "bg-surface text-progress ring-2 ring-inset ring-progress",
-        state === "move" && "bg-move text-ink ring-4 ring-move/20",
+        state === "move" && "bg-move text-white ring-4 ring-move/20",
         state === "ahead" && "bg-surface text-muted ring-1 ring-inset ring-muted/70",
         state === "na" && "bg-sand text-muted ring-1 ring-inset ring-line",
         className,

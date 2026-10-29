@@ -24,7 +24,8 @@ describe("documentTabs", () => {
       "consultation",
       "delivery",
     ]);
-    expect(tabs.find((t) => t.key === "checklist")?.label).toBe("Execution checklist · 2 of 3");
+    expect(tabs.find((t) => t.key === "checklist")?.label).toBe("Checklist");
+    expect(tabs.find((t) => t.key === "checklist")?.badge).toBe("2/3");
     expect(tabs.map((t) => t.href)).toContain("/documents/d1/delivery");
   });
 
