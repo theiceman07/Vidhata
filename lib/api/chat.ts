@@ -1,7 +1,7 @@
 import { chatReplySchema, type ChatReply as WireReply, type ChatRequest as WireRequest } from "@/lib/contracts";
 import { answerQuestion, type ChatReply } from "@/lib/chat/answer";
 import type { ChatSource } from "@/lib/chat/generate";
-import type { ChatAnswerStatus, ChatCitationView } from "@/lib/types";
+import type { ChatAnswerStatus, ChatCitationView, ChatResponse, Citation } from "@/lib/types";
 import { FAILURE_COPY, deadline, kindOfStatus, kindOfThrown, readDetail, type FailureKind } from "@/lib/net/failure";
 import { z } from "zod";
 import { ApiError, authed, type Fetcher } from "./backend";
@@ -45,6 +45,10 @@ export interface ChatAnswer {
   /** The answer when answered; the reason when refused or escalated. */
   text: string;
   citations: ChatCitationView[];
+  /** Set on a reply from the chat endpoint: its text is shown as returned, with no screen copy. */
+  asReturned?: boolean;
+  /** An escalated reply the endpoint recorded (it carried an escalation id). */
+  escalationRecorded?: boolean;
 }
 
 /** The span a mocked answer rests on: the clause as the reply quotes it, else the start of the reply. */
@@ -159,6 +163,85 @@ export function httpTransport(options: {
 }
 
 export const MAX_QUESTION_LENGTH = 2000;
+
+const chatCitationWire = z.object({
+  source: z.enum(["document", "lawyer_note"]),
+  chunk_id: z.string(),
+  clause_number: z.string().nullable().default(null),
+  heading: z.string().nullable().default(null),
+  snippet: z.string(),
+});
+
+/** The chat endpoint's reply (ChatResponse in lib/types.ts), checked before anything is shown. */
+export const chatResponseSchema = z.object({
+  turn_id: z.string(),
+  document_id: z.string(),
+  status: z.enum(["answered", "refused", "escalated"]),
+  answer: z.string().min(1),
+  citations: z.array(chatCitationWire).default([]),
+  reason: z.string().nullable().default(null),
+  retrieval_score: z.number().nullable().default(null),
+  escalation_id: z.string().nullable().default(null),
+}) satisfies z.ZodType<ChatResponse, z.ZodTypeDef, unknown>;
+
+/** Fixed copy for a failed call to the chat endpoint. No em dashes: this is our own text. */
+export const CHAT_INVALID_QUESTION = "That question could not be read. Try asking it another way.";
+export const CHAT_SOMETHING_WRONG = "Something went wrong. Try again.";
+
+/**
+ * A citation as the screen shows it. Number and heading together; the heading alone when there
+ * is no number; only the snippet when there is neither. An advocate's note is never shown to the
+ * client, even if the endpoint sends one, so it is dropped here.
+ */
+export function citationView(c: Citation): ChatCitationView | null {
+  if (c.source !== "document") return null;
+  const number = c.clause_number?.trim() || null;
+  const heading = c.heading?.trim() || undefined;
+  return { clauseReference: number ? `Clause ${number}` : "", heading, quote: c.snippet };
+}
+
+/** The endpoint's reply as the thread shows it: `answer` as returned for every status, `reason` never. */
+export function fromChatResponse(r: ChatResponse): ChatAnswer {
+  return {
+    status: r.status,
+    text: r.answer,
+    citations: r.status === "answered" ? r.citations.flatMap((c) => citationView(c) ?? []) : [],
+    asReturned: true,
+    escalationRecorded: r.status === "escalated" && r.escalation_id !== null,
+  };
+}
+
+/**
+ * Ask the backend's chat endpoint, with the same Bearer token as every other call. A 422 is an
+ * invalid question; anything else that fails (network, server, a reply that cannot be read) is
+ * one generic message, so nothing the server said reaches the screen.
+ */
+export async function askDocumentChat(
+  input: { documentId: string; question: string; language?: string },
+  fetchImpl?: Fetcher,
+): Promise<ChatAnswer> {
+  const question = input.question.trim();
+  if (!question) throw new ChatError("Type a question first.");
+  if (question.length > MAX_QUESTION_LENGTH) {
+    throw new ChatError(`Keep the question under ${MAX_QUESTION_LENGTH} characters.`);
+  }
+  try {
+    const reply = await authed(
+      `/documents/${encodeURIComponent(input.documentId)}/chat`,
+      { method: "POST", body: { question, language: input.language ?? "en" } },
+      chatResponseSchema,
+      fetchImpl,
+    );
+    return fromChatResponse(reply);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 422) {
+      throw new ChatError(CHAT_INVALID_QUESTION, { detail: err.detail });
+    }
+    throw new ChatError(CHAT_SOMETHING_WRONG, {
+      detail: err instanceof ApiError ? err.detail : err instanceof Error ? err.message : undefined,
+    });
+  }
+}
 
 export async function askDocumentQuestion(
   input: { documentId: string; question: string; language?: string },

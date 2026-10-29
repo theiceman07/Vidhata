@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/shared/icon";
-import { ChatCitations } from "@/components/domain/chat-message";
+import { ChatCitations, ChatEscalationRecorded } from "@/components/domain/chat-message";
 import { ChatPending, ChatSendError } from "@/components/domain/chat-status";
 import { agentAvailable } from "@/lib/chatAccess";
 import { CONSULTATION, PRICE_BASIS } from "@/lib/config/pricing";
@@ -210,12 +210,13 @@ export function DocumentAgent({
                 </li>
               ) : (
                 <li key={m.id} className="text-meta leading-relaxed text-ink">
-                  {m.status === "refused" && (
+                  {m.status === "refused" && !m.asReturned && (
                     <p className="mb-1 text-label font-medium text-muted-fg">
                       Not something this document answers
                     </p>
                   )}
                   <p>{m.text}</p>
+                  <ChatEscalationRecorded message={m} />
                   <ChatCitations
                     variant="docked"
                     citations={
