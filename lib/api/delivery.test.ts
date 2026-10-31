@@ -156,7 +156,8 @@ describe("what the delivery screen holds back", () => {
     // Code only: the file's own comments explain what it does not do.
     const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
     // Disabled controls, no link, no handler, nothing that makes a file.
-    expect((code.match(/<Button[^>]*\bdisabled\b/g) ?? []).length).toBe(2);
+    // Two disabled buttons in the full layout, one in the compact layout.
+    expect((code.match(/<Button[^>]*\bdisabled\b/g) ?? []).length).toBe(3);
     expect(code).not.toMatch(/href=|onClick|download=|Blob|createObjectURL|window\.print|toast/);
   });
 });
