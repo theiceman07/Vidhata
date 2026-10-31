@@ -14,7 +14,7 @@ import { EscalationPrompt } from "@/components/domain/escalation-prompt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MAX_QUESTION_LENGTH, chatTransport, unavailableTransport } from "@/lib/api/chat";
+import { CHAT_MAX_LENGTH, chatTransport, unavailableTransport } from "@/lib/api/chat";
 import { getClientDocument } from "@/lib/api/client/documents";
 import { useDocumentChat } from "@/lib/chat-session/useDocumentChat";
 import { getClientSummary } from "@/lib/api/client/delivery";
@@ -58,6 +58,7 @@ export default function ChatPage() {
   const messages = chat.messages;
   const resetChat = chat.reset;
   const [input, setInput] = useState("");
+  const over = input.length > CHAT_MAX_LENGTH;
   const [highlightedClause, setHighlightedClause] = useState<string | null>(
     null,
   );
@@ -278,15 +279,26 @@ export default function ChatPage() {
               <Input
                 ref={inputRef}
                 value={input}
-                maxLength={MAX_QUESTION_LENGTH}
+                aria-invalid={over}
+                aria-describedby="chat-length"
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about any clause"
                 aria-label="Ask about a clause in this document"
               />
-              <Button type="submit" size="icon" aria-label="Send" disabled={chat.pending} className="h-11 w-11 shrink-0">
+              <Button type="submit" size="icon" aria-label="Send" disabled={chat.pending || over} className="h-11 w-11 shrink-0">
                 <Icon name="send" size={18} />
               </Button>
             </form>
+            <div className="mt-1.5 flex items-center justify-between gap-4">
+              <p id="chat-length" className="text-meta text-muted-fg">
+                {input.length} of {CHAT_MAX_LENGTH} characters
+              </p>
+            </div>
+            {over && (
+              <p aria-live="polite" className="mt-1 border-l-2 border-flagged pl-4 text-small text-ink">
+                That is {input.length - CHAT_MAX_LENGTH} characters over the limit. Shorten your question to send it.
+              </p>
+            )}
             <p className="mt-2 text-small text-muted-fg">
               Ask about anything in this document. For advice on your
               situation, book a consultation.
