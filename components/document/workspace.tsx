@@ -857,7 +857,7 @@ export function DocumentWorkspace({
                   onSettle={(note) =>
                     onSettle?.(selectedFinding.findingId, note)
                   }
-                  onReopen={() => onReopen?.(selectedFinding.findingId)}
+                  onReopen={onReopen ? () => onReopen?.(selectedFinding.findingId) : undefined}
                   onRequestChange={(request) =>
                     onRequestChange?.(selectedFinding.findingId, request)
                   }

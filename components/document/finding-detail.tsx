@@ -81,7 +81,7 @@ export function FindingDetail({
   /** Offered to an advocate looking at a document nobody has claimed. */
   claim?: { onClaim: () => void; claiming: boolean; disabledReason: string | null };
   onSettle: (note: string | null) => void;
-  onReopen: () => void;
+  onReopen?: () => void;
   onRequestChange: (request: string) => void;
   /**
    * Why no revision request can be made, once the limit is reached. The
@@ -284,15 +284,17 @@ export function FindingDetail({
                 {finding.resolvedAt &&
                   ` · ${format(new Date(finding.resolvedAt), "d MMM yyyy, HH:mm")}`}
               </p>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onReopen}
-                disabled={busy}
-                aria-label={`Reopen ${which}`}
-              >
-                Reopen
-              </Button>
+              {onReopen && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onReopen}
+                  disabled={busy}
+                  aria-label={`Reopen ${which}`}
+                >
+                  Reopen
+                </Button>
+              )}
             </div>
           ) : draft ? (
             <div className="space-y-2">
