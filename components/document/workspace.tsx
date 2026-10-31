@@ -15,6 +15,7 @@ import {
 import {
   findingState,
   findingsWithClient,
+  noFindingsLine,
   severityCounts,
   unsettledFindings,
   type Blocker,
@@ -524,9 +525,7 @@ export function DocumentWorkspace({
               <span className="flex items-center gap-3">
                 <span className="text-meta text-muted-fg">
                   {view.findings.length === 0
-                    ? scoped
-                      ? "No findings in this round"
-                      : "No findings raised"
+                    ? noFindingsLine(doc.status, scoped)
                     : unsettled.length === 0
                       ? `All ${view.findings.length} findings ${scoped ? "in this round " : ""}settled`
                       : `${unsettled.length} of ${view.findings.length} findings ${scoped ? "in this round " : ""}undecided`}
