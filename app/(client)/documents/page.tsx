@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listClientDocuments } from "@/lib/api/client/documents";
 import { MOCK_CLIENT_ORG, MOCK_CLIENT_PERSON } from "@/lib/mock/client.mock";
+import { findingsNote } from "@/lib/screeningNote";
 import { groupOf, yourMove, type Move, type MoveGroup } from "@/lib/moves";
 import { TONE, type Tone } from "@/lib/tone";
 import type { ClientDocumentSummary } from "@/lib/types";
@@ -248,7 +249,7 @@ function YourRecord({ docs }: { docs: ClientDocumentSummary[] }) {
       label: "Findings raised",
       dot: "bg-blocked",
       value: findings,
-      note: `Across ${screened.length} screened ${screened.length === 1 ? "draft" : "drafts"}`,
+      note: findingsNote(screened.length),
     },
     {
       label: "Signed off",
