@@ -117,3 +117,29 @@ describe("the finding screen", () => {
     expect(out).toContain("Missing (expected after Clause 9, Term and Termination)");
   });
 });
+
+describe("Reopen on a settled finding", () => {
+  const render = (id: string, onReopen?: () => void) =>
+    renderToStaticMarkup(
+      createElement(FindingDetail, {
+        doc,
+        finding: byId(id),
+        number: "01",
+        role: "advocate",
+        canAdjudicate: true,
+        onSettle: () => {},
+        onReopen,
+        onRequestChange: () => {},
+        trail: [],
+      }),
+    );
+  const ids = Object.values(R1_FINDING_IDS);
+
+  it("is offered when the screen can reopen, so there is something to hide", () => {
+    expect(ids.some((id) => render(id, () => {}).includes("Reopen"))).toBe(true);
+  });
+
+  it("is not offered when no handler is passed (backend mode), whatever the finding's state", () => {
+    for (const id of ids) expect(render(id)).not.toContain("Reopen");
+  });
+});
