@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChatError, MAX_QUESTION_LENGTH, askDocumentQuestion, type ChatTransport } from "@/lib/api/chat";
+import { ChatError, MAX_QUESTION_LENGTH, askDocumentChat, askDocumentQuestion, type ChatTransport } from "@/lib/api/chat";
+import { chatBackendEnabled } from "@/lib/api/source";
 import type { ChatMessage } from "@/lib/types";
 import { beginAsk, beginRetry, completeAsk, failAsk, initialThread, nextMessageId } from "./thread";
 
@@ -36,7 +37,10 @@ export function useDocumentChat(options: {
       const mine = epoch.current;
       const current = () => live.current && epoch.current === mine;
       try {
-        const answer = await askDocumentQuestion({ documentId, question }, transportRef.current);
+        // With the chat flag on, the backend's endpoint answers; otherwise the C1 transport does.
+        const answer = chatBackendEnabled()
+          ? await askDocumentChat({ documentId, question })
+          : await askDocumentQuestion({ documentId, question }, transportRef.current);
         if (current()) setState((s) => completeAsk(s, answer, nextMessageId("a")));
       } catch (err) {
         const message = err instanceof ChatError ? err.message : "Could not get an answer. Try again.";

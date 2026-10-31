@@ -38,27 +38,39 @@ export function ChatCitations({
 }) {
   if (citations.length === 0) return null;
   const style = CITATION_STYLES[variant];
-  const quoted = citations.filter((c) => c.quote.trim() !== "");
+  // A citation with neither a clause number nor a heading is shown as its snippet alone.
+  const named = citations.filter((c) => labelOf(c) !== "");
+  const bare = citations.filter((c) => labelOf(c) === "" && c.quote.trim() !== "");
+  const quoted = named.filter((c) => c.quote.trim() !== "");
 
   return (
     <div className="mt-2">
-      <ul aria-label="Clauses this answer rests on" className="flex flex-wrap items-center gap-2">
-        {citations.map((c, i) => (
-          <li key={`${c.clauseReference}-${i}`}>
-            {isClause(c.clauseReference) ? (
-              <button type="button" onClick={() => onCite?.(c.clauseReference)} className={cn(style.chip, style.link)}>
-                <Icon name="description" size={16} />
-                {c.clauseReference}
-              </button>
-            ) : (
-              <span className={style.chip}>
-                <Icon name="description" size={16} />
-                {c.clauseReference}
-              </span>
-            )}
-          </li>
-        ))}
-      </ul>
+      {named.length > 0 && (
+        <ul aria-label="Clauses this answer rests on" className="flex flex-wrap items-center gap-2">
+          {named.map((c, i) => (
+            <li key={`${labelOf(c)}-${i}`}>
+              {isClause(c.clauseReference) ? (
+                <button type="button" onClick={() => onCite?.(c.clauseReference)} className={cn(style.chip, style.link)}>
+                  <Icon name="description" size={16} />
+                  {labelOf(c)}
+                </button>
+              ) : (
+                <span className={style.chip}>
+                  <Icon name="description" size={16} />
+                  {labelOf(c)}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {bare.length > 0 && (
+        <ul aria-label="What this answer quotes" className="mt-2 space-y-1 border-l-2 border-line pl-3 text-small text-muted-fg">
+          {bare.map((c, i) => (
+            <li key={`bare-${i}`}>&ldquo;{c.quote}&rdquo;</li>
+          ))}
+        </ul>
+      )}
       {quoted.length > 0 && (
         <details className="mt-2 text-small text-muted-fg">
           <summary className="inline-flex min-h-11 w-fit cursor-pointer items-center rounded-control py-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent">
@@ -66,14 +78,34 @@ export function ChatCitations({
           </summary>
           <ul className="mt-1 space-y-1 border-l-2 border-line pl-3">
             {quoted.map((c, i) => (
-              <li key={`${c.clauseReference}-${i}`}>
-                <span className="font-medium text-ink">{c.clauseReference}</span>: &ldquo;{c.quote}&rdquo;
+              <li key={`${labelOf(c)}-${i}`}>
+                <span className="font-medium text-ink">{labelOf(c)}</span>: &ldquo;{c.quote}&rdquo;
               </li>
             ))}
           </ul>
         </details>
       )}
     </div>
+  );
+}
+
+/** Clause number and heading together, the heading alone, or nothing. */
+function labelOf(c: ChatCitationView): string {
+  const heading = c.heading?.trim() ?? "";
+  if (c.clauseReference && heading) return `${c.clauseReference} · ${heading}`;
+  return c.clauseReference || heading;
+}
+
+/**
+ * A tick beside an escalated reply, only when the service recorded it (it returned an escalation
+ * id). The reply's own text says what happens next, so the tick adds no words beyond its label.
+ */
+export function ChatEscalationRecorded({ message }: { message: ChatMessageType }) {
+  if (!message.asReturned || message.status !== "escalated" || !message.escalationRecorded) return null;
+  return (
+    <span role="img" aria-label="Recorded" data-escalation-recorded className="mt-2 inline-flex text-done">
+      <Icon name="check_circle" size={18} />
+    </span>
   );
 }
 
@@ -101,8 +133,12 @@ export function ChatMessage({ message, onCiteClick }: ChatMessageProps) {
               : "border border-line bg-paper text-ink shadow-card",
         )}
       >
-        {refused && <p className="mb-1 text-label font-medium text-muted-fg">Not something this document answers</p>}
+        {/* A reply shown as returned may be a refusal for another reason (not ready, unavailable). */}
+        {refused && !message.asReturned && (
+          <p className="mb-1 text-label font-medium text-muted-fg">Not something this document answers</p>
+        )}
         <p className="whitespace-pre-wrap">{message.text}</p>
+        <ChatEscalationRecorded message={message} />
         <ChatCitations citations={citations} variant="page" onCite={onCiteClick} />
       </div>
     </div>
