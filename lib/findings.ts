@@ -2,9 +2,21 @@ import { SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF } from "@/lib/config/visibility";
 import {
   SEVERITY_ORDER,
   type ContractDocument,
+  type DocumentStatus,
   type Finding,
   type Severity,
 } from "@/lib/types";
+
+/** A document in draft or still being analysed has not been screened: its empty findings list means "not yet", not "none". */
+export function isScreened(status: DocumentStatus): boolean {
+  return status !== "draft" && status !== "analysing";
+}
+
+/** The line over the findings list when there are no findings to list. */
+export function noFindingsLine(status: DocumentStatus, scoped: boolean): string {
+  if (!isScreened(status)) return "Not screened yet";
+  return scoped ? "No findings in this round" : "No findings raised";
+}
 
 /**
  * Three state systems, never one.

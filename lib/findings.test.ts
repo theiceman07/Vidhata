@@ -2,7 +2,8 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { clientAuditTrail, buildAuditTrail } from "./audit";
-import { clientVisibleFindings, firstPassFindings } from "./findings";
+import { clientVisibleFindings, firstPassFindings, noFindingsLine } from "./findings";
+import { findingsNote } from "./screeningNote";
 import { mockDocuments } from "./mock/documents.mock";
 import type { ContractDocument } from "./types";
 
@@ -120,5 +121,20 @@ describe("client screens", () => {
   it("never read doc.findings directly", () => {
     const offenders = clientFiles.filter((file) => /\.findings\b/.test(readFileSync(file, "utf8")));
     expect(offenders.map((f) => path.relative(root, f))).toEqual([]);
+  });
+});
+
+describe("an empty findings count", () => {
+  it("says nothing has been screened when that is so, and never that none were found", () => {
+    expect(findingsNote(0)).toBe("No draft screened yet");
+    expect(findingsNote(1)).toBe("Across 1 screened draft");
+    expect(findingsNote(3)).toBe("Across 3 screened drafts");
+  });
+
+  it("tells a document still in the pipeline from one that came back clean", () => {
+    expect(noFindingsLine("draft", false)).toBe("Not screened yet");
+    expect(noFindingsLine("analysing", true)).toBe("Not screened yet");
+    expect(noFindingsLine("pending_review", false)).toBe("No findings raised");
+    expect(noFindingsLine("under_review", true)).toBe("No findings in this round");
   });
 });
