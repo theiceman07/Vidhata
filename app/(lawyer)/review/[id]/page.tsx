@@ -405,7 +405,7 @@ export default function ReviewPage() {
         ) : null
       }
       onSettle={handleSettle}
-      onReopen={handleReopen}
+      onReopen={backendDataEnabled() ? undefined : handleReopen}
       onRequestChange={handleRequestChange}
       busy={busy}
     />
