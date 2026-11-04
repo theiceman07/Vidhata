@@ -163,6 +163,8 @@ export function httpTransport(options: {
 }
 
 export const MAX_QUESTION_LENGTH = 2000;
+/** What the chat screen accepts. The backend's cap is the authority; the screen only counts characters and says so. */
+export const CHAT_MAX_LENGTH = 1000;
 
 const chatCitationWire = z.object({
   source: z.enum(["document", "lawyer_note"]),

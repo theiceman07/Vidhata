@@ -8,6 +8,7 @@ import { chatReplySchema } from "@/lib/contracts";
 import { mockDocuments } from "@/lib/mock/documents.mock";
 import { FAILURE_COPY } from "@/lib/net/failure";
 import {
+  CHAT_MAX_LENGTH,
   CHAT_TIMEOUT_MS,
   ChatError,
   MAX_QUESTION_LENGTH,
@@ -188,5 +189,12 @@ describe("httpTransport", () => {
   it("does not trust a 200 whose body is not JSON", async () => {
     const err = await failWith(async () => new Response("<html>ok</html>", { status: 200 }));
     expect(err.message).toMatch(/could not be read/);
+  });
+});
+
+describe("the chat screen's own length limit", () => {
+  it("is 1000, and never above what ask() enforces, so the screen cannot allow what ask() refuses", () => {
+    expect(CHAT_MAX_LENGTH).toBe(1000);
+    expect(CHAT_MAX_LENGTH).toBeLessThanOrEqual(MAX_QUESTION_LENGTH);
   });
 });
