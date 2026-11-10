@@ -4,7 +4,7 @@ import { SiteHeader } from "@/components/marketing/site-header";
 
 export const metadata: Metadata = {
   title: "Security and data",
-  description: "Where Vidhata keeps client data, how it is protected, and when it is used.",
+  description: "Where Vidhataa keeps client data, how it is protected, and when it is used.",
 };
 
 // The four commitments are the product's own, from the fixes list. They are
@@ -22,7 +22,7 @@ const COMMITMENTS = [
   },
   {
     title: "No training without opt-in",
-    body: "Your documents are not used to train models unless you opt in. The opt-in is off by default and can be withdrawn. This is how Vidhata handles consent under the Digital Personal Data Protection Act, 2023.",
+    body: "Your documents are not used to train models unless you opt in. The opt-in is off by default and can be withdrawn. This is how Vidhataa handles consent under the Digital Personal Data Protection Act, 2023.",
   },
   {
     title: "Audit trail",
@@ -37,7 +37,7 @@ export default function SecurityPage() {
       <main>
         <section className="mx-auto w-full max-w-6xl px-6 pb-16 pt-24 text-center md:pt-32">
           <h1 className="mx-auto max-w-3xl font-display text-display text-ink">
-            How Vidhata handles your data.
+            How Vidhataa handles your data.
           </h1>
           <p className="mx-auto mt-6 max-w-xl text-lead text-muted-fg">
             Four commitments, stated plainly.
@@ -51,7 +51,7 @@ export default function SecurityPage() {
           >
             <p className="font-medium">This is a preview.</p>
             <p className="mt-1 text-muted-fg">
-              These are the commitments Vidhata is built to. The preview does not yet keep them: it
+              These are the commitments Vidhataa is built to. The preview does not yet keep them: it
               stores nothing, and its sign-in is not real security. Do not put real contract or
               personal data into it.
             </p>

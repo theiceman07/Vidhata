@@ -75,7 +75,7 @@ export default function LawyerLoginPage() {
         intro="For empanelled advocates only."
       >
         <p className="text-body text-ink">
-          Accounts aren&apos;t open yet. Vidhata is in preview.
+          Accounts aren&apos;t open yet. Vidhataa is in preview.
         </p>
         <Button asChild className="mt-6 w-full">
           <Link href="/">Go to home</Link>

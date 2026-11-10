@@ -90,7 +90,7 @@ export function PrivacySettings() {
   return (
     <div className="w-full">
       <p className="mb-4 text-meta text-muted-fg">
-        What Vidhata may do with your documents, what you can take with you, and
+        What Vidhataa may do with your documents, what you can take with you, and
         how to ask for deletion.
       </p>
 
@@ -164,7 +164,7 @@ function TrainingPanel({
   return (
     <Panel id="training-title" title="Training use">
       <p className="text-body text-ink">
-        Vidhata does not use your documents to train models unless you opt in.
+        Vidhataa does not use your documents to train models unless you opt in.
         It is off by default, and you can turn it off again at any time.
       </p>
 
@@ -257,7 +257,7 @@ function ExportPanel() {
   return (
     <Panel id="export-title" title="Export your data">
       <p className="text-body text-ink">
-        A file of what you can read in Vidhata: your documents as far as you can
+        A file of what you can read in Vidhataa: your documents as far as you can
         read them, your invoices, the questions you have asked an advocate, and
         your consent log.
       </p>

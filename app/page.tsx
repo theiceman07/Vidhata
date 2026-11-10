@@ -10,7 +10,7 @@ import { Accountability } from "@/components/marketing/accountability";
 import { Faq } from "@/components/marketing/faq";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { PublicEntry } from "@/components/marketing/public-entry";
-import { GlowBackdrop } from "@/components/marketing/glow-backdrop";
+import { AuroraBackdrop } from "@/components/marketing/aurora-backdrop";
 
 /**
  * The landing page says one thing on arrival and the rest in order as
@@ -50,20 +50,20 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <GlowBackdrop>
+        <AuroraBackdrop>
         <section className="site-wrap">
           <div className="flex flex-col items-center py-28 text-center md:py-36">
             <h2 className="max-w-3xl font-display text-display text-ink">
               Put your next contract in front of an advocate.
             </h2>
             <p className="mt-6 max-w-xl text-lead text-ink/70">
-              Describe the deal. Vidhata drafts and screens it. An advocate
+              Describe the deal. Vidhataa drafts and screens it. An advocate
               settles the findings and signs off.
             </p>
             <PublicEntry className="mt-12" />
           </div>
         </section>
-        </GlowBackdrop>
+        </AuroraBackdrop>
       </main>
       <SiteFooter />
     </>

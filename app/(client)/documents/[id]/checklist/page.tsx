@@ -303,12 +303,12 @@ function ExecutionSummary({
       {/* The record already on file: secondary. */}
       <div className="rounded-card bg-surface p-6">
         <p className="mb-3 text-label font-medium text-muted-fg">Record</p>
-        <dl className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <div className="flex min-w-0 items-start gap-3 rounded-control bg-paper p-4">
             <span aria-hidden className="mt-0.5 shrink-0">
               <Tick state="done" size="sm" />
             </span>
-            <div className="min-w-0">
+            <dl className="min-w-0">
               <dt className="text-label text-muted-fg">Signed off</dt>
               <dd className="mt-0.5">
                 {doc.signOff ? (
@@ -326,11 +326,11 @@ function ExecutionSummary({
                   <span className="text-meta text-muted-fg">No sign-off is recorded.</span>
                 )}
               </dd>
-            </div>
+            </dl>
           </div>
           <div className="flex min-w-0 items-start gap-3 rounded-control bg-paper p-4">
             <Icon name="attach_file" size={20} className="mt-0.5 shrink-0 text-muted-fg" />
-            <div className="min-w-0">
+            <dl className="min-w-0">
               <dt className="text-label text-muted-fg">Proof on file</dt>
               <dd className="mt-0.5">
                 {proof.length > 0 ? (
@@ -345,9 +345,9 @@ function ExecutionSummary({
                   <span className="text-meta text-muted-fg">Nothing attached yet.</span>
                 )}
               </dd>
-            </div>
+            </dl>
           </div>
-        </dl>
+        </div>
       </div>
     </section>
   );
@@ -537,19 +537,17 @@ function AgreementAndDocument({ doc }: { doc: ClientDocument }) {
         <h2 id="agreement-heading" className="font-display text-h3 text-ink">
           The agreement
         </h2>
-        <dl className="mt-3 grid gap-2">
-          <div className="rounded-control bg-paper px-4 py-3">
+        <dl className="mt-3 grid grid-cols-2 gap-2 @xl:grid-cols-4">
+          <div className="col-span-full rounded-control bg-paper px-4 py-3">
             <dt className="text-label text-muted-fg">{parties[0]}</dt>
             <dd className="mt-0.5 font-display text-h3 text-ink">{parties[1]}</dd>
           </div>
-          <div className="grid grid-cols-2 gap-2 @xl:grid-cols-4">
-            {facts.map(([term, value]) => (
-              <div key={term} className="min-w-0 rounded-control bg-paper px-4 py-3">
-                <dt className="text-label text-muted-fg">{term}</dt>
-                <dd className="mt-0.5 text-body font-medium text-ink">{value}</dd>
-              </div>
-            ))}
-          </div>
+          {facts.map(([term, value]) => (
+            <div key={term} className="min-w-0 rounded-control bg-paper px-4 py-3">
+              <dt className="text-label text-muted-fg">{term}</dt>
+              <dd className="mt-0.5 text-body font-medium text-ink">{value}</dd>
+            </div>
+          ))}
         </dl>
         {doc.deal.keyTerms && (
           <div className="mt-2 rounded-control bg-paper px-4 py-3">

@@ -1,4 +1,4 @@
-import { GlowBackdrop } from "./glow-backdrop";
+import { AuroraBackdrop } from "./aurora-backdrop";
 import { PublicEntry } from "./public-entry";
 
 /**
@@ -11,18 +11,18 @@ import { PublicEntry } from "./public-entry";
  */
 export function Hero() {
   return (
-    <GlowBackdrop>
+    <AuroraBackdrop>
     <section className="site-wrap">
       <div className="flex min-h-[calc(100svh-4rem)] flex-col items-center justify-center py-20 text-center">
         <h1 className="max-w-4xl font-display text-display-hero text-ink">
           AI drafts. <em className="italic">Advocates</em> decide.
         </h1>
         <p className="mt-5 max-w-2xl text-balance text-lead text-ink/70">
-          Describe the deal. Vidhata drafts it, and a named advocate signs off.
+          Describe the deal. Vidhataa drafts it, and a named advocate signs off.
         </p>
         <PublicEntry className="mt-10" />
       </div>
     </section>
-    </GlowBackdrop>
+    </AuroraBackdrop>
   );
 }

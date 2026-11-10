@@ -1,4 +1,4 @@
-# Vidhata Web
+# Vidhataa Web
 
 AI-drafted, advocate-settled contracts for Indian startups and MSMEs.
 Frontend only. No backend exists yet.
@@ -25,7 +25,7 @@ off. The client gets the settled document plus an execution checklist
   components), TypeScript strict, Tailwind, shadcn/ui.
 - Server Components by default. "use client" only for interactivity.
 - Domain components live in components/domain and are the only place
-  Vidhata vocabulary appears in JSX.
+  Vidhataa vocabulary appears in JSX.
 - Types come from lib/types.ts. Do not redeclare shapes inline.
 - Tailwind tokens only (bg-paper, text-ink, border-line). No raw hex.
 - Every list view needs loading, empty and error states.
@@ -61,7 +61,7 @@ off. The client gets the settled document plus an execution checklist
 Brand Board V2.0 (22 Sep 2026). This supersedes the earlier warm rust
 palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
 
-- Product name: Vidhata. "AI drafts. Advocates decide."
+- Product name: Vidhataa. "AI drafts. Advocates decide."
 - Design board "Before, and a safe After" (v1 conservative) supersedes the
   one-accent monotone look. Colour carries meaning, one colour per meaning:
   green is done or brand, blue is in progress (advocate-side work),
@@ -83,13 +83,13 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
   stepper and in every checklist and list. The current step is a blue ring
   with a dot; later steps are muted outlines.
 - Board V3 (23 Sep 2026), reference 7shifts.com. The wordmark is the
-  word "Vidhata" in Apfel Grotezk (font-wordmark, self-hosted in
+  word "Vidhataa" in Apfel Grotezk (font-wordmark, self-hosted in
   app/fonts), with no symbol. Brygada 1918 (font-display and
   font-clause): headlines and contract text. Hanken Grotesk (font-sans):
   everything else. There is no monospace voice; font-mono renders the
   grotesk with tabular figures. Do not bring back Newsreader, Inter, IBM
   Plex Mono, Archivo Narrow, uppercase mono eyebrows or datelines like
-  "Vidhata · New Delhi".
+  "Vidhataa · New Delhi".
 - Headings are 500, never bold. Body never exceeds 600.
 - Status colors are semantic only, never decorative: the done, progress,
   move and blocked families above (use move-text, not marigold, for text on
@@ -119,11 +119,11 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
   in the hero and at the end; the brief survives sign-in. Where the preview
   workspace is off (the public site, NEXT_PUBLIC_VIDHATA_PREVIEW_MODE unset)
   sign-in is closed, but the prompt still shows (owner's call, 10 Nov
-  2026): PublicEntry puts "Vidhata is in preview. Accounts aren't open yet."
+  2026): PublicEntry puts "Vidhataa is in preview. Accounts aren't open yet."
   under the prompt, never inside it, with links to /sample and /contracts.
   On the landing page the prompt is the larger form with example briefs
   under it; its button is neutral until there is a brief, then accent, and
-  the sign-in and onboarding pages say "Accounts aren't open yet. Vidhata is
+  the sign-in and onboarding pages say "Accounts aren't open yet. Vidhataa is
   in preview." with a way home. Inside the
   portal it drafts: readBrief() (lib/api/brief.ts) reads what the brief
   states, a complete brief is drafted at once, and an incomplete one opens
@@ -159,7 +159,7 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
   768px.
 - Portals: the rail tucks away like Arc's sidebar. At rest it is a sliver
   of the ink capsule at the left edge; pointing at it or tabbing into it
-  opens it in full (the Vidhata wordmark, search, sections, identity) and
+  opens it in full (the Vidhataa wordmark, search, sections, identity) and
   the page makes room rather than being covered. Each visit lands with
   it kept open, so the sliver is never a mystery; tucking it away (Ctrl+\)
   holds for the rest of the visit (sessionStorage). On mobile it lies
@@ -225,8 +225,8 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
 - Avoid: purple/violet/indigo, gradients, glassmorphism, shadows,
   decorative icon treatments, scales, gavels, sepia parchment graphics.
   The footer is flat (reference footer.design/styles/flat): a full-width
-  black field with the wordmark across its foot, and no shadow, the inner
-  shadow on the wordmark included. Solid accent is for controls only,
+  black field with the wordmark across its foot. The one shadow allowed
+  is a soft inner shadow on that wordmark (owner's call, 10 Nov 2026). Solid accent is for controls only,
   never a band or a tile: it reads too bright at that size.
   Icons are allowed where they carry meaning (a state icon in StateLabel, a
   tick, an icon that replaces an explanatory paragraph), never as decoration.

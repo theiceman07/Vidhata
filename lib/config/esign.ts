@@ -22,7 +22,7 @@ export const ESIGN_LEGAL_NOTE =
   "This list needs legal confirmation. The schedule to the IT Act can be amended.";
 
 /**
- * The agreement types Vidhata drafts that fall in one of the classes above.
+ * The agreement types Vidhataa drafts that fall in one of the classes above.
  * None does: a mutual NDA, a vendor agreement, a master services agreement and
  * an employment agreement are none of a will, a trust, a negotiable instrument
  * or a power of attorney. A type is added here, and only here, if one ever is.

@@ -747,6 +747,8 @@ export function DocumentWorkspace({
           {/* Centre · the contract. */}
           <section
             aria-label="Contract text"
+            // A scroll area with nothing focusable in it: the tab stop lets a keyboard scroll it.
+            tabIndex={0}
             className="min-w-0 bg-paper lg:overflow-y-auto"
           >
             <DocumentSurface

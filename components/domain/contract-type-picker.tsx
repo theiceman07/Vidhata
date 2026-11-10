@@ -16,7 +16,7 @@ type DraftType = ModelledContractType;
  * The first thing intake asks: what kind of document is this.
  *
  * Every type in the catalogue is shown, in its group, so a client can see
- * what Vidhata will draft and what it will not yet. A type that cannot be
+ * what Vidhataa will draft and what it will not yet. A type that cannot be
  * drafted is disabled and says "Coming soon" rather than being left out, so
  * its absence is never a mystery. Which types are available is one flag per
  * type in the catalogue, not a decision made here.

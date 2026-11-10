@@ -26,9 +26,9 @@ export const PALETTE: Record<string, Record<Mode, string>> = {
   "highlight-bg": { light: "#FFF3A3", dark: "#3D3500" },
   "highlight-text": { light: "#000000", dark: "#FFE866" },
   "status-verified": { light: "#4044F9", dark: "#4044F9" },
-  "status-accepted": { light: "#0C8F45", dark: "#0C8F45" },
-  "status-rejected": { light: "#E5372B", dark: "#E5372B" },
-  "status-pending": { light: "#E35D05", dark: "#E35D05" },
+  "status-accepted": { light: "#0B8540", dark: "#0B8540" },
+  "status-rejected": { light: "#D92D21", dark: "#D92D21" },
+  "status-pending": { light: "#C74F00", dark: "#C74F00" },
   "status-on": { light: "#FFFFFF", dark: "#FFFFFF" },
 };
 

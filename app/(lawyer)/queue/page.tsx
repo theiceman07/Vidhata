@@ -32,6 +32,7 @@ import {
 } from "@/lib/findings";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import { PIPELINE_LAYERS, type ContractDocument } from "@/lib/types";
+import { DocumentTitle } from "@/components/shared/document-title";
 import { PageHeader } from "@/components/shared/page-header";
 
 type LoadState = "loading" | "error" | "loaded";
@@ -274,6 +275,7 @@ export default function QueuePage() {
 
   return (
     <div className="w-full">
+      <DocumentTitle title="Queue" />
       <PageHeader
         eyebrow={
           <>
@@ -470,7 +472,7 @@ export default function QueuePage() {
       )}
       </div>
 
-      <div className="mt-10 grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-10 grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
         <YourDesk
           mine={buckets.mine}
           client={buckets.client}

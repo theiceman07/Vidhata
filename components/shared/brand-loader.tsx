@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-const NAME = "Vidhata";
+const NAME = "Vidhataa";
 
 /**
  * The wait, told as the product.

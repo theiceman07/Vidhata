@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = {
   title: "Agreements",
   description:
-    "The agreement types Vidhata drafts, and the ones that are coming, for Indian startups and MSMEs.",
+    "The agreement types Vidhataa drafts, and the ones that are coming, for Indian startups and MSMEs.",
 };
 
 /**
@@ -24,7 +24,7 @@ export default function ContractsPage() {
       <SiteHeader />
       <main>
         <PageOpening
-          title="The agreements Vidhata drafts."
+          title="The agreements Vidhataa drafts."
           lead={
             <>
               {CONTRACT_CATALOGUE.length} agreement types in {CONTRACT_GROUPS.length} groups.{" "}

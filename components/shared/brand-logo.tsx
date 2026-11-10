@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-// The Vidhata wordmark: the name, set in Apfel Grotezk, and nothing else.
+// The Vidhataa wordmark: the name, set in Apfel Grotezk, and nothing else.
 // No symbol, no frame, no lockup. One colour (currentColor), so the
 // caller's token drives it on white and on ink alike.
 //
@@ -29,7 +29,7 @@ export function BrandLogo({
         className,
       )}
     >
-      Vidhata
+      Vidhataa
     </span>
   );
 }

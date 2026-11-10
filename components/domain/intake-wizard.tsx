@@ -83,7 +83,7 @@ export function IntakeWizard() {
       transactionValue: 0,
       durationMonths: 12,
       stateOfExecution: "",
-      // The one default: Vidhata settles Indian contracts, so unless a brief
+      // The one default: Vidhataa settles Indian contracts, so unless a brief
       // names another law this is the law, shown in the field and on the
       // document. It used to be empty with the words only as a placeholder, so
       // the field looked filled in and Continue refused it.

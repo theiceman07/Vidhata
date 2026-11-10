@@ -4,7 +4,7 @@ import { SiteHeader } from "@/components/marketing/site-header";
 
 export const metadata: Metadata = {
   title: "Scope and limits",
-  description: "What Vidhata does not do, and what it is: a technology provider, not a law firm.",
+  description: "What Vidhataa does not do, and what it is: a technology provider, not a law firm.",
 };
 
 // The out-of-scope list is the product's own, from the fixes list. Do not
@@ -30,10 +30,10 @@ export default function ScopePage() {
                 Scope and limits
               </p>
               <h1 className="mt-6 font-display text-display text-ink">
-                What Vidhata does not do.
+                What Vidhataa does not do.
               </h1>
               <p className="mt-5 max-w-measure text-lead text-muted-fg">
-                Vidhata is a technology provider, not a law firm.
+                Vidhataa is a technology provider, not a law firm.
               </p>
             </div>
 
@@ -41,7 +41,7 @@ export default function ScopePage() {
               <div>
                 <p className="text-meta font-medium text-muted-fg">The chat agent</p>
                 <p className="mt-1 font-display text-h3 text-ink">
-                  Vidhata&apos;s chat agent explains the settled document. It does not give legal
+                  Vidhataa&apos;s chat agent explains the settled document. It does not give legal
                   advice.
                 </p>
               </div>
@@ -57,7 +57,7 @@ export default function ScopePage() {
 
         <section className="tile-grain w-full bg-parchment">
           <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-16">
-            <h2 className="font-display text-h1 text-ink">Outside Vidhata&apos;s scope</h2>
+            <h2 className="font-display text-h1 text-ink">Outside Vidhataa&apos;s scope</h2>
             <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {OUT_OF_SCOPE.map((item, i) => (
                 <li

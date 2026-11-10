@@ -74,10 +74,10 @@ export default function ClientLoginPage() {
       <AuthScreen
         portal="client"
         title="Welcome back."
-        intro="For founders and teams whose contracts Vidhata drafts."
+        intro="For founders and teams whose contracts Vidhataa drafts."
       >
         <p className="text-body text-ink">
-          Accounts aren&apos;t open yet. Vidhata is in preview.
+          Accounts aren&apos;t open yet. Vidhataa is in preview.
         </p>
         <Button asChild className="mt-6 w-full">
           <Link href="/">Go to home</Link>
@@ -90,10 +90,10 @@ export default function ClientLoginPage() {
     <AuthScreen
       portal="client"
       title="Welcome back."
-      intro="For founders and teams whose contracts Vidhata drafts."
+      intro="For founders and teams whose contracts Vidhataa drafts."
       footer={
         <>
-          New to Vidhata?{" "}
+          New to Vidhataa?{" "}
             <button
             type="button"
             onClick={() =>

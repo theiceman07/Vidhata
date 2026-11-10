@@ -25,7 +25,7 @@ export function socialCard() {
           padding: "72px 80px",
         }}
       >
-        <div style={{ fontSize: 40, fontWeight: 500, letterSpacing: "-0.02em" }}>Vidhata</div>
+        <div style={{ fontSize: 40, fontWeight: 500, letterSpacing: "-0.02em" }}>Vidhataa</div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           <div
             style={{

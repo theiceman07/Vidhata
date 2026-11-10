@@ -1,3 +1,4 @@
+import { SkipLink } from "@/components/shared/skip-link";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { FONT_VARIABLES } from "./fonts";
@@ -14,23 +15,23 @@ import { hexOf } from "@/lib/palette";
 export const metadata: Metadata = {
   metadataBase: new URL("https://vidhata-pi.vercel.app"),
   title: {
-    default: "Vidhata · AI drafts. Advocates decide.",
-    template: "%s · Vidhata",
+    default: "Vidhataa · AI drafts. Advocates decide.",
+    template: "%s · Vidhataa",
   },
   description:
     "AI-drafted, advocate-settled contracts for Indian startups and MSMEs. Every finding carries its source and a named advocate signs off.",
   openGraph: {
-    title: "Vidhata · AI drafts. Advocates decide.",
+    title: "Vidhataa · AI drafts. Advocates decide.",
     description:
       "AI-drafted, advocate-settled contracts for Indian startups and MSMEs. Every finding carries its source and a named advocate signs off.",
-    siteName: "Vidhata",
+    siteName: "Vidhataa",
     type: "website",
   },
   // The card image itself comes from app/opengraph-image.tsx and
   // app/twitter-image.tsx.
   twitter: {
     card: "summary_large_image",
-    title: "Vidhata · AI drafts. Advocates decide.",
+    title: "Vidhataa · AI drafts. Advocates decide.",
     description:
       "AI-drafted, advocate-settled contracts for Indian startups and MSMEs. Every finding carries its source and a named advocate signs off.",
   },
@@ -73,6 +74,7 @@ export default function RootLayout({
           and tooltips mount straight into body, and a full-width
           positioning wrapper throws them to the left edge. */}
       <body className="relative flex min-h-full flex-col">
+        <SkipLink />
         <SessionProvider>
           <div className="flex flex-1 flex-col [&>*]:w-full">{children}</div>
           {/* Top centre, below the preview banner: a toast sits over the

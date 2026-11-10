@@ -1,6 +1,6 @@
 /**
  * Plain-language meanings for the words the product uses and a client may
- * not know. They define Vidhata's own process, never a point of law: a
+ * not know. They define Vidhataa's own process, never a point of law: a
  * statute, a section or a case is never glossed here.
  */
 export const GLOSSARY = {
@@ -11,7 +11,7 @@ export const GLOSSARY = {
   settled: "Every finding has been decided by an advocate.",
   finding:
     "A concern the first pass raised about a clause. An advocate decides each one.",
-  empanelled: "On Vidhata's panel of advocates, and invited to review documents.",
+  empanelled: "On Vidhataa's panel of advocates, and invited to review documents.",
 } as const;
 
 export type GlossTerm = keyof typeof GLOSSARY;

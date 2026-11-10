@@ -16,7 +16,8 @@ interface ErrorStateProps {
 export function ErrorState({ message, onRetry }: ErrorStateProps) {
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
-      <div className="border-l-2 border-flagged py-6 pl-6">
+      {/* Announced when it replaces the page: a screen reader is otherwise left on silence. */}
+      <div role="alert" className="border-l-2 border-flagged py-6 pl-6">
         {/* The label is for a message that does not say so itself: most start with
             "Could not", and the same words twice read as a stutter. */}
         {!/^could not/i.test(message) && (

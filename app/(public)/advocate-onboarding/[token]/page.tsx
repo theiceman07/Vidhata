@@ -86,7 +86,7 @@ export default function OnboardingPage() {
     return (
       <AuthScreen portal="advocate" title="Join the panel." intro="By invitation only.">
         <p className="text-body text-ink">
-          Accounts aren&apos;t open yet. Vidhata is in preview, so an invitation can&apos;t be
+          Accounts aren&apos;t open yet. Vidhataa is in preview, so an invitation can&apos;t be
           accepted here.
         </p>
         <Button asChild className="mt-6 w-full">
@@ -187,9 +187,9 @@ export default function OnboardingPage() {
       <div className="space-y-5">
         {step === 0 && (
           <div className="space-y-3 text-body text-ink">
-            <p>You have been invited to join Vidhata&apos;s panel of advocates.</p>
+            <p>You have been invited to join Vidhataa&apos;s panel of advocates.</p>
             <p className="text-muted-fg">
-              Your profile is private to you and Vidhata. Clients cannot search, rank or rate
+              Your profile is private to you and Vidhataa. Clients cannot search, rank or rate
               advocates.
             </p>
             <p className="text-muted-fg">

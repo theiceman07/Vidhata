@@ -21,11 +21,11 @@ export default function GlobalError({
   return (
     <html lang="en" className={`${FONT_VARIABLES} h-full antialiased`}>
       <head>
-        <title>Something went wrong · Vidhata</title>
+        <title>Something went wrong · Vidhataa</title>
       </head>
       <body className="flex min-h-full flex-col bg-paper text-ink">
         <header className="mx-auto w-full max-w-6xl px-6 pt-10">
-          <a href="/" aria-label="Vidhata home" className="inline-block text-ink">
+          <a href="/" aria-label="Vidhataa home" className="inline-block text-ink">
             <BrandLogo size="xl" />
           </a>
         </header>

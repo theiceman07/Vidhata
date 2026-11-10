@@ -407,7 +407,7 @@ const SETTINGS_TABS = [
   { key: "privacy", label: "Privacy", href: "/settings?tab=privacy" },
 ] as const;
 
-/** Settings has two tabs: who you are, and what Vidhata may do with your documents. */
+/** Settings has two tabs: who you are, and what Vidhataa may do with your documents. */
 function SettingsTabs() {
   const tab =
     useSearchParams().get("tab") === "privacy" ? "privacy" : "account";

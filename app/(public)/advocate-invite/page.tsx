@@ -27,12 +27,12 @@ export default function AdvocateInvitePage() {
             <h1 className="mt-2 font-display text-display text-ink">Request an invitation</h1>
             <div className="mt-4 max-w-measure space-y-3 text-lead text-muted-fg">
               <p>
-                Empanelment at Vidhata is by invitation. You cannot apply for a place on the panel,
+                Empanelment at Vidhataa is by invitation. You cannot apply for a place on the panel,
                 and this form does not apply for one: it tells us who you are, so that we can write
                 to you if a place opens.
               </p>
               <p>
-                Vidhata keeps no public directory of advocates, and shows no ratings or ranking of
+                Vidhataa keeps no public directory of advocates, and shows no ratings or ranking of
                 them, in keeping with the Bar Council of India&apos;s rules on advertising by
                 advocates.
               </p>

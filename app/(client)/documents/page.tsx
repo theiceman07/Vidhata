@@ -7,6 +7,7 @@ import { ErrorState } from "@/components/shared/error-state";
 import { Icon } from "@/components/shared/icon";
 import { LifecycleStepper } from "@/components/document/provenance";
 import { StateLabel } from "@/components/document/state-label";
+import { DocumentTitle } from "@/components/shared/document-title";
 import { DealPrompt } from "@/components/marketing/deal-prompt";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -135,6 +136,7 @@ export default function DocumentsPage() {
 
   return (
     <div className="w-full">
+      <DocumentTitle title="Documents" />
       {/* The greeting and the way in: the one display moment. */}
       <section className="flex flex-col items-center px-2 pb-10 pt-8 text-center md:pt-14">
         {/* The one page that is not a PageHeader: a greeting and a prompt, centred. */}
@@ -221,7 +223,7 @@ function EmptyGroup({
 }
 
 /**
- * Everything Vidhata has done for this organisation, counted from the
+ * Everything Vidhataa has done for this organisation, counted from the
  * documents themselves. Nothing here is estimated.
  */
 function YourRecord({ docs }: { docs: ClientDocumentSummary[] }) {

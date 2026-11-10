@@ -1,5 +1,6 @@
 import { Children, isValidElement, type ReactNode } from "react";
 import { BackButton } from "@/components/shared/back-button";
+import { DocumentTitle } from "@/components/shared/document-title";
 import { cn } from "@/lib/utils";
 
 /**
@@ -140,6 +141,7 @@ export function PageHeader({
   if (stacked) {
     return (
       <header className={cn("pb-1", tabs && "mb-6", className)}>
+        {typeof title === "string" && <DocumentTitle title={title} />}
         {back && <BackButton fallbackHref={back.fallbackHref} label={back.label} />}
         <div className="mt-2 flex items-center justify-between gap-x-6 gap-y-2 max-md:flex-wrap">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1">
@@ -157,6 +159,7 @@ export function PageHeader({
   if (compact) {
     return (
       <header className={className}>
+        {typeof title === "string" && <DocumentTitle title={title} />}
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1">
           <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
             {back && <BackButton fallbackHref={back.fallbackHref} label={back.label} />}
@@ -178,6 +181,7 @@ export function PageHeader({
   return (
     <>
     <header className={cn(barApart ? "mb-2" : "mb-6", className)}>
+      {typeof title === "string" && <DocumentTitle title={title} />}
       {/* The way back (and an eyebrow) on a slim line; the page's actions sit
           at the right of the title's own line, so the header spends no row on them. */}
       {(back || eyebrow) && (

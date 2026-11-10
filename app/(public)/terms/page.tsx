@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-// QA 7.2: placeholder, deliberately not drafted here — Vidhata's Terms of
+// QA 7.2: placeholder, deliberately not drafted here — Vidhataa's Terms of
 // Service must be written or approved by a qualified person before
 // publication on a legal-services product. Shipping the route with an
 // explicit "pending" state is safer than either omitting it (the original
@@ -23,7 +23,7 @@ export default function TermsPage() {
       <div className="rounded-card border border-line bg-sand p-6 text-body text-ink">
         <p className="font-medium">Terms of Service · pending publication.</p>
         <p className="mt-2 text-muted-fg">
-          This page is a placeholder. Vidhata&apos;s Terms of Service are
+          This page is a placeholder. Vidhataa&apos;s Terms of Service are
           being drafted by qualified counsel and will be published here
           before general availability. If you need terms information now,
           contact us via the{" "}

@@ -3,8 +3,8 @@ import { hexOf } from "@/lib/palette";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Vidhata",
-    short_name: "Vidhata",
+    name: "Vidhataa",
+    short_name: "Vidhataa",
     start_url: "/",
     display: "browser",
     background_color: hexOf("bg-canvas", "light"),

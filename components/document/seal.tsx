@@ -9,7 +9,7 @@ import { DURATION, EASE, duration } from "@/lib/motion";
  *
  * A framed serif initial, engraved-plate style, borrowed from the stamp
  * at the bottom of a signed instrument — because that is the moment
- * Vidhata sells.
+ * Vidhataa sells.
  *
  * It appears exactly once per document, at sign-off, and nowhere else
  * inside the product. That restraint is the whole of its weight: a mark
@@ -27,7 +27,7 @@ export function Seal({ className }: { className?: string }) {
       width="96"
       height="96"
       role="img"
-      aria-label="Vidhata seal"
+      aria-label="Vidhataa seal"
       className={cn("text-accent", className)}
     >
       <motion.circle

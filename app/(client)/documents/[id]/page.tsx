@@ -351,7 +351,7 @@ function ActivityTile({ trail }: { trail: ClientAuditEntry[] }) {
             ))}
           </ol>
           {more > 0 && (
-            <button type="button" onClick={() => setAll(true)} className="link mt-3 text-label">
+            <button type="button" onClick={() => setAll(true)} className="link mt-3 inline-flex min-h-6 items-center text-label">
               Show {more} earlier
             </button>
           )}

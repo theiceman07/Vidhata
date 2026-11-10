@@ -19,8 +19,8 @@ interface Pair {
   use: "text" | "graphic";
 }
 
-// The board fixes the status fills; white on them is 3.6 to 4.3:1, so those
-// labels are held to the large-text floor and kept medium weight.
+// The status fills carry 12px white labels (StateLabel), so each is held to
+// the body-text floor. They were darkened from the board's values to reach it.
 const PAIRS: Pair[] = [
   { name: "text on canvas", fg: "text-primary", bg: "bg-canvas", use: "text" },
   { name: "text on subtle", fg: "text-primary", bg: "bg-subtle", use: "text" },
@@ -33,9 +33,9 @@ const PAIRS: Pair[] = [
   { name: "accent text on selected tile", fg: "accent-text", bg: "tile-selected", use: "text" },
   { name: "highlight text on highlight", fg: "highlight-text", bg: "highlight-bg", use: "text" },
   { name: "status label on verified", fg: "status-on", bg: "status-verified", use: "text" },
-  { name: "status label on accepted", fg: "status-on", bg: "status-accepted", use: "graphic" },
-  { name: "status label on rejected", fg: "status-on", bg: "status-rejected", use: "graphic" },
-  { name: "status label on pending", fg: "status-on", bg: "status-pending", use: "graphic" },
+  { name: "status label on accepted", fg: "status-on", bg: "status-accepted", use: "text" },
+  { name: "status label on rejected", fg: "status-on", bg: "status-rejected", use: "text" },
+  { name: "status label on pending", fg: "status-on", bg: "status-pending", use: "text" },
 ];
 
 describe.each<Mode>(["light", "dark"])("palette contrast (WCAG 2), %s", (mode) => {

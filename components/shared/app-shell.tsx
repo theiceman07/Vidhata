@@ -244,7 +244,7 @@ function Rail({
     <Sidebar open={open} setOpen={setHovered}>
       <SidebarBody>
         <div className="flex h-9 items-center overflow-hidden pl-2.5">
-          <Link href={homeHref} aria-label="Vidhata home" className="rounded-full text-ink">
+          <Link href={homeHref} aria-label="Vidhataa home" className="rounded-full text-ink">
             {open ? (
               <BrandLogo size="md" />
             ) : (

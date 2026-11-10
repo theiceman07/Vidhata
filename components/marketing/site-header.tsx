@@ -25,7 +25,7 @@ const MENUS = [
     label: "Get started",
     links: [
       { href: "/sample", label: "Sample document", note: "A settled document, start to finish" },
-      { href: "/contracts", label: "Agreements", note: "What Vidhata drafts" },
+      { href: "/contracts", label: "Agreements", note: "What Vidhataa drafts" },
       { href: "/contact", label: "Contact us", note: "A person replies" },
     ],
   },
@@ -75,7 +75,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-30 w-full border-b border-[#FFFFFF]/15 bg-[#000000] text-[#FFFFFF]">
       <div className="site-wrap grid h-16 grid-cols-[1fr_auto] items-center gap-6 lg:grid-cols-[1fr_auto_1fr]">
-        <Link href="/" aria-label="Vidhata home" className="justify-self-start focus-visible:ring-offset-[#000000]">
+        <Link href="/" aria-label="Vidhataa home" className="justify-self-start focus-visible:ring-offset-[#000000]">
           <BrandLogo size="md" />
         </Link>
 

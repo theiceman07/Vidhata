@@ -84,7 +84,7 @@ export function SiteFooter() {
 
         <div className="mt-20 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-paper/20 pt-5 text-meta text-paper/70 md:mt-28">
           <p>
-            © {new Date().getFullYear()} Vidhata
+            © {new Date().getFullYear()} Vidhataa
             <span aria-hidden className="mx-1.5">·</span>
             India
           </p>
@@ -97,9 +97,28 @@ export function SiteFooter() {
           same at every width. */}
       <div
         aria-hidden
-        className="mt-10 h-[0.6em] select-none overflow-hidden whitespace-nowrap text-center font-wordmark text-[clamp(72px,30vw,620px)] leading-[0.8] tracking-[-0.02em] text-paper"
+        className="mt-10 h-[0.6em] select-none overflow-hidden whitespace-nowrap text-center font-wordmark text-[clamp(64px,26vw,540px)] leading-[0.8] tracking-[-0.02em] text-paper"
       >
-        Vidhata
+        {/* The letters read as pressed into the page: a soft shadow falls
+            inside their top edges (owner's call, 10 Nov 2026). The filter sits
+            on the span so the crop above does not cast a shadow of its own. */}
+        <span className="block [filter:url(#wordmark-inset)]">Vidhataa</span>
+        <svg width="0" height="0" className="absolute" focusable="false">
+          <filter id="wordmark-inset" colorInterpolationFilters="sRGB">
+            <feComponentTransfer in="SourceAlpha" result="outside">
+              <feFuncA type="table" tableValues="1 0" />
+            </feComponentTransfer>
+            <feGaussianBlur in="outside" stdDeviation="5" result="soft" />
+            <feOffset in="soft" dx="3" dy="7" result="cast" />
+            <feFlood floodColor="black" floodOpacity="0.5" />
+            <feComposite in2="cast" operator="in" result="shadow" />
+            <feComposite in="shadow" in2="SourceAlpha" operator="in" result="inner" />
+            <feMerge>
+              <feMergeNode in="SourceGraphic" />
+              <feMergeNode in="inner" />
+            </feMerge>
+          </filter>
+        </svg>
       </div>
     </footer>
   );

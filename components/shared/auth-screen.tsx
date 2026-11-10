@@ -42,7 +42,7 @@ export function AuthScreen({
         >
           <Icon name="arrow_back" size={20} />
         </Link>
-        <Link href="/" aria-label="Vidhata home" className="text-ink">
+        <Link href="/" aria-label="Vidhataa home" className="text-ink">
           <BrandLogo size="xl" />
         </Link>
       </header>

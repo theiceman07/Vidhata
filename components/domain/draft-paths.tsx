@@ -20,18 +20,18 @@ export function DraftPaths({ children }: { children: React.ReactNode }) {
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
       <TabsList
         aria-label="How to start"
-        className="h-auto shrink-0 flex-wrap justify-start gap-1 rounded-full bg-parchment p-1"
+        className="h-auto max-w-full flex-wrap justify-start gap-1 rounded-3xl bg-parchment p-1 sm:rounded-full"
       >
         <TabsTrigger
           value="describe"
-          className="rounded-full px-5 py-2 text-body data-[state=active]:bg-ink data-[state=active]:text-paper data-[state=active]:shadow-none"
+          className="rounded-full px-4 py-2 text-meta sm:px-5 sm:text-body data-[state=active]:bg-ink data-[state=active]:text-paper data-[state=active]:shadow-none"
         >
           Describe a deal
         </TabsTrigger>
         <TabsTrigger
           value="upload"
           disabled
-          className="gap-2 rounded-full px-5 py-2 text-body text-muted-fg disabled:opacity-100"
+          className="gap-2 rounded-full px-4 py-2 text-meta text-muted-fg disabled:opacity-100 sm:px-5 sm:text-body"
         >
           Upload an existing contract
           <span className="rounded-full bg-paper px-2.5 py-0.5 text-label text-muted-fg">

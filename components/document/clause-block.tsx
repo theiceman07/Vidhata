@@ -14,7 +14,7 @@ import { useReviewScope } from "./review-scope-context";
  * How a quoted span reads, by the state of the finding that quotes it.
  *
  * Open findings underline in their severity colour. A finding waiting on
- * the client is dashed: nothing is decided yet, but nobody at Vidhata is
+ * the client is dashed: nothing is decided yet, but nobody at Vidhataa is
  * holding it. Settled findings keep a hairline in verified ink, because
  * the passage was looked at and decided, and that is worth seeing.
  */

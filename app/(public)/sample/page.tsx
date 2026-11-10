@@ -162,7 +162,7 @@ export default function SamplePage() {
                           <TextLink
                             key={finding.findingId}
                             href={`#finding-${finding.findingId}`}
-                            className="rounded-full border border-line bg-paper px-2.5 py-0.5 font-sans text-label font-medium text-ink transition-colors hover:border-ink hover:bg-ink hover:text-paper"
+                            className="inline-flex min-h-6 items-center rounded-full border border-line bg-paper px-2.5 py-0.5 font-sans text-label font-medium text-ink transition-colors hover:border-ink hover:bg-ink hover:text-paper"
                           >
                             Finding {numbers[finding.findingId]}
                           </TextLink>

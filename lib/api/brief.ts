@@ -13,7 +13,7 @@ import { randomDelay } from "./delay";
  * not state is reported missing, never guessed: the state of execution
  * decides stamp duty, so it above all. The review tier is not read at all;
  * screening assigns it after the first pass. The one default is governing law, the laws of India unless the
- * brief names another, because Vidhata settles Indian contracts; it is
+ * brief names another, because Vidhataa settles Indian contracts; it is
  * shown in intake and on the document.
  */
 export interface BriefReading {

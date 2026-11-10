@@ -25,7 +25,7 @@ describe("which documents can be signed electronically", () => {
     expect(ESIGN_LEGAL_NOTE).toMatch(/schedule to the IT Act can be amended/);
   });
 
-  it("allows every type Vidhata drafts, because none is one of those classes", () => {
+  it("allows every type Vidhataa drafts, because none is one of those classes", () => {
     expect(CONTRACT_TYPES.length).toBeGreaterThan(0);
     for (const type of CONTRACT_TYPES) {
       expect(canSignElectronically(type.value), type.value).toBe(true);

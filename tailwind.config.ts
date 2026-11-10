@@ -93,7 +93,7 @@ const config: Config = {
         // One scale, two jobs: the serif sizes carry headlines, the
         // grotesk sizes carry reading. Headlines are 500, never bold.
         display: [
-          "clamp(44px, 6.2vw, 84px)",
+          "clamp(34px, min(11.2vw, max(44px, 6.2vw)), 84px)",
           { lineHeight: "1.02", fontWeight: "500", letterSpacing: "-0.025em" },
         ],
         // The landing headline: one step above display, as a named size so the scale stays honest.

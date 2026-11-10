@@ -38,13 +38,13 @@ export function PublicEntry({ className }: { className?: string }) {
       <DealPrompt className="max-w-3xl" destination="/login" examples={EXAMPLES} />
       {/* Said outside the box, so it does not sit beside "Draft a document"
           contradicting it. */}
-      <p className="text-meta text-muted-fg">Vidhata is in preview. Accounts aren&apos;t open yet.</p>
+      <p className="text-meta text-muted-fg">Vidhataa is in preview. Accounts aren&apos;t open yet.</p>
       <p className="-mt-2 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
         <Link href="/sample" className={QUIET_LINK}>
           See a sample document
         </Link>
         <Link href="/contracts" className={QUIET_LINK}>
-          The agreements Vidhata drafts
+          The agreements Vidhataa drafts
         </Link>
       </p>
     </div>

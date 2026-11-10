@@ -10,10 +10,10 @@ const FAQS = [
   {
     question: "Is this a marketplace that ranks advocates?",
     answer:
-      "No. Vidhata is a technology provider to advocate-owned professional entities. We don't rank or market individual advocates.",
+      "No. Vidhataa is a technology provider to advocate-owned professional entities. We don't rank or market individual advocates.",
   },
   {
-    question: "What kinds of contracts does Vidhata handle?",
+    question: "What kinds of contracts does Vidhataa handle?",
     answer:
       "The everyday contracts every founder negotiates 2 to 40 times a year: NDAs, SOWs, vendor agreements and MSAs. Not litigation, not regulated filings, not cross-border work.",
   },

@@ -41,9 +41,13 @@ export function SummaryView({
   return (
     <section aria-labelledby="summary-label" className="@container">
       {showLabel ? (
-        <p id="summary-label" className="max-w-measure text-meta text-muted-fg">
-          {SUMMARY_LABEL}
-        </p>
+        <>
+          {/* The groups below are h3, so the visible label still needs a level-two heading above them. */}
+          <h2 className="sr-only">Summary</h2>
+          <p id="summary-label" className="max-w-measure text-meta text-muted-fg">
+            {SUMMARY_LABEL}
+          </p>
+        </>
       ) : (
         <h2 id="summary-label" className="sr-only">
           Summary
@@ -192,9 +196,13 @@ function SummaryBento({
   return (
     <section aria-labelledby="summary-label" className="space-y-8">
       {showLabel ? (
-        <p id="summary-label" className="max-w-measure text-meta text-muted-fg">
-          {SUMMARY_LABEL}
-        </p>
+        <>
+          {/* The groups below are h3, so the visible label still needs a level-two heading above them. */}
+          <h2 className="sr-only">Summary</h2>
+          <p id="summary-label" className="max-w-measure text-meta text-muted-fg">
+            {SUMMARY_LABEL}
+          </p>
+        </>
       ) : (
         <h2 id="summary-label" className="sr-only">
           Summary

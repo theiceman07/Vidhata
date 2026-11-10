@@ -21,11 +21,11 @@ export default function PrivacyPage() {
       <div className="rounded-card border border-line bg-sand p-6 text-body text-ink">
         <p className="font-medium">Privacy Policy · pending publication.</p>
         <p className="mt-2 text-muted-fg">
-          This page is a placeholder. Vidhata handles contract data, so our
+          This page is a placeholder. Vidhataa handles contract data, so our
           Privacy Policy, including data retention, advocate empanelment
           disclosures and how findings are stored, will be published here
           before general availability, reviewed by qualified counsel. Note
-          also: Vidhata&apos;s chat agent explains the settled document; it
+          also: Vidhataa&apos;s chat agent explains the settled document; it
           does not give legal advice. Your advocate&apos;s sign-off is the
           legal act.
         </p>

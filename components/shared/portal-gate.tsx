@@ -64,7 +64,7 @@ function Notice({
   return (
     <div className="flex min-h-screen flex-col bg-paper">
       <header className="mx-auto w-full max-w-6xl px-6 pt-10">
-        <Link href="/" aria-label="Vidhata home" className="inline-block text-ink">
+        <Link href="/" aria-label="Vidhataa home" className="inline-block text-ink">
           <BrandLogo size="xl" />
         </Link>
       </header>
