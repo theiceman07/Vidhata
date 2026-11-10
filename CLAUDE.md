@@ -98,16 +98,31 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
 - Shape: round everywhere, never square. Buttons and labels are pills;
   rounded-control 12px, rounded-card 20px, rounded-modal 28px. No
   shadows: shadow-float is an ink hairline, not elevation.
-- Marketing: a solid ink nav bar, a one-line hero, the rest told as the
-  visitor scrolls. "Draft a document" appears in the hero and the
+- Marketing (owner's call, 10 Nov 2026, reference git.law): a solid black
+  nav bar across the full width with Get started and Product menus,
+  Pricing and Sign in (components/marketing/site-header.tsx); pages run
+  edge to edge on .site-wrap, not a centred max-w-6xl column, and the
+  pages in the nav (/sample, /contracts, /contact, /pricing) open with
+  PageOpening (title left, lead on the centre line, on the wash); a warm
+  wash that follows the pointer (.hero-glow, GlowBackdrop: highlighter
+  yellow with a little pending orange, never purple or the accent) and
+  the highlighter (.mark-glow) are allowed on marketing pages only; the
+  feature tile in IndiaChecks is highlighter yellow, not ink; as are scroll reveals (Reveal)
+  and eased scrolling (SmoothScroll). None of this enters the product.
+  A one-line hero, the rest told as the visitor scrolls. "Draft a document" appears in the hero and the
   closing panel only.
 - Marketing pages: sections that need to stand apart are full-width
-  tinted bands (parchment, pale accent, ink) with a fine grain
-  (.tile-grain). No gradients. "Draft a document" is the DealPrompt box
+  bands (parchment or ink, never a tint of the accent: the blue at low
+  alpha reads lavender; owner's call, 10 Nov 2026) with a fine grain
+  (.tile-grain). An ink tile or stage is flat, with no glow. The header
+  menus are black panels, the bar continued. "Draft a document" is the DealPrompt box
   in the hero and at the end; the brief survives sign-in. Where the preview
   workspace is off (the public site, NEXT_PUBLIC_VIDHATA_PREVIEW_MODE unset)
-  there is no sign-in to send anyone to, so PublicEntry shows "See a sample
-  document" (/sample) and a quieter link to /contracts in both places, and
+  sign-in is closed, but the prompt still shows (owner's call, 10 Nov
+  2026): PublicEntry puts "Vidhata is in preview. Accounts aren't open yet."
+  under the prompt, never inside it, with links to /sample and /contracts.
+  On the landing page the prompt is the larger form with example briefs
+  under it; its button is neutral until there is a brief, then accent, and
   the sign-in and onboarding pages say "Accounts aren't open yet. Vidhata is
   in preview." with a way home. Inside the
   portal it drafts: readBrief() (lib/api/brief.ts) reads what the brief
@@ -115,8 +130,7 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
   intake pre-filled at the first missing fact. Nothing unstated is
   guessed, the state of execution above all. The client never picks a
   tier: screening assigns it after the first pass (lib/triage.ts), and
-  every price lives in lib/config/pricing.ts. The nav holds Pricing and Sign in only, floats with no strip behind it,
-  and changes tone with scroll (mark dark bands data-nav-tone="dark").
+  every price lives in lib/config/pricing.ts.
 - An ink band takes `tile-grain tile-grain-ink`: dark noise cannot show on ink
   (measured), so ink uses light noise.
 - No visible scrollbars anywhere (globals.css).
@@ -210,8 +224,10 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
   DealPrompt on Documents.
 - Avoid: purple/violet/indigo, gradients, glassmorphism, shadows,
   decorative icon treatments, scales, gavels, sepia parchment graphics.
-  The one shadow allowed is the inner shadow set into the footer wordmark
-  (components/marketing/site-footer.tsx), by the owner's explicit call.
+  The footer is flat (reference footer.design/styles/flat): a full-width
+  black field with the wordmark across its foot, and no shadow, the inner
+  shadow on the wordmark included. Solid accent is for controls only,
+  never a band or a tile: it reads too bright at that size.
   Icons are allowed where they carry meaning (a state icon in StateLabel, a
   tick, an icon that replaces an explanatory paragraph), never as decoration.
 - The seal appears once per document, at sign-off. That is the only place

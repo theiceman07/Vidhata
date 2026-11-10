@@ -12,8 +12,8 @@ import { PublicEntry } from "./public-entry";
 export function Hero() {
   return (
     <GlowBackdrop>
-    <section className="mx-auto w-full max-w-6xl px-6">
-      <div className="flex min-h-[calc(100svh-6rem)] flex-col items-center justify-center py-20 text-center">
+    <section className="site-wrap">
+      <div className="flex min-h-[calc(100svh-4rem)] flex-col items-center justify-center py-20 text-center">
         <h1 className="max-w-4xl font-display text-display-hero text-ink">
           AI drafts. <em className="italic">Advocates</em> decide.
         </h1>

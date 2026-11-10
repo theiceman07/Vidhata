@@ -47,12 +47,12 @@ export function Accountability() {
     <section
       id="advocates"
       data-nav-tone="dark"
-      className="tile-grain tile-grain-ink w-full scroll-mt-20 bg-ink"
+      className="tile-grain tile-grain-ink w-full scroll-mt-16 bg-ink"
     >
-      <div className="mx-auto w-full max-w-6xl px-6 py-24 md:py-32">
-      <div className="grid gap-x-16 gap-y-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:items-center">
+      <div className="site-wrap py-24 md:py-32">
+      <div className="grid gap-x-16 gap-y-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,36rem)] lg:items-center">
         <div>
-          <h2 className="max-w-xl font-display text-display text-paper">
+          <h2 className="max-w-3xl font-display text-display text-paper">
             A named advocate stands behind the result.
           </h2>
           <p className="mt-8 max-w-lg text-lead text-paper/85">

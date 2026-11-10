@@ -21,9 +21,14 @@ import { cn } from "@/lib/utils";
  * anything is missing, intake opens with what the brief did state filled
  * in, at the first thing it still needs.
  *
+ * On the landing page it is the larger form: two lines to start, lead
+ * type, and example briefs underneath that fill the box when chosen.
+ * Inside the portal it is `compact`.
+ *
  * Motion (after Granola): while the box has focus a thin ring of the
  * brand's greens and amber travels round its border and the box lifts a
- * little; the send button fills once there is something to send. The
+ * little; the send button fills once there is something to send, and the
+ * note gives way to how to send it. The
  * caret changes colour on each blink. Reduced motion stills all of it.
  * The focus is the box's: the field inside it draws no ring of its own.
  */
@@ -37,8 +42,11 @@ export function DealPrompt({
   restore = false,
   autoFocus = false,
   compact = false,
+  examples,
 }: {
   className?: string;
+  /** Briefs a visitor can start from. Choosing one fills the box; nothing is sent. */
+  examples?: readonly string[];
   /** One line that grows with the brief, for inside the portal where the box is not the page. */
   compact?: boolean;
   /**
@@ -60,12 +68,14 @@ export function DealPrompt({
   const [drafting, setDrafting] = useState(false);
   const ready = brief.trim().length > 0;
 
-  // Compact: the field is one line and grows to fit the brief, up to a limit.
+  // The field grows to fit the brief, up to a limit. Compact starts at one
+  // line; on the landing page it starts at two, so it reads as a place to
+  // describe a deal and not a search box.
   useEffect(() => {
     const field = fieldRef.current;
-    if (!compact || !field) return;
+    if (!field) return;
     field.style.height = "auto";
-    field.style.height = `${Math.min(field.scrollHeight, 160)}px`;
+    field.style.height = `${Math.min(field.scrollHeight, compact ? 160 : 240)}px`;
   }, [brief, compact]);
 
   useEffect(() => {
@@ -135,7 +145,10 @@ export function DealPrompt({
           e.preventDefault();
           start();
         }}
-        className={cn("relative border border-ink/15 bg-paper text-left transition-[transform,border-color] duration-300 ease-out group-focus-within:-translate-y-0.5 group-focus-within:border-ink/40", "rounded-card px-4 py-3")}
+        className={cn(
+          "relative border bg-paper text-left transition-[transform,border-color] duration-300 ease-out group-focus-within:-translate-y-0.5 group-focus-within:border-ink/50",
+          compact ? "rounded-card border-ink/15 px-4 py-3" : "rounded-modal border-ink/25 px-6 pb-4 pt-5",
+        )}
       >
         <label htmlFor={fieldId} className="sr-only">
           Describe the deal
@@ -143,7 +156,7 @@ export function DealPrompt({
         <textarea
           id={fieldId}
           ref={fieldRef}
-          rows={1}
+          rows={compact ? 1 : 2}
           autoFocus={autoFocus}
           value={brief}
           onChange={(e) => setBrief(e.target.value)}
@@ -156,22 +169,27 @@ export function DealPrompt({
           placeholder={placeholder}
           className={cn(
             "caret-cycle field-bare block w-full resize-none bg-transparent text-ink outline-none placeholder:text-muted-fg",
-            "text-body tracking-normal",
-            "pt-0.5",
+            "tracking-normal",
+            compact ? "pt-0.5 text-body" : "text-lead",
           )}
         />
-        <div className={cn("flex items-center justify-between gap-3", "mt-2")}>
-          <span className={cn("hidden text-muted-fg tracking-normal sm:inline", "text-label")}>{note}</span>
+        <div className={cn("flex items-center justify-between gap-3", compact ? "mt-2" : "mt-3")}>
+          {/* The note until there is a brief, then how to send it. */}
+          <span className={cn("hidden text-muted-fg tracking-normal sm:inline", compact ? "text-label" : "text-meta")}>
+            {ready ? "Enter to draft · Shift+Enter for a new line" : note}
+          </span>
           <button
             type="submit"
             aria-label="Draft a document"
             aria-busy={drafting}
             className={cn(
-              "h-8 px-4 text-meta",
-              "ml-auto inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full font-medium transition-all duration-300 ease-out",
+              compact ? "h-8 px-4 text-meta" : "h-11 px-5 text-body",
+              "ml-auto inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full font-medium transition-[background-color,color,transform] duration-300 ease-out active:scale-[0.96]",
+              // Neutral until there is something to send, never a tint of
+              // the accent: that reads lavender, and as a disabled control.
               ready
-                ? "scale-100 bg-accent text-accent-fg hover:bg-accent-hover"
-                : "scale-95 bg-brand-tint text-brand",
+                ? "bg-accent text-accent-fg hover:bg-accent-hover"
+                : "bg-ink/[0.07] text-ink hover:bg-ink/[0.12]",
             )}
           >
             {drafting ? "Drafting…" : "Draft a document"}
@@ -183,6 +201,24 @@ export function DealPrompt({
           </button>
         </div>
       </form>
+      {examples && examples.length > 0 && (
+        <ul aria-label="Example briefs" className="mt-4 flex flex-wrap justify-center gap-2">
+          {examples.map((example) => (
+            <li key={example}>
+              <button
+                type="button"
+                onClick={() => {
+                  setBrief(example);
+                  fieldRef.current?.focus();
+                }}
+                className="inline-flex min-h-11 items-center rounded-full border border-ink/15 bg-paper px-4 text-left text-meta text-ink transition-[background-color,border-color,transform] duration-150 ease-out hover:border-ink/40 hover:bg-parchment active:scale-[0.96]"
+              >
+                {example}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { AuditTrail } from "@/components/document/audit-trail";
 import { CitationBlock } from "@/components/document/citation-block";
 import { SeverityMark } from "@/components/document/severity";
 import { StateLabel } from "@/components/document/state-label";
+import { PageOpening } from "@/components/marketing/page-opening";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { clientAuditTrail } from "@/lib/audit";
@@ -57,9 +58,19 @@ function Paragraphs({ text }: { text: string }) {
   );
 }
 
+/** The landing page's section header: title left, lead on the centre line, on the title's last baseline. */
+function SectionHead({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="grid gap-x-5 gap-y-6 lg:grid-cols-2 lg:items-end lg:[align-items:last_baseline]">
+      <h2 className="font-display text-display text-ink">{title}</h2>
+      <p className="max-w-xl text-lead text-muted-fg">{children}</p>
+    </div>
+  );
+}
+
 function Step({ step, number }: { step: ExecutionStep; number: number }) {
   return (
-    <li className="rounded-card bg-paper p-6">
+    <li className="rounded-card border border-line bg-paper p-8">
       <p className="text-label font-medium text-muted-fg">
         {String(number).padStart(2, "0")} · {STEP_TITLE[step.kind]}
       </p>
@@ -89,57 +100,46 @@ export default function SamplePage() {
     <div>
       <SiteHeader />
       <main>
-        <section className="mx-auto w-full max-w-6xl px-6 pb-10 pt-20 md:pt-24">
-          <div className="grid items-end gap-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <PageOpening
+          label="Sample document"
+          title={doc.title}
+          lead="This is a settled document as a client receives it. The parties and the advocate are fictional, and nothing on this page can be changed."
+        >
+          <dl className="grid gap-x-8 gap-y-6 rounded-card border border-line bg-paper p-8 text-body sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <p className="inline-flex rounded-full bg-parchment px-4 py-1.5 text-meta font-medium text-ink">
-                Sample document
-              </p>
-              <h1 className="mt-6 font-display text-display text-ink">{doc.title}</h1>
-              <p className="mt-4 max-w-measure text-lead text-muted-fg">
-                This is a settled document as a client receives it. The parties and the advocate
-                are fictional, and nothing on this page can be changed.
-              </p>
+              <dt className="text-meta font-medium text-muted-fg">Parties</dt>
+              <dd className="mt-1 text-ink">
+                {doc.clientName} and {doc.counterpartyName}
+              </dd>
             </div>
-            <dl className="space-y-5 rounded-card bg-parchment p-6 text-body">
-              <div>
-                <dt className="text-meta font-medium text-muted-fg">Parties</dt>
-                <dd className="mt-1 text-ink">
-                  {doc.clientName} and {doc.counterpartyName}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-meta font-medium text-muted-fg">Status</dt>
-                <dd className="mt-1">
-                  <StateLabel state={doc.status} />
-                </dd>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <dt className="text-meta font-medium text-muted-fg">Draft</dt>
-                  <dd className="mt-1 text-ink">Draft {doc.version}</dd>
-                </div>
-                <div>
-                  <dt className="text-meta font-medium text-muted-fg">Findings</dt>
-                  <dd className="mt-1 text-ink">
-                    {findings.length} raised · {settledCount} settled
-                  </dd>
-                </div>
-              </div>
-            </dl>
-          </div>
-        </section>
+            <div>
+              <dt className="text-meta font-medium text-muted-fg">Status</dt>
+              <dd className="mt-1">
+                <StateLabel state={doc.status} />
+              </dd>
+            </div>
+            <div>
+              <dt className="text-meta font-medium text-muted-fg">Draft</dt>
+              <dd className="mt-1 text-ink">Draft {doc.version}</dd>
+            </div>
+            <div>
+              <dt className="text-meta font-medium text-muted-fg">Findings</dt>
+              <dd className="mt-1 text-ink">
+                {findings.length} raised · {settledCount} settled
+              </dd>
+            </div>
+          </dl>
+        </PageOpening>
 
         <section className="tile-grain w-full bg-parchment">
-          <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-16">
-            <h2 className="font-display text-h1 text-ink">The text and its findings</h2>
-            <p className="mt-3 max-w-measure text-body text-muted-fg">
+          <div className="site-wrap py-24 md:py-32">
+            <SectionHead title="The text and its findings">
               The settled text is on the left. A clause an advocate raised a finding on is ruled
-              in green and carries its finding number; the findings stay in view on the right,
-              each with the source it rests on.
-            </p>
+              in the margin and carries its finding number; the findings stay in view on the
+              right, each with the source it rests on.
+            </SectionHead>
 
-            <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+            <div className="mt-16 grid gap-x-16 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start">
               <div className="min-w-0">
                 {doc.clauses.map((clause) => {
                   const notes = clause.findingIds
@@ -151,7 +151,7 @@ export default function SamplePage() {
                       id={`clause-${clause.id}`}
                       className={
                         notes.length > 0
-                          ? "scroll-mt-32 border-l-2 border-accent pb-8 pl-5"
+                          ? "scroll-mt-32 border-l-2 border-ink pb-8 pl-5"
                           : "scroll-mt-32 border-l-2 border-transparent pb-8 pl-5"
                       }
                     >
@@ -162,13 +162,13 @@ export default function SamplePage() {
                           <TextLink
                             key={finding.findingId}
                             href={`#finding-${finding.findingId}`}
-                            className="rounded-full bg-paper px-2.5 py-0.5 font-sans text-label font-medium text-accent transition-colors hover:bg-accent hover:text-accent-fg"
+                            className="rounded-full border border-line bg-paper px-2.5 py-0.5 font-sans text-label font-medium text-ink transition-colors hover:border-ink hover:bg-ink hover:text-paper"
                           >
                             Finding {numbers[finding.findingId]}
                           </TextLink>
                         ))}
                       </h3>
-                      <div className="mt-2 font-clause text-body leading-relaxed text-ink">
+                      <div className="mt-2 max-w-measure font-clause text-body leading-relaxed text-ink">
                         <Paragraphs text={clause.body} />
                       </div>
                     </article>
@@ -186,7 +186,7 @@ export default function SamplePage() {
                     <div
                       key={finding.findingId}
                       id={`finding-${finding.findingId}`}
-                      className="scroll-mt-32 rounded-card bg-paper p-6"
+                      className="scroll-mt-32 rounded-card border border-line bg-paper p-6"
                     >
                       <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
                         <span className="font-mono text-label text-muted-fg">
@@ -221,14 +221,13 @@ export default function SamplePage() {
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-6xl px-6 py-14 md:py-16">
-          <h2 className="font-display text-h1 text-ink">The sign-off</h2>
-          <p className="mt-3 max-w-measure text-body text-muted-fg">
+        <section className="site-wrap py-24 md:py-32">
+          <SectionHead title="The sign-off">
             Nothing reaches a client without a recorded advocate sign-off. The record is kept with
             the document.
-          </p>
+          </SectionHead>
           {doc.advocate && doc.settledAt && (
-            <dl className="mt-8 grid gap-6 rounded-card bg-parchment p-8 sm:grid-cols-2 lg:grid-cols-3">
+            <dl className="mt-16 grid gap-6 rounded-card bg-parchment p-8 sm:grid-cols-2 lg:grid-cols-3">
               <div>
                 <dt className="text-meta font-medium text-muted-fg">Signed off by</dt>
                 <dd className="mt-1 font-display text-h2 text-ink">{doc.advocate.name}, advocate</dd>
@@ -243,7 +242,7 @@ export default function SamplePage() {
               </div>
             </dl>
           )}
-          <div className="mt-6 rounded-card bg-parchment p-8">
+          <div className="mt-5 rounded-card bg-parchment p-8">
             <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2">
               <h3 className="text-meta font-medium text-muted-fg">The record</h3>
               <p className="flex flex-wrap items-center gap-x-5 gap-y-1 text-meta text-muted-fg">
@@ -264,14 +263,13 @@ export default function SamplePage() {
         </section>
 
         <section className="tile-grain w-full bg-parchment">
-          <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-16">
-            <h2 className="font-display text-h1 text-ink">The execution checklist</h2>
-            <p className="mt-3 max-w-measure text-body text-muted-fg">
+          <div className="site-wrap py-24 md:py-32">
+            <SectionHead title="The execution checklist">
               What remains before a settled document takes effect. The entries below are a sample:
               on a real document the checklist states no stamp-duty figure, and your advocate
               confirms the amount for the state you sign in.
-            </p>
-            <ol className="mt-10 grid gap-4 md:grid-cols-3">
+            </SectionHead>
+            <ol className="mt-16 grid gap-5 md:grid-cols-3">
               {steps.map((step, i) => (
                 <Step key={step.kind} step={step} number={i + 1} />
               ))}

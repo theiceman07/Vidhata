@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { Hero } from "@/components/marketing/hero";
+import { Statement } from "@/components/marketing/statement";
+import { SmoothScroll } from "@/components/marketing/smooth-scroll";
 import { HowItWorks } from "@/components/marketing/how-it-works";
 import { LivingDocument } from "@/components/marketing/living-document";
 import { IndiaChecks } from "@/components/marketing/india-checks";
@@ -20,19 +22,21 @@ import { GlowBackdrop } from "@/components/marketing/glow-backdrop";
 export default function LandingPage() {
   return (
     <>
+      <SmoothScroll />
       <SiteHeader />
       <main>
         <Hero />
+        <Statement />
         <HowItWorks />
         <LivingDocument />
         <IndiaChecks />
         <Accountability />
 
         <section className="tile-grain w-full bg-parchment">
-          <div className="mx-auto grid w-full max-w-6xl gap-x-16 gap-y-10 px-6 py-24 md:py-32 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
+          <div className="site-wrap grid gap-x-16 gap-y-10 py-24 md:py-32 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
             <div>
-              <h2 className="font-display text-h1 text-ink">Questions, answered</h2>
-              <p className="mt-4 text-body text-muted-fg">
+              <h2 className="font-display text-display text-ink">Questions, answered</h2>
+              <p className="mt-6 text-lead text-muted-fg">
                 Anything else, write to us and a person replies.
               </p>
               <Link
@@ -47,7 +51,7 @@ export default function LandingPage() {
         </section>
 
         <GlowBackdrop>
-        <section className="mx-auto w-full max-w-6xl px-6">
+        <section className="site-wrap">
           <div className="flex flex-col items-center py-28 text-center md:py-36">
             <h2 className="max-w-3xl font-display text-display text-ink">
               Put your next contract in front of an advocate.

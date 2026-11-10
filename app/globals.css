@@ -246,15 +246,20 @@
   }
 }
 
-/* TRIAL: a moving gradient behind the hero. Three soft blobs of the palette's
-   tints drift on transform alone (compositor only, no repaint per frame).
-   Remove with the wrapper in components/marketing/hero.tsx. */
+/* A moving wash behind the hero and the closing section. Three soft blobs
+   drift on transform alone (compositor only, no repaint per frame), and a
+   fourth follows the pointer (GlowBackdrop). Warm: the highlighter yellow
+   with a little of the pending orange. Never the accent, which at low alpha
+   reads lavender. The mask fades the foot out so the wash never ends on a
+   cut edge. */
 .hero-glow {
   position: absolute;
   inset: 0;
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent);
 }
 .hero-glow > span {
   position: absolute;
@@ -266,20 +271,38 @@
 .hero-glow > span:nth-child(1) {
   left: -12%;
   top: -25%;
-  background: radial-gradient(closest-side, theme("colors.brand.tint"), transparent);
+  background: radial-gradient(closest-side, rgb(var(--c-highlight-bg) / 0.75), transparent);
   animation: glow-a 22s ease-in-out infinite alternate;
 }
 .hero-glow > span:nth-child(2) {
   right: -14%;
   top: 0;
-  background: radial-gradient(closest-side, theme("colors.move.tint"), transparent);
+  background: radial-gradient(closest-side, rgb(var(--c-status-pending) / 0.13), transparent);
   animation: glow-b 27s ease-in-out infinite alternate;
 }
 .hero-glow > span:nth-child(3) {
   left: 22%;
   bottom: -45%;
-  background: radial-gradient(closest-side, theme("colors.progress.tint"), transparent);
+  background: radial-gradient(closest-side, rgb(var(--c-highlight-bg) / 0.6), transparent);
   animation: glow-c 31s ease-in-out infinite alternate;
+}
+/* The pointer's light. GlowBackdrop moves it by transform and turns it on
+   while a mouse is over the section. */
+.hero-glow > .hero-glow-pointer {
+  left: 0;
+  top: 0;
+  width: 640px;
+  opacity: 0;
+  background: radial-gradient(
+    closest-side,
+    rgb(var(--c-status-pending) / 0.16),
+    rgb(var(--c-highlight-bg) / 0.55) 45%,
+    transparent
+  );
+  transition: opacity 500ms ease-out;
+}
+.hero-glow > .hero-glow-pointer[data-on="true"] {
+  opacity: 1;
 }
 @keyframes glow-a {
   to { transform: translate3d(22vw, 12vh, 0) scale(1.2); }
@@ -293,5 +316,37 @@
 @media (prefers-reduced-motion: reduce) {
   .hero-glow > span {
     animation: none !important;
+  }
+}
+
+/* Marketing layout and decoration. */
+@layer components {
+  /* The public pages run edge to edge: one gutter, and a cap only so a line
+     of text never crosses an ultrawide screen. */
+  .site-wrap {
+    @apply mx-auto w-full max-w-[1760px] px-5 sm:px-8 lg:px-12 2xl:px-16;
+  }
+
+  /* A phrase run over with a highlighter. The stroke is drawn left to right
+     when the phrase comes into view (Highlight sets data-on). */
+  .mark-glow {
+    position: relative;
+    isolation: isolate;
+    white-space: nowrap;
+  }
+  .mark-glow::before {
+    content: "";
+    position: absolute;
+    inset: 0.12em -0.16em 0;
+    z-index: -1;
+    border-radius: 0.25em;
+    background: rgb(var(--c-highlight-bg));
+    filter: blur(0.12em);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 700ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .mark-glow[data-on="true"]::before {
+    transform: scaleX(1);
   }
 }

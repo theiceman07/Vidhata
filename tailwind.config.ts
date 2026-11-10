@@ -101,6 +101,11 @@ const config: Config = {
           "clamp(44px, 6.4vw, 92px)",
           { lineHeight: "1", fontWeight: "500", letterSpacing: "-0.03em" },
         ],
+        // A full sentence set as a headline: the statement band on the landing page.
+        statement: [
+          "clamp(28px, 3.4vw, 56px)",
+          { lineHeight: "1.15", fontWeight: "500", letterSpacing: "-0.02em" },
+        ],
         // The greeting on Documents, the one centred hero inside the product.
         greeting: [
           "clamp(32px, 3.4vw, 48px)",

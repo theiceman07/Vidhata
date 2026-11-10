@@ -29,7 +29,7 @@ const EVERY_TIER = [
 export function PricingTable() {
   return (
     <div>
-      <p className="mx-auto mb-8 max-w-xl text-center text-body text-muted-fg">
+      <p className="mb-10 max-w-xl text-lead text-muted-fg">
         Your document is assigned a tier after screening, based on its value
         and risk. You don&apos;t have to guess which one you need.
       </p>
@@ -40,7 +40,7 @@ export function PricingTable() {
           return (
             <div
               key={tier}
-              className="flex flex-col rounded-card bg-paper p-8 md:p-10"
+              className="flex flex-col rounded-card border border-line bg-paper p-8 md:p-10"
             >
               <h2 className="text-lead font-medium text-ink">{t.label}</h2>
               <p className="mt-6 font-display text-[clamp(40px,4vw,56px)] font-medium leading-none tracking-[-0.02em] text-ink">
@@ -71,7 +71,7 @@ export function PricingTable() {
         })}
       </div>
 
-      <div className="mt-5 rounded-card bg-paper p-8 md:p-10">
+      <div className="mt-5 rounded-card border border-line bg-paper p-8 md:p-10">
         <p className="font-display text-h2 text-ink">Every tier includes</p>
         <ul className="mt-5 grid gap-x-8 gap-y-3 text-body text-ink sm:grid-cols-2">
           {EVERY_TIER.map((item) => (
@@ -83,7 +83,7 @@ export function PricingTable() {
         </ul>
       </div>
 
-      <div className="mt-5 flex flex-col gap-3 rounded-card bg-paper p-8 sm:flex-row sm:items-center sm:justify-between md:p-10">
+      <div className="mt-5 flex flex-col gap-3 rounded-card border border-line bg-paper p-8 sm:flex-row sm:items-center sm:justify-between md:p-10">
         <div>
           <p className="font-display text-h2 text-ink">{CONSULTATION.label}</p>
           <p className="mt-2 max-w-measure text-body text-muted-fg">

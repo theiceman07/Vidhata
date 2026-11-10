@@ -6,11 +6,14 @@ import {
   motion,
   useMotionValueEvent,
   useScroll,
+  useSpring,
   useReducedMotion,
+  type MotionValue,
 } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Dateline } from "@/components/document/dateline";
 import { DURATION, EASE } from "@/lib/motion";
+import { Highlight } from "./highlight";
 import { getMockDocumentById } from "@/lib/mock/documents.mock";
 
 /**
@@ -24,6 +27,11 @@ import { getMockDocumentById } from "@/lib/mock/documents.mock";
  * the clause on the page, and the concern in the margin beside it, with
  * its source. The margin fills as the arc advances, so the width the
  * clause does not need is the width the review happens in.
+ *
+ * Scroll is read twice. A spring-smoothed copy of it fills the rail beside
+ * the stage index continuously, so the reader always sees the scroll doing
+ * something; the stage itself changes at four thresholds, and each change
+ * is carried by a short fade or a highlighter wipe rather than a swap.
  *
  * Scroll picks the stage; the stage is plain state, so what renders at
  * each step is identical whether the reader scrolled there or, under
@@ -105,13 +113,20 @@ function Sheet({ stage, reduced }: { stage: number; reduced: boolean }) {
 
   if (!FINDING || !CLAUSE || !CITATION) return null;
 
+  // New wording fades in over the old rather than replacing it in one frame.
+  const swap = {
+    initial: reduced ? false : { opacity: 0 },
+    animate: { opacity: 1 },
+    transition: { duration: reduced ? 0 : DURATION.settle, ease: EASE.standard },
+  } as const;
+
   return (
     <div className="overflow-hidden rounded-card border border-line bg-paper">
       <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-2.5 sm:px-8">
         <Dateline segments={[MSA?.title ?? "Master services agreement", "Draft 1"]} />
         <span
           className={cn(
-            "font-mono text-label transition-colors",
+            "font-mono text-label transition-colors duration-300",
             settled ? "text-accent" : flagged ? "text-ink" : "text-muted-fg",
           )}
         >
@@ -119,7 +134,7 @@ function Sheet({ stage, reduced }: { stage: number; reduced: boolean }) {
         </span>
       </div>
 
-      <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,21rem)]">
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] xl:grid-cols-[minmax(0,1fr)_minmax(0,30rem)]">
         {/* The clause, at a reading measure. */}
         <div className="px-5 py-8 sm:px-8 lg:py-10">
           {BEFORE && <Neighbour clause={BEFORE} className="mb-7 border-b border-line pb-7" />}
@@ -134,19 +149,24 @@ function Sheet({ stage, reduced }: { stage: number; reduced: boolean }) {
             {revising ? (
               // The advocate's edit, shown as a redline while it is a
               // proposal, and as clean text once it is settled.
-              <>
+              <motion.span key="revising" {...swap}>
                 <del className="text-muted-fg decoration-flagged/60">sixty (60) days</del>{" "}
                 <ins className="border-b border-accent bg-accent/[0.08] no-underline">
                   forty-five (45) days
                 </ins>
-              </>
+              </motion.span>
             ) : settled ? (
-              <span className="border-b border-accent">forty-five (45) days</span>
+              <motion.span key="settled" {...swap} className="border-b border-accent">
+                forty-five (45) days
+              </motion.span>
             ) : (
+              // The highlighter is drawn across the words, left to right.
               <span
                 className={cn(
-                  "transition-colors duration-200",
-                  flagged && "border-b border-caution bg-caution/[0.15]",
+                  "border-b bg-gradient-to-r from-caution/15 to-caution/15 bg-no-repeat transition-[background-size,border-color] duration-500 ease-out",
+                  flagged
+                    ? "border-caution bg-[length:100%_100%]"
+                    : "border-transparent bg-[length:0%_100%]",
                 )}
               >
                 sixty (60) days
@@ -247,15 +267,25 @@ function Sheet({ stage, reduced }: { stage: number; reduced: boolean }) {
 function StageIndex({
   stage,
   onSelect,
+  progress,
 }: {
   stage: number;
   onSelect?: (index: number) => void;
+  /** Scroll through the arc, 0 to 1. Given, the rail fills with it. */
+  progress?: MotionValue<number>;
 }) {
   return (
     <ol
       aria-label="Stages"
-      className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-1 lg:gap-0 lg:border-l lg:border-line"
+      className="relative grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-1 lg:gap-0 lg:border-l lg:border-line"
     >
+      {progress && (
+        <motion.span
+          aria-hidden
+          style={{ scaleY: progress }}
+          className="absolute -left-px bottom-0 top-0 hidden w-0.5 origin-top bg-ink lg:block"
+        />
+      )}
       {STAGES.map((s, i) => {
         const active = i === stage;
         const reached = i <= stage;
@@ -264,7 +294,7 @@ function StageIndex({
             <span className="block font-mono text-label text-muted-fg">{s.n}</span>
             <span
               className={cn(
-                "block text-meta transition-colors",
+                "block text-meta transition-colors duration-300",
                 active ? "font-medium text-ink" : reached ? "text-ink" : "text-muted-fg",
               )}
             >
@@ -276,6 +306,8 @@ function StageIndex({
         const itemClass = cn(
           "block w-full border-l-2 py-2 pl-3 text-left transition-colors lg:-ml-px lg:py-3 lg:pl-5",
           active ? "border-ink" : "border-transparent",
+          // On a wide screen the rail's own fill marks the place.
+          progress && "lg:border-transparent",
         );
 
         return (
@@ -300,11 +332,11 @@ function StageIndex({
 
 function Header() {
   return (
-    <div className="max-w-2xl">
+    <div className="grid gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-end lg:[align-items:last_baseline]">
       <h2 className="font-display text-display text-ink">
-        A finding is a note in the margin of a clause.
+        A finding is a <Highlight>note in the margin</Highlight> of a clause.
       </h2>
-      <p className="mt-6 text-lead text-muted-fg">
+      <p className="max-w-xl text-lead text-muted-fg">
         Not a tile in a dashboard. Every concern the first pass raises
         stays attached to the words that caused it, carries the source it
         rests on, and is settled by a named advocate before anything
@@ -323,6 +355,10 @@ export function LivingDocument() {
     offset: ["start start", "end end"],
   });
 
+  // The rail follows the scroll through a spring, so a wheel notch arrives
+  // as one eased movement instead of a step.
+  const rail = useSpring(scrollYProgress, { stiffness: 140, damping: 30, restDelta: 0.001 });
+
   // Each stage owns an equal share of the scroll. Only a change of stage
   // sets state, so scrolling within a stage costs nothing.
   useMotionValueEvent(scrollYProgress, "change", (v) => {
@@ -335,10 +371,10 @@ export function LivingDocument() {
     return (
       <section
         id="arc"
-        className="mx-auto w-full max-w-6xl scroll-mt-24 px-6 py-24 md:py-32"
+        className="site-wrap scroll-mt-16 py-24 md:py-32"
       >
         <Header />
-        <div className="mt-12 grid gap-x-12 gap-y-6 lg:grid-cols-[14rem_minmax(0,1fr)]">
+        <div className="mt-12 grid gap-x-12 gap-y-6 lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)]">
           <StageIndex stage={stage} onSelect={setStage} />
           <Sheet stage={stage} reduced />
         </div>
@@ -349,14 +385,15 @@ export function LivingDocument() {
   return (
     <section
       id="arc"
-      className="mx-auto w-full max-w-6xl scroll-mt-24 px-6 py-24 md:py-32"
+      className="site-wrap scroll-mt-16 py-24 md:py-32"
     >
       <Header />
 
-      {/* Two screens of scroll drive four stages, then release. */}
-      <div ref={ref} className="relative mt-16 h-[240svh]">
-        <div className="sticky top-24 grid gap-x-12 gap-y-6 lg:top-[16vh] lg:grid-cols-[14rem_minmax(0,1fr)]">
-          <StageIndex stage={stage} />
+      {/* Three screens of scroll drive four stages, then release: enough
+          room that a stage is held, not flicked past. */}
+      <div ref={ref} className="relative mt-16 h-[320svh]">
+        <div className="sticky top-24 grid gap-x-12 gap-y-6 lg:top-[14vh] lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)]">
+          <StageIndex stage={stage} progress={rail} />
           <Sheet stage={stage} reduced={false} />
         </div>
       </div>

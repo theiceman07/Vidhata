@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PricingTable } from "@/components/marketing/pricing-table";
 import { Faq } from "@/components/marketing/faq";
+import { PageOpening } from "@/components/marketing/page-opening";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
 
@@ -20,26 +22,33 @@ export default function PricingPage() {
     <div>
       <SiteHeader />
       <main>
-        <section className="mx-auto w-full max-w-6xl px-6 pb-20 pt-24 text-center md:pt-32">
-          <h1 className="mx-auto max-w-3xl font-display text-display text-ink">
-            One fixed price per document.
-          </h1>
-          <p className="mx-auto mt-6 max-w-xl text-lead text-muted-fg">
-            Priced by review tier, assigned after screening. No hourly billing.
-          </p>
-        </section>
+        <PageOpening
+          title="One fixed price per document."
+          lead="Priced by review tier, assigned after screening. No hourly billing."
+        />
 
         <section className="tile-grain w-full bg-parchment">
-          <div className="mx-auto w-full max-w-6xl px-6 py-24 md:py-28">
+          <div className="site-wrap py-24 md:py-32">
             <PricingTable />
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-6xl px-6 py-24 md:py-32">
-          <div className="grid gap-x-16 gap-y-10 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
-            <h2 className="font-display text-h1 text-ink">Questions, answered</h2>
-            <Faq />
+        {/* The landing page's questions section, on white here because the
+            tiers above already hold the band. */}
+        <section className="site-wrap grid gap-x-16 gap-y-10 py-24 md:py-32 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+          <div>
+            <h2 className="font-display text-display text-ink">Questions, answered</h2>
+            <p className="mt-6 text-lead text-muted-fg">
+              Anything else, write to us and a person replies.
+            </p>
+            <Link
+              href="/contact"
+              className="mt-6 inline-flex h-11 items-center rounded-full border border-ink/80 px-5 text-body font-medium text-ink transition-colors hover:bg-ink hover:text-paper"
+            >
+              Contact us
+            </Link>
           </div>
+          <Faq />
         </section>
       </main>
       <SiteFooter />

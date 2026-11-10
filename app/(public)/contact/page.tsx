@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ContactForm } from "@/components/marketing/contact-form";
+import { PageOpening } from "@/components/marketing/page-opening";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
 
@@ -15,34 +16,28 @@ export default function ContactPage() {
   return (
     <div>
       <SiteHeader />
-      <main className="mx-auto w-full max-w-6xl px-6 pb-20 pt-24 md:pt-32">
-        <div className="grid gap-12 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
-          <div>
-            <p className="inline-flex rounded-full bg-parchment px-4 py-1.5 text-meta font-medium text-ink">
-              Contact
-            </p>
-            <h1 className="mt-6 font-display text-display text-ink">Write to us</h1>
-            <p className="mt-4 max-w-measure text-lead text-muted-fg">
-              For general and client enquiries. Tell us what you need and we will come back to you.
-            </p>
+      <main>
+        <PageOpening
+          title="Write to us"
+          lead="For general and client enquiries. Tell us what you need and we will come back to you."
+        />
 
-            <div className="mt-8 rounded-card bg-parchment p-6">
-              <p className="text-meta font-medium text-muted-fg">Are you an empanelled advocate?</p>
-              <p className="mt-2 text-body text-ink">
+        <section className="tile-grain w-full bg-parchment">
+          <div className="site-wrap grid gap-x-16 gap-y-8 py-24 md:py-32 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start">
+            <div className="rounded-card border border-line bg-paper p-8">
+              <h2 className="font-display text-h2 text-ink">Are you an empanelled advocate?</h2>
+              <p className="mt-3 text-body text-muted-fg">
                 Use the{" "}
-                <Link
-                  href="/advocate-login"
-                  className="link"
-                >
+                <Link href="/advocate-login" className="link">
                   advocate sign-in
                 </Link>{" "}
                 instead. This form is not for review work.
               </p>
             </div>
-          </div>
 
-          <ContactForm />
-        </div>
+            <ContactForm />
+          </div>
+        </section>
       </main>
       <SiteFooter />
     </div>

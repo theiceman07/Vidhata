@@ -32,7 +32,7 @@ export function ContactForm() {
 
   if (state === "sent") {
     return (
-      <div role="status" className="rounded-card bg-parchment p-6">
+      <div role="status" className="rounded-card border border-line bg-paper p-8">
         <p className="font-display text-h3 text-ink">Thanks, {name}.</p>
         <p className="mt-2 text-body text-muted-fg">
           This is a preview, so your message was not sent and nothing was
@@ -43,7 +43,7 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-5 rounded-card bg-parchment p-8">
+    <form onSubmit={onSubmit} className="space-y-5 rounded-card border border-line bg-paper p-8">
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <Label htmlFor="contact-name">Your name</Label>
