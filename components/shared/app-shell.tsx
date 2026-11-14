@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/session";
 import { BrandLogo } from "@/components/shared/brand-logo";
@@ -124,7 +123,6 @@ function ShellBody({
 
   function handleSignOut() {
     signOut();
-    toast.success("Signed out.");
     router.replace("/");
   }
 
