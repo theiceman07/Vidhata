@@ -93,16 +93,10 @@ export default function ClientLoginPage() {
       intro="For founders and teams whose contracts Vidhataa drafts."
       footer={
         <>
-          New to Vidhataa?{" "}
-            <button
-            type="button"
-            onClick={() =>
-              toast.info("Sign-up isn't available in this preview.")
-            }
-            className="link"
-          >
-            Create an account
-          </button>
+          Accounts are opened by invitation.{" "}
+          <Link href="/contact" className="link">
+            Request access
+          </Link>
         </>
       }
     >

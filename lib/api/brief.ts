@@ -34,8 +34,8 @@ export const DRAFT_NEEDS: (keyof IntakeInput)[] = [
 
 const TYPE_PATTERNS: [ContractDocument["type"], RegExp][] = [
   ["nda", /\bnda\b|non[- ]?disclosure|confidentiality agreement/i],
-  ["msa", /\bmsa\b|master services|services agreement|consult(?:ing|ancy)/i],
-  ["employment", /employ|\bhir(?:e|ing)\b|offer letter|appointment letter/i],
+  // MSA and employment are held back (hidden in the catalogue) until the owner decides, so a brief
+  // that names them does not start a draft of that type: intake asks for the type instead.
   ["vendor", /vendor|supplier|supply|purchase|procure/i],
 ];
 

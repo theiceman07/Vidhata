@@ -184,6 +184,12 @@ export default function ChecklistPage() {
           {doc.deal.clientName} and {doc.deal.counterpartyName} · Execution
           checklist · Generated {format(new Date(), "d MMM yyyy, HH:mm")}
         </p>
+        {doc.signOff && (
+          <p className="text-body text-muted-fg">
+            Signed off by {doc.signOff.advocate} · Enrolment {doc.signOff.enrolment} ·{" "}
+            {format(new Date(doc.signOff.at), "d MMM yyyy")}
+          </p>
+        )}
       </div>
 
       {!isSettled ? (
@@ -244,6 +250,8 @@ function ExecutionSummary({
   const next = nextStep(doc.executionSteps);
   const proof = doc.executionSteps.filter((s) => s.evidence);
   const left = applicable.length - done;
+  // No steps is not "every step complete": nothing has been generated, so nothing is claimed.
+  const noSteps = applicable.length === 0;
 
   return (
     <section
@@ -253,6 +261,12 @@ function ExecutionSummary({
       {/* How far, and what is next. */}
       <div className="rounded-card bg-surface p-6">
         <p className="mb-3 text-label font-medium text-muted-fg">Progress</p>
+        {noSteps ? (
+          <p className="text-meta text-ink">
+            No execution steps have been generated for this document yet.
+          </p>
+        ) : (
+          <>
         <div className="flex items-baseline gap-3">
           <p className="font-display text-h2 tabular-nums text-ink">
             {done}
@@ -298,6 +312,8 @@ function ExecutionSummary({
             "Nothing is left. The document is recorded as executed."
           )}
         </p>
+          </>
+        )}
       </div>
 
       {/* The record already on file: secondary. */}
