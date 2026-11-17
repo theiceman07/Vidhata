@@ -57,7 +57,7 @@ export const CONTRACT_CATALOGUE: ContractTypeOption[] = [
   // Commercial and sales
   {
     id: "vendor",
-    label: "Vendor / Supplier Agreement",
+    label: "Vendor / MSME supplier agreement",
     group: "commercial",
     available: true,
     draftType: "vendor",

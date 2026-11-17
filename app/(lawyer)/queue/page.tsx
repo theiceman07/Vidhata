@@ -635,8 +635,12 @@ function UpNext({
           <span>
             {doc.clientName} and {doc.counterpartyName}
           </span>
-          <span aria-hidden className="h-1 w-1 rounded-full bg-muted-fg/40" />
-          <span>Executed in {doc.stateOfExecution}</span>
+          {!unclaimed && (
+            <>
+              <span aria-hidden className="h-1 w-1 rounded-full bg-muted-fg/40" />
+              <span>Executed in {doc.stateOfExecution}</span>
+            </>
+          )}
           <span aria-hidden className="h-1 w-1 rounded-full bg-muted-fg/40" />
           <span className="font-mono tabular-nums">
             Waiting {days} {days === 1 ? "day" : "days"}

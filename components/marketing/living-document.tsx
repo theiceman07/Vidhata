@@ -49,19 +49,19 @@ const STAGES = [
   { n: "04", label: "Trusted release", caption: "Settled" },
 ] as const;
 
-// The MSA fixture's payment-terms finding, verbatim, with its cited source.
+// The vendor fixture's payment-terms finding, verbatim, with its cited source.
 // Nothing on this page is
 // drafted for the page: an unsourced concern in a marketing section would
 // be exactly the "probably fine" the product refuses to produce.
-const MSA = getMockDocumentById("doc-msa-pending");
-const FINDING = MSA?.findings.find((f) => f.clauseReference === "Clause 4.1");
-const CLAUSE_AT = MSA?.clauses.findIndex((c) => c.number === "4.1") ?? -1;
-const CLAUSE = MSA?.clauses[CLAUSE_AT];
+const VENDOR = getMockDocumentById("doc-vendor-revision");
+const FINDING = VENDOR?.findings.find((f) => f.ruleApplied === "MSMED-S15-PAYMENT-TERM");
+const CLAUSE_AT = VENDOR?.clauses.findIndex((c) => c.number === "5.3") ?? -1;
+const CLAUSE = VENDOR?.clauses[CLAUSE_AT];
 const CITATION = FINDING?.citation;
 // The clauses either side, from the same contract, so the passage reads
 // as a page of a document rather than a quotation on a card.
-const BEFORE = CLAUSE_AT > 0 ? MSA?.clauses[CLAUSE_AT - 1] : undefined;
-const AFTER = CLAUSE_AT >= 0 ? MSA?.clauses[CLAUSE_AT + 1] : undefined;
+const BEFORE = CLAUSE_AT > 0 ? VENDOR?.clauses[CLAUSE_AT - 1] : undefined;
+const AFTER = CLAUSE_AT >= 0 ? VENDOR?.clauses[CLAUSE_AT + 1] : undefined;
 
 function Neighbour({
   clause,
@@ -123,7 +123,7 @@ function Sheet({ stage, reduced }: { stage: number; reduced: boolean }) {
   return (
     <div className="overflow-hidden rounded-card border border-line bg-paper">
       <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-2.5 sm:px-8">
-        <Dateline segments={[MSA?.title ?? "Master services agreement", "Draft 1"]} />
+        <Dateline segments={[VENDOR?.title ?? "Vendor agreement", "Draft 1"]} />
         <span
           className={cn(
             "font-mono text-label transition-colors duration-300",
@@ -144,13 +144,13 @@ function Sheet({ stage, reduced }: { stage: number; reduced: boolean }) {
             {CLAUSE.heading}
           </h3>
           <p className="mt-3 max-w-measure font-clause text-h3 font-normal leading-relaxed tracking-normal text-ink">
-            The Service Provider shall invoice the Client monthly in arrears.
+            The Supplier shall invoice the Buyer on delivery of each consignment.
             Payment shall be made within{" "}
             {revising ? (
               // The advocate's edit, shown as a redline while it is a
               // proposal, and as clean text once it is settled.
               <motion.span key="revising" {...swap}>
-                <del className="text-muted-fg decoration-flagged/60">sixty (60) days</del>{" "}
+                <del className="text-muted-fg decoration-flagged/60">ninety (90) days</del>{" "}
                 <ins className="border-b border-accent bg-accent/[0.08] no-underline">
                   forty-five (45) days
                 </ins>
@@ -169,10 +169,10 @@ function Sheet({ stage, reduced }: { stage: number; reduced: boolean }) {
                     : "border-transparent bg-[length:0%_100%]",
                 )}
               >
-                sixty (60) days
+                ninety (90) days
               </span>
             )}{" "}
-            of receipt of a valid invoice.
+            of delivery.
           </p>
 
           {AFTER && <Neighbour clause={AFTER} className="mt-7 border-t border-line pt-7" />}

@@ -189,8 +189,7 @@ export default function DocumentPage() {
           <UploadContractPanel docId={doc.id} onReviewRequested={setDoc} />
         ) : (
           <p className="max-w-prose rounded-card bg-parchment p-6 text-body text-ink">
-            This draft has not been submitted. Drafting from your answers is not open yet, so there is
-            nothing to submit for now.
+            Drafting from your answers isn&apos;t open yet. There is nothing to submit for now.
           </p>
         )}
       </Frame>
