@@ -369,8 +369,8 @@ function Unusable({ state }: { state: "expired" | "used" | "invalid" }) {
     expired: {
       title: "This invitation has expired.",
       body: "Empanelment is by invitation, so you will need a new one.",
-      href: "/advocate-invite",
-      link: "Request an invitation",
+      href: "/advocate-login",
+      link: "Advocate sign-in",
     },
     used: {
       title: "This invitation has already been used.",
