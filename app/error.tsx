@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { TextLink } from "@/components/shared/text-link";
+import { supportEmail } from "@/lib/config/contact";
 
 // QA 10.7: same rationale as not-found.tsx — an uncaught render error used
 // to leave no route home. error.tsx must be a Client Component per
@@ -23,8 +24,14 @@ export default function ErrorBoundary({
         An unexpected error occurred. You can try again or head back home.
       </p>
       <p className="mt-3 max-w-sm text-meta text-muted-fg">
-        If it keeps happening, <TextLink href="/contact">contact us</TextLink>
-        {error.digest ? <> and quote reference {error.digest}.</> : "."}
+        {supportEmail() ? (
+          <>
+            If it keeps happening, email <TextLink href={`mailto:${supportEmail()}`}>{supportEmail()}</TextLink>
+            {error.digest ? <> and quote reference {error.digest}.</> : "."}
+          </>
+        ) : (
+          <>If it keeps happening, try again in a moment.{error.digest ? <> Reference {error.digest}.</> : null}</>
+        )}
       </p>
       <div className="mt-6 flex gap-3">
         <Button variant="outline" onClick={() => reset()}>

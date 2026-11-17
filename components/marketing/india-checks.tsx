@@ -12,14 +12,11 @@ import { Reveal } from "./reveal";
  * actual language or the actual output the check produces, so the
  * specificity is demonstrated rather than claimed.
  */
-const MSA = getMockDocumentById("doc-msa-pending");
+const VENDOR = getMockDocumentById("doc-vendor-revision");
 const NDA = getMockDocumentById("doc-nda-settled");
 
-const nonCompete = MSA?.findings.find(
-  (f) => f.clauseReference === "Clause 7.2",
-);
-const paymentTerms = MSA?.findings.find(
-  (f) => f.clauseReference === "Clause 4.1",
+const paymentTerms = VENDOR?.findings.find(
+  (f) => f.ruleApplied === "MSMED-S15-PAYMENT-TERM",
 );
 const esignature = NDA?.executionSteps.find((s) => s.kind === "esignature");
 
@@ -37,7 +34,8 @@ const CHECKS: Check[] = [
     title: "Restraint of trade",
     description:
       "Non-compete and non-solicit clauses are screened against the Indian Contract Act's restraint-of-trade rule.",
-    fragment: nonCompete?.clauseText,
+    // No NDA or vendor fixture holds a restraint-of-trade clause, and none is drafted for the page.
+    fragment: undefined,
   },
   {
     notation: "S.74",

@@ -3,6 +3,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readBrief } from "@/lib/api/brief";
 import { uploadPathEnabled } from "@/lib/api/source";
+import { supportEmail } from "@/lib/config/contact";
 import {
   CONTRACT_CATALOGUE,
   CONTRACT_TYPES,
@@ -100,11 +101,12 @@ describe("wording and copy", () => {
     expect(page).toMatch(/noSteps\s*\?/);
   });
 
-  it("opens accounts by invitation instead of offering sign-up", () => {
+  it("opens accounts by invitation instead of offering sign-up, and links no mock form", () => {
     const login = read("app", "(public)", "login", "page.tsx");
     expect(login).not.toContain("Create an account");
-    expect(login).toContain("Request access");
-    expect(login).toContain('href="/contact"');
+    expect(login).toContain("Accounts are opened by invitation.");
+    expect(login).not.toContain('"/contact"');
+    expect(login).toContain("supportEmail()");
   });
 
   it("has no workflow video block on the landing page", () => {
@@ -112,14 +114,61 @@ describe("wording and copy", () => {
     expect(how).not.toMatch(/VideoPlaceholder|Workflow video|Coming soon/);
   });
 
-  it("puts no address on the error pages, only the contact page", () => {
+  it("writes no address into the error pages or the login page, and links no mock form", () => {
     for (const file of [
       ["app", "error.tsx"],
       ["components", "shared", "error-state.tsx"],
+      ["app", "(public)", "login", "page.tsx"],
     ]) {
       const source = read(...file);
-      expect(source).toContain('href="/contact"');
-      expect(source).not.toMatch(/mailto:|[\w.-]+@[\w-]+\.\w+|localhost|supabase|vercel/i);
+      expect(source).not.toContain('"/contact"');
+      expect(source).not.toMatch(/[\w.-]+@[\w-]+\.\w+/);
+      if (file.join("/").includes("error")) {
+        expect(source).not.toMatch(/localhost|supabase|vercel/i);
+      }
+      expect(source).toContain("supportEmail()");
+    }
+  });
+
+  it("uses the support address only from the deploy's setting, and only when it is an address", () => {
+    vi.stubEnv("NEXT_PUBLIC_VIDHATA_SUPPORT_EMAIL", "");
+    expect(supportEmail()).toBeNull();
+    vi.stubEnv("NEXT_PUBLIC_VIDHATA_SUPPORT_EMAIL", "not an address");
+    expect(supportEmail()).toBeNull();
+    vi.stubEnv("NEXT_PUBLIC_VIDHATA_SUPPORT_EMAIL", " help@example.test ");
+    expect(supportEmail()).toBe("help@example.test");
+    vi.unstubAllEnvs();
+  });
+
+  it("says version history isn't available yet, instead of reporting the document missing", () => {
+    const page = read("app", "(client)", "documents", "[id]", "history", "page.tsx");
+    expect(page).toContain("Version history isn&apos;t available yet.");
+    expect(page).toMatch(/backendDataEnabled\(\)\)\s*\{[\s\S]*setState\("unavailable"\)/);
+  });
+
+  it("says what the upload-off state is, in the owner's words", () => {
+    const page = read("app", "(client)", "documents", "[id]", "page.tsx");
+    expect(page).toContain("Drafting from your answers isn&apos;t open yet. There is nothing to submit for now.");
+  });
+
+  it("names the supported vendor type as the SRD does", () => {
+    expect(LISTED_CATALOGUE.find((e) => e.id === "vendor")?.label).toBe(
+      "Vendor / MSME supplier agreement",
+    );
+  });
+
+  it("shows an unclaimed document by type, tier and state only: no value and no execution state", () => {
+    const schema = read("lib", "api", "backend-documents.ts");
+    const queueRow = schema.slice(schema.indexOf("export const queueRowSchema"), schema.indexOf("export type QueueRow"));
+    expect(queueRow).not.toMatch(/transaction_value|state_of_execution/);
+    const queue = read("app", "(lawyer)", "queue", "page.tsx");
+    expect(queue).toMatch(/!unclaimed\s*&&\s*\(\s*<>[\s\S]*Executed in/);
+  });
+
+  it("uses no MSA or employment fixture on the landing page", () => {
+    for (const file of ["living-document.tsx", "india-checks.tsx"]) {
+      const source = read("components", "marketing", file);
+      expect(source).not.toMatch(/doc-msa|doc-employment|Master services/i);
     }
   });
 });

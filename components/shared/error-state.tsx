@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { TextLink } from "@/components/shared/text-link";
+import { supportEmail } from "@/lib/config/contact";
 
 interface ErrorStateProps {
   /** State the fact. Never "something went wrong". */
@@ -31,8 +32,14 @@ export function ErrorState({ message, onRetry, reference }: ErrorStateProps) {
           Try again
         </Button>
         <p className="mt-4 text-meta text-muted-fg">
-          If it keeps happening, <TextLink href="/contact">contact us</TextLink>
-          {reference ? <> and quote reference {reference}.</> : "."}
+          {supportEmail() ? (
+            <>
+              If it keeps happening, email <TextLink href={`mailto:${supportEmail()}`}>{supportEmail()}</TextLink>
+              {reference ? <> and quote reference {reference}.</> : "."}
+            </>
+          ) : (
+            reference ? <>Reference {reference}.</> : null
+          )}
         </p>
       </div>
     </div>
