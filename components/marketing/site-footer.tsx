@@ -24,13 +24,11 @@ const GROUPS = [
     links: [
       { href: "/#advocates", label: "Empanelment" },
       { href: "/advocate-login", label: "Advocate login" },
-      { href: "/advocate-invite", label: "Request an invitation" },
     ],
   },
   {
     label: "Company",
     links: [
-      { href: "/contact", label: "Contact" },
       { href: "/scope", label: "Scope and limits" },
       { href: "/security", label: "Security and data" },
       { href: "/terms", label: "Terms of service" },

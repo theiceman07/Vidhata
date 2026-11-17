@@ -1,4 +1,3 @@
-import { TextLink } from "@/components/shared/text-link";
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/shared/page-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
@@ -25,12 +24,7 @@ export default function TermsPage() {
         <p className="mt-2 text-muted-fg">
           This page is a placeholder. Vidhataa&apos;s Terms of Service are
           being drafted by qualified counsel and will be published here
-          before general availability. If you need terms information now,
-          contact us via the{" "}
-          <TextLink href="/contact" className="link">
-            contact page
-          </TextLink>
-          .
+          before general availability.
         </p>
       </div>
     </main>

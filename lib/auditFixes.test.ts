@@ -94,6 +94,30 @@ describe("what an advocate sees before a claim", () => {
   });
 });
 
+describe("no link to a form that discards messages", () => {
+  it("links neither the contact page nor the invitation form from any public page or menu", () => {
+    for (const file of [
+      ["app", "page.tsx"],
+      ["app", "(public)", "pricing", "page.tsx"],
+      ["app", "(public)", "terms", "page.tsx"],
+      ["app", "(public)", "advocate-login", "page.tsx"],
+      ["app", "(public)", "advocate-onboarding", "[token]", "page.tsx"],
+      ["components", "marketing", "site-header.tsx"],
+      ["components", "marketing", "site-footer.tsx"],
+    ]) {
+      const source = read(...file);
+      expect(source, file.join("/")).not.toMatch(/["']\/contact["']|["']\/advocate-invite["']/);
+      expect(source, file.join("/")).not.toMatch(/mailto:/);
+    }
+  });
+
+  it("states that advocate sign-in is by invitation, as plain text", () => {
+    expect(read("app", "(public)", "advocate-login", "page.tsx")).toContain(
+      "Empanelment is by invitation.",
+    );
+  });
+});
+
 describe("wording and copy", () => {
   it("says nothing is generated, not that every step is complete, when a checklist has no steps", () => {
     const page = read("app", "(client)", "documents", "[id]", "checklist", "page.tsx");

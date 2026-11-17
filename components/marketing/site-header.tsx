@@ -26,7 +26,6 @@ const MENUS = [
     links: [
       { href: "/sample", label: "Sample document", note: "A settled document, start to finish" },
       { href: "/contracts", label: "Agreements", note: "What Vidhataa drafts" },
-      { href: "/contact", label: "Contact us", note: "A person replies" },
     ],
   },
   {
