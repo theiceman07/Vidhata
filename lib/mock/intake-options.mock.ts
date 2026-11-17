@@ -38,6 +38,11 @@ interface ContractTypeBase {
   /** As the source list names it. */
   label: string;
   group: ContractGroupId;
+  /**
+   * Kept off every list (the picker, the public contracts page, the brief reader) until the owner
+   * decides. A hidden type stays in the data model so an existing document still shows its label.
+   */
+  hidden?: boolean;
 }
 
 export type ContractTypeOption =
@@ -68,6 +73,7 @@ export const CONTRACT_CATALOGUE: ContractTypeOption[] = [
     id: "msa",
     label: "Master Services Agreement (MSA)",
     group: "commercial",
+    hidden: true,
     available: true,
     draftType: "msa",
     draftLabel: "Master Services Agreement",
@@ -107,6 +113,7 @@ export const CONTRACT_CATALOGUE: ContractTypeOption[] = [
     id: "employment",
     label: "Employment Contract / Appointment Letter",
     group: "hr",
+    hidden: true,
     available: true,
     draftType: "employment",
     draftLabel: "Employment agreement",
@@ -176,6 +183,13 @@ export const CONTRACT_CATALOGUE: ContractTypeOption[] = [
     available: false,
   },
 ];
+
+/**
+ * What a client is shown: the catalogue without the types held back for now. The supported types
+ * are NDA and vendor / MSME. Founders' Agreement and SHA are listed as coming soon. MSA and
+ * employment are hidden until the owner decides.
+ */
+export const LISTED_CATALOGUE = CONTRACT_CATALOGUE.filter((entry) => !entry.hidden);
 
 /**
  * The types a draft can start from, under the names a drafted document

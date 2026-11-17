@@ -4,7 +4,7 @@ import { Fragment, useState } from "react";
 import { Icon } from "@/components/shared/icon";
 import { Input } from "@/components/ui/input";
 import {
-  CONTRACT_CATALOGUE,
+  LISTED_CATALOGUE,
   CONTRACT_GROUPS,
 } from "@/lib/mock/intake-options.mock";
 import type { ModelledContractType } from "@/lib/types";
@@ -34,7 +34,7 @@ export function ContractTypePicker({
   // Opens on what can be drafted today; the types still to come are one click away.
   const [availableOnly, setAvailableOnly] = useState(true);
   const needle = query.trim().toLowerCase();
-  const shown = CONTRACT_CATALOGUE.filter(
+  const shown = LISTED_CATALOGUE.filter(
     (e) =>
       (!availableOnly || e.available) && (needle === "" || e.label.toLowerCase().includes(needle)),
   );

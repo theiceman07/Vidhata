@@ -581,6 +581,9 @@ function UpNext({
   const pending = unsettledFindings(doc);
   const days = differenceInCalendarDays(new Date(), new Date(doc.createdAt));
   const shown = pending.slice(0, 3);
+  // Before a claim the queue shows metadata only. The text, the findings and a link to the review
+  // open only after the advocate has declared no conflict and claimed it.
+  const unclaimed = doc.status === "pending_review";
   const why =
     doc.status === "pending_review"
       ? `Unclaimed · ${tierLabel(doc.tier).toLowerCase()}`
@@ -618,12 +621,16 @@ function UpNext({
       </div>
 
       <div className="min-w-0">
-        <Link
-          href={`/review/${doc.id}`}
-          className="font-display text-h2 text-ink hover:text-brand"
-        >
-          {doc.title}
-        </Link>
+        {unclaimed ? (
+          <p className="font-display text-h2 text-ink">{doc.title}</p>
+        ) : (
+          <Link
+            href={`/review/${doc.id}`}
+            className="font-display text-h2 text-ink hover:text-brand"
+          >
+            {doc.title}
+          </Link>
+        )}
         <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-meta text-muted-fg">
           <span>
             {doc.clientName} and {doc.counterpartyName}
@@ -637,7 +644,11 @@ function UpNext({
         </p>
       </div>
 
-      {shown.length > 0 ? (
+      {unclaimed ? (
+        <p className="rounded-card bg-paper p-4 text-meta text-muted-fg">
+          The text and the findings open once you claim this document.
+        </p>
+      ) : shown.length > 0 ? (
         <ul className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(18rem,1fr))]">
           {shown.map((finding) => (
             <li key={finding.findingId} className="flex min-w-0 flex-col rounded-card bg-paper p-4">
@@ -670,9 +681,6 @@ function UpNext({
           </span>
         </p>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline" size="lg">
-            <Link href={`/review/${doc.id}`}>Preview</Link>
-          </Button>
           {action}
         </div>
       </div>
@@ -933,12 +941,16 @@ function QueueRow({ doc, action }: { doc: ContractDocument; action: React.ReactN
       )}
     >
       <div role="cell" className="min-w-0">
-        <Link
-          href={`/review/${doc.id}`}
-          className="line-clamp-2 font-display text-h3 text-ink hover:text-brand"
-        >
-          {doc.title}
-        </Link>
+        {doc.status === "pending_review" ? (
+          <p className="line-clamp-2 font-display text-h3 text-ink">{doc.title}</p>
+        ) : (
+          <Link
+            href={`/review/${doc.id}`}
+            className="line-clamp-2 font-display text-h3 text-ink hover:text-brand"
+          >
+            {doc.title}
+          </Link>
+        )}
         <p className="mt-0.5 truncate text-meta text-muted-fg">
           {doc.clientName}
           <span className="lg:hidden">

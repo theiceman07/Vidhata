@@ -2,7 +2,6 @@
 
 import { useRef } from "react";
 import { motion, useReducedMotion, useScroll, useSpring } from "framer-motion";
-import { Icon } from "@/components/shared/icon";
 import { Reveal } from "./reveal";
 
 /**
@@ -33,28 +32,6 @@ const STEPS = [
   },
 ];
 
-/** Where the workflow video goes. Nothing plays yet, so it is not a control. */
-function VideoPlaceholder() {
-  return (
-    <div className="rounded-modal border border-line bg-paper p-2.5 sm:p-4">
-      <div
-        role="img"
-        aria-label="Workflow video, coming soon"
-        className="relative flex bg-night aspect-video items-center justify-center overflow-hidden rounded-card"
-      >
-        <span className="flex h-14 w-14 items-center sm:h-20 sm:w-20 justify-center rounded-full bg-paper text-ink">
-          <Icon name="play_arrow" size={24} filled className="scale-150" />
-        </span>
-        <p className="absolute left-5 top-4 text-meta font-medium text-paper sm:left-7 sm:top-6">
-          Workflow video
-          <span aria-hidden className="mx-2">·</span>
-          Coming soon
-        </p>
-      </div>
-    </div>
-  );
-}
-
 export function HowItWorks() {
   const reduced = useReducedMotion();
   const steps = useRef<HTMLOListElement>(null);
@@ -74,11 +51,8 @@ export function HowItWorks() {
           </p>
         </div>
 
-        <div className="mt-16 grid gap-x-16 gap-y-14 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start">
-          <Reveal className="lg:sticky lg:top-24">
-            <VideoPlaceholder />
-          </Reveal>
-
+        {/* The workflow video is not on the page until it exists. */}
+        <div className="mt-16 max-w-3xl">
           <ol ref={steps} className="relative space-y-12">
             {/* The rail the steps hang off, and its fill. */}
             <span aria-hidden className="absolute bottom-0 left-5 top-0 w-px -translate-x-1/2 bg-ink/15" />

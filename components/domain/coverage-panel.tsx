@@ -28,10 +28,13 @@ export function CoveragePanel({
   const ran = layersRun(doc);
   const clauseCount = doc.clauses.length + doc.otherClauseCount;
   const calm = useCalm();
+  // A layer that ran on nothing did not check anything: say so, never "all layers ran".
   const intro =
     ran.length === 0
       ? "The first pass has not run yet."
-      : `All ${ran.length} layers ran on the ${clauseCount} clauses of Draft ${doc.version}. The full pipeline runs again on every revision.`;
+      : clauseCount === 0
+        ? `Draft ${doc.version} has no clauses yet, so there was nothing for the layers to check. The full pipeline runs again on every revision.`
+        : `All ${ran.length} layers ran on the ${clauseCount} clauses of Draft ${doc.version}. The full pipeline runs again on every revision.`;
 
   if (calm) {
     // One open section: a strong rule, the heading with its intro line, then
@@ -102,9 +105,7 @@ export function CoveragePanel({
       hint="Layers and exclusions"
     >
       <p className="text-meta text-ink">
-        {ran.length === 0
-          ? "The first pass has not run yet."
-          : `All ${ran.length} layers ran on the ${clauseCount} clauses of Draft ${doc.version}. The full pipeline runs again on every revision.`}
+        {intro}
       </p>
 
       {/* The pipeline as one strip, then what it checked and what it did not.
@@ -113,10 +114,10 @@ export function CoveragePanel({
         <div className="mt-5">
           <p className="text-label font-medium text-muted">Layers that ran</p>
           <ol className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-7">
-            {ran.map((layer, i) => (
+            {ran.map((layer) => (
               <li key={layer} className="flex flex-col gap-2 rounded-control bg-surface p-3">
                 <span className="flex items-center justify-between">
-                  <span className="text-label tabular-nums text-muted-fg">Layer {i + 1}</span>
+                  <span className="text-label tabular-nums text-muted-fg">Layer {layer}</span>
                   <Tick state="done" size="sm" />
                 </span>
                 <span className="text-meta font-medium leading-snug text-ink">

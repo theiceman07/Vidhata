@@ -19,7 +19,7 @@ import { ErrorState } from "@/components/shared/error-state";
 import { Icon } from "@/components/shared/icon";
 import { PipelineProgress } from "@/components/domain/pipeline-progress";
 import { UploadContractPanel } from "@/components/domain/upload-contract-panel";
-import { backendDataEnabled } from "@/lib/api/source";
+import { backendDataEnabled, uploadPathEnabled } from "@/lib/api/source";
 import { ClientReader } from "@/components/document/client-reader";
 import { Provenance } from "@/components/document/provenance";
 import { ChangeRequests } from "@/components/document/change-requests";
@@ -185,7 +185,14 @@ export default function DocumentPage() {
   if (doc.status === "draft" && backendDataEnabled()) {
     return (
       <Frame>
-        <UploadContractPanel docId={doc.id} onReviewRequested={setDoc} />
+        {uploadPathEnabled() ? (
+          <UploadContractPanel docId={doc.id} onReviewRequested={setDoc} />
+        ) : (
+          <p className="max-w-prose rounded-card bg-parchment p-6 text-body text-ink">
+            This draft has not been submitted. Drafting from your answers is not open yet, so there is
+            nothing to submit for now.
+          </p>
+        )}
       </Frame>
     );
   }
