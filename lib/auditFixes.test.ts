@@ -94,6 +94,22 @@ describe("what an advocate sees before a claim", () => {
   });
 });
 
+describe("the preview-only API proxy", () => {
+  const config = read("next.config.mjs");
+
+  it("rewrites /api-proxy/* only on a Vercel preview build", () => {
+    expect(config).toContain('process.env.VERCEL_ENV === "preview"');
+    expect(config).toContain("/api-proxy/:path*");
+    expect(config).toMatch(/previewProxy\s*\?\s*\[/);
+  });
+
+  it("takes its target from a server-side setting, never a public one or a literal address", () => {
+    expect(config).toContain("VIDHATA_API_PROXY_TARGET");
+    expect(config).not.toContain("NEXT_PUBLIC");
+    expect(config).not.toMatch(/api\.vidhataa|localhost/);
+  });
+});
+
 describe("wording and copy", () => {
   it("says nothing is generated, not that every step is complete, when a checklist has no steps", () => {
     const page = read("app", "(client)", "documents", "[id]", "checklist", "page.tsx");
