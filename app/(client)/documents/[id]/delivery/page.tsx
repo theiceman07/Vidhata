@@ -21,6 +21,7 @@ import { documentIdentity } from "@/lib/documentTitle";
 import { PageHeader } from "@/components/shared/page-header";
 import { DocumentTabs } from "@/components/document/document-tabs";
 import { PageSkeleton } from "@/components/shared/page-skeleton";
+import { advocateLabel } from "@/lib/advocateLabel";
 
 type Load =
   | { phase: "loading" }
@@ -112,7 +113,7 @@ export default function DeliveryPage() {
     {
       href: `${base}/consultation`,
       label: "Consultation",
-      note: `Ask ${delivery.signOff.advocate}, who settled it.`,
+      note: `Ask ${advocateLabel(delivery.signOff.advocate)}, who settled it.`,
     },
   ];
 

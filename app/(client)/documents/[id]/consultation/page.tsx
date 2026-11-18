@@ -29,6 +29,7 @@ import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { ClientConsultation, ClientDocument } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { documentIdentity } from "@/lib/documentTitle";
+import { advocateLabel } from "@/lib/advocateLabel";
 import { StateLabel } from "@/components/document/state-label";
 import { PageHeader } from "@/components/shared/page-header";
 import { DocumentTabs } from "@/components/document/document-tabs";
@@ -141,7 +142,7 @@ export default function ConsultationPage() {
     );
   }
 
-  const advocate = signOff.advocate;
+  const advocate = advocateLabel(signOff.advocate);
 
   return (
     <div className="w-full">
