@@ -150,7 +150,8 @@ export default function QueuePage() {
     const matched = buckets[filter].filter(
       (d) =>
         !q ||
-        [d.title, d.clientName, d.counterpartyName].some((s) =>
+        // An unclaimed document's organisation is not shown, so it is not searchable either.
+        [d.title, d.status === "pending_review" ? "" : d.clientName, d.counterpartyName].some((s) =>
           s.toLowerCase().includes(q),
         ),
     );
@@ -633,7 +634,7 @@ function UpNext({
         )}
         <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-meta text-muted-fg">
           <span>
-            {doc.clientName} and {doc.counterpartyName}
+            {unclaimed ? doc.counterpartyName : `${doc.clientName} and ${doc.counterpartyName}`}
           </span>
           {!unclaimed && (
             <>
@@ -956,9 +957,9 @@ function QueueRow({ doc, action }: { doc: ContractDocument; action: React.ReactN
           </Link>
         )}
         <p className="mt-0.5 truncate text-meta text-muted-fg">
-          {doc.clientName}
+          {doc.status !== "pending_review" && doc.clientName}
           <span className="lg:hidden">
-            <span className="mx-1.5 text-muted-fg/50">·</span>
+            {doc.status !== "pending_review" && <span className="mx-1.5 text-muted-fg/50">·</span>}
             {tierLabel(doc.tier)}
             <span className="mx-1.5 text-muted-fg/50">·</span>
             waiting {days} {days === 1 ? "day" : "days"}
