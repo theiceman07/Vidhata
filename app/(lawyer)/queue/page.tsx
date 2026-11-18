@@ -26,6 +26,7 @@ import {
 import { listDocuments, claimDocument, getQueuePriority } from "@/lib/api/documents";
 import { getAdvocateProfile } from "@/lib/api/advocate";
 import { tierLabel } from "@/lib/config/pricing";
+import { partiesVisibleInQueue, queueSearchFields, upNextPartiesLine } from "@/lib/queueParties";
 import {
   severityCounts,
   unsettledFindings,
@@ -150,10 +151,8 @@ export default function QueuePage() {
     const matched = buckets[filter].filter(
       (d) =>
         !q ||
-        // An unclaimed document's organisation is not shown, so it is not searchable either.
-        [d.title, d.status === "pending_review" ? "" : d.clientName, d.counterpartyName].some((s) =>
-          s.toLowerCase().includes(q),
-        ),
+        // An unclaimed document's parties are not shown, so they are not searchable either.
+        queueSearchFields(d).some((s) => s.toLowerCase().includes(q)),
     );
     const age = (d: ContractDocument) => new Date(d.createdAt).getTime();
     return [...matched].sort((a, b) => {
@@ -584,7 +583,8 @@ function UpNext({
   const shown = pending.slice(0, 3);
   // Before a claim the queue shows metadata only. The text, the findings and a link to the review
   // open only after the advocate has declared no conflict and claimed it.
-  const unclaimed = doc.status === "pending_review";
+  const unclaimed = !partiesVisibleInQueue(doc);
+  const partiesLine = upNextPartiesLine(doc);
   const why =
     doc.status === "pending_review"
       ? `Unclaimed · ${tierLabel(doc.tier).toLowerCase()}`
@@ -633,16 +633,14 @@ function UpNext({
           </Link>
         )}
         <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-meta text-muted-fg">
-          <span>
-            {unclaimed ? doc.counterpartyName : `${doc.clientName} and ${doc.counterpartyName}`}
-          </span>
-          {!unclaimed && (
+          {partiesLine && (
             <>
+              <span>{partiesLine}</span>
               <span aria-hidden className="h-1 w-1 rounded-full bg-muted-fg/40" />
               <span>Executed in {doc.stateOfExecution}</span>
+              <span aria-hidden className="h-1 w-1 rounded-full bg-muted-fg/40" />
             </>
           )}
-          <span aria-hidden className="h-1 w-1 rounded-full bg-muted-fg/40" />
           <span className="font-mono tabular-nums">
             Waiting {days} {days === 1 ? "day" : "days"}
           </span>
@@ -889,7 +887,7 @@ function emptyCopy(filter: Filter, query: string): { title: string; description:
   if (query.trim()) {
     return {
       title: `Nothing matches “${query.trim()}”.`,
-      description: "Search looks at the document title and both parties.",
+      description: "Search looks at the document title, and at both parties once a document is claimed.",
     };
   }
   switch (filter) {
@@ -957,9 +955,9 @@ function QueueRow({ doc, action }: { doc: ContractDocument; action: React.ReactN
           </Link>
         )}
         <p className="mt-0.5 truncate text-meta text-muted-fg">
-          {doc.status !== "pending_review" && doc.clientName}
+          {partiesVisibleInQueue(doc) && doc.clientName}
           <span className="lg:hidden">
-            {doc.status !== "pending_review" && <span className="mx-1.5 text-muted-fg/50">·</span>}
+            {partiesVisibleInQueue(doc) && <span className="mx-1.5 text-muted-fg/50">·</span>}
             {tierLabel(doc.tier)}
             <span className="mx-1.5 text-muted-fg/50">·</span>
             waiting {days} {days === 1 ? "day" : "days"}
