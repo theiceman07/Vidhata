@@ -108,7 +108,7 @@ export default function DeliveryPage() {
       label: "Execution checklist",
       note: `${delivery.checklist.done} of ${delivery.checklist.total} steps complete.`,
     },
-    { href: `${base}/history`, label: "Version history", note: "Every draft and decision." },
+    { href: `${base}/history`, label: "Version history", note: "Drafts and decisions will appear here." },
     {
       href: `${base}/consultation`,
       label: "Consultation",
