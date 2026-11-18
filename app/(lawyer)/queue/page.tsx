@@ -412,7 +412,7 @@ export default function QueuePage() {
               aria-label="Search the queue"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by document or party"
+              placeholder="Search the queue"
               className="h-11 w-full rounded-full border border-line bg-paper pl-11 pr-4 text-meta text-ink placeholder:text-muted-fg focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent"
             />
           </label>
