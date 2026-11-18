@@ -16,6 +16,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/advocate-login`, lastModified: now, priority: 0.5 },
     { url: `${base}/terms`, lastModified: now, priority: 0.3 },
     { url: `${base}/privacy`, lastModified: now, priority: 0.3 },
-    { url: `${base}/contact`, lastModified: now, priority: 0.3 },
   ];
 }
