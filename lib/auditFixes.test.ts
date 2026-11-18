@@ -85,7 +85,7 @@ describe("what an advocate sees before a claim", () => {
 
   it("does not link an unclaimed document's title to its review", () => {
     expect(queue.match(/status === "pending_review" \?/g)?.length).toBeGreaterThanOrEqual(1);
-    expect(queue).toContain("const unclaimed = doc.status ===");
+    expect(queue).toContain("const unclaimed = !partiesVisibleInQueue(doc);");
   });
 
   it("says the text and findings open on a claim, and shows no finding text before it", () => {
@@ -186,7 +186,7 @@ describe("wording and copy", () => {
     const queueRow = schema.slice(schema.indexOf("export const queueRowSchema"), schema.indexOf("export type QueueRow"));
     expect(queueRow).not.toMatch(/transaction_value|state_of_execution/);
     const queue = read("app", "(lawyer)", "queue", "page.tsx");
-    expect(queue).toMatch(/!unclaimed\s*&&\s*\(\s*<>[\s\S]*Executed in/);
+    expect(queue).toMatch(/partiesLine\s*&&\s*\(\s*<>[\s\S]*Executed in/);
   });
 
   it("uses no MSA or employment fixture on the landing page", () => {
