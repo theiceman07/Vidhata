@@ -168,7 +168,7 @@ export default function DocumentsPage() {
           there, rather than a stack of full-width bars saying nothing. */}
       <div className="space-y-14 pb-10">
         {docs.length >= SEARCH_FROM && (
-          <div className="relative max-w-md">
+          <div className="relative">
             <Icon
               name="search"
               size={18}
