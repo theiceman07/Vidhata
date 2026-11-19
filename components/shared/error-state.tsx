@@ -1,9 +1,13 @@
 import { Button } from "@/components/ui/button";
+import { TextLink } from "@/components/shared/text-link";
+import { supportEmail } from "@/lib/config/contact";
 
 interface ErrorStateProps {
   /** State the fact. Never "something went wrong". */
   message: string;
   onRetry: () => void;
+  /** A request or error id to quote to support, when the failure came with one. */
+  reference?: string;
 }
 
 /**
@@ -13,7 +17,7 @@ interface ErrorStateProps {
  * note about the document surface, not a separate object floating on
  * top of it.
  */
-export function ErrorState({ message, onRetry }: ErrorStateProps) {
+export function ErrorState({ message, onRetry, reference }: ErrorStateProps) {
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
       {/* Announced when it replaces the page: a screen reader is otherwise left on silence. */}
@@ -27,6 +31,16 @@ export function ErrorState({ message, onRetry }: ErrorStateProps) {
         <Button variant="outline" className="mt-6" onClick={onRetry}>
           Try again
         </Button>
+        <p className="mt-4 text-meta text-muted-fg">
+          {supportEmail() ? (
+            <>
+              If it keeps happening, email <TextLink href={`mailto:${supportEmail()}`}>{supportEmail()}</TextLink>
+              {reference ? <> and quote reference {reference}.</> : "."}
+            </>
+          ) : (
+            reference ? <>Reference {reference}.</> : null
+          )}
+        </p>
       </div>
     </div>
   );

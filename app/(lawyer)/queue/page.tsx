@@ -26,6 +26,7 @@ import {
 import { listDocuments, claimDocument, getQueuePriority } from "@/lib/api/documents";
 import { getAdvocateProfile } from "@/lib/api/advocate";
 import { tierLabel } from "@/lib/config/pricing";
+import { partiesVisibleInQueue, queueSearchFields, upNextPartiesLine } from "@/lib/queueParties";
 import {
   severityCounts,
   unsettledFindings,
@@ -150,9 +151,8 @@ export default function QueuePage() {
     const matched = buckets[filter].filter(
       (d) =>
         !q ||
-        [d.title, d.clientName, d.counterpartyName].some((s) =>
-          s.toLowerCase().includes(q),
-        ),
+        // An unclaimed document's parties are not shown, so they are not searchable either.
+        queueSearchFields(d).some((s) => s.toLowerCase().includes(q)),
     );
     const age = (d: ContractDocument) => new Date(d.createdAt).getTime();
     return [...matched].sort((a, b) => {
@@ -411,7 +411,7 @@ export default function QueuePage() {
               aria-label="Search the queue"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by document or party"
+              placeholder="Search the queue"
               className="h-11 w-full rounded-full border border-line bg-paper pl-11 pr-4 text-meta text-ink placeholder:text-muted-fg focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent"
             />
           </label>
@@ -581,6 +581,10 @@ function UpNext({
   const pending = unsettledFindings(doc);
   const days = differenceInCalendarDays(new Date(), new Date(doc.createdAt));
   const shown = pending.slice(0, 3);
+  // Before a claim the queue shows metadata only. The text, the findings and a link to the review
+  // open only after the advocate has declared no conflict and claimed it.
+  const unclaimed = !partiesVisibleInQueue(doc);
+  const partiesLine = upNextPartiesLine(doc);
   const why =
     doc.status === "pending_review"
       ? `Unclaimed · ${tierLabel(doc.tier).toLowerCase()}`
@@ -618,26 +622,36 @@ function UpNext({
       </div>
 
       <div className="min-w-0">
-        <Link
-          href={`/review/${doc.id}`}
-          className="font-display text-h2 text-ink hover:text-brand"
-        >
-          {doc.title}
-        </Link>
+        {unclaimed ? (
+          <p className="font-display text-h2 text-ink">{doc.title}</p>
+        ) : (
+          <Link
+            href={`/review/${doc.id}`}
+            className="font-display text-h2 text-ink hover:text-brand"
+          >
+            {doc.title}
+          </Link>
+        )}
         <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-meta text-muted-fg">
-          <span>
-            {doc.clientName} and {doc.counterpartyName}
-          </span>
-          <span aria-hidden className="h-1 w-1 rounded-full bg-muted-fg/40" />
-          <span>Executed in {doc.stateOfExecution}</span>
-          <span aria-hidden className="h-1 w-1 rounded-full bg-muted-fg/40" />
+          {partiesLine && (
+            <>
+              <span>{partiesLine}</span>
+              <span aria-hidden className="h-1 w-1 rounded-full bg-muted-fg/40" />
+              <span>Executed in {doc.stateOfExecution}</span>
+              <span aria-hidden className="h-1 w-1 rounded-full bg-muted-fg/40" />
+            </>
+          )}
           <span className="font-mono tabular-nums">
             Waiting {days} {days === 1 ? "day" : "days"}
           </span>
         </p>
       </div>
 
-      {shown.length > 0 ? (
+      {unclaimed ? (
+        <p className="rounded-card bg-paper p-4 text-meta text-muted-fg">
+          The text and the findings open once you claim this document.
+        </p>
+      ) : shown.length > 0 ? (
         <ul className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(18rem,1fr))]">
           {shown.map((finding) => (
             <li key={finding.findingId} className="flex min-w-0 flex-col rounded-card bg-paper p-4">
@@ -670,9 +684,6 @@ function UpNext({
           </span>
         </p>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline" size="lg">
-            <Link href={`/review/${doc.id}`}>Preview</Link>
-          </Button>
           {action}
         </div>
       </div>
@@ -876,7 +887,7 @@ function emptyCopy(filter: Filter, query: string): { title: string; description:
   if (query.trim()) {
     return {
       title: `Nothing matches “${query.trim()}”.`,
-      description: "Search looks at the document title and both parties.",
+      description: "Search looks at the document title, and at both parties once a document is claimed.",
     };
   }
   switch (filter) {
@@ -933,16 +944,20 @@ function QueueRow({ doc, action }: { doc: ContractDocument; action: React.ReactN
       )}
     >
       <div role="cell" className="min-w-0">
-        <Link
-          href={`/review/${doc.id}`}
-          className="line-clamp-2 font-display text-h3 text-ink hover:text-brand"
-        >
-          {doc.title}
-        </Link>
+        {doc.status === "pending_review" ? (
+          <p className="line-clamp-2 font-display text-h3 text-ink">{doc.title}</p>
+        ) : (
+          <Link
+            href={`/review/${doc.id}`}
+            className="line-clamp-2 font-display text-h3 text-ink hover:text-brand"
+          >
+            {doc.title}
+          </Link>
+        )}
         <p className="mt-0.5 truncate text-meta text-muted-fg">
-          {doc.clientName}
+          {partiesVisibleInQueue(doc) && doc.clientName}
           <span className="lg:hidden">
-            <span className="mx-1.5 text-muted-fg/50">·</span>
+            {partiesVisibleInQueue(doc) && <span className="mx-1.5 text-muted-fg/50">·</span>}
             {tierLabel(doc.tier)}
             <span className="mx-1.5 text-muted-fg/50">·</span>
             waiting {days} {days === 1 ? "day" : "days"}

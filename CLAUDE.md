@@ -102,7 +102,7 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
   nav bar across the full width with Get started and Product menus,
   Pricing and Sign in (components/marketing/site-header.tsx); pages run
   edge to edge on .site-wrap, not a centred max-w-6xl column, and the
-  pages in the nav (/sample, /contracts, /contact, /pricing) open with
+  pages in the nav (/sample, /contracts, /pricing) open with
   PageOpening (title left, lead on the centre line, on the wash); a warm
   wash that follows the pointer (.hero-glow, GlowBackdrop: highlighter
   yellow with a little pending orange, never purple or the accent) and

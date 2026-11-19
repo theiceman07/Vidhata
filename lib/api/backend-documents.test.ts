@@ -127,7 +127,8 @@ describe("the lawyer queue", () => {
     const [d] = await listBackendQueue(f);
     expect(f.mock.calls[0][0]).toBe("http://localhost:8000/queue");
     expect(d).toMatchObject({ id: ID, status: "pending_review", tier: "enhanced", clientName: "Acme Pvt Ltd",
-      transactionValue: 250000, createdAt: "2026-10-18T08:30:00Z", advocate: null });
+      // Type, tier and state only before a claim: the value and the execution state are not carried.
+      transactionValue: 0, stateOfExecution: "Not recorded", createdAt: "2026-10-18T08:30:00Z", advocate: null });
   });
 
   it("claims with POST and returns the claimed document as under review", async () => {
