@@ -136,7 +136,7 @@ export default function QueuePage() {
         if (d.advocate && !isMine(d, advocate.id)) return false;
         return true;
       }),
-    [docs],
+    [docs, advocate.id],
   );
 
   const buckets = useMemo(() => {
@@ -149,7 +149,7 @@ export default function QueuePage() {
       settled: visible.filter(isSettled),
     };
     return result;
-  }, [visible]);
+  }, [visible, advocate.id]);
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -174,7 +174,7 @@ export default function QueuePage() {
         age(a) - age(b)
       );
     });
-  }, [buckets, filter, query, sort]);
+  }, [buckets, filter, query, sort, advocate.id]);
 
   // Claim asks for the conflict declaration first, here as on the review page.
   function claim(id: string) {

@@ -9,6 +9,7 @@ import type {
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { getDocument } from "./documents";
 import { register, restored } from "./state";
+import { refuseInBackendMode } from "./unavailable";
 
 // In-memory, like everything in the preview: it resets on reload.
 let store: Consultation[] = restored("consultations");
@@ -178,6 +179,7 @@ export async function payConsultation(id: string): Promise<Consultation> {
 export async function listAdvocateConsultations(
   advocateId: string,
 ): Promise<ConsultationSummary[]> {
+  refuseInBackendMode();
   await randomDelay(150, 300);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not load your consultation requests.");
@@ -202,6 +204,7 @@ export async function listAdvocateConsultations(
  * neither the question, the answer nor the client's payment is in a line.
  */
 export async function getPayoutStatement(advocateId: string): Promise<PayoutStatement> {
+  refuseInBackendMode();
   await randomDelay(150, 300);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not load your payout statement.");
@@ -230,6 +233,7 @@ export async function getAdvocateConsultation(
   advocateId: string,
   id: string,
 ): Promise<AdvocateConsultation | null> {
+  refuseInBackendMode();
   await randomDelay(150, 300);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not load this request.");
@@ -247,6 +251,7 @@ export async function acceptConsultation(
   advocateId: string,
   id: string,
 ): Promise<AdvocateConsultation> {
+  refuseInBackendMode();
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not accept this request. Nothing was changed.");
@@ -270,6 +275,7 @@ export async function declineConsultation(
   advocateId: string,
   id: string,
 ): Promise<AdvocateConsultation> {
+  refuseInBackendMode();
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not decline this request. Nothing was changed.");
@@ -296,6 +302,7 @@ export async function answerConsultation(
   id: string,
   answer: string,
 ): Promise<AdvocateConsultation> {
+  refuseInBackendMode();
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not send your answer. Nothing was changed.");

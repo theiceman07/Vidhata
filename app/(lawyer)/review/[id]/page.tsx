@@ -24,6 +24,7 @@ import { getAdvocateProfile } from "@/lib/api/advocate";
 import { addNote, deleteNote, listNotes, updateNote } from "@/lib/api/notes";
 import { backendDataEnabled } from "@/lib/api/source";
 import { canWriteNotes } from "@/lib/noteAccess";
+import { notAvailableInBackend } from "@/lib/api/unavailable";
 import { buildAuditTrail } from "@/lib/audit";
 import { findingNumbers, signOffBlockers } from "@/lib/findings";
 import { useAdvocate } from "@/lib/auth/identity";
@@ -37,6 +38,8 @@ import type {
 } from "@/lib/types";
 
 type LoadState = "loading" | "error" | "loaded";
+
+const NOTES_NOT_AVAILABLE = "Notes are not available yet";
 
 export default function ReviewPage() {
   const advocate = useAdvocate();
@@ -61,7 +64,9 @@ export default function ReviewPage() {
       const [result, profile, ownNotes, drafts] = await Promise.all([
         getDocumentForReview(params.id),
         getAdvocateProfile(),
-        listNotes(params.id, advocate.id),
+        notAvailableInBackend()
+          ? Promise.resolve([])
+          : listNotes(params.id, advocate.id),
         getDocumentVersions(params.id),
       ]);
       if (!result) throw new Error("Document not found.");
@@ -72,10 +77,12 @@ export default function ReviewPage() {
       setVersions(drafts);
       setState("loaded");
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Could not load this document.");
+      setErrorMessage(
+        err instanceof Error ? err.message : "Could not load this document.",
+      );
       setState("error");
     }
-  }, [params.id]);
+  }, [params.id, advocate.id]);
 
   useEffect(() => {
     load();
@@ -84,67 +91,97 @@ export default function ReviewPage() {
   // The advocate's own margin notes. Working paper: no busy state, no
   // record, and nothing here reaches the client.
   const marginNotes = useMemo<MarginNotes>(
-    () => ({
-      items: notes,
-      access: doc ? canWriteNotes(doc, advocate.id) : undefined,
-      // A refusal is stated and returns false, so the composer stays open with the text.
-      onAdd: async (clauseId, text) => {
-        try {
-          const note = await addNote({
-            documentId: params.id,
-            clauseId,
-            advocateId: advocate.id,
-            text,
-          });
-          setNotes((prev) => [...prev, note]);
-          return true;
-        } catch (err) {
-          toast.error(err instanceof Error ? err.message : "Could not keep this note.");
-          return false;
-        }
-      },
-      onUpdate: async (noteId, text) => {
-        try {
-          const note = await updateNote(noteId, advocate.id, text);
-          setNotes((prev) => prev.map((n) => (n.id === noteId ? note : n)));
-          return true;
-        } catch (err) {
-          toast.error(err instanceof Error ? err.message : "Could not save this note.");
-          return false;
-        }
-      },
-      onDelete: async (noteId) => {
-        const removed = notes.find((n) => n.id === noteId);
-        try {
-          await deleteNote(noteId, advocate.id);
-        } catch (err) {
-          toast.error(err instanceof Error ? err.message : "Could not remove this note.");
-          return;
-        }
-        setNotes((prev) => prev.filter((n) => n.id !== noteId));
-        if (removed) {
-          toast("Note removed", {
-            action: {
-              label: "Undo",
-              onClick: async () => {
-                try {
-                  const restored = await addNote({
-                    documentId: removed.documentId,
-                    clauseId: removed.clauseId,
-                    advocateId: removed.advocateId,
-                    text: removed.text,
-                  });
-                  setNotes((prev) => [...prev, restored]);
-                } catch (err) {
-                  toast.error(err instanceof Error ? err.message : "Could not keep this note.");
-                }
-              },
+    () =>
+      notAvailableInBackend()
+        ? {
+            items: [],
+            access: {
+              add: { allowed: false, reason: NOTES_NOT_AVAILABLE },
+              change: { allowed: false, reason: NOTES_NOT_AVAILABLE },
             },
-          });
-        }
-      },
-    }),
-    [notes, params.id, doc],
+            onAdd: async () => false,
+            onUpdate: async () => false,
+            onDelete: async () => {},
+          }
+        : {
+            items: notes,
+            access: doc ? canWriteNotes(doc, advocate.id) : undefined,
+            // A refusal is stated and returns false, so the composer stays open with the text.
+            onAdd: async (clauseId, text) => {
+              try {
+                const note = await addNote({
+                  documentId: params.id,
+                  clauseId,
+                  advocateId: advocate.id,
+                  text,
+                });
+                setNotes((prev) => [...prev, note]);
+                return true;
+              } catch (err) {
+                toast.error(
+                  err instanceof Error
+                    ? err.message
+                    : "Could not keep this note.",
+                );
+                return false;
+              }
+            },
+            onUpdate: async (noteId, text) => {
+              try {
+                const note = await updateNote(noteId, advocate.id, text);
+                setNotes((prev) =>
+                  prev.map((n) => (n.id === noteId ? note : n)),
+                );
+                return true;
+              } catch (err) {
+                toast.error(
+                  err instanceof Error
+                    ? err.message
+                    : "Could not save this note.",
+                );
+                return false;
+              }
+            },
+            onDelete: async (noteId) => {
+              const removed = notes.find((n) => n.id === noteId);
+              try {
+                await deleteNote(noteId, advocate.id);
+              } catch (err) {
+                toast.error(
+                  err instanceof Error
+                    ? err.message
+                    : "Could not remove this note.",
+                );
+                return;
+              }
+              setNotes((prev) => prev.filter((n) => n.id !== noteId));
+              if (removed) {
+                toast("Note removed", {
+                  action: {
+                    label: "Undo",
+                    onClick: async () => {
+                      try {
+                        const restored = await addNote({
+                          documentId: removed.documentId,
+                          clauseId: removed.clauseId,
+                          advocateId: removed.advocateId,
+                          text: removed.text,
+                        });
+                        setNotes((prev) => [...prev, restored]);
+                      } catch (err) {
+                        toast.error(
+                          err instanceof Error
+                            ? err.message
+                            : "Could not keep this note.",
+                        );
+                      }
+                    },
+                  },
+                });
+              }
+            },
+          },
+    [notes, params.id, doc, advocate.id],
   );
 
   /** Every mutation goes through here: busy while it runs, errors stated. */
@@ -206,7 +243,7 @@ export default function ReviewPage() {
             },
       });
     },
-    [doc, run],
+    [doc, run, advocate.id],
   );
 
   const handleReopen = useCallback(
@@ -223,7 +260,7 @@ export default function ReviewPage() {
         "Could not reopen this finding.",
       );
     },
-    [doc, run],
+    [doc, run, advocate.id],
   );
 
   const handleRequestChange = useCallback(
@@ -235,7 +272,7 @@ export default function ReviewPage() {
       );
       if (updated) toast.success("Request sent to the client");
     },
-    [doc, run],
+    [doc, run, advocate],
   );
 
   // Every Claim on this page asks for the conflict declaration first.
@@ -252,21 +289,24 @@ export default function ReviewPage() {
       setClaimOpen(false);
       toast.success("Claimed. The document is yours to review.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not claim this document.");
+      toast.error(
+        err instanceof Error ? err.message : "Could not claim this document.",
+      );
     } finally {
       setClaiming(false);
     }
-  }, [doc]);
+  }, [doc, advocate]);
 
   const blockers = useMemo(
     () => (doc ? signOffBlockers(doc, advocate.id) : []),
-    [doc],
+    [doc, advocate.id],
   );
 
   // A re-review is scoped to what the last round changed. A first review has
   // no earlier draft, and a signed-off document has nothing left to decide.
   const scope = useMemo(() => {
-    if (!doc || doc.status === "settled" || doc.status === "executed") return null;
+    if (!doc || doc.status === "settled" || doc.status === "executed")
+      return null;
     return reviewScope(doc, versions);
   }, [doc, versions]);
 
@@ -283,7 +323,12 @@ export default function ReviewPage() {
         onSelect: handleClaim,
       });
     }
-    if (mine && blockers.length === 0 && doc.status !== "settled" && doc.status !== "executed") {
+    if (
+      mine &&
+      blockers.length === 0 &&
+      doc.status !== "settled" &&
+      doc.status !== "executed"
+    ) {
       list.push({
         id: "sign-off",
         group: "Document",
@@ -293,7 +338,7 @@ export default function ReviewPage() {
       });
     }
     return list;
-  }, [doc, available, blockers.length, handleClaim, router]);
+  }, [doc, available, blockers.length, handleClaim, router, advocate.id]);
 
   if (state === "loading") {
     return (
@@ -330,94 +375,98 @@ export default function ReviewPage() {
 
   return (
     <>
-    <DocumentWorkspace
-      doc={doc}
-      role="advocate"
-      numbering={findingNumbers(doc)}
-      trail={buildAuditTrail(doc)}
-      back={{ href: "/queue", label: "Queue" }}
-      owner={owner}
-      canAdjudicate={canAdjudicate}
-      claim={
-        unclaimed
-          ? {
-              onClaim: handleClaim,
-              claiming,
-              disabledReason: available
-                ? null
-                : "You are marked unavailable for new claims. Change this in your profile.",
-            }
-          : undefined
-      }
-      blockers={settled ? undefined : blockers}
-      aside={
-        settled && doc.settledAt ? (
-          <span className="inline-flex items-center gap-1 text-label text-ink">
-            <Tick state="done" size="sm" />
-            Signed off by {doc.advocate?.name}
-          </span>
-        ) : undefined
-      }
-      commands={commands}
-      initialFindingId={initialFindingId}
-      notes={marginNotes}
-      scope={scope}
-      revisions={revisionCycle(doc)}
-      companion={({ goToClause, openFinding }) => (
-        <ReviewAgent
-          doc={doc}
-          advocateId={advocate.id}
-          onCite={goToClause}
-          onOpenFinding={openFinding}
-        />
-      )}
-      actions={
-        unclaimed ? (
-          <Button size="sm" onClick={handleClaim} disabled={claiming || !available}>
-            {claiming ? "Claiming" : "Claim document"}
-          </Button>
-        ) : canAdjudicate ? (
-          <>
-            <AddFindingDialog
-              clauses={doc.clauses}
-              open={dialogOpen}
-              onOpenChange={setDialogOpen}
-              onAdd={async (finding) => {
-                const updated = await run(
-                  () => addFinding(doc.id, finding, advocate.id),
-                  "Could not add this finding.",
-                );
-                if (updated) setDialogOpen(false);
-              }}
-            />
+      <DocumentWorkspace
+        doc={doc}
+        role="advocate"
+        numbering={findingNumbers(doc)}
+        trail={buildAuditTrail(doc)}
+        back={{ href: "/queue", label: "Queue" }}
+        owner={owner}
+        canAdjudicate={canAdjudicate}
+        claim={
+          unclaimed
+            ? {
+                onClaim: handleClaim,
+                claiming,
+                disabledReason: available
+                  ? null
+                  : "You are marked unavailable for new claims. Change this in your profile.",
+              }
+            : undefined
+        }
+        blockers={settled ? undefined : blockers}
+        aside={
+          settled && doc.settledAt ? (
+            <span className="inline-flex items-center gap-1 text-label text-ink">
+              <Tick state="done" size="sm" />
+              Signed off by {doc.advocate?.name}
+            </span>
+          ) : undefined
+        }
+        commands={commands}
+        initialFindingId={initialFindingId}
+        notes={marginNotes}
+        scope={scope}
+        revisions={revisionCycle(doc)}
+        companion={({ goToClause, openFinding }) => (
+          <ReviewAgent
+            doc={doc}
+            advocateId={advocate.id}
+            onCite={goToClause}
+            onOpenFinding={openFinding}
+          />
+        )}
+        actions={
+          unclaimed ? (
             <Button
               size="sm"
-              disabled={blockers.length > 0}
-              onClick={() => router.push(`/review/${doc.id}/sign-off`)}
-              title={
-                blockers.length > 0
-                  ? "Resolve the items in the status strip first"
-                  : undefined
-              }
+              onClick={handleClaim}
+              disabled={claiming || !available}
             >
-              Sign off
+              {claiming ? "Claiming" : "Claim document"}
             </Button>
-          </>
-        ) : null
-      }
-      onSettle={handleSettle}
-      onReopen={backendDataEnabled() ? undefined : handleReopen}
-      onRequestChange={handleRequestChange}
-      busy={busy}
-    />
-    <ClaimDialog
-      doc={doc}
-      declaredConflicts={declaredConflicts}
-      open={claimOpen}
-      onOpenChange={setClaimOpen}
-      onConfirm={confirmClaim}
-      claiming={claiming}
-    />
+          ) : canAdjudicate ? (
+            <>
+              <AddFindingDialog
+                clauses={doc.clauses}
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                onAdd={async (finding) => {
+                  const updated = await run(
+                    () => addFinding(doc.id, finding, advocate.id),
+                    "Could not add this finding.",
+                  );
+                  if (updated) setDialogOpen(false);
+                }}
+              />
+              <Button
+                size="sm"
+                disabled={blockers.length > 0}
+                onClick={() => router.push(`/review/${doc.id}/sign-off`)}
+                title={
+                  blockers.length > 0
+                    ? "Resolve the items in the status strip first"
+                    : undefined
+                }
+              >
+                Sign off
+              </Button>
+            </>
+          ) : null
+        }
+        onSettle={handleSettle}
+        onReopen={backendDataEnabled() ? undefined : handleReopen}
+        onRequestChange={handleRequestChange}
+        busy={busy}
+      />
+      <ClaimDialog
+        doc={doc}
+        declaredConflicts={declaredConflicts}
+        open={claimOpen}
+        onOpenChange={setClaimOpen}
+        onConfirm={confirmClaim}
+        claiming={claiming}
+      />
     </>
   );
 }

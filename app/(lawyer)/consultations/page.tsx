@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { useAdvocate } from "@/lib/auth/identity";
 import type { ConsultationSummary } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
+import { NotAvailable } from "@/components/shared/not-available";
+import { notAvailableInBackend } from "@/lib/api/unavailable";
 
 type LoadState = "loading" | "error" | "loaded";
 type Filter = "all" | "waiting" | "answered" | "declined";
@@ -40,6 +42,10 @@ export default function ConsultationsPage() {
   const [query, setQuery] = useState("");
 
   const load = useCallback(async () => {
+    if (notAvailableInBackend()) {
+      setState("loaded");
+      return;
+    }
     setState("loading");
     try {
       setRequests(await listAdvocateConsultations(advocate.id));
@@ -48,11 +54,22 @@ export default function ConsultationsPage() {
       setErrorMessage(err instanceof Error ? err.message : "Could not load your requests.");
       setState("error");
     }
-  }, []);
+  }, [advocate.id]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  if (notAvailableInBackend()) {
+    return (
+      <div className="w-full">
+        <PageHeader title="Consultations" />
+        <div className="mt-8">
+          <NotAvailable what="Consultations are" />
+        </div>
+      </div>
+    );
+  }
 
   if (state === "loading") {
     return (

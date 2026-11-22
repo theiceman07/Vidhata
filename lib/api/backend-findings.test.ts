@@ -19,7 +19,6 @@ import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 const DOC = "11111111-1111-4111-8111-111111111111";
 const ORG = "22222222-2222-4222-8222-222222222222";
 const ME = "33333333-3333-4333-8333-333333333333";
-const OTHER = "44444444-4444-4444-8444-444444444444";
 const F1 = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const F2 = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const F3 = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";

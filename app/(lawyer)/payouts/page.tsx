@@ -12,6 +12,8 @@ import { PRICE_BASIS, rupees } from "@/lib/config/pricing";
 import { useAdvocate } from "@/lib/auth/identity";
 import type { PayoutStatement } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
+import { NotAvailable } from "@/components/shared/not-available";
+import { notAvailableInBackend } from "@/lib/api/unavailable";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -32,6 +34,10 @@ export default function PayoutsPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const load = useCallback(async () => {
+    if (notAvailableInBackend()) {
+      setState("loaded");
+      return;
+    }
     setState("loading");
     try {
       setStatement(await getPayoutStatement(advocate.id));
@@ -40,11 +46,22 @@ export default function PayoutsPage() {
       setErrorMessage(err instanceof Error ? err.message : "Could not load your payout statement.");
       setState("error");
     }
-  }, []);
+  }, [advocate.id]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  if (notAvailableInBackend()) {
+    return (
+      <div className="w-full">
+        <PageHeader title="Payout statement" />
+        <div className="mt-8">
+          <NotAvailable what="Payouts are" />
+        </div>
+      </div>
+    );
+  }
 
   if (state === "loading") {
     return (

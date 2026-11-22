@@ -22,6 +22,8 @@ import {
 } from "@/lib/api/consultations";
 import { CONSULTATION, PRICE_BASIS } from "@/lib/config/pricing";
 import { useAdvocate } from "@/lib/auth/identity";
+import { NotAvailable } from "@/components/shared/not-available";
+import { notAvailableInBackend } from "@/lib/api/unavailable";
 import type { AdvocateConsultation } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
 
@@ -53,6 +55,10 @@ export default function ConsultationRequestPage() {
   const inFlight = useRef(false);
 
   const load = useCallback(async () => {
+    if (notAvailableInBackend()) {
+      setState("loaded");
+      return;
+    }
     setState("loading");
     try {
       setRequest(await getAdvocateConsultation(advocate.id, params.id));
@@ -61,7 +67,7 @@ export default function ConsultationRequestPage() {
       setErrorMessage(err instanceof Error ? err.message : "Could not load this request.");
       setState("error");
     }
-  }, [params.id]);
+  }, [params.id, advocate.id]);
 
   useEffect(() => {
     load();
@@ -88,6 +94,20 @@ export default function ConsultationRequestPage() {
       setBusy(null);
       inFlight.current = false;
     }
+  }
+
+  if (notAvailableInBackend()) {
+    return (
+      <div className="w-full">
+        <PageHeader
+          back={{ fallbackHref: "/consultations", label: "Consultations" }}
+          title="Consultation"
+        />
+        <div className="max-w-xl">
+          <NotAvailable what="Consultations are" />
+        </div>
+      </div>
+    );
   }
 
   if (state === "loading") {

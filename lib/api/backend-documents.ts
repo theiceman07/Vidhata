@@ -2,7 +2,6 @@ import { z } from "zod";
 import { ApiError, authed, type Fetcher } from "@/lib/api/backend";
 import { confirmUpload, requestUploadUrl, uploadToS3 } from "@/lib/api/files";
 import { checkFile } from "@/lib/storage/upload";
-import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import type { ContractDocument, DocumentStatus, ModelledContractType, ReviewTier } from "@/lib/types";
 
 /** POST /documents on the real backend (backend/app/documents/router.py). Not the mock in documents.ts. */
