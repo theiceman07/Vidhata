@@ -28,7 +28,10 @@ import {
   claimDocument,
   getQueuePriority,
 } from "@/lib/api/documents";
-import { getAdvocateProfile } from "@/lib/api/advocate";
+import {
+  declareConflictWithClient,
+  getAdvocateProfile,
+} from "@/lib/api/advocate";
 import { tierLabel } from "@/lib/config/pricing";
 import {
   partiesVisibleInQueue,
@@ -214,6 +217,27 @@ export default function QueuePage() {
       setClaimTarget(null);
       toast.error(
         err instanceof Error ? err.message : "Could not claim this document.",
+      );
+    } finally {
+      setClaimingId(null);
+    }
+  }
+
+  async function declareConflict() {
+    if (!claimTarget) return;
+    const { id, clientName } = claimTarget;
+    setClaimingId(id);
+    try {
+      await declareConflictWithClient(id);
+      setClaimTarget(null);
+      toast.success(
+        `Conflict recorded with ${clientName}. Their documents are hidden from your queue.`,
+      );
+      await load();
+    } catch (err) {
+      setClaimTarget(null);
+      toast.error(
+        err instanceof Error ? err.message : "Could not record the conflict.",
       );
     } finally {
       setClaimingId(null);
@@ -553,6 +577,7 @@ export default function QueuePage() {
           if (!next) setClaimTarget(null);
         }}
         onConfirm={confirmClaim}
+        onDeclareConflict={backendOn ? declareConflict : undefined}
         claiming={claimingId !== null}
       />
     </div>

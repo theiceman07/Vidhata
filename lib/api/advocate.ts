@@ -1,6 +1,8 @@
 import type { AdvocateEnrolment } from "@/lib/types";
 import { randomDelay, MockApiError, shouldSimulateFailure } from "./delay";
 import { register, restored } from "./state";
+import { declareBackendConflict } from "./backend-queue";
+import { backendDataEnabled } from "./source";
 import { refuseInBackendMode } from "./unavailable";
 
 // In-memory mutable store, same pattern as lib/api/documents.ts. Resets on
@@ -97,4 +99,21 @@ export async function removeDeclaredConflict(
     (c) => c !== name,
   );
   return structuredClone(profile);
+}
+
+/**
+ * Declare a conflict with the client of one document, on the real backend. The backend keeps
+ * it by client organisation and hides that client's documents from this advocate; if the
+ * document is claimed by them it is released. Nothing is written to the browser. In the
+ * preview a conflict is declared by name on the profile page instead (addDeclaredConflict).
+ */
+export async function declareConflictWithClient(
+  documentId: string,
+  reason: string | null = null,
+): Promise<void> {
+  if (!backendDataEnabled())
+    throw new MockApiError(
+      "Declaring a conflict from a document needs the live service.",
+    );
+  await declareBackendConflict(documentId, reason);
 }

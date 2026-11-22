@@ -12,6 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { backendDataEnabled } from "@/lib/api/source";
+import { claimAttestationNote } from "@/lib/claimWording";
 import { declaredConflictWith } from "@/lib/conflicts";
 import type { ContractDocument } from "@/lib/types";
 
@@ -31,13 +33,19 @@ export function ClaimDialog({
   open,
   onOpenChange,
   onConfirm,
+  onDeclareConflict,
   claiming,
 }: {
-  doc: Pick<ContractDocument, "title" | "clientName" | "counterpartyName"> | null;
+  doc: Pick<
+    ContractDocument,
+    "title" | "clientName" | "counterpartyName"
+  > | null;
   declaredConflicts: string[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void | Promise<void>;
+  /** With the live service: record a conflict with this client instead of claiming. */
+  onDeclareConflict?: () => void | Promise<void>;
   claiming: boolean;
 }) {
   const [confirmed, setConfirmed] = useState(false);
@@ -49,16 +57,22 @@ export function ClaimDialog({
 
   if (!doc) return null;
 
-  const match = declaredConflictWith([doc.clientName, doc.counterpartyName], declaredConflicts);
+  const match = declaredConflictWith(
+    [doc.clientName, doc.counterpartyName],
+    declaredConflicts,
+  );
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !claiming && onOpenChange(next)}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => !claiming && onOpenChange(next)}
+    >
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Claim this document</DialogTitle>
           <DialogDescription>
-            Claiming assigns {doc.title} to you alone. Before you do, confirm you have no conflict
-            of interest with either party.
+            Claiming assigns {doc.title} to you alone. Before you do, confirm
+            you have no conflict of interest with either party.
           </DialogDescription>
         </DialogHeader>
 
@@ -68,16 +82,21 @@ export function ClaimDialog({
             <dd className="mt-0.5 text-ink">{doc.clientName}</dd>
           </div>
           <div>
-            <dt className="text-label font-medium text-muted-fg">Counterparty</dt>
+            <dt className="text-label font-medium text-muted-fg">
+              Counterparty
+            </dt>
             <dd className="mt-0.5 text-ink">{doc.counterpartyName}</dd>
           </div>
         </dl>
 
         {match ? (
-          <div role="alert" className="space-y-2 border-l-2 border-flagged pl-3 text-meta">
+          <div
+            role="alert"
+            className="space-y-2 border-l-2 border-flagged pl-3 text-meta"
+          >
             <p className="text-ink">
-              Your profile lists {match.declared} as a declared conflict, and it matches{" "}
-              {match.party}. You cannot claim this document.
+              Your profile lists {match.declared} as a declared conflict, and it
+              matches {match.party}. You cannot claim this document.
             </p>
             <p className="text-muted-fg">
               If the entry is a mistake, correct it in your{" "}
@@ -98,21 +117,40 @@ export function ClaimDialog({
                 className="mt-1"
               />
               <label htmlFor="claim-no-conflict" className="text-body text-ink">
-                I confirm I have no conflict of interest with {doc.clientName} or{" "}
-                {doc.counterpartyName}.
+                I confirm I have no conflict of interest with {doc.clientName}{" "}
+                or {doc.counterpartyName}.
               </label>
             </div>
             <p className="pl-7 text-meta text-muted-fg">
-              Your declaration is recorded with the claim.
+              {claimAttestationNote(backendDataEnabled())}
             </p>
+            {onDeclareConflict && (
+              <p className="pl-7 text-meta">
+                <button
+                  type="button"
+                  className="link"
+                  onClick={() => onDeclareConflict()}
+                  disabled={claiming}
+                >
+                  I have a conflict with {doc.clientName}
+                </button>
+              </p>
+            )}
           </div>
         )}
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={claiming}>
+          <Button
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            disabled={claiming}
+          >
             Cancel
           </Button>
-          <Button onClick={() => onConfirm()} disabled={claiming || !confirmed || Boolean(match)}>
+          <Button
+            onClick={() => onConfirm()}
+            disabled={claiming || !confirmed || Boolean(match)}
+          >
             {claiming ? "Claiming" : "Claim"}
           </Button>
         </DialogFooter>
