@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listAdvocateConsultations } from "@/lib/api/consultations";
 import { cn } from "@/lib/utils";
-import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
+import { useAdvocate } from "@/lib/auth/identity";
 import type { ConsultationSummary } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
 
@@ -32,6 +32,7 @@ const FILTERS: { id: Filter; label: string }[] = [
  * asked, about what, and where the request stands.
  */
 export default function ConsultationsPage() {
+  const advocate = useAdvocate();
   const [requests, setRequests] = useState<ConsultationSummary[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -41,7 +42,7 @@ export default function ConsultationsPage() {
   const load = useCallback(async () => {
     setState("loading");
     try {
-      setRequests(await listAdvocateConsultations(CURRENT_ADVOCATE.id));
+      setRequests(await listAdvocateConsultations(advocate.id));
       setState("loaded");
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Could not load your requests.");

@@ -9,7 +9,7 @@ import { ErrorState } from "@/components/shared/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPayoutStatement } from "@/lib/api/consultations";
 import { PRICE_BASIS, rupees } from "@/lib/config/pricing";
-import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
+import { useAdvocate } from "@/lib/auth/identity";
 import type { PayoutStatement } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
 
@@ -26,6 +26,7 @@ type LoadState = "loading" | "error" | "loaded";
  * other advocate to be set beside. The total is the API's, not worked out here.
  */
 export default function PayoutsPage() {
+  const advocate = useAdvocate();
   const [statement, setStatement] = useState<PayoutStatement | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -33,7 +34,7 @@ export default function PayoutsPage() {
   const load = useCallback(async () => {
     setState("loading");
     try {
-      setStatement(await getPayoutStatement(CURRENT_ADVOCATE.id));
+      setStatement(await getPayoutStatement(advocate.id));
       setState("loaded");
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Could not load your payout statement.");

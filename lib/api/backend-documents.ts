@@ -160,18 +160,6 @@ export function toContractDocument(raw: unknown): ContractDocument {
   };
 }
 
-/**
- * The review screens decide whether the signed-in advocate holds a claim by comparing the document's
- * advocate id with CURRENT_ADVOCATE.id, the one identity those screens know. The backend holds the real
- * account id. So the document an advocate holds is shown as held by CURRENT_ADVOCATE; one held by anyone
- * else keeps that person's own id and still reads as held by someone else. Pure: with no viewer id, or
- * a document nobody holds, it changes nothing.
- */
-export function asViewedBy(doc: ContractDocument, viewerId: string | null): ContractDocument {
-  if (!viewerId || !doc.advocate || doc.advocate.id !== viewerId) return doc;
-  return { ...doc, advocate: { ...doc.advocate, id: CURRENT_ADVOCATE.id } };
-}
-
 export function queueRowToContractDocument(r: QueueRow): ContractDocument {
   return {
     ...base(r.doc_type),

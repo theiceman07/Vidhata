@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
+import { useAdvocate } from "@/lib/auth/identity";
 import {
   getAdvocateProfile,
   setAdvocateAvailability,
@@ -23,6 +23,7 @@ import {
 // lib/api/advocate.ts and actually gate the Claim action (see
 // app/(lawyer)/queue/page.tsx).
 export default function ProfilePage() {
+  const advocate = useAdvocate();
   const [available, setAvailable] = useState(true);
   const [conflicts, setConflicts] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,9 +69,9 @@ export default function ProfilePage() {
           <section className="rounded-card bg-parchment p-6">
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0">
-                <p className="font-display text-h3 text-ink">{CURRENT_ADVOCATE.name}</p>
+                <p className="font-display text-h3 text-ink">{advocate.name}</p>
                 <p className="mt-1 text-meta text-muted-fg">
-                  Bar enrolment: {CURRENT_ADVOCATE.bar}
+                  Bar enrolment: {advocate.bar || "not recorded"}
                 </p>
               </div>
               <Badge className="shrink-0 border-transparent bg-done text-white hover:bg-done">

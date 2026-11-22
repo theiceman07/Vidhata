@@ -4,7 +4,7 @@ const getSession = vi.fn();
 vi.mock("@/lib/auth/supabaseClient", () => ({ getSupabaseClient: () => ({ auth: { getSession } }) }));
 
 import { ApiError } from "@/lib/api/backend";
-import { asViewedBy, listBackendDocuments, toContractDocument } from "@/lib/api/backend-documents";
+import { listBackendDocuments, toContractDocument } from "@/lib/api/backend-documents";
 import {
   addBackendFinding,
   adjudicateBackendFinding,
@@ -197,24 +197,6 @@ describe("the advocate's writes", () => {
   });
 });
 
-describe("whose claim it is", () => {
-  const held = (id: string) => toContractDocument(docRow({ assigned_lawyer_id: id }));
-
-  it("shows the signed-in advocate's own claim as the screens' current advocate", () => {
-    expect(asViewedBy(held(ME), ME).advocate?.id).toBe(CURRENT_ADVOCATE.id);
-  });
-
-  it("leaves another advocate's claim as theirs, so it still reads as held by someone else", () => {
-    expect(asViewedBy(held(OTHER), ME).advocate?.id).toBe(OTHER);
-  });
-
-  it("changes nothing with no viewer, or on a document nobody holds", () => {
-    expect(asViewedBy(held(ME), null).advocate?.id).toBe(ME);
-    const free = toContractDocument(docRow({ assigned_lawyer_id: null }));
-    expect(asViewedBy(free, ME)).toBe(free);
-  });
-});
-
 describe("the document API on the real backend", () => {
   const review = (extra: Routes = {}): Routes => ({
     [`GET /documents/${DOC}`]: () => json(200, docRow()),
@@ -222,11 +204,12 @@ describe("the document API on the real backend", () => {
     ...extra,
   });
 
-  it("gives the advocate the document with its findings, held by the current advocate", async () => {
+  it("gives the advocate the document with its findings, with the advocate's real id, never the sample one", async () => {
     backend(review());
     const doc = await getDocumentForReview(DOC);
     expect(doc?.findings.map((f) => f.findingId)).toEqual([F1, F2]);
-    expect(doc?.advocate?.id).toBe(CURRENT_ADVOCATE.id);
+    expect(doc?.advocate?.id).toBe(docRow().assigned_lawyer_id);
+    expect(doc?.advocate?.id).not.toBe(CURRENT_ADVOCATE.id);
   });
 
   it("lists a contract type the screens do not model under a plain label, and keeps the rest", async () => {

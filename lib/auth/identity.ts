@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { backendDataEnabled } from "@/lib/api/source";
-import { authed } from "@/lib/api/backend";
+import { authed, ownUserId } from "@/lib/api/backend";
+import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 
 /**
  * The name the portal shows for the person signed in. The preview shows its sample name. With the
@@ -28,35 +29,82 @@ export function greetingName(name: string): string {
 }
 
 const MeReply = z.object({
+  token: z.object({ id: z.string() }),
   profile: z.object({ full_name: z.string().nullable() }).nullable(),
 });
 
-let stored: Promise<string | null> | null = null;
-
-function storedDisplayName(): Promise<string | null> {
-  stored ??= authed("/me", { method: "GET" }, MeReply)
-    .then((me) => me.profile?.full_name ?? null)
-    .catch(() => {
-      stored = null; // try again on the next mount; the label shows meanwhile
-      return null;
-    });
-  return stored;
+export interface Me {
+  id: string;
+  name: string | null;
 }
 
-export function useIdentityName(sampleName: string, label: string): string {
+// One read of GET /me per signed-in account. The cache is keyed by the account's id, so a different
+// account (sign out, then sign in as someone else in the same page load) is never served the
+// previous account's name or id, and signing out empties it.
+let cache: { uid: string; me: Promise<Me | null> } | null = null;
+
+/** Forget the cached /me, for tests. */
+export function resetMeCache(): void {
+  cache = null;
+}
+
+export async function ownMe(): Promise<Me | null> {
+  const uid = await ownUserId();
+  if (!uid) {
+    cache = null;
+    return null;
+  }
+  if (!cache || cache.uid !== uid) {
+    const mine = {
+      uid,
+      me: authed("/me", { method: "GET" }, MeReply)
+        .then((r): Me => ({ id: r.token.id, name: r.profile?.full_name ?? null }))
+        .catch((): Me | null => {
+          if (cache === mine) cache = null; // try again on the next mount; the label shows meanwhile
+          return null;
+        }),
+    };
+    cache = mine;
+  }
+  return cache.me;
+}
+
+function useOwnMe(): Me | null {
   const backend = backendDataEnabled();
-  const [name, setName] = useState<string | null>(null);
+  const [me, setMe] = useState<Me | null>(null);
 
   useEffect(() => {
     if (!backend) return;
     let live = true;
-    storedDisplayName().then((n) => {
-      if (live) setName(n);
+    ownMe().then((m) => {
+      if (live) setMe(m);
     });
     return () => {
       live = false;
     };
   }, [backend]);
 
-  return identityName(backend, sampleName, name, label);
+  return me;
+}
+
+export function useIdentityName(sampleName: string, label: string): string {
+  const me = useOwnMe();
+  return identityName(backendDataEnabled(), sampleName, me?.name ?? null, label);
+}
+
+/**
+ * The signed-in advocate, for every call that names one. The preview uses the sample advocate. With
+ * the real backend on, the id is the account's own id from GET /me, and it is "" until that is read,
+ * so nothing is ever attributed to the sample advocate for a real account.
+ */
+export function useAdvocate(): { id: string; name: string; bar: string } {
+  const backend = backendDataEnabled();
+  const me = useOwnMe();
+  return useMemo(
+    () =>
+      backend
+        ? { id: me?.id ?? "", name: identityName(true, CURRENT_ADVOCATE.name, me?.name ?? null, "Lawyer"), bar: "" }
+        : CURRENT_ADVOCATE,
+    [backend, me],
+  );
 }

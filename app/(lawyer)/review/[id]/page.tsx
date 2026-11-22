@@ -26,7 +26,7 @@ import { backendDataEnabled } from "@/lib/api/source";
 import { canWriteNotes } from "@/lib/noteAccess";
 import { buildAuditTrail } from "@/lib/audit";
 import { findingNumbers, signOffBlockers } from "@/lib/findings";
-import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
+import { useAdvocate } from "@/lib/auth/identity";
 import { reviewScope } from "@/lib/reviewScope";
 import { revisionCycle } from "@/lib/revisions";
 import type {
@@ -39,6 +39,7 @@ import type {
 type LoadState = "loading" | "error" | "loaded";
 
 export default function ReviewPage() {
+  const advocate = useAdvocate();
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const initialFindingId = useSearchParams().get("finding");
@@ -60,7 +61,7 @@ export default function ReviewPage() {
       const [result, profile, ownNotes, drafts] = await Promise.all([
         getDocumentForReview(params.id),
         getAdvocateProfile(),
-        listNotes(params.id, CURRENT_ADVOCATE.id),
+        listNotes(params.id, advocate.id),
         getDocumentVersions(params.id),
       ]);
       if (!result) throw new Error("Document not found.");
@@ -85,14 +86,14 @@ export default function ReviewPage() {
   const marginNotes = useMemo<MarginNotes>(
     () => ({
       items: notes,
-      access: doc ? canWriteNotes(doc, CURRENT_ADVOCATE.id) : undefined,
+      access: doc ? canWriteNotes(doc, advocate.id) : undefined,
       // A refusal is stated and returns false, so the composer stays open with the text.
       onAdd: async (clauseId, text) => {
         try {
           const note = await addNote({
             documentId: params.id,
             clauseId,
-            advocateId: CURRENT_ADVOCATE.id,
+            advocateId: advocate.id,
             text,
           });
           setNotes((prev) => [...prev, note]);
@@ -104,7 +105,7 @@ export default function ReviewPage() {
       },
       onUpdate: async (noteId, text) => {
         try {
-          const note = await updateNote(noteId, CURRENT_ADVOCATE.id, text);
+          const note = await updateNote(noteId, advocate.id, text);
           setNotes((prev) => prev.map((n) => (n.id === noteId ? note : n)));
           return true;
         } catch (err) {
@@ -115,7 +116,7 @@ export default function ReviewPage() {
       onDelete: async (noteId) => {
         const removed = notes.find((n) => n.id === noteId);
         try {
-          await deleteNote(noteId, CURRENT_ADVOCATE.id);
+          await deleteNote(noteId, advocate.id);
         } catch (err) {
           toast.error(err instanceof Error ? err.message : "Could not remove this note.");
           return;
@@ -181,7 +182,7 @@ export default function ReviewPage() {
               disposition: note ? "overridden" : "confirmed",
               overrideNote: note,
             },
-            CURRENT_ADVOCATE.id,
+            advocate.id,
           ),
         "Could not settle this finding.",
       );
@@ -198,7 +199,7 @@ export default function ReviewPage() {
                   doc.id,
                   findingId,
                   { disposition: "pending", overrideNote: null },
-                  CURRENT_ADVOCATE.id,
+                  advocate.id,
                 );
                 setDoc(reverted);
               },
@@ -217,7 +218,7 @@ export default function ReviewPage() {
             doc.id,
             findingId,
             { disposition: "pending", overrideNote: null },
-            CURRENT_ADVOCATE.id,
+            advocate.id,
           ),
         "Could not reopen this finding.",
       );
@@ -229,7 +230,7 @@ export default function ReviewPage() {
     async (findingId: string, request: string) => {
       if (!doc) return;
       const updated = await run(
-        () => requestChange(doc.id, findingId, request, CURRENT_ADVOCATE),
+        () => requestChange(doc.id, findingId, request, advocate),
         "Could not send this request.",
       );
       if (updated) toast.success("Request sent to the client");
@@ -244,7 +245,7 @@ export default function ReviewPage() {
     if (!doc) return;
     setClaiming(true);
     try {
-      const updated = await claimDocument(doc.id, CURRENT_ADVOCATE, {
+      const updated = await claimDocument(doc.id, advocate, {
         noConflictWithEitherParty: true,
       });
       setDoc(updated);
@@ -258,7 +259,7 @@ export default function ReviewPage() {
   }, [doc]);
 
   const blockers = useMemo(
-    () => (doc ? signOffBlockers(doc, CURRENT_ADVOCATE.id) : []),
+    () => (doc ? signOffBlockers(doc, advocate.id) : []),
     [doc],
   );
 
@@ -272,7 +273,7 @@ export default function ReviewPage() {
   const commands = useMemo<PaletteCommand[]>(() => {
     if (!doc) return [];
     const list: PaletteCommand[] = [];
-    const mine = doc.advocate?.id === CURRENT_ADVOCATE.id;
+    const mine = doc.advocate?.id === advocate.id;
     if (!doc.advocate && available) {
       list.push({
         id: "claim",
@@ -318,7 +319,7 @@ export default function ReviewPage() {
   }
 
   const settled = doc.status === "settled" || doc.status === "executed";
-  const mine = doc.advocate?.id === CURRENT_ADVOCATE.id;
+  const mine = doc.advocate?.id === advocate.id;
   const canAdjudicate = mine && !settled;
   const unclaimed = !doc.advocate;
   const owner = unclaimed
@@ -365,7 +366,7 @@ export default function ReviewPage() {
       companion={({ goToClause, openFinding }) => (
         <ReviewAgent
           doc={doc}
-          advocateId={CURRENT_ADVOCATE.id}
+          advocateId={advocate.id}
           onCite={goToClause}
           onOpenFinding={openFinding}
         />
@@ -383,7 +384,7 @@ export default function ReviewPage() {
               onOpenChange={setDialogOpen}
               onAdd={async (finding) => {
                 const updated = await run(
-                  () => addFinding(doc.id, finding, CURRENT_ADVOCATE.id),
+                  () => addFinding(doc.id, finding, advocate.id),
                   "Could not add this finding.",
                 );
                 if (updated) setDialogOpen(false);

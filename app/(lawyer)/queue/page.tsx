@@ -31,8 +31,7 @@ import {
   severityCounts,
   unsettledFindings,
 } from "@/lib/findings";
-import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
-import { greetingName, useIdentityName } from "@/lib/auth/identity";
+import { greetingName, useAdvocate } from "@/lib/auth/identity";
 import { backendDataEnabled } from "@/lib/api/source";
 import { PIPELINE_LAYERS, type ContractDocument } from "@/lib/types";
 import { DocumentTitle } from "@/components/shared/document-title";
@@ -58,8 +57,8 @@ function isSettled(doc: ContractDocument) {
   return doc.status === "settled" || doc.status === "executed";
 }
 
-function isMine(doc: ContractDocument) {
-  return doc.advocate?.id === CURRENT_ADVOCATE.id;
+function isMine(doc: ContractDocument, advocateId: string) {
+  return advocateId !== "" && doc.advocate?.id === advocateId;
 }
 
 /** Answered requests waiting on the advocate: the client has moved. */
@@ -70,8 +69,8 @@ function clientAnswered(doc: ContractDocument) {
 }
 
 /** The order an advocate should meet the work in when nothing else is set. */
-function rank(doc: ContractDocument): number {
-  if (isMine(doc) && doc.status === "under_review") return 0;
+function rank(doc: ContractDocument, advocateId: string): number {
+  if (isMine(doc, advocateId) && doc.status === "under_review") return 0;
   if (doc.status === "pending_review") return 1;
   if (doc.status === "revision") return 2;
   return 3;
@@ -90,7 +89,8 @@ const COLUMNS =
   "lg:grid-cols-[minmax(0,2.4fr)_minmax(5rem,0.6fr)_minmax(8rem,0.9fr)_minmax(5rem,0.6fr)_minmax(12rem,1.3fr)_8rem]";
 
 export default function QueuePage() {
-  const displayName = useIdentityName(CURRENT_ADVOCATE.name, "Lawyer");
+  const advocate = useAdvocate();
+  const displayName = advocate.name;
   const firstName = greetingName(displayName);
   const backendOn = backendDataEnabled();
   const router = useRouter();
@@ -133,7 +133,7 @@ export default function QueuePage() {
     () =>
       docs.filter((d) => {
         if (d.status === "draft" || d.status === "analysing") return false;
-        if (d.advocate && !isMine(d)) return false;
+        if (d.advocate && !isMine(d, advocate.id)) return false;
         return true;
       }),
     [docs],
@@ -143,7 +143,7 @@ export default function QueuePage() {
     const open = visible.filter((d) => !isSettled(d));
     const result: Record<Filter, ContractDocument[]> = {
       open,
-      mine: open.filter((d) => isMine(d) && d.status === "under_review"),
+      mine: open.filter((d) => isMine(d, advocate.id) && d.status === "under_review"),
       unclaimed: open.filter((d) => d.status === "pending_review"),
       client: open.filter((d) => d.status === "revision"),
       settled: visible.filter(isSettled),
@@ -169,7 +169,7 @@ export default function QueuePage() {
       // what backs the pricing page's priority turnaround), then age, so
       // nothing is starved.
       return (
-        rank(a) - rank(b) ||
+        rank(a, advocate.id) - rank(b, advocate.id) ||
         getQueuePriority(a) - getQueuePriority(b) ||
         age(a) - age(b)
       );
@@ -186,7 +186,7 @@ export default function QueuePage() {
     const id = claimTarget.id;
     setClaimingId(id);
     try {
-      await claimDocument(id, CURRENT_ADVOCATE, { noConflictWithEitherParty: true });
+      await claimDocument(id, advocate, { noConflictWithEitherParty: true });
       setClaimTarget(null);
       router.push(`/review/${id}`);
     } catch (err) {
@@ -237,7 +237,7 @@ export default function QueuePage() {
     .filter((d) => d.status !== "revision" || clientAnswered(d))
     .sort(
       (a, b) =>
-        rank(a) - rank(b) ||
+        rank(a, advocate.id) - rank(b, advocate.id) ||
         getQueuePriority(a) - getQueuePriority(b) ||
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
@@ -287,7 +287,7 @@ export default function QueuePage() {
             {!backendOn && (
               <>
                 <span className="mx-1.5 text-muted-fg/50">·</span>
-                <span className="font-mono">{CURRENT_ADVOCATE.bar}</span>
+                <span className="font-mono">{advocate.bar}</span>
               </>
             )}
           </>

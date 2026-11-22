@@ -19,7 +19,7 @@ import { getDocumentForReview, signOffDocument } from "@/lib/api/documents";
 import { listSettlementNotes } from "@/lib/api/settlement-notes";
 import { signOffBlockers } from "@/lib/findings";
 import { buildAuditTrail } from "@/lib/audit";
-import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
+import { useAdvocate } from "@/lib/auth/identity";
 import type { ContractDocument, SettlementNote } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
 
@@ -131,6 +131,7 @@ function RecordList({ doc }: { doc: ContractDocument }) {
 }
 
 export default function SignOffPage() {
+  const advocate = useAdvocate();
   const params = useParams<{ id: string }>();
   const [doc, setDoc] = useState<ContractDocument | null>(null);
   const [state, setState] = useState<LoadState>("loading");
@@ -144,7 +145,7 @@ export default function SignOffPage() {
     try {
       const [result, own] = await Promise.all([
         getDocumentForReview(params.id),
-        listSettlementNotes(CURRENT_ADVOCATE.id, params.id),
+        listSettlementNotes(advocate.id, params.id),
       ]);
       if (!result) throw new Error("Document not found.");
       setDoc(result);
@@ -244,7 +245,7 @@ export default function SignOffPage() {
     );
   }
 
-  const blockers = signOffBlockers(doc, CURRENT_ADVOCATE.id);
+  const blockers = signOffBlockers(doc, advocate.id);
   const allChecked = CONFIRMATIONS.every((c) => checked[c.id]);
   const canSignOff = blockers.length === 0 && allChecked && !submitting;
   // What signing off will also hand to the client: the notes marked to share, and no draft.
@@ -254,7 +255,7 @@ export default function SignOffPage() {
     if (!doc) return;
     setSubmitting(true);
     try {
-      setDoc(await signOffDocument(doc.id, CURRENT_ADVOCATE.id));
+      setDoc(await signOffDocument(doc.id, advocate.id));
       toast.success("Signed off. The client can now read the settled document.");
     } catch (err) {
       toast.error(
@@ -321,10 +322,10 @@ export default function SignOffPage() {
 
 
       {/* Only the advocate who holds the document writes notes to its client. */}
-      {doc.advocate?.id === CURRENT_ADVOCATE.id && (
+      {doc.advocate?.id === advocate.id && (
         <SettlementNotesPanel
           documentId={doc.id}
-          advocateId={CURRENT_ADVOCATE.id}
+          advocateId={advocate.id}
           clauses={doc.clauses}
           notes={notes}
           onNotes={setNotes}
@@ -375,7 +376,7 @@ export default function SignOffPage() {
             ? "Resolve the items above first."
             : !allChecked
               ? "Confirm each statement to sign off."
-              : `Signed as ${CURRENT_ADVOCATE.name} · enrolment ${CURRENT_ADVOCATE.bar}`}
+              : `Signed as ${advocate.name}${advocate.bar ? ` · enrolment ${advocate.bar}` : ""}`}
         </p>
       </div>
     </div>

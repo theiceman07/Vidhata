@@ -23,8 +23,8 @@ import { declaredConflictNames } from "./advocate";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { register, restored } from "./state";
 import { backendDataEnabled } from "./source";
-import { ApiError, ownUserId } from "./backend";
-import { asViewedBy, getBackendDocument, listBackendDocuments } from "./backend-documents";
+import { ApiError } from "./backend";
+import { getBackendDocument, listBackendDocuments } from "./backend-documents";
 import {
   addBackendFinding,
   adjudicateBackendFinding,
@@ -266,8 +266,8 @@ async function withClientFindings(doc: ContractDocument | null): Promise<Contrac
 async function reviewDocument(id: string): Promise<ContractDocument | null> {
   const doc = await getBackendDocument(id);
   if (!doc) return null;
-  const [findings, viewer] = await Promise.all([listBackendFindings(id), ownUserId()]);
-  return asViewedBy({ ...doc, findings }, viewer);
+  const findings = await listBackendFindings(id);
+  return { ...doc, findings };
 }
 
 export async function getDocument(
