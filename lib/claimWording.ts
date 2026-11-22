@@ -12,3 +12,21 @@ export const PREVIEW_DECLARATION_NOTE =
 export function claimAttestationNote(backend: boolean): string {
   return backend ? BACKEND_ATTESTATION_NOTE : PREVIEW_DECLARATION_NOTE;
 }
+
+/**
+ * Said before an advocate confirms a conflict with a client. The backend has no route that
+ * removes a declaration, so it cannot be undone from here. The address comes from the deploy's
+ * own setting (lib/config/contact.ts); none is written into the source, and while none is set
+ * this says so instead of naming one.
+ */
+export const PERMANENT_DECLARATION =
+  "This declaration is permanent. Contact support to change it.";
+export const NO_SUPPORT_ADDRESS_YET = "There is no support address yet.";
+
+export function permanentDeclarationNote(
+  supportAddress: string | null,
+): string {
+  return supportAddress
+    ? `${PERMANENT_DECLARATION} Write to ${supportAddress}.`
+    : `${PERMANENT_DECLARATION} ${NO_SUPPORT_ADDRESS_YET}`;
+}

@@ -13,7 +13,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { backendDataEnabled } from "@/lib/api/source";
-import { claimAttestationNote } from "@/lib/claimWording";
+import {
+  claimAttestationNote,
+  permanentDeclarationNote,
+} from "@/lib/claimWording";
+import { supportEmail } from "@/lib/config/contact";
 import { declaredConflictWith } from "@/lib/conflicts";
 import type { ContractDocument } from "@/lib/types";
 
@@ -49,10 +53,14 @@ export function ClaimDialog({
   claiming: boolean;
 }) {
   const [confirmed, setConfirmed] = useState(false);
+  const [confirmingDeclare, setConfirmingDeclare] = useState(false);
 
   // Each time it opens the declaration is made afresh.
   useEffect(() => {
-    if (open) setConfirmed(false);
+    if (open) {
+      setConfirmed(false);
+      setConfirmingDeclare(false);
+    }
   }, [open]);
 
   if (!doc) return null;
@@ -124,18 +132,46 @@ export function ClaimDialog({
             <p className="pl-7 text-meta text-muted-fg">
               {claimAttestationNote(backendDataEnabled())}
             </p>
-            {onDeclareConflict && (
-              <p className="pl-7 text-meta">
-                <button
-                  type="button"
-                  className="link"
-                  onClick={() => onDeclareConflict()}
-                  disabled={claiming}
+            {onDeclareConflict &&
+              (confirmingDeclare ? (
+                <div
+                  role="alert"
+                  className="space-y-2 border-l-2 border-flagged pl-3 text-meta"
                 >
-                  I have a conflict with {doc.clientName}
-                </button>
-              </p>
-            )}
+                  <p className="text-ink">
+                    {permanentDeclarationNote(supportEmail())}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onDeclareConflict()}
+                      disabled={claiming}
+                    >
+                      Declare the conflict with {doc.clientName}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setConfirmingDeclare(false)}
+                      disabled={claiming}
+                    >
+                      Back
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="pl-7 text-meta">
+                  <button
+                    type="button"
+                    className="link"
+                    onClick={() => setConfirmingDeclare(true)}
+                    disabled={claiming}
+                  >
+                    I have a conflict with {doc.clientName}
+                  </button>
+                </p>
+              ))}
           </div>
         )}
 
