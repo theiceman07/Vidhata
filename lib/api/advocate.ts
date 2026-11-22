@@ -1,6 +1,7 @@
 import type { AdvocateEnrolment } from "@/lib/types";
 import { randomDelay, MockApiError, shouldSimulateFailure } from "./delay";
 import { register, restored } from "./state";
+import { refuseInBackendMode } from "./unavailable";
 
 // In-memory mutable store, same pattern as lib/api/documents.ts. Resets on
 // reload — there is no backend yet. QA 3.6: this used to be untracked
@@ -27,6 +28,7 @@ export function recordOnboarding(details: {
   stateBarCouncil: string;
   declaredConflicts: string[];
 }): AdvocateProfile {
+  refuseInBackendMode();
   const names = [...profile.declaredConflicts];
   for (const raw of details.declaredConflicts) {
     const name = raw.trim();
@@ -58,6 +60,7 @@ export async function getAdvocateProfile(): Promise<AdvocateProfile> {
 export async function setAdvocateAvailability(
   available: boolean,
 ): Promise<AdvocateProfile> {
+  refuseInBackendMode();
   await randomDelay(200, 400);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not update availability.");
@@ -69,6 +72,7 @@ export async function setAdvocateAvailability(
 export async function addDeclaredConflict(
   name: string,
 ): Promise<AdvocateProfile> {
+  refuseInBackendMode();
   await randomDelay(200, 400);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not save the declared conflict.");
@@ -82,6 +86,7 @@ export async function addDeclaredConflict(
 export async function removeDeclaredConflict(
   name: string,
 ): Promise<AdvocateProfile> {
+  refuseInBackendMode();
   await randomDelay(200, 400);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not remove the declared conflict.");

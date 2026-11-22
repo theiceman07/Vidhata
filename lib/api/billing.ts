@@ -5,6 +5,7 @@ import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { listOrgConsultations } from "./consultations";
 import { listDocuments } from "./documents";
 import { register, restored } from "./state";
+import { refuseInBackendMode } from "./unavailable";
 
 // In-memory, like everything in the preview: it resets on reload, and nothing
 // is sent anywhere. One profile per organisation.
@@ -59,6 +60,7 @@ export async function saveBillingProfile(
   orgId: string,
   input: { name: string; gstin: string },
 ): Promise<BillingProfile> {
+  refuseInBackendMode();
   await randomDelay(200, 400);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not save your billing details.");

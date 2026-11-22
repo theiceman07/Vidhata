@@ -2,6 +2,7 @@ import { mockInvitations, type Invitation } from "@/lib/mock/invites.mock";
 import { recordOnboarding, type AdvocateProfile } from "./advocate";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { register, restored } from "./state";
+import { refuseInBackendMode } from "./unavailable";
 
 // Which invitations have been used. Held for this browser tab, like everything in the preview.
 const used = new Set<string>(restored("invitationsUsed"));
@@ -77,6 +78,7 @@ export async function completeOnboarding(
   token: string,
   input: OnboardingInput,
 ): Promise<AdvocateProfile> {
+  refuseInBackendMode();
   await randomDelay(400, 800);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not complete your onboarding. Nothing was saved.");

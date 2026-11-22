@@ -33,6 +33,7 @@ import {
   signOffBackendDocument,
 } from "./backend-findings";
 import { claimBackendDocument, listBackendQueue } from "./backend-queue";
+import { refuseInBackendMode } from "./unavailable";
 
 // QA 7.3: tier ordering used to sort the advocate queue, so the pricing
 // page's "Priority turnaround" claim (Enhanced/Senior tiers) is backed by
@@ -437,6 +438,7 @@ export async function createDraftDocument(
   input: IntakeInput,
   orgId: string = MOCK_CLIENT_ORG.id,
 ): Promise<ContractDocument> {
+  refuseInBackendMode();
   await randomDelay();
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not create the draft.");
@@ -481,6 +483,7 @@ export async function createDraftDocument(
 }
 
 export async function startAnalysis(id: string): Promise<ContractDocument> {
+  refuseInBackendMode();
   await randomDelay(200, 400);
   const doc = store.find((d) => d.id === id);
   if (!doc) throw new MockApiError("Document not found.");
@@ -506,6 +509,7 @@ export async function startAnalysis(id: string): Promise<ContractDocument> {
  * document awaiting payment, nothing recorded, and the client can try again.
  */
 export async function payFee(id: string): Promise<ContractDocument> {
+  refuseInBackendMode();
   await randomDelay(400, 800);
   const doc = store.find((d) => d.id === id);
   if (!doc) throw new MockApiError("Document not found.");
@@ -630,6 +634,7 @@ export async function requestChange(
   request: string,
   advocate: { id: string; name: string },
 ): Promise<ContractDocument> {
+  refuseInBackendMode();
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not send this request.");
@@ -681,6 +686,7 @@ export async function respondToChanges(
   docId: string,
   responses: Record<string, string>,
 ): Promise<ContractDocument> {
+  refuseInBackendMode();
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not send your responses.");
@@ -881,6 +887,7 @@ export async function toggleExecutionStep(
   complete: boolean,
   actorName: string,
 ): Promise<ContractDocument> {
+  refuseInBackendMode();
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not update the checklist.");
@@ -913,6 +920,7 @@ export async function attachEvidence(
   kind: ExecutionStep["kind"],
   fileName: string | null,
 ): Promise<ContractDocument> {
+  refuseInBackendMode();
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not attach this file.");

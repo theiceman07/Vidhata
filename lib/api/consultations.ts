@@ -76,6 +76,7 @@ export async function requestConsultation(
   documentId: string,
   question: string,
 ): Promise<Consultation> {
+  refuseInBackendMode();
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not send your request. Nothing was created.");
@@ -152,6 +153,7 @@ export async function listConsultations(documentId: string): Promise<Consultatio
  * accepted and unpaid, nothing recorded, and the client can try again.
  */
 export async function payConsultation(id: string): Promise<Consultation> {
+  refuseInBackendMode();
   await randomDelay(400, 800);
   const c = store.find((x) => x.id === id);
   if (!c) throw new MockApiError(NOT_FOUND);

@@ -9,6 +9,7 @@ import { listOrgConsultations } from "./consultations";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { listDocuments } from "./documents";
 import { register, restored } from "./state";
+import { refuseInBackendMode } from "./unavailable";
 
 // In-memory, like everything in the preview: it resets on reload. One state
 // per organisation. Training use starts off.
@@ -38,6 +39,7 @@ export async function getPrivacy(orgId: string): Promise<PrivacyState> {
  * leaves one entry. A failure changes nothing.
  */
 export async function setTrainingOptIn(orgId: string, granted: boolean): Promise<PrivacyState> {
+  refuseInBackendMode();
   await randomDelay(200, 400);
   // A consent is a real yes or no. The type says so, and a caller that skips it must not
   // write "true" or 1 into the consent log, which is the proof a revocation happened.
@@ -60,6 +62,7 @@ export async function setTrainingOptIn(orgId: string, granted: boolean): Promise
 export async function requestDataExport(
   orgId: string,
 ): Promise<{ fileName: string; contents: string }> {
+  refuseInBackendMode();
   await randomDelay(400, 800);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not prepare your export.");
@@ -95,6 +98,7 @@ export async function requestDeletion(
   orgId: string,
   confirmation: { understood: true },
 ): Promise<PrivacyState> {
+  refuseInBackendMode();
   await randomDelay(300, 600);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not record your request.");
@@ -109,6 +113,7 @@ export async function requestDeletion(
 
 /** Take a request back, until it is processed. */
 export async function withdrawDeletion(orgId: string): Promise<PrivacyState> {
+  refuseInBackendMode();
   await randomDelay(200, 400);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not withdraw your request.");

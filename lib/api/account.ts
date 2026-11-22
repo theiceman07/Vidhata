@@ -1,6 +1,7 @@
 import type { Account } from "@/lib/types";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { register, restored } from "./state";
+import { refuseInBackendMode } from "./unavailable";
 
 /**
  * The client's own details and its team.
@@ -41,6 +42,7 @@ export async function saveProfile(
   orgId: string,
   profile: { name: string; email: string },
 ): Promise<Account> {
+  refuseInBackendMode();
   await randomDelay(200, 400);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not save your details. Nothing was changed.");
@@ -65,6 +67,7 @@ export async function saveProfile(
  * team is refused.
  */
 export async function inviteMember(orgId: string, email: string): Promise<Account> {
+  refuseInBackendMode();
   await randomDelay(250, 500);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not send the invitation. Nothing was changed.");
@@ -87,6 +90,7 @@ export async function inviteMember(orgId: string, email: string): Promise<Accoun
  * removed. Removing someone who is already gone changes nothing.
  */
 export async function removeMember(orgId: string, memberId: string): Promise<Account> {
+  refuseInBackendMode();
   await randomDelay(200, 400);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not remove this person. Nothing was changed.");
