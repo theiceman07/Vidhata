@@ -32,6 +32,8 @@ import {
   unsettledFindings,
 } from "@/lib/findings";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
+import { greetingName, useIdentityName } from "@/lib/auth/identity";
+import { backendDataEnabled } from "@/lib/api/source";
 import { PIPELINE_LAYERS, type ContractDocument } from "@/lib/types";
 import { DocumentTitle } from "@/components/shared/document-title";
 import { PageHeader } from "@/components/shared/page-header";
@@ -88,6 +90,9 @@ const COLUMNS =
   "lg:grid-cols-[minmax(0,2.4fr)_minmax(5rem,0.6fr)_minmax(8rem,0.9fr)_minmax(5rem,0.6fr)_minmax(12rem,1.3fr)_8rem]";
 
 export default function QueuePage() {
+  const displayName = useIdentityName(CURRENT_ADVOCATE.name, "Lawyer");
+  const firstName = greetingName(displayName);
+  const backendOn = backendDataEnabled();
   const router = useRouter();
   const [docs, setDocs] = useState<ContractDocument[]>([]);
   const [state, setState] = useState<LoadState>("loading");
@@ -224,7 +229,6 @@ export default function QueuePage() {
     (max, d) => Math.max(max, differenceInCalendarDays(new Date(), new Date(d.createdAt))),
     0,
   );
-  const firstName = CURRENT_ADVOCATE.name.split(" ")[0];
 
   // What the advocate can act on now, in queue order: work in hand,
   // then unclaimed work, then documents the client has answered. A
@@ -279,9 +283,13 @@ export default function QueuePage() {
       <PageHeader
         eyebrow={
           <>
-            {CURRENT_ADVOCATE.name}
-            <span className="mx-1.5 text-muted-fg/50">·</span>
-            <span className="font-mono">{CURRENT_ADVOCATE.bar}</span>
+            {displayName}
+            {!backendOn && (
+              <>
+                <span className="mx-1.5 text-muted-fg/50">·</span>
+                <span className="font-mono">{CURRENT_ADVOCATE.bar}</span>
+              </>
+            )}
           </>
         }
         title={

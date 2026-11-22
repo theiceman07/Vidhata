@@ -36,7 +36,7 @@ export default function ClientPortalLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const name = useIdentityName(MOCK_CLIENT_ORG.name);
+  const name = useIdentityName(MOCK_CLIENT_ORG.name, "Client");
 
   return (
     <PortalGate portal="client">

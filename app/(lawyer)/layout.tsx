@@ -33,7 +33,7 @@ export default function LawyerPortalLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const name = useIdentityName(CURRENT_ADVOCATE.name);
+  const name = useIdentityName(CURRENT_ADVOCATE.name, "Lawyer");
 
   return (
     <PortalGate portal="lawyer">
