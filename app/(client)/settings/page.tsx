@@ -21,6 +21,8 @@ import type { Account, TeamMember } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
 import { PrivacySettings } from "@/components/domain/privacy-settings";
 import { cn } from "@/lib/utils";
+import { NotAvailable } from "@/components/shared/not-available";
+import { notAvailableInBackend } from "@/lib/api/unavailable";
 
 /**
  * Client settings.
@@ -75,6 +77,7 @@ function AccountSettings() {
   const [confirming, setConfirming] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (notAvailableInBackend()) return;
     setState("loading");
     try {
       const loaded = await getAccount(MOCK_CLIENT_ORG.id);
@@ -147,6 +150,17 @@ function AccountSettings() {
     } finally {
       setRemoving(null);
     }
+  }
+
+  if (notAvailableInBackend()) {
+    return (
+      <div className="w-full">
+        <PageHeader title="Settings" />
+        <div className="mt-8 max-w-xl">
+          <NotAvailable what="Settings are" />
+        </div>
+      </div>
+    );
   }
 
   if (state === "loading") {

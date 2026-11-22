@@ -26,6 +26,7 @@ function accountOf(orgId: string): Account {
 }
 
 export async function getAccount(orgId: string): Promise<Account> {
+  refuseInBackendMode();
   await randomDelay(150, 300);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not load your account.");

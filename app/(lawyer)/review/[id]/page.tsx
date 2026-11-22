@@ -63,11 +63,18 @@ export default function ReviewPage() {
     try {
       const [result, profile, ownNotes, drafts] = await Promise.all([
         getDocumentForReview(params.id),
-        getAdvocateProfile(),
+        notAvailableInBackend()
+          ? Promise.resolve({
+              available: true,
+              declaredConflicts: [] as string[],
+            })
+          : getAdvocateProfile(),
         notAvailableInBackend()
           ? Promise.resolve([])
           : listNotes(params.id, advocate.id),
-        getDocumentVersions(params.id),
+        notAvailableInBackend()
+          ? Promise.resolve([])
+          : getDocumentVersions(params.id),
       ]);
       if (!result) throw new Error("Document not found.");
       setDoc(result);

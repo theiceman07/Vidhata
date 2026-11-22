@@ -26,6 +26,7 @@ function stateOf(orgId: string): PrivacyState {
 }
 
 export async function getPrivacy(orgId: string): Promise<PrivacyState> {
+  refuseInBackendMode();
   await randomDelay(150, 300);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not load your privacy settings.");

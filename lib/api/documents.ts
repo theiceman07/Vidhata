@@ -312,6 +312,7 @@ export async function getDocumentForReview(
 export async function getDocumentVersions(
   id: string,
 ): Promise<DocumentVersion[]> {
+  refuseInBackendMode();
   await randomDelay();
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not load the version history.");

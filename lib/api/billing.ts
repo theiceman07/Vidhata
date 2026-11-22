@@ -23,6 +23,7 @@ function profileOf(orgId: string): BillingProfile {
 
 /** An organisation's invoices, newest first, read from its documents. */
 export async function listInvoices(orgId: string): Promise<Invoice[]> {
+  refuseInBackendMode();
   // Each of these owns its own delay and failure switch, and scopes by org. The
   // consultations are read for what was paid and when, and nothing else.
   // A failure in either is said as what the reader asked for: invoices, not the
@@ -39,11 +40,13 @@ export async function listInvoices(orgId: string): Promise<Invoice[]> {
 }
 
 export async function getInvoice(orgId: string, number: string): Promise<Invoice | null> {
+  refuseInBackendMode();
   const invoices = await listInvoices(orgId);
   return invoices.find((i) => i.number === number) ?? null;
 }
 
 export async function getBillingProfile(orgId: string): Promise<BillingProfile> {
+  refuseInBackendMode();
   await randomDelay(150, 300);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not load your billing details.");

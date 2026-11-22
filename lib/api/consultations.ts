@@ -129,6 +129,7 @@ export async function requestConsultation(
  * nothing else that others could read.
  */
 export async function listOrgConsultations(orgId: string): Promise<Consultation[]> {
+  refuseInBackendMode();
   await randomDelay(150, 300);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not load your consultation requests.");
@@ -138,6 +139,7 @@ export async function listOrgConsultations(orgId: string): Promise<Consultation[
 
 /** A document's consultation requests, newest first. */
 export async function listConsultations(documentId: string): Promise<Consultation[]> {
+  refuseInBackendMode();
   await randomDelay(150, 300);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not load your consultation requests.");

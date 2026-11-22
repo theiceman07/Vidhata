@@ -49,10 +49,12 @@ export function recordOnboarding(details: {
  * lib/api/documents.ts and a screen only mirrors it.
  */
 export function declaredConflictNames(): string[] {
+  refuseInBackendMode();
   return [...profile.declaredConflicts];
 }
 
 export async function getAdvocateProfile(): Promise<AdvocateProfile> {
+  refuseInBackendMode();
   await randomDelay(150, 300);
   return structuredClone(profile);
 }

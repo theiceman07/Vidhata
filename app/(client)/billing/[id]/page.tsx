@@ -12,6 +12,8 @@ import { PRICE_BASIS, rupees } from "@/lib/config/pricing";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { BillingProfile, Invoice } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
+import { NotAvailable } from "@/components/shared/not-available";
+import { notAvailableInBackend } from "@/lib/api/unavailable";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -30,6 +32,7 @@ export default function ReceiptPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const load = useCallback(async () => {
+    if (notAvailableInBackend()) return;
     setState("loading");
     try {
       const [found, details] = await Promise.all([
@@ -41,7 +44,9 @@ export default function ReceiptPage() {
       setProfile(details);
       setState("loaded");
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Could not load this receipt.");
+      setErrorMessage(
+        err instanceof Error ? err.message : "Could not load this receipt.",
+      );
       setState("error");
     }
   }, [params.id]);
@@ -49,6 +54,17 @@ export default function ReceiptPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  if (notAvailableInBackend()) {
+    return (
+      <div className="w-full">
+        <PageHeader title="Invoice" />
+        <div className="mt-8 max-w-xl">
+          <NotAvailable what="Invoices are" />
+        </div>
+      </div>
+    );
+  }
 
   if (state === "loading") {
     return (
@@ -87,7 +103,9 @@ export default function ReceiptPage() {
             <dd className="text-base font-medium text-ink [overflow-wrap:anywhere]">
               {invoice.description}
             </dd>
-            <dt className="text-muted-fg">{INVOICE_KIND_LABEL[invoice.kind]}</dt>
+            <dt className="text-muted-fg">
+              {INVOICE_KIND_LABEL[invoice.kind]}
+            </dt>
             <dd className="text-ink">{invoiceBasis(invoice)}</dd>
           </dl>
 
@@ -100,7 +118,9 @@ export default function ReceiptPage() {
             <Button variant="outline" disabled className="mt-5 w-full">
               Download receipt
             </Button>
-            <p className="mt-2 text-label text-muted-fg">Downloads aren&apos;t enabled in this preview</p>
+            <p className="mt-2 text-label text-muted-fg">
+              Downloads aren&apos;t enabled in this preview
+            </p>
           </div>
         </div>
 
@@ -114,7 +134,9 @@ export default function ReceiptPage() {
         </div>
       </section>
 
-      <p className="mt-4 text-meta text-muted-fg">Preview receipt. No payment was taken.</p>
+      <p className="mt-4 text-meta text-muted-fg">
+        Preview receipt. No payment was taken.
+      </p>
     </div>
   );
 }

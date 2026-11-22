@@ -20,6 +20,7 @@ import {
 } from "@/lib/api/onboarding";
 import { useSession } from "@/lib/session";
 import type { Invitation } from "@/lib/mock/invites.mock";
+import { notAvailableInBackend } from "@/lib/api/unavailable";
 
 const PREVIEW_MODE = process.env.NEXT_PUBLIC_VIDHATA_PREVIEW_MODE === "1";
 const STEPS = ["Welcome", "Password", "Your enrolment", "Conflicts"] as const;
@@ -62,6 +63,7 @@ export default function OnboardingPage() {
   const inFlight = useRef(false);
 
   const check = useCallback(async () => {
+    if (notAvailableInBackend()) return;
     setLoad({ phase: "loading" });
     try {
       const lookup = await getInvite(params.token);
@@ -73,7 +75,10 @@ export default function OnboardingPage() {
     } catch (err) {
       setLoad({
         phase: "error",
-        message: err instanceof Error ? err.message : "Could not check your invitation.",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Could not check your invitation.",
       });
     }
   }, [params.token]);
@@ -82,12 +87,16 @@ export default function OnboardingPage() {
     check();
   }, [check]);
 
-  if (!PREVIEW_MODE) {
+  if (!PREVIEW_MODE || notAvailableInBackend()) {
     return (
-      <AuthScreen portal="advocate" title="Join the panel." intro="By invitation only.">
+      <AuthScreen
+        portal="advocate"
+        title="Join the panel."
+        intro="By invitation only."
+      >
         <p className="text-body text-ink">
-          Accounts aren&apos;t open yet. Vidhataa is in preview, so an invitation can&apos;t be
-          accepted here.
+          Accounts aren&apos;t open yet. Vidhataa is in preview, so an
+          invitation can&apos;t be accepted here.
         </p>
         <Button asChild className="mt-6 w-full">
           <Link href="/">Back to home</Link>
@@ -98,7 +107,11 @@ export default function OnboardingPage() {
 
   if (load.phase === "loading") {
     return (
-      <AuthScreen portal="advocate" title="Join the panel." intro="Checking your invitation.">
+      <AuthScreen
+        portal="advocate"
+        title="Join the panel."
+        intro="Checking your invitation."
+      >
         <Skeleton className="h-10 w-full" />
         <Skeleton className="mt-3 h-10 w-2/3" />
       </AuthScreen>
@@ -107,7 +120,11 @@ export default function OnboardingPage() {
 
   if (load.phase === "error") {
     return (
-      <AuthScreen portal="advocate" title="Join the panel." intro="By invitation only.">
+      <AuthScreen
+        portal="advocate"
+        title="Join the panel."
+        intro="By invitation only."
+      >
         <p role="alert" className="text-body text-ink">
           {load.message}
         </p>
@@ -167,10 +184,16 @@ export default function OnboardingPage() {
     try {
       await completeOnboarding(params.token, input());
       setRole("lawyer");
-      toast.success("You have joined the panel. Documents are the ones you claim from the queue.");
+      toast.success(
+        "You have joined the panel. Documents are the ones you claim from the queue.",
+      );
       router.push("/queue");
     } catch (err) {
-      setProblem(err instanceof Error ? err.message : "Could not complete your onboarding.");
+      setProblem(
+        err instanceof Error
+          ? err.message
+          : "Could not complete your onboarding.",
+      );
       setSubmitting(false);
       inFlight.current = false;
     }
@@ -187,18 +210,20 @@ export default function OnboardingPage() {
       <div className="space-y-5">
         {step === 0 && (
           <div className="space-y-3 text-body text-ink">
-            <p>You have been invited to join Vidhataa&apos;s panel of advocates.</p>
-            <p className="text-muted-fg">
-              Your profile is private to you and Vidhataa. Clients cannot search, rank or rate
-              advocates.
+            <p>
+              You have been invited to join Vidhataa&apos;s panel of advocates.
             </p>
             <p className="text-muted-fg">
-              Documents are not assigned to you. You claim them from the queue, and each time you
-              declare no conflict with either party.
+              Your profile is private to you and Vidhataa. Clients cannot
+              search, rank or rate advocates.
             </p>
             <p className="text-muted-fg">
-              The terms of empanelment are not stated here. They are provided separately, and
-              counsel is confirming that wording.
+              Documents are not assigned to you. You claim them from the queue,
+              and each time you declare no conflict with either party.
+            </p>
+            <p className="text-muted-fg">
+              The terms of empanelment are not stated here. They are provided
+              separately, and counsel is confirming that wording.
             </p>
           </div>
         )}
@@ -206,8 +231,8 @@ export default function OnboardingPage() {
         {step === 1 && (
           <>
             <p className="text-meta text-muted-fg">
-              This is a stand-in for the preview: nothing here is stored or checked beyond its
-              length.
+              This is a stand-in for the preview: nothing here is stored or
+              checked beyond its length.
             </p>
             <div>
               <Label htmlFor="onboarding-password">Password</Label>
@@ -218,12 +243,17 @@ export default function OnboardingPage() {
                 autoComplete="new-password"
                 aria-describedby="onboarding-password-note"
               />
-              <p id="onboarding-password-note" className="mt-1.5 text-meta text-muted-fg">
+              <p
+                id="onboarding-password-note"
+                className="mt-1.5 text-meta text-muted-fg"
+              >
                 At least {MIN_PASSWORD_LENGTH} characters.
               </p>
             </div>
             <div>
-              <Label htmlFor="onboarding-password-repeat">Repeat the password</Label>
+              <Label htmlFor="onboarding-password-repeat">
+                Repeat the password
+              </Label>
               <PasswordInput
                 id="onboarding-password-repeat"
                 value={passwordRepeat}
@@ -237,11 +267,16 @@ export default function OnboardingPage() {
         {step === 2 && (
           <>
             <p className="text-meta text-muted-fg">
-              These come from your invitation. Correct them if they are wrong, then confirm.
+              These come from your invitation. Correct them if they are wrong,
+              then confirm.
             </p>
             <div>
               <Label htmlFor="onboarding-bar">Bar enrolment number</Label>
-              <Input id="onboarding-bar" value={bar} onChange={(e) => setBar(e.target.value)} />
+              <Input
+                id="onboarding-bar"
+                value={bar}
+                onChange={(e) => setBar(e.target.value)}
+              />
             </div>
             <div>
               <Label htmlFor="onboarding-council">State Bar Council</Label>
@@ -258,7 +293,10 @@ export default function OnboardingPage() {
                 onCheckedChange={(v) => setConfirmed(v === true)}
                 className="mt-1"
               />
-              <label htmlFor="onboarding-confirm" className="text-body text-ink">
+              <label
+                htmlFor="onboarding-confirm"
+                className="text-body text-ink"
+              >
                 These enrolment details are correct.
               </label>
             </div>
@@ -268,9 +306,9 @@ export default function OnboardingPage() {
         {step === 3 && (
           <>
             <p className="text-meta text-muted-fg">
-              Name any person or company you have a conflict with. A document whose client or
-              counterparty matches one of them cannot be claimed by you. You can change this on
-              your profile.
+              Name any person or company you have a conflict with. A document
+              whose client or counterparty matches one of them cannot be claimed
+              by you. You can change this on your profile.
             </p>
             <div className="flex gap-2">
               <Input
@@ -298,7 +336,9 @@ export default function OnboardingPage() {
                     {name}
                     <button
                       type="button"
-                      onClick={() => setConflicts(conflicts.filter((c) => c !== name))}
+                      onClick={() =>
+                        setConflicts(conflicts.filter((c) => c !== name))
+                      }
                       aria-label={`Remove ${name}`}
                       className="text-muted-fg hover:text-ink"
                     >
@@ -381,7 +421,11 @@ function Unusable({ state }: { state: "expired" | "used" | "invalid" }) {
   }[state];
 
   return (
-    <AuthScreen portal="advocate" title={copy.title} intro="By invitation only.">
+    <AuthScreen
+      portal="advocate"
+      title={copy.title}
+      intro="By invitation only."
+    >
       <p className="text-body text-ink">{copy.body}</p>
       <Button asChild className="mt-6 w-full">
         <Link href={copy.href}>{copy.link}</Link>
