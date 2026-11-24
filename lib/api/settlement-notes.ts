@@ -2,6 +2,7 @@ import { checkNoteText, noteIsReleased } from "@/lib/settlementNotes";
 import type { SettlementNote } from "@/lib/types";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { getDocumentForReview, heldDocument } from "./documents";
+import { refuseInBackendMode } from "./unavailable";
 
 /**
  * An advocate's notes to the client, kept on the document they hold.
@@ -40,6 +41,7 @@ export async function listSettlementNotes(
   advocateId: string,
   documentId: string,
 ): Promise<SettlementNote[]> {
+  refuseInBackendMode();
   const doc = await getDocumentForReview(documentId);
   if (!doc) throw new MockApiError("Document not found.");
   if (doc.advocate?.id !== advocateId) return [];
@@ -53,6 +55,7 @@ export async function addSettlementNote(
   clauseNumber: string,
   text: string,
 ): Promise<SettlementNote> {
+  refuseInBackendMode();
   await randomDelay(80, 160);
   if (shouldSimulateFailure()) throw new MockApiError("Could not keep this note.");
   const doc = writable(documentId, advocateId);
@@ -89,6 +92,7 @@ export async function updateSettlementNote(
   noteId: string,
   change: { text?: string; shareWithClient?: boolean },
 ): Promise<SettlementNote> {
+  refuseInBackendMode();
   await randomDelay(80, 160);
   if (shouldSimulateFailure()) throw new MockApiError("Could not save this note.");
   const doc = writable(documentId, advocateId);
@@ -117,6 +121,7 @@ export async function deleteSettlementNote(
   documentId: string,
   noteId: string,
 ): Promise<void> {
+  refuseInBackendMode();
   await randomDelay(80, 160);
   if (shouldSimulateFailure()) throw new MockApiError("Could not remove this note.");
   const doc = writable(documentId, advocateId);

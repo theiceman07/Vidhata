@@ -10,12 +10,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getBillingProfile, listInvoices, saveBillingProfile } from "@/lib/api/billing";
+import {
+  getBillingProfile,
+  listInvoices,
+  saveBillingProfile,
+} from "@/lib/api/billing";
 import { INVOICE_KIND_LABEL } from "@/lib/billing";
 import { PRICE_BASIS, rupees, tierLabel } from "@/lib/config/pricing";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { BillingProfile, Invoice } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
+import { NotAvailable } from "@/components/shared/not-available";
+import { notAvailableInBackend } from "@/lib/api/unavailable";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -37,6 +43,7 @@ export default function BillingPage() {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
+    if (notAvailableInBackend()) return;
     setState("loading");
     try {
       const [list, details] = await Promise.all([
@@ -49,7 +56,9 @@ export default function BillingPage() {
       setGstin(details.gstin ?? "");
       setState("loaded");
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Could not load your billing.");
+      setErrorMessage(
+        err instanceof Error ? err.message : "Could not load your billing.",
+      );
       setState("error");
     }
   }, []);
@@ -62,16 +71,34 @@ export default function BillingPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const saved = await saveBillingProfile(MOCK_CLIENT_ORG.id, { name, gstin });
+      const saved = await saveBillingProfile(MOCK_CLIENT_ORG.id, {
+        name,
+        gstin,
+      });
       setProfile(saved);
       setName(saved.name);
       setGstin(saved.gstin ?? "");
       toast.success("Billing details updated");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not save your billing details.");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Could not save your billing details.",
+      );
     } finally {
       setSaving(false);
     }
+  }
+
+  if (notAvailableInBackend()) {
+    return (
+      <div className="w-full">
+        <PageHeader title="Billing" />
+        <div className="mt-8 max-w-xl">
+          <NotAvailable what="Billing is" />
+        </div>
+      </div>
+    );
   }
 
   if (state === "loading") {
@@ -95,7 +122,9 @@ export default function BillingPage() {
   }
 
   const unchanged =
-    profile !== null && name.trim() === profile.name && gstin.trim() === (profile.gstin ?? "");
+    profile !== null &&
+    name.trim() === profile.name &&
+    gstin.trim() === (profile.gstin ?? "");
 
   return (
     <div className="w-full">
@@ -103,8 +132,9 @@ export default function BillingPage() {
         title="Billing"
         description={
           <>
-            One fixed fee per document, set by its review tier, covering every revision round. All
-            amounts are {PRICE_BASIS}. GST is added at the rate in force.
+            One fixed fee per document, set by its review tier, covering every
+            revision round. All amounts are {PRICE_BASIS}. GST is added at the
+            rate in force.
           </>
         }
       />
@@ -113,11 +143,17 @@ export default function BillingPage() {
           list and the panel share the second, so both start at one line and
           the panel sticks within that row alone. */}
       <div className="grid gap-x-6 gap-y-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:gap-x-8">
-        <h2 id="invoices-title" className="min-w-0 font-display text-h3 text-ink">
+        <h2
+          id="invoices-title"
+          className="min-w-0 font-display text-h3 text-ink"
+        >
           Invoices
         </h2>
 
-        <section aria-labelledby="invoices-title" className="min-w-0 lg:row-start-2">
+        <section
+          aria-labelledby="invoices-title"
+          className="min-w-0 lg:row-start-2"
+        >
           {invoices.length === 0 ? (
             <EmptyState
               title="No invoices yet"
@@ -138,7 +174,8 @@ export default function BillingPage() {
                   >
                     <span className="min-w-0">
                       <span className="block text-meta text-muted-fg">
-                        {invoice.number} · {format(new Date(invoice.issuedAt), "d MMM yyyy")}
+                        {invoice.number} ·{" "}
+                        {format(new Date(invoice.issuedAt), "d MMM yyyy")}
                       </span>
                       <span className="mt-0.5 block text-body font-medium text-ink [overflow-wrap:anywhere]">
                         {invoice.description}
@@ -154,7 +191,9 @@ export default function BillingPage() {
                       <span className="block font-display text-h3 tabular-nums text-ink">
                         {rupees(invoice.amount)}
                       </span>
-                      <span className="block text-meta text-muted-fg">{PRICE_BASIS}</span>
+                      <span className="block text-meta text-muted-fg">
+                        {PRICE_BASIS}
+                      </span>
                     </span>
                   </Link>
                 </li>
@@ -163,8 +202,9 @@ export default function BillingPage() {
           )}
 
           <p className="mt-4 max-w-measure text-meta text-muted-fg">
-            Consultation fees are separate from the document fee. They are invoiced on their own
-            line, and only if an advocate accepts a request.
+            Consultation fees are separate from the document fee. They are
+            invoiced on their own line, and only if an advocate accepts a
+            request.
           </p>
         </section>
 
@@ -188,7 +228,10 @@ export default function BillingPage() {
                 onChange={(e) => setGstin(e.target.value)}
                 aria-describedby="billing-gstin-note"
               />
-              <p id="billing-gstin-note" className="mt-1.5 text-meta text-muted-fg">
+              <p
+                id="billing-gstin-note"
+                className="mt-1.5 text-meta text-muted-fg"
+              >
                 Kept as you enter it. It is not checked against any register.
               </p>
             </div>
@@ -200,7 +243,9 @@ export default function BillingPage() {
               {saving ? "Saving" : "Save details"}
             </Button>
             {unchanged && (
-              <p className="text-center text-meta text-muted-fg">Your details are up to date.</p>
+              <p className="text-center text-meta text-muted-fg">
+                Your details are up to date.
+              </p>
             )}
           </form>
         </aside>

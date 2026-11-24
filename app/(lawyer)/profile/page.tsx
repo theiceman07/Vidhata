@@ -9,7 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
+import { NotAvailable } from "@/components/shared/not-available";
+import { notAvailableInBackend } from "@/lib/api/unavailable";
+import { useAdvocate } from "@/lib/auth/identity";
 import {
   getAdvocateProfile,
   setAdvocateAvailability,
@@ -23,18 +25,25 @@ import {
 // lib/api/advocate.ts and actually gate the Claim action (see
 // app/(lawyer)/queue/page.tsx).
 export default function ProfilePage() {
+  const advocate = useAdvocate();
   const [available, setAvailable] = useState(true);
   const [conflicts, setConflicts] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [newConflict, setNewConflict] = useState("");
 
+  const unavailable = notAvailableInBackend();
+
   useEffect(() => {
+    if (unavailable) {
+      setLoading(false);
+      return;
+    }
     getAdvocateProfile().then((profile) => {
       setAvailable(profile.available);
       setConflicts(profile.declaredConflicts);
       setLoading(false);
     });
-  }, []);
+  }, [unavailable]);
 
   async function handleAvailabilityChange(next: boolean) {
     setAvailable(next);
@@ -61,16 +70,19 @@ export default function ProfilePage() {
 
   return (
     <div className="w-full">
-      <PageHeader title="Profile" description="Empanelment, conflicts and availability." />
+      <PageHeader
+        title="Profile"
+        description="Empanelment, conflicts and availability."
+      />
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <div className="space-y-4">
           <section className="rounded-card bg-parchment p-6">
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0">
-                <p className="font-display text-h3 text-ink">{CURRENT_ADVOCATE.name}</p>
+                <p className="font-display text-h3 text-ink">{advocate.name}</p>
                 <p className="mt-1 text-meta text-muted-fg">
-                  Bar enrolment: {CURRENT_ADVOCATE.bar}
+                  Bar enrolment: {advocate.bar || "not recorded"}
                 </p>
               </div>
               <Badge className="shrink-0 border-transparent bg-done text-white hover:bg-done">
@@ -79,16 +91,20 @@ export default function ProfilePage() {
             </div>
           </section>
 
-          {loading ? (
+          {unavailable ? (
+            <NotAvailable what="Availability is" />
+          ) : loading ? (
             <Skeleton className="h-28 w-full rounded-card" />
           ) : (
             <section className="rounded-card bg-parchment p-6">
               <div className="flex items-start justify-between gap-6">
                 <div className="min-w-0">
-                  <p className="font-medium text-ink">Available for new claims</p>
+                  <p className="font-medium text-ink">
+                    Available for new claims
+                  </p>
                   <p className="mt-1 max-w-measure text-meta text-muted-fg">
-                    Turn this off when you don&apos;t want new documents to appear claimable in
-                    the queue.
+                    Turn this off when you don&apos;t want new documents to
+                    appear claimable in the queue.
                   </p>
                 </div>
                 <Switch
@@ -102,13 +118,17 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {loading ? (
+        {unavailable ? (
+          <NotAvailable what="Declared conflicts are" />
+        ) : loading ? (
           <Skeleton className="h-48 w-full rounded-card" />
         ) : (
           <section className="rounded-card bg-parchment p-6">
             <div className="flex items-baseline justify-between gap-3">
               <p className="font-medium text-ink">Declared conflicts</p>
-              <p className="text-label tabular-nums text-muted-fg">{conflicts.length}</p>
+              <p className="text-label tabular-nums text-muted-fg">
+                {conflicts.length}
+              </p>
             </div>
             <p className="mt-1 text-meta text-muted-fg">
               A document naming one of these parties cannot be claimed by you.

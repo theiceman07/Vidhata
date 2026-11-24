@@ -3,6 +3,7 @@ import { MockApiError, randomDelay } from "./delay";
 import { NOTES_SIGNED_OFF } from "@/lib/noteAccess";
 import { heldDocument } from "./documents";
 import { register, restored } from "./state";
+import { refuseInBackendMode } from "./unavailable";
 
 /**
  * An advocate's margin notes.
@@ -41,6 +42,7 @@ export async function listNotes(
   documentId: string,
   advocateId: string,
 ): Promise<AdvocateNote[]> {
+  refuseInBackendMode();
   await randomDelay(80, 160);
   return readAll().filter(
     (n) => n.documentId === documentId && n.advocateId === advocateId,
@@ -53,6 +55,7 @@ export async function addNote(input: {
   advocateId: string;
   text: string;
 }): Promise<AdvocateNote> {
+  refuseInBackendMode();
   await randomDelay(80, 160);
   heldDocument(input.documentId, input.advocateId);
   const text = input.text.trim();
@@ -74,6 +77,7 @@ export async function updateNote(
   advocateId: string,
   text: string,
 ): Promise<AdvocateNote> {
+  refuseInBackendMode();
   await randomDelay(80, 160);
   const all = readAll();
   const note = all.find((n) => n.id === noteId && n.advocateId === advocateId);
@@ -87,6 +91,7 @@ export async function updateNote(
 }
 
 export async function deleteNote(noteId: string, advocateId: string): Promise<void> {
+  refuseInBackendMode();
   await randomDelay(80, 160);
   const note = readAll().find((n) => n.id === noteId && n.advocateId === advocateId);
   // A note that is not there is already gone, so removing it again changes nothing.

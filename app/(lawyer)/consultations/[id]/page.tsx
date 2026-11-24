@@ -21,7 +21,9 @@ import {
   getAdvocateConsultation,
 } from "@/lib/api/consultations";
 import { CONSULTATION, PRICE_BASIS } from "@/lib/config/pricing";
-import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
+import { useAdvocate } from "@/lib/auth/identity";
+import { NotAvailable } from "@/components/shared/not-available";
+import { notAvailableInBackend } from "@/lib/api/unavailable";
 import type { AdvocateConsultation } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
 
@@ -40,6 +42,7 @@ type LoadState = "loading" | "error" | "loaded";
  * paid. They see whether it is paid and nothing of how.
  */
 export default function ConsultationRequestPage() {
+  const advocate = useAdvocate();
   const params = useParams<{ id: string }>();
   const [request, setRequest] = useState<AdvocateConsultation | null>(null);
   const [state, setState] = useState<LoadState>("loading");
@@ -52,15 +55,19 @@ export default function ConsultationRequestPage() {
   const inFlight = useRef(false);
 
   const load = useCallback(async () => {
+    if (notAvailableInBackend()) {
+      setState("loaded");
+      return;
+    }
     setState("loading");
     try {
-      setRequest(await getAdvocateConsultation(CURRENT_ADVOCATE.id, params.id));
+      setRequest(await getAdvocateConsultation(advocate.id, params.id));
       setState("loaded");
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Could not load this request.");
       setState("error");
     }
-  }, [params.id]);
+  }, [params.id, advocate.id]);
 
   useEffect(() => {
     load();
@@ -87,6 +94,20 @@ export default function ConsultationRequestPage() {
       setBusy(null);
       inFlight.current = false;
     }
+  }
+
+  if (notAvailableInBackend()) {
+    return (
+      <div className="w-full">
+        <PageHeader
+          back={{ fallbackHref: "/consultations", label: "Consultations" }}
+          title="Consultation"
+        />
+        <div className="max-w-xl">
+          <NotAvailable what="Consultations are" />
+        </div>
+      </div>
+    );
   }
 
   if (state === "loading") {
@@ -172,7 +193,7 @@ export default function ConsultationRequestPage() {
                 e.preventDefault();
                 move(
                   "answer",
-                  () => answerConsultation(CURRENT_ADVOCATE.id, request.id, answer),
+                  () => answerConsultation(advocate.id, request.id, answer),
                   "Answer recorded",
                 );
               }}
@@ -231,7 +252,7 @@ export default function ConsultationRequestPage() {
                         onClick={() =>
                           move(
                             "decline",
-                            () => declineConsultation(CURRENT_ADVOCATE.id, request.id),
+                            () => declineConsultation(advocate.id, request.id),
                             "Request declined",
                           )
                         }
@@ -254,7 +275,7 @@ export default function ConsultationRequestPage() {
                       onClick={() =>
                         move(
                           "accept",
-                          () => acceptConsultation(CURRENT_ADVOCATE.id, request.id),
+                          () => acceptConsultation(advocate.id, request.id),
                           "Request accepted",
                         )
                       }

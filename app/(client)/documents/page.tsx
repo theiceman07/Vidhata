@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listClientDocuments } from "@/lib/api/client/documents";
 import { MOCK_CLIENT_ORG, MOCK_CLIENT_PERSON } from "@/lib/mock/client.mock";
+import { greetingName, useIdentityName } from "@/lib/auth/identity";
 import { findingsNote } from "@/lib/screeningNote";
 import { groupOf, yourMove, type Move, type MoveGroup } from "@/lib/moves";
 import { TONE, type Tone } from "@/lib/tone";
@@ -51,6 +52,7 @@ function since(doc: ClientDocumentSummary): string | null {
 }
 
 export default function DocumentsPage() {
+  const firstName = greetingName(useIdentityName(MOCK_CLIENT_PERSON.name, "Client"));
   const [docs, setDocs] = useState<ClientDocumentSummary[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -151,7 +153,7 @@ export default function DocumentsPage() {
       <section className="flex flex-col items-center px-2 pb-10 pt-8 text-center md:pt-14">
         {/* The one page that is not a PageHeader: a greeting and a prompt, centred. */}
         <h1 className="font-display text-h1 text-ink">
-          {greeting()}, {MOCK_CLIENT_PERSON.name.split(" ")[0]}
+          {greeting()}, {firstName}
         </h1>
         <DealPrompt
           className="mt-6 max-w-2xl"

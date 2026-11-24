@@ -2,6 +2,7 @@ import { mockInvitations, type Invitation } from "@/lib/mock/invites.mock";
 import { recordOnboarding, type AdvocateProfile } from "./advocate";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { register, restored } from "./state";
+import { refuseInBackendMode } from "./unavailable";
 
 // Which invitations have been used. Held for this browser tab, like everything in the preview.
 const used = new Set<string>(restored("invitationsUsed"));
@@ -19,6 +20,7 @@ export type InviteLookup =
  * advocate, because what they do next differs.
  */
 export async function getInvite(token: string): Promise<InviteLookup> {
+  refuseInBackendMode();
   await randomDelay(200, 400);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not check your invitation.");
@@ -46,6 +48,7 @@ export const MIN_PASSWORD_LENGTH = 8;
 
 /** What is wrong with an onboarding, by what it is about. Shared with the form. */
 export function onboardingProblems(input: OnboardingInput): string[] {
+  refuseInBackendMode();
   const problems: string[] = [];
   if (input.password.length < MIN_PASSWORD_LENGTH) {
     problems.push(`Choose a password of at least ${MIN_PASSWORD_LENGTH} characters.`);
@@ -77,6 +80,7 @@ export async function completeOnboarding(
   token: string,
   input: OnboardingInput,
 ): Promise<AdvocateProfile> {
+  refuseInBackendMode();
   await randomDelay(400, 800);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not complete your onboarding. Nothing was saved.");
