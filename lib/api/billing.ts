@@ -5,6 +5,7 @@ import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { listOrgConsultations } from "./consultations";
 import { listDocuments } from "./documents";
 import { register, restored } from "./state";
+import { refuseInBackendMode } from "./unavailable";
 
 // In-memory, like everything in the preview: it resets on reload, and nothing
 // is sent anywhere. One profile per organisation.
@@ -22,6 +23,7 @@ function profileOf(orgId: string): BillingProfile {
 
 /** An organisation's invoices, newest first, read from its documents. */
 export async function listInvoices(orgId: string): Promise<Invoice[]> {
+  refuseInBackendMode();
   // Each of these owns its own delay and failure switch, and scopes by org. The
   // consultations are read for what was paid and when, and nothing else.
   // A failure in either is said as what the reader asked for: invoices, not the
@@ -38,11 +40,13 @@ export async function listInvoices(orgId: string): Promise<Invoice[]> {
 }
 
 export async function getInvoice(orgId: string, number: string): Promise<Invoice | null> {
+  refuseInBackendMode();
   const invoices = await listInvoices(orgId);
   return invoices.find((i) => i.number === number) ?? null;
 }
 
 export async function getBillingProfile(orgId: string): Promise<BillingProfile> {
+  refuseInBackendMode();
   await randomDelay(150, 300);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not load your billing details.");
@@ -59,6 +63,7 @@ export async function saveBillingProfile(
   orgId: string,
   input: { name: string; gstin: string },
 ): Promise<BillingProfile> {
+  refuseInBackendMode();
   await randomDelay(200, 400);
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not save your billing details.");

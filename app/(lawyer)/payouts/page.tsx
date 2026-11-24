@@ -9,9 +9,11 @@ import { ErrorState } from "@/components/shared/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPayoutStatement } from "@/lib/api/consultations";
 import { PRICE_BASIS, rupees } from "@/lib/config/pricing";
-import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
+import { useAdvocate } from "@/lib/auth/identity";
 import type { PayoutStatement } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
+import { NotAvailable } from "@/components/shared/not-available";
+import { notAvailableInBackend } from "@/lib/api/unavailable";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -26,24 +28,40 @@ type LoadState = "loading" | "error" | "loaded";
  * other advocate to be set beside. The total is the API's, not worked out here.
  */
 export default function PayoutsPage() {
+  const advocate = useAdvocate();
   const [statement, setStatement] = useState<PayoutStatement | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
 
   const load = useCallback(async () => {
+    if (notAvailableInBackend()) {
+      setState("loaded");
+      return;
+    }
     setState("loading");
     try {
-      setStatement(await getPayoutStatement(CURRENT_ADVOCATE.id));
+      setStatement(await getPayoutStatement(advocate.id));
       setState("loaded");
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Could not load your payout statement.");
       setState("error");
     }
-  }, []);
+  }, [advocate.id]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  if (notAvailableInBackend()) {
+    return (
+      <div className="w-full">
+        <PageHeader title="Payout statement" />
+        <div className="mt-8">
+          <NotAvailable what="Payouts are" />
+        </div>
+      </div>
+    );
+  }
 
   if (state === "loading") {
     return (

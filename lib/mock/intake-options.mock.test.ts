@@ -15,7 +15,7 @@ describe("the contract catalogue", () => {
 
   it("names every type as the source list does, in order", () => {
     expect(CONTRACT_CATALOGUE.map((e) => e.label)).toEqual([
-      "Vendor / Supplier Agreement",
+      "Vendor / MSME supplier agreement",
       "Service Level Agreement (SLA)",
       "Master Services Agreement (MSA)",
       "Distributor / Dealership Agreement",

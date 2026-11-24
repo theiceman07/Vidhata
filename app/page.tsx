@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { Hero } from "@/components/marketing/hero";
 import { Statement } from "@/components/marketing/statement";
@@ -37,14 +36,8 @@ export default function LandingPage() {
             <div>
               <h2 className="font-display text-display text-ink">Questions, answered</h2>
               <p className="mt-6 text-lead text-muted-fg">
-                Anything else, write to us and a person replies.
+                Vidhataa is in preview. Accounts are opened by invitation.
               </p>
-              <Link
-                href="/contact"
-                className="mt-6 inline-flex h-11 items-center rounded-full border border-ink/80 px-5 text-body font-medium text-ink transition-colors hover:bg-ink hover:text-paper"
-              >
-                Contact us
-              </Link>
             </div>
             <Faq />
           </div>

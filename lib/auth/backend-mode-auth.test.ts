@@ -18,11 +18,15 @@ describe("mock credentials", () => {
 
 describe("identity name", () => {
   it("keeps the sample name in the preview", () => {
-    expect(identityName(false, "Anaya Textiles Pvt Ltd", null)).toBe("Anaya Textiles Pvt Ltd");
+    expect(identityName(false, "Anaya Textiles Pvt Ltd", null, "Client")).toBe("Anaya Textiles Pvt Ltd");
   });
 
-  it("shows the signed-in email with the backend on, never the sample name", () => {
-    expect(identityName(true, "Anaya Textiles Pvt Ltd", "founder@example.com")).toBe("founder@example.com");
-    expect(identityName(true, "Anaya Textiles Pvt Ltd", null)).toBe("Signed in");
+  it("shows the stored display name with the backend on", () => {
+    expect(identityName(true, "Ishita Rao", "Asha Menon", "Lawyer")).toBe("Asha Menon");
+  });
+
+  it("shows the neutral label when there is no stored name, never the sample name or the email", () => {
+    expect(identityName(true, "Ishita Rao", null, "Lawyer")).toBe("Lawyer");
+    expect(identityName(true, "Meera Shah", "  ", "Client")).toBe("Client");
   });
 });

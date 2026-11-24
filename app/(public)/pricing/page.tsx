@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { PricingTable } from "@/components/marketing/pricing-table";
 import { Faq } from "@/components/marketing/faq";
 import { PageOpening } from "@/components/marketing/page-opening";
@@ -39,14 +38,8 @@ export default function PricingPage() {
           <div>
             <h2 className="font-display text-display text-ink">Questions, answered</h2>
             <p className="mt-6 text-lead text-muted-fg">
-              Anything else, write to us and a person replies.
+              Vidhataa is in preview. Accounts are opened by invitation.
             </p>
-            <Link
-              href="/contact"
-              className="mt-6 inline-flex h-11 items-center rounded-full border border-ink/80 px-5 text-body font-medium text-ink transition-colors hover:bg-ink hover:text-paper"
-            >
-              Contact us
-            </Link>
           </div>
           <Faq />
         </section>

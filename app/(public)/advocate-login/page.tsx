@@ -89,14 +89,7 @@ export default function LawyerLoginPage() {
       portal="advocate"
       title="Advocate sign in."
       intro="For empanelled advocates only."
-      footer={
-        <>
-          Not on the panel yet?{" "}
-          <Link href="/advocate-invite" className="link">
-            Request an invitation
-          </Link>
-        </>
-      }
+      footer={<>Empanelment is by invitation.</>}
     >
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         <div>

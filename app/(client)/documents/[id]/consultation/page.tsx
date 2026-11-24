@@ -29,9 +29,12 @@ import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { ClientConsultation, ClientDocument } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { documentIdentity } from "@/lib/documentTitle";
+import { advocateLabel } from "@/lib/advocateLabel";
 import { StateLabel } from "@/components/document/state-label";
 import { PageHeader } from "@/components/shared/page-header";
 import { DocumentTabs } from "@/components/document/document-tabs";
+import { NotAvailable } from "@/components/shared/not-available";
+import { notAvailableInBackend } from "@/lib/api/unavailable";
 
 const ORG = MOCK_CLIENT_ORG.id;
 
@@ -60,6 +63,7 @@ export default function ConsultationPage() {
   const inFlight = useRef(false);
 
   const load = useCallback(async () => {
+    if (notAvailableInBackend()) return;
     setState("loading");
     try {
       const [found, list] = await Promise.all([
@@ -106,6 +110,17 @@ export default function ConsultationPage() {
     }
   }
 
+  if (notAvailableInBackend()) {
+    return (
+      <div className="w-full">
+        <PageHeader title="Consultation" />
+        <div className="mt-8 max-w-xl">
+          <NotAvailable what="Consultations are" />
+        </div>
+      </div>
+    );
+  }
+
   if (state === "loading") {
     return (
       <div className="w-full">
@@ -141,7 +156,7 @@ export default function ConsultationPage() {
     );
   }
 
-  const advocate = signOff.advocate;
+  const advocate = advocateLabel(signOff.advocate);
 
   return (
     <div className="w-full">
@@ -174,7 +189,10 @@ export default function ConsultationPage() {
               noValidate
               className="mt-4 flex min-h-0 flex-1 flex-col"
             >
-              <Label htmlFor="consultation-question" className="text-body font-medium text-ink">
+              <Label
+                htmlFor="consultation-question"
+                className="text-body font-medium text-ink"
+              >
                 What would you like to ask {advocate}?
               </Label>
               <p className="mt-1 text-meta text-muted-fg">
@@ -248,7 +266,10 @@ export default function ConsultationPage() {
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                 <span className="text-body font-medium text-ink">
                   Document fee
-                  <span className="text-meta font-normal text-muted-fg"> · the platform</span>
+                  <span className="text-meta font-normal text-muted-fg">
+                    {" "}
+                    · the platform
+                  </span>
                 </span>
                 <span className="text-body text-ink">
                   {doc.paidAt && doc.tier
@@ -422,7 +443,9 @@ function RequestItem({
     <li className="rounded-card bg-parchment p-5">
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-muted-fg">
         <span>
-          <span className="text-body font-medium text-ink">{r.advocateName}</span>
+          <span className="text-body font-medium text-ink">
+            {r.advocateName}
+          </span>
           {" · "}
           {format(new Date(r.requestedAt), "d MMM yyyy")}
         </span>

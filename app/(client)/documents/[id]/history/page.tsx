@@ -7,6 +7,7 @@ import { VersionHistory } from "@/components/domain/version-history";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getClientDocument } from "@/lib/api/client/documents";
 import { getClientVersions } from "@/lib/api/client/versions";
+import { backendDataEnabled } from "@/lib/api/source";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { ClientDocument, ClientVersionList } from "@/lib/types";
 import { documentIdentity } from "@/lib/documentTitle";
@@ -15,7 +16,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { DocumentTabs } from "@/components/document/document-tabs";
 import { PageSkeleton } from "@/components/shared/page-skeleton";
 
-type LoadState = "loading" | "error" | "loaded";
+type LoadState = "loading" | "error" | "loaded" | "unavailable";
 
 /**
  * A document's drafts and what changed between them, for the client.
@@ -34,6 +35,14 @@ export default function VersionHistoryPage() {
   const load = useCallback(async () => {
     setState("loading");
     try {
+      // The backend has no versions route yet. Say so, rather than reporting the document missing.
+      if (backendDataEnabled()) {
+        const held = await getClientDocument(MOCK_CLIENT_ORG.id, params.id);
+        if (!held) throw new Error("Document not found.");
+        setDoc(held);
+        setState("unavailable");
+        return;
+      }
       const [document, drafts] = await Promise.all([
         getClientDocument(MOCK_CLIENT_ORG.id, params.id),
         getClientVersions(MOCK_CLIENT_ORG.id, params.id),
@@ -66,6 +75,24 @@ export default function VersionHistoryPage() {
           </div>
         </div>
       </PageSkeleton>
+    );
+  }
+
+  if (state === "unavailable" && doc) {
+    return (
+      <div className="w-full">
+        <PageHeader
+          stacked
+          status={<StateLabel state={doc.status} />}
+          back={{ fallbackHref: `/documents/${doc.id}` }}
+          title={documentIdentity(doc.title).name}
+          meta={[documentIdentity(doc.title).with]}
+          tabs={<DocumentTabs documentId={doc.id} signedOff={Boolean(doc.signOff)} checklist={doc.checklist} />}
+        />
+        <p role="status" className="mt-10 max-w-prose rounded-card bg-parchment p-6 text-body text-ink">
+          Version history isn&apos;t available yet.
+        </p>
+      </div>
     );
   }
 

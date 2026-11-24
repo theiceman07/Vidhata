@@ -17,9 +17,11 @@ import { SettlementNoteView } from "@/components/document/settlement-note-view";
 import { SettlementNotesPanel } from "@/components/domain/settlement-notes-panel";
 import { getDocumentForReview, signOffDocument } from "@/lib/api/documents";
 import { listSettlementNotes } from "@/lib/api/settlement-notes";
+import { notAvailableInBackend } from "@/lib/api/unavailable";
+import { NotAvailable } from "@/components/shared/not-available";
 import { signOffBlockers } from "@/lib/findings";
 import { buildAuditTrail } from "@/lib/audit";
-import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
+import { useAdvocate } from "@/lib/auth/identity";
 import type { ContractDocument, SettlementNote } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
 
@@ -53,7 +55,8 @@ const CONFIRMATIONS = [
     // original wording and the question are on the counsel list in
     // docs/superpowers/plans/2026-10-03-money-and-privacy.md.
     id: "responsibility",
-    label: "I sign this off under my own professional responsibility as an advocate.",
+    label:
+      "I sign this off under my own professional responsibility as an advocate.",
   },
   {
     id: "audit",
@@ -78,7 +81,9 @@ function ist(iso: string): string {
 
 /** What the signature covers, counted from the document itself. */
 function recordOf(doc: ContractDocument) {
-  const sources = new Set(doc.findings.map((f) => f.citation.trim()).filter(Boolean));
+  const sources = new Set(
+    doc.findings.map((f) => f.citation.trim()).filter(Boolean),
+  );
   const requests = doc.findings.filter((f) => f.changeRequest);
   return {
     findings: doc.findings.length,
@@ -131,6 +136,7 @@ function RecordList({ doc }: { doc: ContractDocument }) {
 }
 
 export default function SignOffPage() {
+  const advocate = useAdvocate();
   const params = useParams<{ id: string }>();
   const [doc, setDoc] = useState<ContractDocument | null>(null);
   const [state, setState] = useState<LoadState>("loading");
@@ -144,7 +150,9 @@ export default function SignOffPage() {
     try {
       const [result, own] = await Promise.all([
         getDocumentForReview(params.id),
-        listSettlementNotes(CURRENT_ADVOCATE.id, params.id),
+        notAvailableInBackend()
+          ? Promise.resolve([])
+          : listSettlementNotes(advocate.id, params.id),
       ]);
       if (!result) throw new Error("Document not found.");
       setDoc(result);
@@ -156,7 +164,7 @@ export default function SignOffPage() {
       );
       setState("error");
     }
-  }, [params.id]);
+  }, [params.id, advocate.id]);
 
   useEffect(() => {
     load();
@@ -179,9 +187,15 @@ export default function SignOffPage() {
 
   // Signed off, whether just now or before: the record, with the seal.
   // This is the one place the mark appears inside the product.
-  if ((doc.status === "settled" || doc.status === "executed") && doc.advocate && doc.settledAt) {
+  if (
+    (doc.status === "settled" || doc.status === "executed") &&
+    doc.advocate &&
+    doc.settledAt
+  ) {
     // What was released to the client, read back from the record, as written.
-    const released = (doc.settlementNotes ?? []).filter((n) => n.releasedAt !== null);
+    const released = (doc.settlementNotes ?? []).filter(
+      (n) => n.releasedAt !== null,
+    );
     return (
       <div className="w-full">
         <PageHeader
@@ -193,14 +207,25 @@ export default function SignOffPage() {
 
         <section className="mt-8 grid items-start gap-6 rounded-card border border-line bg-paper p-5 sm:grid-cols-[minmax(0,1fr)_auto] md:p-6">
           <div className="min-w-0">
-            <p className="text-label font-medium text-muted-fg">Reviewed and signed by</p>
-            <p className="mt-1 font-display text-h2 text-ink">{doc.advocate.name}</p>
+            <p className="text-label font-medium text-muted-fg">
+              Reviewed and signed by
+            </p>
+            <p className="mt-1 font-display text-h2 text-ink">
+              {doc.advocate.name}
+            </p>
             <p className="mt-1 text-meta text-muted-fg">
-              Enrolment <span className="font-mono text-label text-ink">{doc.advocate.bar}</span>
-              <span aria-hidden className="mx-1.5 text-muted-fg">·</span>
+              Enrolment{" "}
+              <span className="font-mono text-label text-ink">
+                {doc.advocate.bar}
+              </span>
+              <span aria-hidden className="mx-1.5 text-muted-fg">
+                ·
+              </span>
               Empanelled advocate
             </p>
-            <p className="mt-1 font-mono text-label text-ink">{ist(doc.settledAt)}</p>
+            <p className="mt-1 font-mono text-label text-ink">
+              {ist(doc.settledAt)}
+            </p>
 
             <div className="mt-5 border-t border-line pt-4">
               <RecordList doc={doc} />
@@ -211,14 +236,19 @@ export default function SignOffPage() {
 
         {released.length > 0 && (
           <section className="mt-8">
-            <h2 className="text-body font-medium text-ink">Shared with the client at sign-off</h2>
+            <h2 className="text-body font-medium text-ink">
+              Shared with the client at sign-off
+            </h2>
             <ul className="mt-2 space-y-3">
               {released.map((n) => (
                 <li key={n.id}>
                   <SettlementNoteView
                     label="Note to client"
                     clauseNumber={n.clauseNumber}
-                    clauseHeading={doc.clauses.find((c) => c.number === n.clauseNumber)?.heading}
+                    clauseHeading={
+                      doc.clauses.find((c) => c.number === n.clauseNumber)
+                        ?.heading
+                    }
                     text={n.text}
                     releasedAt={n.releasedAt}
                   />
@@ -244,21 +274,27 @@ export default function SignOffPage() {
     );
   }
 
-  const blockers = signOffBlockers(doc, CURRENT_ADVOCATE.id);
+  const blockers = signOffBlockers(doc, advocate.id);
   const allChecked = CONFIRMATIONS.every((c) => checked[c.id]);
   const canSignOff = blockers.length === 0 && allChecked && !submitting;
   // What signing off will also hand to the client: the notes marked to share, and no draft.
-  const sharing = notes.filter((n) => n.shareWithClient && n.releasedAt === null).length;
+  const sharing = notes.filter(
+    (n) => n.shareWithClient && n.releasedAt === null,
+  ).length;
 
   async function submit() {
     if (!doc) return;
     setSubmitting(true);
     try {
-      setDoc(await signOffDocument(doc.id, CURRENT_ADVOCATE.id));
-      toast.success("Signed off. The client can now read the settled document.");
+      setDoc(await signOffDocument(doc.id, advocate.id));
+      toast.success(
+        "Signed off. The client can now read the settled document.",
+      );
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Could not sign off this document.",
+        err instanceof Error
+          ? err.message
+          : "Could not sign off this document.",
       );
     } finally {
       setSubmitting(false);
@@ -287,10 +323,12 @@ export default function SignOffPage() {
             <Icon name="error" size={24} className="mt-0.5 shrink-0 text-ink" />
             <div className="min-w-0 flex-1">
               <h2 id="blockers-title" className="text-h3 text-ink">
-                {plural(blockers.length, "item stands", "items stand")} between this document and sign-off
+                {plural(blockers.length, "item stands", "items stand")} between
+                this document and sign-off
               </h2>
               <p className="mt-1 text-meta text-ink">
-                Resolve {blockers.length === 1 ? "it" : "each"} in the document, then come back to sign.
+                Resolve {blockers.length === 1 ? "it" : "each"} in the document,
+                then come back to sign.
               </p>
               <ul className="mt-4 space-y-2">
                 {blockers.map((b) => (
@@ -304,7 +342,11 @@ export default function SignOffPage() {
                       className="flex items-center justify-between gap-3 rounded-control bg-paper px-4 py-3 text-meta text-ink transition-colors hover:bg-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                     >
                       <span>{b.label}</span>
-                      <Icon name="arrow_forward" size={18} className="text-muted-fg" />
+                      <Icon
+                        name="arrow_forward"
+                        size={18}
+                        className="text-muted-fg"
+                      />
                     </Link>
                   </li>
                 ))}
@@ -315,20 +357,25 @@ export default function SignOffPage() {
       )}
 
       <section className="mt-8 rounded-card border border-line bg-paper p-5">
-        <h2 className="mb-3 text-body font-medium text-ink">What you are signing</h2>
+        <h2 className="mb-3 text-body font-medium text-ink">
+          What you are signing
+        </h2>
         <RecordList doc={doc} />
       </section>
 
-
       {/* Only the advocate who holds the document writes notes to its client. */}
-      {doc.advocate?.id === CURRENT_ADVOCATE.id && (
-        <SettlementNotesPanel
-          documentId={doc.id}
-          advocateId={CURRENT_ADVOCATE.id}
-          clauses={doc.clauses}
-          notes={notes}
-          onNotes={setNotes}
-        />
+      {notAvailableInBackend() ? (
+        <NotAvailable what="Notes to the client are" />
+      ) : (
+        doc.advocate?.id === advocate.id && (
+          <SettlementNotesPanel
+            documentId={doc.id}
+            advocateId={advocate.id}
+            clauses={doc.clauses}
+            notes={notes}
+            onNotes={setNotes}
+          />
+        )
       )}
 
       <section className="mt-8">
@@ -375,7 +422,7 @@ export default function SignOffPage() {
             ? "Resolve the items above first."
             : !allChecked
               ? "Confirm each statement to sign off."
-              : `Signed as ${CURRENT_ADVOCATE.name} · enrolment ${CURRENT_ADVOCATE.bar}`}
+              : `Signed as ${advocate.name}${advocate.bar ? ` · enrolment ${advocate.bar}` : ""}`}
         </p>
       </div>
     </div>

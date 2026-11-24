@@ -13,6 +13,7 @@ import { useSession } from "@/lib/session";
 import { mockCredentialsAccepted } from "@/lib/auth/mock-credentials";
 import { backendDataEnabled } from "@/lib/api/source";
 import { signInToPortal } from "@/lib/api/auth";
+import { supportEmail } from "@/lib/config/contact";
 
 const PREVIEW_MODE = process.env.NEXT_PUBLIC_VIDHATA_PREVIEW_MODE === "1";
 const MAX_ATTEMPTS = 5;
@@ -93,16 +94,16 @@ export default function ClientLoginPage() {
       intro="For founders and teams whose contracts Vidhataa drafts."
       footer={
         <>
-          New to Vidhataa?{" "}
-            <button
-            type="button"
-            onClick={() =>
-              toast.info("Sign-up isn't available in this preview.")
-            }
-            className="link"
-          >
-            Create an account
-          </button>
+          Accounts are opened by invitation.
+          {supportEmail() && (
+            <>
+              {" "}Email us at{" "}
+              <Link href={`mailto:${supportEmail()}`} className="link">
+                {supportEmail()}
+              </Link>{" "}
+              to ask for access.
+            </>
+          )}
         </>
       }
     >

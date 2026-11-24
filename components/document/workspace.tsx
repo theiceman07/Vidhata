@@ -600,7 +600,8 @@ export function DocumentWorkspace({
                 back={{ fallbackHref: back.href, label: back.label }}
                 title={doc.title.split(" · ")[0]}
                 status={<StateLabel state={doc.status} />}
-                meta={[`with ${doc.counterpartyName}`]}
+                // The API says "Not recorded" when it has no counterparty; there is then no one to be "with".
+                meta={[doc.counterpartyName === "Not recorded" ? null : `with ${doc.counterpartyName}`]}
                 actions={
                   <>
                     {next}

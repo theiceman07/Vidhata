@@ -10,9 +10,11 @@ import { StateLabel } from "@/components/document/state-label";
 import { DocumentTitle } from "@/components/shared/document-title";
 import { DealPrompt } from "@/components/marketing/deal-prompt";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listClientDocuments } from "@/lib/api/client/documents";
 import { MOCK_CLIENT_ORG, MOCK_CLIENT_PERSON } from "@/lib/mock/client.mock";
+import { greetingName, useIdentityName } from "@/lib/auth/identity";
 import { findingsNote } from "@/lib/screeningNote";
 import { groupOf, yourMove, type Move, type MoveGroup } from "@/lib/moves";
 import { TONE, type Tone } from "@/lib/tone";
@@ -50,9 +52,11 @@ function since(doc: ClientDocumentSummary): string | null {
 }
 
 export default function DocumentsPage() {
+  const firstName = greetingName(useIdentityName(MOCK_CLIENT_PERSON.name, "Client"));
   const [docs, setDocs] = useState<ClientDocumentSummary[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
+  const [query, setQuery] = useState("");
 
   const load = useCallback(async () => {
     setState("loading");
@@ -93,7 +97,15 @@ export default function DocumentsPage() {
     return <ErrorState message={errorMessage} onRetry={load} />;
   }
 
-  const byGroup = (g: MoveGroup) => docs.filter((d) => groupOf(d) === g);
+  // The list can be searched once it is long enough to crowd the page. The record
+  // below still counts every document: a search narrows the view, not the facts.
+  const SEARCH_FROM = 6;
+  const needle = query.trim().toLowerCase();
+  const searching = docs.length >= SEARCH_FROM && needle.length > 0;
+  const visible = searching
+    ? docs.filter((d) => `${d.title} ${d.counterpartyName}`.toLowerCase().includes(needle))
+    : docs;
+  const byGroup = (g: MoveGroup) => visible.filter((d) => groupOf(d) === g);
   const you = byGroup("you");
 
   const groups: {
@@ -141,7 +153,7 @@ export default function DocumentsPage() {
       <section className="flex flex-col items-center px-2 pb-10 pt-8 text-center md:pt-14">
         {/* The one page that is not a PageHeader: a greeting and a prompt, centred. */}
         <h1 className="font-display text-h1 text-ink">
-          {greeting()}, {MOCK_CLIENT_PERSON.name.split(" ")[0]}
+          {greeting()}, {firstName}
         </h1>
         <DealPrompt
           className="mt-6 max-w-2xl"
@@ -157,6 +169,30 @@ export default function DocumentsPage() {
           collapse into a row of small cards that say what will arrive
           there, rather than a stack of full-width bars saying nothing. */}
       <div className="space-y-14 pb-10">
+        {docs.length >= SEARCH_FROM && (
+          <div className="relative">
+            <Icon
+              name="search"
+              size={18}
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-fg"
+            />
+            <Input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              aria-label="Search your documents"
+              placeholder="Search by title or counterparty"
+              className="pl-11"
+            />
+          </div>
+        )}
+
+        {searching && visible.length === 0 && (
+          <p role="status" className="text-body text-muted-fg">
+            No document matches &ldquo;{query.trim()}&rdquo;.
+          </p>
+        )}
+
         {groups
           .filter((g) => g.docs.length > 0)
           .map((g) => (
@@ -171,7 +207,7 @@ export default function DocumentsPage() {
             </Section>
           ))}
 
-        {empties.length > 0 && (
+        {empties.length > 0 && !searching && (
           <div
             className={cn(
               "grid gap-4",

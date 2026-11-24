@@ -2,7 +2,6 @@ import { z } from "zod";
 import { ApiError, authed, type Fetcher } from "@/lib/api/backend";
 import { confirmUpload, requestUploadUrl, uploadToS3 } from "@/lib/api/files";
 import { checkFile } from "@/lib/storage/upload";
-import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import type { ContractDocument, DocumentStatus, ModelledContractType, ReviewTier } from "@/lib/types";
 
 /** POST /documents on the real backend (backend/app/documents/router.py). Not the mock in documents.ts. */
@@ -109,11 +108,10 @@ export type DocumentRow = z.infer<typeof documentRowSchema>;
 export const queueRowSchema = z.object({
   id: z.string().uuid(),
   doc_type: docType,
-  state_of_execution: z.string().nullable(),
-  transaction_value: money,
   triage_tier: tier,
   queued_at: z.string(),
   org_id: z.string(),
+  // Kept only while the conflict check needs a name to check against; for counsel to decide.
   org_name: z.string().nullable(),
 });
 export type QueueRow = z.infer<typeof queueRowSchema>;
@@ -161,24 +159,13 @@ export function toContractDocument(raw: unknown): ContractDocument {
   };
 }
 
-/**
- * The review screens decide whether the signed-in advocate holds a claim by comparing the document's
- * advocate id with CURRENT_ADVOCATE.id, the one identity those screens know. The backend holds the real
- * account id. So the document an advocate holds is shown as held by CURRENT_ADVOCATE; one held by anyone
- * else keeps that person's own id and still reads as held by someone else. Pure: with no viewer id, or
- * a document nobody holds, it changes nothing.
- */
-export function asViewedBy(doc: ContractDocument, viewerId: string | null): ContractDocument {
-  if (!viewerId || !doc.advocate || doc.advocate.id !== viewerId) return doc;
-  return { ...doc, advocate: { ...doc.advocate, id: CURRENT_ADVOCATE.id } };
-}
-
 export function queueRowToContractDocument(r: QueueRow): ContractDocument {
   return {
     ...base(r.doc_type),
     id: r.id, orgId: r.org_id, status: "pending_review", tier: r.triage_tier ? TIER[r.triage_tier] : null,
-    clientName: r.org_name ?? NOT_RECORDED, stateOfExecution: r.state_of_execution ?? NOT_RECORDED,
-    transactionValue: r.transaction_value ?? 0, createdAt: r.queued_at, advocate: null, claimedAt: null, settledAt: null,
+    // An unclaimed document is shown by type, tier and state only: no execution state and no value.
+    clientName: r.org_name ?? NOT_RECORDED, stateOfExecution: NOT_RECORDED,
+    transactionValue: 0, createdAt: r.queued_at, advocate: null, claimedAt: null, settledAt: null,
   };
 }
 

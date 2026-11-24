@@ -22,7 +22,6 @@ const QUIET_LINK =
 /** Briefs to start from, one for each agreement that can be drafted now. */
 const EXAMPLES = [
   "Mutual NDA with a vendor in Pune",
-  "MSA with a software client",
   "Supplier agreement, paid in 45 days",
 ] as const;
 

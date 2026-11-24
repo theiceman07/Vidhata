@@ -21,6 +21,7 @@ import { documentIdentity } from "@/lib/documentTitle";
 import { PageHeader } from "@/components/shared/page-header";
 import { DocumentTabs } from "@/components/document/document-tabs";
 import { PageSkeleton } from "@/components/shared/page-skeleton";
+import { advocateLabel } from "@/lib/advocateLabel";
 
 type Load =
   | { phase: "loading" }
@@ -108,11 +109,11 @@ export default function DeliveryPage() {
       label: "Execution checklist",
       note: `${delivery.checklist.done} of ${delivery.checklist.total} steps complete.`,
     },
-    { href: `${base}/history`, label: "Version history", note: "Every draft and decision." },
+    { href: `${base}/history`, label: "Version history", note: "Drafts and decisions will appear here." },
     {
       href: `${base}/consultation`,
       label: "Consultation",
-      note: `Ask ${delivery.signOff.advocate}, who settled it.`,
+      note: `Ask ${advocateLabel(delivery.signOff.advocate)}, who settled it.`,
     },
   ];
 

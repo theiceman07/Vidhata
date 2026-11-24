@@ -33,6 +33,8 @@ import {
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { cn } from "@/lib/utils";
 import type { PrivacyState } from "@/lib/types";
+import { NotAvailable } from "@/components/shared/not-available";
+import { notAvailableInBackend } from "@/lib/api/unavailable";
 
 type LoadState = "loading" | "error" | "loaded";
 
@@ -53,6 +55,7 @@ export function PrivacySettings() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const load = useCallback(async () => {
+    if (notAvailableInBackend()) return;
     setState("loading");
     try {
       setPrivacy(await getPrivacy(MOCK_CLIENT_ORG.id));
@@ -70,6 +73,10 @@ export function PrivacySettings() {
   useEffect(() => {
     load();
   }, [load]);
+
+  if (notAvailableInBackend()) {
+    return <NotAvailable what="Privacy settings are" />;
+  }
 
   if (state === "loading") {
     return (
@@ -90,8 +97,8 @@ export function PrivacySettings() {
   return (
     <div className="w-full">
       <p className="mb-4 text-meta text-muted-fg">
-        What Vidhataa may do with your documents, what you can take with you, and
-        how to ask for deletion.
+        What Vidhataa may do with your documents, what you can take with you,
+        and how to ask for deletion.
       </p>
 
       <div className="grid items-stretch gap-4 lg:grid-cols-2">
@@ -257,9 +264,9 @@ function ExportPanel() {
   return (
     <Panel id="export-title" title="Export your data">
       <p className="text-body text-ink">
-        A file of what you can read in Vidhataa: your documents as far as you can
-        read them, your invoices, the questions you have asked an advocate, and
-        your consent log.
+        A file of what you can read in Vidhataa: your documents as far as you
+        can read them, your invoices, the questions you have asked an advocate,
+        and your consent log.
       </p>
       <p className="mt-2 text-meta text-muted-fg">
         Before a document is signed off, that is only the passages your advocate

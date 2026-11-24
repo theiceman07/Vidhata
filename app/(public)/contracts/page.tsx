@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PageOpening } from "@/components/marketing/page-opening";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
-import { CONTRACT_CATALOGUE, CONTRACT_GROUPS } from "@/lib/mock/intake-options.mock";
+import { LISTED_CATALOGUE, CONTRACT_GROUPS } from "@/lib/mock/intake-options.mock";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
  * flag in lib/mock/intake-options.mock.ts is the only switch.
  */
 export default function ContractsPage() {
-  const available = CONTRACT_CATALOGUE.filter((t) => t.available).length;
+  const available = LISTED_CATALOGUE.filter((t) => t.available).length;
 
   return (
     <div>
@@ -27,7 +27,7 @@ export default function ContractsPage() {
           title="The agreements Vidhataa drafts."
           lead={
             <>
-              {CONTRACT_CATALOGUE.length} agreement types in {CONTRACT_GROUPS.length} groups.{" "}
+              {LISTED_CATALOGUE.length} agreement types in {CONTRACT_GROUPS.length} groups.{" "}
               {available} can be drafted now. The rest are coming soon.
             </>
           }
@@ -39,7 +39,7 @@ export default function ContractsPage() {
               <div key={group.id}>
                 <h2 className="font-display text-h1 text-ink">{group.label}</h2>
                 <ul className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-                  {CONTRACT_CATALOGUE.filter((t) => t.group === group.id).map((type) => (
+                  {LISTED_CATALOGUE.filter((t) => t.group === group.id).map((type) => (
                     <li
                       key={type.id}
                       className="flex flex-col justify-between gap-8 rounded-card border border-line bg-paper p-6"
