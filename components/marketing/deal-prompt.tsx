@@ -43,7 +43,10 @@ export function DealPrompt({
   autoFocus = false,
   compact = false,
   examples,
+  actionLabel = "Draft a document",
 }: {
+  /** The button's words. "Request access" on the public site, where nothing is drafted yet. */
+  actionLabel?: string;
   className?: string;
   /** Briefs a visitor can start from. Choosing one fills the box; nothing is sent. */
   examples?: readonly string[];
@@ -66,7 +69,11 @@ export function DealPrompt({
   const fieldId = useId();
   const [brief, setBrief] = useState("");
   const [drafting, setDrafting] = useState(false);
+  const [focused, setFocused] = useState(false);
+  // Said when the button is pressed with nothing in the box, so the press is never silent.
+  const [emptyPress, setEmptyPress] = useState(false);
   const ready = brief.trim().length > 0;
+  const hintId = `${fieldId}-hint`;
 
   // The field grows to fit the brief, up to a limit. Compact starts at one
   // line; on the landing page it starts at two, so it reads as a place to
@@ -101,6 +108,7 @@ export function DealPrompt({
   async function start() {
     // Nothing to draft from yet: the box is the next step, not a page.
     if (!ready) {
+      setEmptyPress(true);
       fieldRef.current?.focus();
       return;
     }
@@ -159,7 +167,14 @@ export function DealPrompt({
           rows={compact ? 1 : 2}
           autoFocus={autoFocus}
           value={brief}
-          onChange={(e) => setBrief(e.target.value)}
+          onChange={(e) => {
+            setBrief(e.target.value);
+            if (emptyPress) setEmptyPress(false);
+          }}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          aria-describedby={hintId}
+          aria-invalid={emptyPress || undefined}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -174,13 +189,27 @@ export function DealPrompt({
           )}
         />
         <div className={cn("flex items-center justify-between gap-3", compact ? "mt-2" : "mt-3")}>
-          {/* The note until there is a brief, then how to send it. */}
-          <span className={cn("hidden text-muted-fg tracking-normal sm:inline", compact ? "text-label" : "text-meta")}>
-            {ready ? "Enter to draft · Shift+Enter for a new line" : note}
+          {/* The note at rest; how to send it as soon as the box has focus, before anything is
+              typed. On a phone there is no Enter to press, so the note stays. An empty press says
+              what is missing. */}
+          <span
+            id={hintId}
+            aria-live="polite"
+            className={cn("min-w-0 tracking-normal", compact ? "text-label" : "text-meta", emptyPress ? "text-ink" : "text-muted-fg")}
+          >
+            {emptyPress ? (
+              "Describe the deal first: who it is with and what it covers."
+            ) : (
+              <>
+                <span className={cn((focused || ready) && "sm:hidden")}>{note}</span>
+                <span className={cn("hidden", (focused || ready) && "sm:inline")}>
+                  Enter to {actionLabel === "Draft a document" ? "draft" : "send"} · Shift+Enter for a new line
+                </span>
+              </>
+            )}
           </span>
           <button
             type="submit"
-            aria-label="Draft a document"
             aria-busy={drafting}
             className={cn(
               compact ? "h-8 px-4 text-meta" : "h-11 px-5 text-body",
@@ -192,7 +221,7 @@ export function DealPrompt({
                 : "bg-ink/[0.07] text-ink hover:bg-ink/[0.12]",
             )}
           >
-            {drafting ? "Drafting…" : "Draft a document"}
+            {drafting ? "Drafting…" : actionLabel}
             <Icon
               name="arrow_forward"
               size={16}
@@ -202,13 +231,18 @@ export function DealPrompt({
         </div>
       </form>
       {examples && examples.length > 0 && (
-        <ul aria-label="Example briefs" className="mt-4 flex flex-wrap justify-center gap-2">
+        <>
+        <p id={`${fieldId}-examples`} className="mt-5 text-meta text-muted-fg">
+          Or start from an example:
+        </p>
+        <ul aria-labelledby={`${fieldId}-examples`} className="mt-2 flex flex-wrap justify-center gap-2">
           {examples.map((example) => (
             <li key={example}>
               <button
                 type="button"
                 onClick={() => {
                   setBrief(example);
+                  setEmptyPress(false);
                   fieldRef.current?.focus();
                 }}
                 className="inline-flex min-h-11 items-center rounded-full border border-ink/15 bg-paper px-4 text-left text-meta text-ink transition-[background-color,border-color,transform] duration-150 ease-out hover:border-ink/40 hover:bg-parchment active:scale-[0.96]"
@@ -218,6 +252,7 @@ export function DealPrompt({
             </li>
           ))}
         </ul>
+        </>
       )}
     </div>
   );

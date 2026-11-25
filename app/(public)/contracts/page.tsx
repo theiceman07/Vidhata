@@ -4,6 +4,7 @@ import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { LISTED_CATALOGUE, CONTRACT_GROUPS } from "@/lib/mock/intake-options.mock";
 import { cn } from "@/lib/utils";
+import { AgreementInterest } from "@/components/marketing/access-forms";
 
 export const metadata: Metadata = {
   title: "Agreements",
@@ -28,7 +29,7 @@ export default function ContractsPage() {
           lead={
             <>
               {LISTED_CATALOGUE.length} agreement types in {CONTRACT_GROUPS.length} groups.{" "}
-              {available} can be drafted now. The rest are coming soon.
+              {available} can be drafted now. The rest are coming soon: tell us which one you need and we&apos;ll let you know when it&apos;s ready.
             </>
           }
         />
@@ -45,16 +46,20 @@ export default function ContractsPage() {
                       className="flex flex-col justify-between gap-8 rounded-card border border-line bg-paper p-6"
                     >
                       <p className="text-body font-medium text-ink">{type.label}</p>
-                      <span
-                        className={cn(
-                          "inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-label font-medium",
-                          type.available
-                            ? "bg-ink text-paper"
-                            : "border border-line text-muted-fg",
-                        )}
-                      >
-                        {type.available ? "Available" : "Coming soon"}
-                      </span>
+                      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                        <span
+                          className={cn(
+                            "inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-label font-medium",
+                            type.available
+                              ? "bg-ink text-paper"
+                              : "border border-line text-muted-fg",
+                          )}
+                        >
+                          {type.available ? "Available" : "Coming soon"}
+                        </span>
+                        {/* A Coming soon type is a demand signal, not a dead end (review, 25 Nov 2026). */}
+                        {!type.available && <AgreementInterest agreement={type.label} />}
+                      </div>
                     </li>
                   ))}
                 </ul>

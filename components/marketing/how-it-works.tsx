@@ -23,7 +23,7 @@ const STEPS = [
   {
     n: "3",
     title: "An advocate decides",
-    body: "An empanelled advocate claims the document, settles each finding and signs off under their Bar enrolment. Nothing reaches you before that sign-off.",
+    body: "An empanelled advocate takes on the document, settles each finding and signs off under their Bar enrolment. Nothing reaches you before that sign-off.",
   },
   {
     n: "4",

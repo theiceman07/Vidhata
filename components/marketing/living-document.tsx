@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Icon } from "@/components/shared/icon";
 import {
   AnimatePresence,
   motion,
@@ -187,7 +188,7 @@ function Sheet({ stage, reduced }: { stage: number; reduced: boolean }) {
             {!flagged && (
               <Note key="empty" reduced={reduced}>
                 <p className="text-meta text-muted-fg">
-                  No notes yet. The first pass is reading the clause.
+                  No notes yet. The first pass is reading the clause: keep scrolling to watch it raise a finding.
                 </p>
               </Note>
             )}
@@ -367,6 +368,17 @@ export function LivingDocument() {
     setStage((prev) => (prev === next ? prev : next));
   });
 
+  // A stage chosen by hand scrolls to the middle of that stage's share, so the scroll and the
+  // stage never disagree. The demo is driven by scroll, which nothing on the page said; the
+  // stages are buttons too, and the hint above says both (review, 25 Nov 2026).
+  function goTo(index: number) {
+    const el = ref.current;
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY;
+    const travel = el.offsetHeight - window.innerHeight;
+    window.scrollTo({ top: top + travel * ((index + 0.5) / STAGES.length), behavior: "smooth" });
+  }
+
   if (reduced) {
     return (
       <section
@@ -388,12 +400,16 @@ export function LivingDocument() {
       className="site-wrap scroll-mt-16 py-24 md:py-32"
     >
       <Header />
+      <p className="mt-8 inline-flex items-center gap-2 text-meta text-muted-fg">
+        <Icon name="keyboard_arrow_down" size={18} />
+        Scroll to watch one clause go through review, or choose a stage.
+      </p>
 
       {/* Three screens of scroll drive four stages, then release: enough
           room that a stage is held, not flicked past. */}
-      <div ref={ref} className="relative mt-16 h-[320svh]">
+      <div ref={ref} className="relative mt-8 h-[320svh]">
         <div className="sticky top-24 grid gap-x-12 gap-y-6 lg:top-[14vh] lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)]">
-          <StageIndex stage={stage} progress={rail} />
+          <StageIndex stage={stage} progress={rail} onSelect={goTo} />
           <Sheet stage={stage} reduced={false} />
         </div>
       </div>

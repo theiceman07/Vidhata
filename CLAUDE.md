@@ -131,6 +131,23 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
   guessed, the state of execution above all. The client never picks a
   tier: screening assigns it after the first pass (lib/triage.ts), and
   every price lives in lib/config/pricing.ts.
+- Access and pricing (owner's call, 25 Nov 2026, after Tejaswi's UX review). Invite-only
+  preview. The public DealPrompt says "Request access" (actionLabel) and carries the brief
+  into /request-access, which shows it back; nothing on the public site sends anyone to a
+  sign-in that cannot open an account. /login links Request access, /advocate-login links
+  Join the panel (/advocate-apply), and Coming soon agreements on /contracts take "Tell us
+  you need this". All three write one row to the backend's access_requests table
+  (lib/api/access-requests.ts; insert only, never read back) and the backend emails each to
+  the company. Google and Microsoft sign-in (ProviderButtons, listed by
+  NEXT_PUBLIC_VIDHATA_OAUTH_PROVIDERS) sign in existing accounts only: a provider address
+  with no account gets no profile (backend migration 24) and /auth/callback signs it out and
+  opens /request-access pre-filled (sessionStorage, never the URL). The company (Quenta,
+  Eachanari, Coimbatore, quenta.contact@gmail.com) lives in lib/config/company.ts and shows
+  in the footer, both sign-in pages and the 404. The public pricing page shows four plans
+  picked up front, priced per contract (lib/config/plans.ts); the portal still runs the
+  screening-assigned tiers in lib/config/pricing.ts until it is moved over. Turnaround, GST,
+  revisions, refunds, counterparty access, e-signing and liability wording are to be
+  confirmed: no copy may depend on them. No advocate or customer count is published.
 - An ink band takes `tile-grain tile-grain-ink`: dark noise cannot show on ink
   (measured), so ink uses light noise.
 - No visible scrollbars anywhere (globals.css).

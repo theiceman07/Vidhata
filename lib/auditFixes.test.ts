@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { readBrief } from "@/lib/api/brief";
 import { uploadPathEnabled } from "@/lib/api/source";
 import { supportEmail } from "@/lib/config/contact";
+import { COMPANY } from "@/lib/config/company";
 import {
   CONTRACT_CATALOGUE,
   CONTRACT_TYPES,
@@ -107,7 +108,10 @@ describe("no link to a form that discards messages", () => {
     ]) {
       const source = read(...file);
       expect(source, file.join("/")).not.toMatch(/["']\/contact["']|["']\/advocate-invite["']/);
-      expect(source, file.join("/")).not.toMatch(/mailto:/);
+      // The only address written to is the configured one (lib/config/contact.ts), never a literal.
+      for (const m of source.matchAll(/mailto:(.{0,20})/g)) {
+        expect(m[1], file.join("/")).toMatch(/^\$\{supportEmail\(\)\}/);
+      }
     }
   });
 
@@ -154,11 +158,11 @@ describe("wording and copy", () => {
     }
   });
 
-  it("uses the support address only from the deploy's setting, and only when it is an address", () => {
+  it("uses the deploy's address when it is one, and the company address otherwise", () => {
     vi.stubEnv("NEXT_PUBLIC_VIDHATA_SUPPORT_EMAIL", "");
-    expect(supportEmail()).toBeNull();
+    expect(supportEmail()).toBe(COMPANY.email);
     vi.stubEnv("NEXT_PUBLIC_VIDHATA_SUPPORT_EMAIL", "not an address");
-    expect(supportEmail()).toBeNull();
+    expect(supportEmail()).toBe(COMPANY.email);
     vi.stubEnv("NEXT_PUBLIC_VIDHATA_SUPPORT_EMAIL", " help@example.test ");
     expect(supportEmail()).toBe("help@example.test");
     vi.unstubAllEnvs();

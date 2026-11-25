@@ -22,3 +22,16 @@ export function chatBackendEnabled(): boolean {
 export function uploadPathEnabled(): boolean {
   return process.env.NEXT_PUBLIC_VIDHATA_UPLOAD === "1";
 }
+
+/**
+ * Which sign-in providers the client sign-in page offers, from NEXT_PUBLIC_VIDHATA_OAUTH_PROVIDERS
+ * ("google", "azure" or "google,azure"). Empty by default: a provider is listed only once it is
+ * enabled in the Supabase project, because Supabase answers an unenabled one with a bare JSON
+ * error page. Backend mode only.
+ */
+export function signInProviders(): ("google" | "azure")[] {
+  if (!backendDataEnabled()) return [];
+  const raw = process.env.NEXT_PUBLIC_VIDHATA_OAUTH_PROVIDERS ?? "";
+  const wanted = raw.split(",").map((p) => p.trim().toLowerCase());
+  return (["google", "azure"] as const).filter((p) => wanted.includes(p));
+}

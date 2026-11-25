@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { BrandLogo } from "@/components/shared/brand-logo";
 import { Icon } from "@/components/shared/icon";
@@ -18,11 +19,16 @@ import {
  * tokens, which flip with the mode).
  *
  * Two menus and a link in the middle, sign-in at the end. Below lg the
- * middle folds into one Menu.
+ * middle folds into one Menu. Only one desktop menu is open at a time:
+ * opening one closes the other, so two panels never stack over the hero.
+ *
+ * "Explore" holds pages to look at; "Get started" was the old name and
+ * promised an entry it did not hold (review, 25 Nov 2026). "Product"
+ * holds the sections of the landing page.
  */
 const MENUS = [
   {
-    label: "Get started",
+    label: "Explore",
     links: [
       { href: "/sample", label: "Sample document", note: "A settled document, start to finish" },
       { href: "/contracts", label: "Agreements", note: "What Vidhataa drafts" },
@@ -53,7 +59,9 @@ function MenuLinks({ links }: { links: (typeof MENUS)[number]["links"] }) {
     <>
       {links.map((link) => (
         <DropdownMenuItem key={link.href} asChild className={ITEM}>
-          <Link href={link.href}>
+          {/* The label names the item; the note describes it. Without this a screen reader
+              announced the whole row, or nothing useful, as the item's name. */}
+          <Link href={link.href} aria-label={link.label} title={link.note}>
             <span className="flex flex-col">
               <span className="text-body font-medium">{link.label}</span>
               <span className="text-meta text-[#FFFFFF]/65">{link.note}</span>
@@ -71,6 +79,7 @@ function MenuLinks({ links }: { links: (typeof MENUS)[number]["links"] }) {
 }
 
 export function SiteHeader() {
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
   return (
     <header className="sticky top-0 z-30 w-full border-b border-[#FFFFFF]/15 bg-[#000000] text-[#FFFFFF]">
       <div className="site-wrap grid h-16 grid-cols-[1fr_auto] items-center gap-6 lg:grid-cols-[1fr_auto_1fr]">
@@ -80,7 +89,14 @@ export function SiteHeader() {
 
         <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
           {MENUS.map((menu) => (
-            <DropdownMenu key={menu.label} modal={false}>
+            <DropdownMenu
+              key={menu.label}
+              modal={false}
+              open={openMenu === menu.label}
+              onOpenChange={(open) =>
+                setOpenMenu((current) => (open ? menu.label : current === menu.label ? null : current))
+              }
+            >
               <DropdownMenuTrigger className={TRIGGER}>
                 {menu.label}
                 <Icon name="expand_more" size={20} className="transition-transform duration-200 ease-out" />

@@ -23,11 +23,9 @@ const FAQS = [
       "It's held back, not guessed at. The citation gate, the fifth layer of the pipeline, stops it, and it goes to your advocate for judgment. It never reaches you disguised as settled.",
   },
   {
-    // Screening assigns the tier; the client does not choose it, so there is
-    // nothing to switch.
-    question: "How is my review tier decided?",
+    question: "Which plan do I need?",
     answer:
-      "You don't choose one. After the first pass, screening reads the type, value and risk of the deal and assigns the tier, so the level of review matches the document. It appears on your document once assigned. If you think it needs a different level of review, talk to your advocate.",
+      "The one that lists your agreement. Each plan covers a set of agreement types at one fixed price per contract, so you know the price before you start. Freemium includes AI drafting and a basic review with no advocate; every other plan includes an advocate's review.",
   },
 ];
 

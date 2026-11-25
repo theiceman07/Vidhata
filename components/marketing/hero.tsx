@@ -18,7 +18,7 @@ export function Hero() {
           AI drafts. <em className="italic">Advocates</em> decide.
         </h1>
         <p className="mt-5 max-w-2xl text-balance text-lead text-ink/70">
-          Describe the deal. Vidhataa drafts it, and a named advocate signs off.
+          Contracts for early-stage startups and MSMEs. Describe the deal, Vidhataa drafts it, and a named advocate signs off.
         </p>
         <PublicEntry className="mt-10" />
       </div>

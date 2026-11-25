@@ -20,6 +20,7 @@ import {
   PREVIEW_DECLARATION_NOTE,
 } from "@/lib/claimWording";
 import { supportEmail } from "@/lib/config/contact";
+import { COMPANY } from "@/lib/config/company";
 
 const DOC = "11111111-1111-4111-8111-111111111111";
 const ME = "33333333-3333-4333-8333-333333333333";
@@ -123,12 +124,18 @@ describe("claim dialog wording about the counterparty", () => {
 describe("before a conflict is confirmed, the advocate is told it is permanent", () => {
   afterEach(() => vi.unstubAllEnvs());
 
-  it("says it is permanent and to contact support, and that no address exists yet when none is set", () => {
+  it("says it is permanent, and names the company address when the deploy sets none", () => {
     vi.stubEnv("NEXT_PUBLIC_VIDHATA_SUPPORT_EMAIL", "");
     const text = permanentDeclarationNote(supportEmail());
     expect(text).toContain(
       "This declaration is permanent. Contact support to change it.",
     );
+    expect(text).toContain(COMPANY.email);
+    expect(text).not.toContain(NO_SUPPORT_ADDRESS_YET);
+  });
+
+  it("says no address exists yet when it is given none", () => {
+    const text = permanentDeclarationNote(null);
     expect(text).toContain(NO_SUPPORT_ADDRESS_YET);
     expect(text).not.toMatch(/@/);
   });

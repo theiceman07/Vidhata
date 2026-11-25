@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { COMPANY } from "@/lib/config/company";
+import { supportEmail } from "@/lib/config/contact";
 
 // QA 7.2: the public pages had no Terms, Privacy or contact link at all —
 // a regulatory-completion gap for a legal-services product. Terms/Privacy
@@ -23,6 +25,7 @@ const GROUPS = [
     label: "Advocates",
     links: [
       { href: "/#advocates", label: "Empanelment" },
+      { href: "/advocate-apply", label: "Join the panel" },
       { href: "/advocate-login", label: "Advocate login" },
     ],
   },
@@ -33,6 +36,7 @@ const GROUPS = [
       { href: "/security", label: "Security and data" },
       { href: "/terms", label: "Terms of service" },
       { href: "/privacy", label: "Privacy policy" },
+      { href: `mailto:${supportEmail()}`, label: "Contact" },
     ],
   },
 ];
@@ -81,12 +85,16 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-20 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-paper/20 pt-5 text-meta text-paper/70 md:mt-28">
-          <p>
-            © {new Date().getFullYear()} Vidhataa
+          <address className="not-italic">
+            © {new Date().getFullYear()} {COMPANY.name}
             <span aria-hidden className="mx-1.5">·</span>
-            India
-          </p>
-          <p>A technology provider to advocate-owned professional entities</p>
+            {COMPANY.address}
+            <span aria-hidden className="mx-1.5">·</span>
+            <a href={`mailto:${supportEmail()}`} className="underline underline-offset-4 hover:text-paper">
+              {supportEmail()}
+            </a>
+          </address>
+          <p>Vidhataa is operated by {COMPANY.name}, a technology provider to advocate-owned professional entities</p>
         </div>
       </div>
 

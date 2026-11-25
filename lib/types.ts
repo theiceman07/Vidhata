@@ -1070,3 +1070,23 @@ export interface ChatMessage {
   /** An escalation the service recorded (it returned an escalation id). Only then is a tick shown. */
   escalationRecorded?: boolean;
 }
+
+/**
+ * A request from the public site, written to the backend's access_requests table (migration 23).
+ * The browser may write one and never read one back.
+ */
+export type AccessRequestKind = "client_access" | "advocate_application" | "agreement_interest";
+
+export interface AccessRequestInput {
+  kind: AccessRequestKind;
+  name?: string;
+  email: string;
+  company?: string;
+  /** The deal brief typed into the hero prompt. */
+  brief?: string;
+  message?: string;
+  /** agreement_interest: the agreement as the site labels it. */
+  agreement?: string;
+  /** advocate_application: enrolment number, state, years, practice areas, phone. */
+  details?: Record<string, string>;
+}

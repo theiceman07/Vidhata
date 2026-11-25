@@ -73,6 +73,7 @@ describe("the money files", () => {
   // skipped, so each is covered the moment it exists.
   const files = [
     "lib/config/pricing.ts",
+    "lib/config/plans.ts",
     "components/marketing/pricing-table.tsx",
     "components/domain/escalation-prompt.tsx",
     "components/domain/payment-panel.tsx",

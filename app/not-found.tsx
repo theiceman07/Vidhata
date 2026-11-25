@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { supportEmail } from "@/lib/config/contact";
 
 export const metadata: Metadata = { title: "Page not found" };
 
@@ -21,9 +22,15 @@ export default function NotFound() {
           <Link href="/">Back to home</Link>
         </Button>
         <Button asChild variant="outline">
-          <Link href="/documents">Your documents</Link>
+          <Link href="/sample">See a settled document</Link>
         </Button>
       </div>
+      <p className="mt-8 text-body text-muted-fg">
+        Looking for something specific? Email{" "}
+        <Link href={`mailto:${supportEmail()}`} className="link">
+          {supportEmail()}
+        </Link>
+      </p>
     </main>
   );
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AuthScreen } from "@/components/shared/auth-screen";
+import { supportEmail } from "@/lib/config/contact";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/shared/password-input";
@@ -73,6 +74,20 @@ export default function LawyerLoginPage() {
         portal="advocate"
         title="Advocate sign in."
         intro="For empanelled advocates only."
+        footer={<>
+          <p>
+            Empanelment is by invitation.{" "}
+            <Link href="/advocate-apply" className="link">
+              Join the panel
+            </Link>
+          </p>
+          <p className="mt-2">
+            Questions? Email{" "}
+            <Link href={`mailto:${supportEmail()}`} className="link">
+              {supportEmail()}
+            </Link>
+          </p>
+        </>}
       >
         <p className="text-body text-ink">
           Accounts aren&apos;t open yet. Vidhataa is in preview.
@@ -89,7 +104,20 @@ export default function LawyerLoginPage() {
       portal="advocate"
       title="Advocate sign in."
       intro="For empanelled advocates only."
-      footer={<>Empanelment is by invitation.</>}
+      footer={<>
+          <p>
+            Empanelment is by invitation.{" "}
+            <Link href="/advocate-apply" className="link">
+              Join the panel
+            </Link>
+          </p>
+          <p className="mt-2">
+            Questions? Email{" "}
+            <Link href={`mailto:${supportEmail()}`} className="link">
+              {supportEmail()}
+            </Link>
+          </p>
+        </>}
     >
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         <div>

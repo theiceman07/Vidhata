@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { TextLink } from "@/components/shared/text-link";
 import type { Metadata } from "next";
 import { AuditTrail } from "@/components/document/audit-trail";
@@ -274,6 +276,24 @@ export default function SamplePage() {
                 <Step key={step.kind} step={step} number={i + 1} />
               ))}
             </ol>
+          </div>
+        </section>
+
+        {/* The page most likely to convince, so it ends with the way in (review, 25 Nov 2026). */}
+        <section className="site-wrap">
+          <div className="flex flex-col items-center py-24 text-center md:py-32">
+            <h2 className="max-w-3xl font-display text-display text-ink">Want one of these for your next contract?</h2>
+            <p className="mt-6 max-w-xl text-lead text-ink/70">
+              Vidhataa is in preview and accounts are opened by invitation. Tell us the contract you need.
+            </p>
+            <div className="mt-10 flex flex-wrap justify-center gap-3">
+              <Button asChild size="lg">
+                <Link href="/request-access">Request access</Link>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/pricing">See plans</Link>
+              </Button>
+            </div>
           </div>
         </section>
       </main>

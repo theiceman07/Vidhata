@@ -9,7 +9,7 @@ import { SiteHeader } from "@/components/marketing/site-header";
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "Fixed, transparent pricing by review tier for AI-drafted, advocate-verified contracts.",
+    "Four plans, one fixed price per contract, for AI-drafted, advocate-reviewed contracts.",
 };
 
 /**
@@ -22,8 +22,8 @@ export default function PricingPage() {
       <SiteHeader />
       <main>
         <PageOpening
-          title="One fixed price per document."
-          lead="Priced by review tier, assigned after screening. No hourly billing."
+          title="One fixed price per contract."
+          lead="Pick the plan that covers the agreement you need. No hourly billing."
         />
 
         <section className="tile-grain w-full bg-parchment">

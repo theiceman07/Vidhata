@@ -11,9 +11,10 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useSession } from "@/lib/session";
 import { mockCredentialsAccepted } from "@/lib/auth/mock-credentials";
-import { backendDataEnabled } from "@/lib/api/source";
+import { backendDataEnabled, signInProviders } from "@/lib/api/source";
 import { signInToPortal } from "@/lib/api/auth";
 import { supportEmail } from "@/lib/config/contact";
+import { ProviderButtons } from "@/components/shared/provider-buttons";
 
 const PREVIEW_MODE = process.env.NEXT_PUBLIC_VIDHATA_PREVIEW_MODE === "1";
 const MAX_ATTEMPTS = 5;
@@ -81,8 +82,14 @@ export default function ClientLoginPage() {
           Accounts aren&apos;t open yet. Vidhataa is in preview.
         </p>
         <Button asChild className="mt-6 w-full">
-          <Link href="/">Go to home</Link>
+          <Link href="/request-access">Request access</Link>
         </Button>
+        <p className="mt-6 text-center text-body text-muted-fg">
+          Questions? Email{" "}
+          <Link href={`mailto:${supportEmail()}`} className="link">
+            {supportEmail()}
+          </Link>
+        </p>
       </AuthScreen>
     );
   }
@@ -94,25 +101,29 @@ export default function ClientLoginPage() {
       intro="For founders and teams whose contracts Vidhataa drafts."
       footer={
         <>
-          Accounts are opened by invitation.
-          {supportEmail() && (
-            <>
-              {" "}Email us at{" "}
-              <Link href={`mailto:${supportEmail()}`} className="link">
-                {supportEmail()}
-              </Link>{" "}
-              to ask for access.
-            </>
-          )}
+          <p>
+            Accounts are opened by invitation.{" "}
+            <Link href="/request-access" className="link">
+              Request access
+            </Link>
+          </p>
+          <p className="mt-2">
+            Questions? Email{" "}
+            <Link href={`mailto:${supportEmail()}`} className="link">
+              {supportEmail()}
+            </Link>
+          </p>
         </>
       }
     >
+      {signInProviders().length > 0 && <ProviderButtons className="mb-6" />}
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         <div>
-          <Label htmlFor="username">Email or username</Label>
+          {/* The real accounts are email accounts. Only the preview workspace takes a username. */}
+          <Label htmlFor="username">{backendDataEnabled() ? "Email" : "Email or username"}</Label>
           <Input
             id="username"
-            type="text"
+            type={backendDataEnabled() ? "email" : "text"}
             required
             value={username}
             onChange={(e) => setUsername(e.target.value)}
