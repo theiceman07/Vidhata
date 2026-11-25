@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { TIER_PRICING } from "../config/pricing";
+import { PLAN_BY_ID } from "../config/plans";
 import { MAX_REVISION_CYCLES } from "../config/revisions";
 import { revisionCycle } from "../revisions";
 import { addDeclaredConflict, removeDeclaredConflict } from "./advocate";
@@ -180,7 +180,7 @@ describe("the snapshot written when the first pass finishes", () => {
     // Seeded as analysing, with the finish time already in the past, so
     // reading it completes the first pass.
     const doc = await settle(getDocument("doc-employment-analysing"));
-    // Screening is done and the tier is known, so it now awaits the fee.
+    // Screening is done, so it now awaits the plan's fee.
     expect(doc?.status).toBe("awaiting_payment");
 
     const versions = await settle(getDocumentVersions("doc-employment-analysing"));
@@ -200,10 +200,10 @@ describe("the snapshot written when the first pass finishes", () => {
 describe("releasing a document to the advocate queue", () => {
   const id = "doc-employment-analysing";
 
-  it("is not released while it awaits payment, whatever its tier", async () => {
+  it("is not released while it awaits payment, whatever its plan", async () => {
     const doc = await settle(getDocument(id));
     expect(doc?.status).toBe("awaiting_payment");
-    expect(doc?.tier).toBe("senior");
+    expect(doc?.plan).toBe("business");
     expect(doc?.payment).toBeUndefined();
     expect(isReleased(doc!)).toBe(false);
   });
@@ -265,7 +265,7 @@ describe("releasing a document to the advocate queue", () => {
     expect(retried.status).toBe("pending_review");
   });
 
-  it("is paid once, at its tier's flat fee, however many times Pay is pressed", async () => {
+  it("is paid once, at its plan's price, however many times Pay is pressed", async () => {
     // The fixture was paid by the retry above. A second and a third press come
     // back with the same single payment.
     const first = payFee(id);
@@ -273,7 +273,7 @@ describe("releasing a document to the advocate queue", () => {
     await vi.runAllTimersAsync();
     const [a, b] = await Promise.all([first, second]);
     expect(a.payment).toEqual(b.payment);
-    expect(a.payment?.amount).toBe(TIER_PRICING.senior.amount);
+    expect(a.payment?.amount).toBe(PLAN_BY_ID.business.amount);
     expect(a.status).toBe("pending_review");
   });
 
@@ -297,6 +297,7 @@ describe("releasing a document to the advocate queue", () => {
         durationMonths: 12,
         governingLaw: "Laws of India",
         keyTerms: "",
+        plan: "standard" as const,
       }),
     );
     expect(draft.status).toBe("draft");
@@ -319,6 +320,7 @@ describe("creating documents", () => {
     durationMonths: 12,
     governingLaw: "Laws of India",
     keyTerms: "",
+    plan: "standard" as const,
   };
 
   it("gives two documents made in the same instant two ids, and each is read back as itself", async () => {

@@ -332,7 +332,7 @@ describe("the files that build notifications", () => {
     const source = readFileSync(path.join(root, "lib/api/client/notifications.ts"), "utf8");
     const imports = [...source.matchAll(/from\s+"([^"]+)"/g)].map((m) => m[1]);
     for (const spec of imports) {
-      expect(spec, spec).toMatch(/^(@\/lib\/notifications|@\/lib\/types|\.\/consultations|\.\/documents)$/);
+      expect(spec, spec).toMatch(/^(@\/lib\/notifications|@\/lib\/types|@\/lib\/config\/consultations|\.\/consultations|\.\/documents)$/);
     }
   });
 });

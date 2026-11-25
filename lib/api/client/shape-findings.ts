@@ -127,8 +127,9 @@ export function numberedForClient(
 /** The findings a client may read, as the client reads them, under their numbers. */
 export function shapeClientFindings(record: ContractDocument, options: ShapeOptions = {}): ClientFinding[] {
   const advocateAdded = options.advocateAddedAfterSignOff ?? SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF;
-  const signedOff = isSignedOff(asClientReads(record));
+  // A Freemium AI draft is read in full with no sign-off (shapeClientDocument).
+  const readable = isSignedOff(asClientReads(record)) || record.status === "ai_draft";
   return numberedForClient(record, options).map(({ finding, number }) =>
-    shapeFinding(finding, number, signedOff, advocateAdded),
+    shapeFinding(finding, number, readable, advocateAdded),
   );
 }

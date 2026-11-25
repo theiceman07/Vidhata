@@ -30,13 +30,13 @@ describe("an organisation's invoices", () => {
     expect(invoices.length).toBeGreaterThan(0);
   });
 
-  it("hold one consultation fee for each paid request the preview starts with, at that request's fee", async () => {
+  // Consultations are off (lib/config/consultations.ts), so their fees are not invoiced; the
+  // pure invoicesFor in lib/billing.test.ts still holds them for when they come back.
+  it("hold no consultation fee while consultations are off", async () => {
     const paid = mockConsultations.filter((c) => c.orgId === org && c.paidAt !== null);
     expect(paid.length).toBeGreaterThan(0);
     const fees = (await settle(listInvoices(org))).filter((i) => i.kind === "consultation_fee");
-    expect(fees.map((i) => [i.documentId, i.amount, i.issuedAt]).sort()).toEqual(
-      paid.map((c) => [c.documentId, c.fee, c.paidAt]).sort(),
-    );
+    expect(fees).toEqual([]);
     // An invoice says what was paid for, and nothing of what was asked or answered.
     const all = JSON.stringify(await settle(listInvoices(org)));
     for (const c of paid) {

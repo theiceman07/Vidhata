@@ -208,9 +208,14 @@ export default function DocumentPage() {
     return <SettledDocument doc={doc} trail={trail} notes={notes} />;
   }
 
-  // Screened and tiered, not yet paid. Only the tier, the fee and the deal
-  // facts behind it are shown: nothing from the review, because a client
-  // reads no finding before sign-off.
+  // Freemium: the first pass's draft and findings, the client's to read in full, with no advocate.
+  if (doc.status === "ai_draft") {
+    return <AiDraftDocument doc={doc} trail={trail} />;
+  }
+
+  // Screened, not yet paid. Only the plan, its price and the deal facts are
+  // shown: nothing from the review, because a client reads no finding before
+  // sign-off.
   if (doc.status === "awaiting_payment") {
     return (
       <Frame>
@@ -419,6 +424,28 @@ function WithAdvocate({ doc }: { doc: ClientDocument }) {
 }
 
 /** Signed off: the settled document itself, read only. */
+/**
+ * A Freemium document: the AI draft and the first pass's findings, read-only, said plainly to have
+ * had no advocate. There is no sign-off, so there is no document agent, summary, checklist or
+ * delivery: each of those rests on settled text.
+ */
+function AiDraftDocument({ doc, trail }: { doc: ClientDocument; trail: ClientAuditEntry[] }) {
+  return (
+    <ClientReader
+      doc={doc}
+      trail={trail}
+      back={{ href: "/documents", label: "Documents" }}
+      aside={
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-move-tint px-3 py-1 text-meta font-medium text-move-text">
+          <Icon name="info" size={16} />
+          AI draft · not reviewed or signed off by an advocate
+        </span>
+      }
+      tabs={<DocumentTabs documentId={doc.id} signedOff={false} />}
+    />
+  );
+}
+
 function SettledDocument({
   doc,
   trail,

@@ -1,4 +1,4 @@
-import type { ContractDocument, ReviewTier } from "@/lib/types";
+import type { ContractDocument, PlanId } from "@/lib/types";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import {
   ndaClauses,
@@ -10,7 +10,7 @@ import {
 } from "@/lib/mock/clauses.mock";
 import { CURRENT_ADVOCATE } from "@/lib/mock/advocate.mock";
 import { esignatureStep } from "@/lib/config/esign";
-import { TIER_PRICING } from "@/lib/config/pricing";
+import { PLAN_BY_ID } from "@/lib/config/plans";
 
 /**
  * What a fixture finding says when the rule behind it names no statute (a check of the draft
@@ -21,9 +21,9 @@ import { TIER_PRICING } from "@/lib/config/pricing";
 // finding says this; it exists here so a fixture finding with no statute still has a string.
 export const NO_STATUTORY_SOURCE = "No statutory source";
 
-/** A fee paid at its tier's flat amount, so a fixture cannot disagree with the config. */
-function paid(tier: ReviewTier, paidAt: string) {
-  return { amount: TIER_PRICING[tier].amount, paidAt };
+/** A fee paid at its plan's price, so a fixture cannot disagree with the config. */
+function paid(plan: PlanId, paidAt: string) {
+  return { amount: PLAN_BY_ID[plan].amount, paidAt };
 }
 
 const settledNda: ContractDocument = {
@@ -31,7 +31,7 @@ const settledNda: ContractDocument = {
   title: "Mutual NDA · Kavach Robotics",
   type: "nda",
   status: "settled",
-  tier: "standard",
+  plan: "standard",
   orgId: MOCK_CLIENT_ORG.id,
   clientName: "Anaya Textiles Pvt Ltd",
   counterpartyName: "Kavach Robotics Pvt Ltd",
@@ -151,7 +151,7 @@ const pendingReviewMsa: ContractDocument = {
   title: "Master Services Agreement · Sundargarh Logistics",
   type: "msa",
   status: "pending_review",
-  tier: "enhanced",
+  plan: "business",
   orgId: "org-bharosa-fintech",
   clientName: "Bharosa Fintech Pvt Ltd",
   counterpartyName: "Sundargarh Logistics Pvt Ltd",
@@ -165,7 +165,7 @@ const pendingReviewMsa: ContractDocument = {
   version: 1,
   revisionCount: 0,
   claimedAt: null,
-  payment: paid("enhanced", "2026-09-14T06:40:00.000Z"),
+  payment: paid("business", "2026-09-14T06:40:00.000Z"),
   settledAt: null,
   analysisCompletesAt: null,
   advocate: null,
@@ -243,7 +243,7 @@ const analysingEmployment: ContractDocument = {
   title: "Employment Agreement · Senior Engineer",
   type: "employment",
   status: "analysing",
-  tier: null,
+  plan: "business",
   orgId: "org-trivandrum-cloud-labs",
   clientName: "Trivandrum Cloud Labs Pvt Ltd",
   counterpartyName: "Individual · Meera Nair",
@@ -275,7 +275,7 @@ const revisionVendor: ContractDocument = {
   title: "Vendor Agreement · Packaging Supply",
   type: "vendor",
   status: "revision",
-  tier: "standard",
+  plan: "standard",
   orgId: MOCK_CLIENT_ORG.id,
   clientName: "Anaya Textiles Pvt Ltd",
   counterpartyName: "Ganesh Packaging Works",
@@ -421,7 +421,7 @@ const rereviewEmployment: ContractDocument = {
   title: "Employment Agreement · Senior Engineer",
   type: "employment",
   status: "under_review",
-  tier: "standard",
+  plan: "business",
   orgId: MOCK_CLIENT_ORG.id,
   clientName: "Anaya Textiles Pvt Ltd",
   counterpartyName: "Individual · Rohan Iyer",
@@ -437,7 +437,7 @@ const rereviewEmployment: ContractDocument = {
   revisionCount: 1,
   claimedAt: "2026-09-23T06:10:00.000Z",
   conflictDeclaredAt: "2026-09-23T06:10:00.000Z",
-  payment: paid("standard", "2026-09-22T10:30:00.000Z"),
+  payment: paid("business", "2026-09-22T10:30:00.000Z"),
   settledAt: null,
   analysisCompletesAt: null,
   advocate: CURRENT_ADVOCATE,
@@ -557,7 +557,7 @@ const settledNda2: ContractDocument = {
   findings: [],
 };
 
-// A document the client has not yet paid for: screened and tiered, and not in
+// A document the client has not yet paid for: screened, and not in
 // the advocate queue. It gives the dashboard a document in this state from the
 // first load, with the pay step to show. Fictional parties.
 const awaitingPaymentVendor: ContractDocument = {
@@ -565,7 +565,7 @@ const awaitingPaymentVendor: ContractDocument = {
   title: "Vendor Agreement · Orchid Packaging",
   type: "vendor",
   status: "awaiting_payment",
-  tier: "enhanced",
+  plan: "standard",
   orgId: MOCK_CLIENT_ORG.id,
   clientName: "Anaya Textiles Pvt Ltd",
   counterpartyName: "Orchid Packaging Pvt Ltd",
@@ -583,6 +583,36 @@ const awaitingPaymentVendor: ContractDocument = {
   analysisCompletesAt: null,
   advocate: null,
   clauses: vendorClauses.map((c) => ({ ...c, findingIds: [], revisedAt: null })),
+  findings: [],
+  executionSteps: [],
+};
+
+// A Freemium document: screened and handed back as an AI draft, with no advocate and no fee. Its
+// text is the settled NDA's skeleton and it has no findings, so nothing in it reads as reviewed.
+// Made last month, so this month's free contract is still there to try. Fictional parties.
+const aiDraftNda: ContractDocument = {
+  id: "doc-nda-ai-draft",
+  title: "Mutual NDA · Neelgiri Analytics",
+  type: "nda",
+  status: "ai_draft",
+  plan: "freemium",
+  orgId: MOCK_CLIENT_ORG.id,
+  clientName: "Anaya Textiles Pvt Ltd",
+  counterpartyName: "Neelgiri Analytics LLP",
+  stateOfExecution: "Tamil Nadu",
+  transactionValue: 0,
+  counterpartyIsMsme: false,
+  durationMonths: 24,
+  governingLaw: "Laws of India",
+  keyTerms: null,
+  createdAt: "2026-10-20T09:00:00.000Z",
+  version: 1,
+  revisionCount: 0,
+  claimedAt: null,
+  settledAt: null,
+  analysisCompletesAt: null,
+  advocate: null,
+  clauses: settledNda.clauses.map((c) => ({ ...structuredClone(c), findingIds: [], revisedAt: null })),
   findings: [],
   executionSteps: [],
 };
@@ -626,6 +656,7 @@ export const mockDocuments: ContractDocument[] = [
   rereviewEmployment,
   awaitingPaymentVendor,
   executedNda,
+  aiDraftNda,
 ];
 
 export function getMockDocumentById(id: string): ContractDocument | undefined {

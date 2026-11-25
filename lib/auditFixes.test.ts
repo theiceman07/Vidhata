@@ -185,7 +185,7 @@ describe("wording and copy", () => {
     );
   });
 
-  it("shows an unclaimed document by type, tier and state only: no value and no execution state", () => {
+  it("shows an unclaimed document by type, plan and state only: no value and no execution state", () => {
     const schema = read("lib", "api", "backend-documents.ts");
     const queueRow = schema.slice(schema.indexOf("export const queueRowSchema"), schema.indexOf("export type QueueRow"));
     expect(queueRow).not.toMatch(/transaction_value|state_of_execution/);

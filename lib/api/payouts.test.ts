@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CONSULTATION, TIER_PRICING } from "@/lib/config/pricing";
+import { CONSULTATION } from "@/lib/config/pricing";
+import { PLANS } from "@/lib/config/plans";
 import { mockConsultations } from "@/lib/mock/consultations.mock";
 import {
   acceptConsultation,
@@ -80,7 +81,7 @@ describe("an advocate's payout statement", () => {
 
   it("is built from the fee the advocate set, and from nothing the platform charges", async () => {
     const statement = await settle(getPayoutStatement(rhea));
-    const platform = Object.values(TIER_PRICING).map((t) => t.amount);
+    const platform = PLANS.map((p) => p.amount).filter((a) => a > 0);
     for (const line of statement.lines) {
       expect(line.amount).toBe(CONSULTATION.amount);
       expect(platform).not.toContain(line.amount);

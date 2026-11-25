@@ -5,19 +5,17 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { payClientFee } from "@/lib/api/client/documents";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
-import { PRICE_BASIS, TIER_PRICING, rupees } from "@/lib/config/pricing";
+import { rupees } from "@/lib/config/pricing";
+import { PLAN_BY_ID } from "@/lib/config/plans";
 import { CONTRACT_TYPES } from "@/lib/mock/intake-options.mock";
 import type { ClientDocument } from "@/lib/types";
 
 /**
  * The step between a screened document and an advocate: one fixed fee.
  *
- * It says what the client already knows and nothing drawn from the review:
- * the tier screening assigned, the fee for it, and the deal facts the
- * assignment reads (the kind of agreement, its value, whether the other side
- * is a registered MSME). It never says why the tier is what it is beyond
- * that, because a reason could come from findings, and a client reads no
- * finding before sign-off.
+ * It says what the client already knows and nothing drawn from the review: the
+ * plan they chose at intake, its price per contract, and the deal facts. A
+ * client reads no finding before sign-off, so nothing here comes from one.
  *
  * The payment is a plainly fake "Pay (preview)", with nothing to type. It can
  * be pressed again after a failure, and pressing it twice pays once.
@@ -27,7 +25,7 @@ export function PaymentPanel({
   onPaid,
   className,
 }: {
-  doc: Pick<ClientDocument, "id" | "type" | "tier" | "deal">;
+  doc: Pick<ClientDocument, "id" | "type" | "plan" | "deal">;
   onPaid: (paid: ClientDocument) => void;
   className?: string;
 }) {
@@ -37,7 +35,7 @@ export function PaymentPanel({
   // has re-rendered yet. The ref is set at once, so only the first goes out.
   const inFlight = useRef(false);
 
-  const tier = doc.tier ? TIER_PRICING[doc.tier] : null;
+  const plan = PLAN_BY_ID[doc.plan];
   const typeLabel = CONTRACT_TYPES.find((t) => t.value === doc.type)?.label ?? doc.type;
 
   async function pay() {
@@ -68,13 +66,10 @@ export function PaymentPanel({
           Pay the fee to send it to an advocate
         </h2>
         <p className="mt-3 max-w-measure text-body text-ink">
-          {tier
-            ? `Screening has assigned this document to ${tier.label} review. `
-            : "Screening has assigned this document a review tier. "}
-          Nothing reaches an advocate until the fee is paid.
+          You chose the {plan.label} plan for this document. Nothing reaches an advocate until the fee is paid.
         </p>
 
-        <h3 className="mt-5 text-meta font-medium text-ink">The deal facts behind the tier</h3>
+        <h3 className="mt-5 text-meta font-medium text-ink">The deal</h3>
         <dl className="mt-3 grid gap-2 sm:grid-cols-3">
           {[
             ["Agreement", typeLabel],
@@ -90,19 +85,9 @@ export function PaymentPanel({
       </div>
 
       <div className="min-w-0 rounded-card bg-paper p-5">
-        <p className="text-label font-medium text-muted-fg">{tier?.label ?? "Review"} · fixed fee</p>
-        {tier ? (
-          <>
-            <p className="mt-2 font-display text-h1 text-ink">{tier.price}</p>
-            <p className="text-meta text-muted-fg">{PRICE_BASIS}</p>
-          </>
-        ) : (
-          <p className="mt-2 text-body text-ink">Set when the tier is assigned.</p>
-        )}
-        <p className="mt-4 text-meta text-ink">
-          One fee for the document. It covers every revision round.
-        </p>
-        <p className="mt-1 text-meta text-muted-fg">GST is added at the rate in force.</p>
+        <p className="text-label font-medium text-muted-fg">{plan.label} plan · {plan.per}</p>
+        <p className="mt-2 font-display text-h1 text-ink">{plan.price}</p>
+        <p className="mt-4 text-meta text-ink">One fee for the document.</p>
 
         {failed && (
           <p role="alert" className="mt-4 text-meta text-ink">
@@ -110,7 +95,7 @@ export function PaymentPanel({
           </p>
         )}
 
-        <Button className="mt-5 w-full" size="lg" onClick={pay} disabled={paying || !tier}>
+        <Button className="mt-5 w-full" size="lg" onClick={pay} disabled={paying}>
           {paying ? "Paying" : failed ? "Try again" : "Pay (preview)"}
         </Button>
         <p className="mt-3 text-meta text-muted-fg">Preview. No payment is taken.</p>

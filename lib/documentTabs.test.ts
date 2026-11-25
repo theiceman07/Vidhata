@@ -14,14 +14,14 @@ describe("documentTabs", () => {
     }
   });
 
-  it("offers all six once signed off, in reading order", () => {
+  // The consultation tab comes back with consultations (lib/config/consultations.ts).
+  it("offers the rest once signed off, in reading order, with no consultation while it is off", () => {
     const tabs = documentTabs({ documentId: "d1", signedOff: true, checklist: { done: 2, total: 3 } });
     expect(tabs.map((t) => t.key)).toEqual([
       "overview",
       "summary",
       "checklist",
       "history",
-      "consultation",
       "delivery",
     ]);
     expect(tabs.find((t) => t.key === "checklist")?.label).toBe("Checklist");

@@ -40,6 +40,7 @@ interface Deal {
   type?: ContractDocument["type"];
   stateOfExecution?: string;
   transactionValue?: number;
+  plan?: ContractDocument["plan"];
 }
 
 /** Created and screened, and not paid for: awaiting payment, with the first pass's findings. */
@@ -53,6 +54,7 @@ export async function screenedDocument(deal: Deal = {}): Promise<ContractDocumen
       counterpartyName: "Counterparty Pvt Ltd",
       stateOfExecution: deal.stateOfExecution ?? "Delhi",
       transactionValue: deal.transactionValue ?? 150_000,
+      plan: deal.plan ?? (type === "msa" || type === "employment" ? "business" : "standard"),
       counterpartyIsMsme: false,
       durationMonths: 12,
       governingLaw: "Laws of India",

@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Icon, type IconName } from "@/components/shared/icon";
 import { Gloss } from "@/components/shared/gloss";
 import { useCalm } from "@/components/domain/calm";
-import { tierLabel } from "@/lib/config/pricing";
+import { planLabel } from "@/lib/config/plans";
 import { DOCUMENT_TONE, TONE, type Tone } from "@/lib/tone";
 import type { ClientDocument } from "@/lib/types";
 
@@ -50,7 +50,10 @@ function heroFor(doc: ClientDocument): Hero | null {
         headline: "Screening your draft",
         mover: "none",
         move: "The first pass is running",
-        next: "When screening ends you pay the fee, then it joins the advocate queue.",
+        next:
+          doc.plan === "freemium"
+            ? "When screening ends the AI draft and its findings are yours to read. Freemium has no advocate review."
+            : "When screening ends you pay the fee, then it joins the advocate queue.",
       };
     case "awaiting_payment":
       return {
@@ -135,7 +138,7 @@ export function StatusHero({ doc, className }: { doc: ClientDocument; className?
       <p className="mt-4 text-meta text-muted">
         Submitted {format(new Date(doc.createdAt), "d MMM yyyy")}
         <span aria-hidden className="mx-1.5">·</span>
-        {tierLabel(doc.tier)} review
+        {planLabel(doc.plan)} plan
       </p>
     </section>
   );

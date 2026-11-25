@@ -25,6 +25,7 @@ const intake: IntakeInput = {
   durationMonths: 24,
   governingLaw: "Laws of India",
   keyTerms: "Mutual confidentiality.",
+  plan: "standard" as const,
 };
 
 describe("starting a draft, as the client's own organisation", () => {

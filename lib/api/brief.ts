@@ -3,6 +3,7 @@ import { CONTRACT_TYPES, INDIAN_STATES } from "@/lib/mock/intake-options.mock";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { IntakeInput } from "./documents";
 import { randomDelay } from "./delay";
+import { plansFor } from "@/lib/config/plans";
 
 /**
  * Reading a brief into intake terms.
@@ -11,8 +12,8 @@ import { randomDelay } from "./delay";
  * into the facts intake needs; until it lands, this mock reads only what
  * the brief plainly states and assumes nothing else. A fact the brief does
  * not state is reported missing, never guessed: the state of execution
- * decides stamp duty, so it above all. The review tier is not read at all;
- * screening assigns it after the first pass. The one default is governing law, the laws of India unless the
+ * decides stamp duty, so it above all. The plan is the client's to choose, and is
+ * filled in only where a single plan covers the type. The one default is governing law, the laws of India unless the
  * brief names another, because Vidhataa settles Indian contracts; it is
  * shown in intake and on the document.
  */
@@ -30,6 +31,7 @@ export const DRAFT_NEEDS: (keyof IntakeInput)[] = [
   "transactionValue",
   "durationMonths",
   "stateOfExecution",
+  "plan",
 ];
 
 const TYPE_PATTERNS: [ContractDocument["type"], RegExp][] = [
@@ -130,6 +132,14 @@ export async function readBrief(brief: string): Promise<BriefReading> {
   const law = text.match(/\blaws? of ([A-Z][\w ]+?)(?:[.,;]|$)/);
   found.governingLaw = law ? `laws of ${law[1].trim()}` : "laws of India";
 
+  // The plan is the client's choice. A brief never states it, so it is read only where the type
+  // leaves no choice (one plan covers it); an NDA, in Freemium and Standard, opens intake at the
+  // plan step.
+  if (found.type) {
+    const covering = plansFor(found.type);
+    if (covering.length === 1) found.plan = covering[0].id;
+  }
+
   if (found.type) {
     const label = CONTRACT_TYPES.find((t) => t.value === found.type)?.label;
     found.title = counterparty ? `${label} · ${counterparty}` : label;
@@ -153,5 +163,6 @@ export function intakeFromReading(reading: BriefReading): IntakeInput | null {
     durationMonths: f.durationMonths!,
     governingLaw: f.governingLaw ?? "laws of India",
     keyTerms: f.keyTerms ?? "",
+    plan: f.plan!,
   };
 }

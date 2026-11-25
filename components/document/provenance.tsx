@@ -76,14 +76,20 @@ export function lifecycle(doc: LifecycleSource): Stage[] {
         ? `An advocate claimed it · ${day(doc.claimedAt)}`
         : s === "pending_review"
           ? "In the advocate queue"
-          : null,
+          : s === "ai_draft"
+            ? "Not part of the Freemium plan"
+            : null,
   };
 
   const signed: Stage = {
     key: "signed",
     label: "Signed off",
     state: s === "settled" || s === "executed" ? "done" : "ahead",
-    detail: doc.signOff ? `${doc.signOff.advocate} · ${day(doc.signOff.at)}` : null,
+    detail: doc.signOff
+      ? `${doc.signOff.advocate} · ${day(doc.signOff.at)}`
+      : s === "ai_draft"
+        ? "No advocate sign-off on Freemium"
+        : null,
   };
 
   const executed: Stage = {
@@ -108,6 +114,8 @@ export function stageCaption(doc: LifecycleSource): string {
       return "First pass running";
     case "awaiting_payment":
       return "Awaiting payment";
+    case "ai_draft":
+      return "AI draft · no advocate review";
     case "pending_review":
       return "In the advocate queue";
     case "under_review":

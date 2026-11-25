@@ -2,7 +2,8 @@ import { z } from "zod";
 import { ApiError, authed, type Fetcher } from "@/lib/api/backend";
 import { confirmUpload, requestUploadUrl, uploadToS3 } from "@/lib/api/files";
 import { checkFile } from "@/lib/storage/upload";
-import type { ContractDocument, DocumentStatus, ModelledContractType, ReviewTier } from "@/lib/types";
+import type { ContractDocument, DocumentStatus, ModelledContractType, PlanId } from "@/lib/types";
+import { plansFor } from "@/lib/config/plans";
 
 /** POST /documents on the real backend (backend/app/documents/router.py). Not the mock in documents.ts. */
 const createdSchema = z.object({ id: z.string().uuid(), doc_type: z.string(), state: z.string() });
@@ -13,6 +14,8 @@ export type CreatedDocument = z.infer<typeof createdSchema>;
 export interface CreateFacts {
   stateOfExecution?: string;
   transactionValue?: number;
+  /** The plan the client chose (backend migration 26). */
+  plan?: PlanId;
 }
 
 export function createBackendDocument(docType: string, fetchImpl?: Fetcher, facts: CreateFacts = {}): Promise<CreatedDocument> {
@@ -21,6 +24,7 @@ export function createBackendDocument(docType: string, fetchImpl?: Fetcher, fact
   if (facts.transactionValue !== undefined && Number.isFinite(facts.transactionValue) && facts.transactionValue >= 0) {
     body.transaction_value = facts.transactionValue;
   }
+  if (facts.plan) body.plan = facts.plan;
   return authed("/documents", { method: "POST", body }, createdSchema, fetchImpl);
 }
 
@@ -54,6 +58,8 @@ export async function requestBackendReview(documentId: string, fetchImpl?: Fetch
 const STATES = [
   "drafted", "under_ai_review", "pending_lawyer_review", "lawyer_commented",
   "revision_in_progress", "lawyer_approved", "delivered",
+  // Freemium: screened and handed to the client with no advocate (backend migration 26).
+  "ai_draft_delivered",
 ] as const;
 
 // The backend has 19 contract types; the screens model four. Any other type is shown as type "other"
@@ -65,7 +71,6 @@ const TITLE: Record<ModelledContractType, string> = {
   vendor: "Vendor Agreement",
   employment: "Employment Agreement",
 };
-const TIER: Record<string, ReviewTier> = { standard: "standard", enhanced: "enhanced", senior_counsel: "senior" };
 const NOT_RECORDED = "Not recorded";
 
 // Any non-empty code is accepted; typeAndTitle() decides how it is shown.
@@ -88,7 +93,9 @@ function typeAndTitle(code: string): { type: ContractDocument["type"]; title: st
   }
   return { type: "other", title: plainTypeLabel(code) };
 }
-const tier = z.enum(["standard", "enhanced", "senior_counsel"]).nullable();
+// The plan the client chose. A row from before backend migration 26 carries none; it is read as the
+// cheapest plan with an advocate that covers its type (see planOf).
+const plan = z.enum(["freemium", "standard", "business", "premium"]).nullish();
 const money = z.coerce.number().nullable();
 
 export const documentRowSchema = z.object({
@@ -98,7 +105,7 @@ export const documentRowSchema = z.object({
   state: z.enum(STATES),
   state_of_execution: z.string().nullable(),
   transaction_value: money,
-  triage_tier: tier,
+  plan,
   assigned_lawyer_id: z.string().nullable(),
   created_at: z.string(),
   updated_at: z.string(),
@@ -108,7 +115,7 @@ export type DocumentRow = z.infer<typeof documentRowSchema>;
 export const queueRowSchema = z.object({
   id: z.string().uuid(),
   doc_type: docType,
-  triage_tier: tier,
+  plan,
   queued_at: z.string(),
   org_id: z.string(),
   // Kept only while the conflict check needs a name to check against; for counsel to decide.
@@ -125,10 +132,16 @@ function statusOf(state: DocumentRow["state"], assigned: string | null): Documen
     case "revision_in_progress": return "revision";
     case "lawyer_approved":
     case "delivered": return "settled";
+    case "ai_draft_delivered": return "ai_draft";
   }
 }
 
-function base(code: string): Omit<ContractDocument, "id" | "orgId" | "status" | "tier" | "clientName" | "stateOfExecution" | "transactionValue" | "createdAt" | "advocate" | "settledAt" | "claimedAt"> {
+function planOf(stated: PlanId | null | undefined, type: ContractDocument["type"]): PlanId {
+  if (stated) return stated;
+  return plansFor(type).find((p) => p.advocateReview)?.id ?? "standard";
+}
+
+function base(code: string): Omit<ContractDocument, "id" | "orgId" | "status" | "plan" | "clientName" | "stateOfExecution" | "transactionValue" | "createdAt" | "advocate" | "settledAt" | "claimedAt"> {
   const { type, title } = typeAndTitle(code);
   return {
     title, type, counterpartyName: NOT_RECORDED, counterpartyIsMsme: false, durationMonths: 0,
@@ -151,7 +164,7 @@ export function toContractDocument(raw: unknown): ContractDocument {
   const status = statusOf(r.state, r.assigned_lawyer_id);
   return {
     ...base(r.doc_type),
-    id: r.id, orgId: r.org_id, status, tier: r.triage_tier ? TIER[r.triage_tier] : null,
+    id: r.id, orgId: r.org_id, status, plan: planOf(r.plan, typeAndTitle(r.doc_type).type),
     clientName: NOT_RECORDED, stateOfExecution: r.state_of_execution ?? NOT_RECORDED,
     transactionValue: r.transaction_value ?? 0, createdAt: r.created_at,
     advocate: r.assigned_lawyer_id ? { id: r.assigned_lawyer_id, name: "Assigned advocate", bar: "" } : null,
@@ -162,8 +175,8 @@ export function toContractDocument(raw: unknown): ContractDocument {
 export function queueRowToContractDocument(r: QueueRow): ContractDocument {
   return {
     ...base(r.doc_type),
-    id: r.id, orgId: r.org_id, status: "pending_review", tier: r.triage_tier ? TIER[r.triage_tier] : null,
-    // An unclaimed document is shown by type, tier and state only: no execution state and no value.
+    id: r.id, orgId: r.org_id, status: "pending_review", plan: planOf(r.plan, typeAndTitle(r.doc_type).type),
+    // An unclaimed document is shown by type, plan and state only: no execution state and no value.
     clientName: r.org_name ?? NOT_RECORDED, stateOfExecution: NOT_RECORDED,
     transactionValue: 0, createdAt: r.queued_at, advocate: null, claimedAt: null, settledAt: null,
   };

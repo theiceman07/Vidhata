@@ -31,7 +31,8 @@ export function groupOf(doc: MoveSource): MoveGroup {
     return "you";
   }
   if (doc.status === "settled" && outstandingSteps(doc) > 0) return "you";
-  if (doc.status === "settled" || doc.status === "executed") return "done";
+  // A Freemium AI draft is finished as far as its plan goes: nothing waits on anyone.
+  if (doc.status === "settled" || doc.status === "executed" || doc.status === "ai_draft") return "done";
   return "advocate";
 }
 

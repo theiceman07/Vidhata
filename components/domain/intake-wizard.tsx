@@ -22,12 +22,8 @@ import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { DRAFT_NEEDS, readBrief } from "@/lib/api/brief";
 import { BRIEF_KEY } from "@/components/marketing/deal-prompt";
 import { ContractTypePicker } from "@/components/domain/contract-type-picker";
-import {
-  PRICE_BASIS,
-  PRICING_IS_INDICATIVE,
-  rupees,
-  tierRange,
-} from "@/lib/config/pricing";
+import { plansFor } from "@/lib/config/plans";
+import { PlanPicker } from "@/components/domain/plan-picker";
 import { intakeSchema, type IntakeFormValues } from "@/lib/intakeSchema";
 import { INDIAN_STATES } from "@/lib/mock/intake-options.mock";
 import { createReentryGuard, runExclusive } from "@/lib/reentry";
@@ -46,9 +42,10 @@ const STEP_FIELDS: (keyof IntakeFormValues)[][] = [
     "governingLaw",
   ],
   ["keyTerms"],
+  ["plan"],
 ];
 
-const STEP_LABELS = ["Contract type", "Deal basics", "Transaction details", "Key terms"];
+const STEP_LABELS = ["Contract type", "Deal basics", "Transaction details", "Key terms", "Plan"];
 
 export function IntakeWizard() {
   const router = useRouter();
@@ -138,6 +135,15 @@ export function IntakeWizard() {
 
   const values = watch();
 
+  // The plan has to cover the type. A type with one plan has it chosen for the client (they still
+  // see it, and its price, on the plan step); a change of type clears a plan that no longer fits.
+  useEffect(() => {
+    if (!values.type) return;
+    const covering = plansFor(values.type);
+    if (values.plan && covering.some((p) => p.id === values.plan)) return;
+    setValue("plan", (covering.length === 1 ? covering[0].id : undefined) as never);
+  }, [values.type, values.plan, setValue]);
+
   async function goNext() {
     touched.current = true;
     const valid = await trigger(STEP_FIELDS[step]);
@@ -169,6 +175,7 @@ export function IntakeWizard() {
           durationMonths: data.durationMonths,
           governingLaw: data.governingLaw,
           keyTerms: data.keyTerms ?? "",
+          plan: data.plan,
         });
         router.push(`/documents/${doc.id}`);
       } catch (err) {
@@ -337,13 +344,6 @@ export function IntakeWizard() {
                 The counterparty is a registered MSME
               </Label>
             </div>
-            {/* The tier is not asked for: screening assigns it from the deal
-                facts once the first pass has run. */}
-            <p className="text-small text-muted-fg">
-              Your review tier is assigned after screening, from the value and
-              risk of the deal. Billing is not enabled in this preview. No
-              payment is taken.
-            </p>
           </>
         )}
 
@@ -429,14 +429,19 @@ export function IntakeWizard() {
               rows={8}
               className="min-h-[12rem]"
             />
-            <p className="mt-4 max-w-measure text-meta text-muted-fg">
-              One fixed fee per document, set by the review tier screening assigns after the
-              first pass: from {rupees(tierRange().low)} to {rupees(tierRange().high)}{" "}
-              {PRICE_BASIS}
-              {PRICING_IS_INDICATIVE && " (indicative)"}. You pay once the document is screened,
-              and nothing reaches an advocate before then.
-            </p>
           </div>
+        )}
+
+        {step === 4 && values.type && (
+          <PlanPicker
+            type={values.type}
+            value={values.plan}
+            onChange={(plan) => {
+              touched.current = true;
+              setValue("plan", plan, { shouldValidate: true });
+            }}
+            error={errors.plan?.message}
+          />
         )}
 
         {submitError && (

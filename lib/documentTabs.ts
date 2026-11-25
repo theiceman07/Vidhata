@@ -1,3 +1,5 @@
+import { CONSULTATIONS_ENABLED } from "@/lib/config/consultations";
+
 /**
  * The ways into a document, as a client sees them.
  *
@@ -43,7 +45,7 @@ export function documentTabs({
   tabs.push({ key: "history", label: "Version history", href: `${base}/history` });
 
   if (signedOff) {
-    tabs.push({ key: "consultation", label: "Consultation", href: `${base}/consultation` });
+    if (CONSULTATIONS_ENABLED) tabs.push({ key: "consultation", label: "Consultation", href: `${base}/consultation` });
     tabs.push({ key: "delivery", label: "Delivery", href: `${base}/delivery` });
   }
 

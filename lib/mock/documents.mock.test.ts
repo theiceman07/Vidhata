@@ -10,6 +10,7 @@ const EVERY_STATUS: DocumentStatus[] = [
   "draft",
   "analysing",
   "awaiting_payment",
+  "ai_draft",
   "pending_review",
   "under_review",
   "revision",
@@ -26,9 +27,9 @@ describe("the fixtures' states", () => {
     }
   });
 
-  it("has one awaiting payment: screened and tiered, unpaid, and not in the advocate queue", () => {
+  it("has one awaiting payment: screened, on a plan with an advocate, unpaid, and not in the advocate queue", () => {
     const doc = mockDocuments.find((d) => d.status === "awaiting_payment")!;
-    expect(doc.tier).not.toBeNull();
+    expect(doc.plan).not.toBe("freemium");
     expect(doc.payment).toBeUndefined();
     expect(isReleased(doc)).toBe(false);
   });

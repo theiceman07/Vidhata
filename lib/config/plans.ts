@@ -1,18 +1,15 @@
+import type { ModelledContractType, PlanId } from "@/lib/types";
 import { rupees } from "./pricing";
 
 /**
- * The plans on the public pricing page (owner's call, 25 Nov 2026). They replace the three review
- * tiers that screening assigned (lib/config/pricing.ts): the client now picks a plan up front, and
- * each plan is priced per contract and covers a set of agreement types.
- *
- * Only the marketing pages read this so far. The portal still runs the screening-assigned tiers in
- * lib/config/pricing.ts and lib/triage.ts; moving it onto these plans is separate work.
+ * The plans (owner's call, 25 Nov 2026). They replace the three review tiers screening used to
+ * assign: the client picks a plan at intake, each plan is priced per contract and covers a set of
+ * agreement types, and the plan decides whether an advocate reviews the document. Every price the
+ * product states for a document lives here.
  *
  * Turnaround and GST are to be confirmed by the owner. Until a value is set here, no page states
  * one.
  */
-export type PlanId = "freemium" | "standard" | "business" | "premium";
-
 export interface Plan {
   id: PlanId;
   label: string;
@@ -103,3 +100,42 @@ export const PLANS: Plan[] = [
 export function reviewedFrom(): Plan {
   return PLANS.filter((p) => p.advocateReview).reduce((a, b) => (b.amount < a.amount ? b : a));
 }
+
+export const PLAN_BY_ID: Record<PlanId, Plan> = Object.fromEntries(PLANS.map((p) => [p.id, p])) as Record<PlanId, Plan>;
+
+export function planLabel(plan: PlanId | null | undefined): string {
+  return plan ? PLAN_BY_ID[plan].label : "No plan";
+}
+
+/**
+ * Which plans cover each agreement type the portal can draft, cheapest first. Read from the plans'
+ * own agreement lists (an NDA is in Freemium and Standard; a vendor agreement with an MSME in
+ * Standard; an MSA and an employment agreement in Business), so the two cannot drift.
+ */
+const PLAN_AGREEMENT: Record<ModelledContractType, string[]> = {
+  nda: ["NDA"],
+  vendor: ["Vendor Agreement (MSME)"],
+  msa: ["MSA"],
+  employment: ["Employment Agreement"],
+};
+
+export function plansFor(type: ModelledContractType | "other"): Plan[] {
+  if (type === "other") return [];
+  const names = PLAN_AGREEMENT[type];
+  return PLANS.filter((p) => p.agreements.some((a) => names.includes(a)));
+}
+
+export function planCovers(plan: PlanId, type: ModelledContractType | "other"): boolean {
+  return plansFor(type).some((p) => p.id === plan);
+}
+
+/** Freemium: one contract per organisation per calendar month. */
+export const FREEMIUM_MONTHLY_LIMIT = 1;
+
+/** The queue offers the dearest plans first. Freemium never reaches the queue. */
+export const PLAN_QUEUE_PRIORITY: Record<PlanId, number> = {
+  premium: 0,
+  business: 1,
+  standard: 2,
+  freemium: 3,
+};

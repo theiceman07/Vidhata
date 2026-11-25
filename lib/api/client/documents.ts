@@ -1,4 +1,5 @@
 import { intakeSchema } from "@/lib/intakeSchema";
+import { FREEMIUM_MONTHLY_LIMIT } from "@/lib/config/plans";
 import type { ClientDocument, ClientDocumentSummary, ContractDocument, ExecutionStep } from "@/lib/types";
 import { MockApiError } from "../delay";
 import { backendDataEnabled } from "../source";
@@ -12,6 +13,7 @@ import {
 import {
   attachEvidence,
   createDraftDocument,
+  freemiumUsedThisMonth,
   getDocument,
   type IntakeInput,
   listDocuments,
@@ -61,6 +63,7 @@ export async function createClientDraft(orgId: string, input: IntakeInput): Prom
     const created = await createBackendDocument(BACKEND_CODE_BY_TYPE[parsed.data.type], undefined, {
       stateOfExecution: parsed.data.stateOfExecution,
       transactionValue: parsed.data.transactionValue,
+      plan: parsed.data.plan,
     });
     const doc = await getBackendDocument(created.id);
     if (!doc) throw new MockApiError("Could not create the draft.");
@@ -172,4 +175,14 @@ export async function requestClientReview(orgId: string, id: string): Promise<Cl
   await ownDocument(orgId, id);
   await requestBackendReview(id);
   return shapeClientDocument(await ownDocument(orgId, id));
+}
+
+/**
+ * How many Freemium contracts the client's organisation has left this month. The backend decides
+ * for itself and refuses one over the limit, so in backend mode this says nothing (null) and the
+ * picker offers Freemium.
+ */
+export async function freemiumRemaining(orgId: string): Promise<number | null> {
+  if (backendDataEnabled()) return null;
+  return Math.max(0, FREEMIUM_MONTHLY_LIMIT - freemiumUsedThisMonth(orgId));
 }

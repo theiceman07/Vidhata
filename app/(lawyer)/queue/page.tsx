@@ -32,7 +32,7 @@ import {
   declareConflictWithClient,
   getAdvocateProfile,
 } from "@/lib/api/advocate";
-import { tierLabel } from "@/lib/config/pricing";
+import { planLabel } from "@/lib/config/plans";
 import {
   partiesVisibleInQueue,
   queueSearchFields,
@@ -187,9 +187,8 @@ export default function QueuePage() {
       if (sort === "findings") {
         return unsettledFindings(b).length - unsettledFindings(a).length;
       }
-      // Priority: what is already in hand, then tier routing (which is
-      // what backs the pricing page's priority turnaround), then age, so
-      // nothing is starved.
+      // Priority: what is already in hand, then the plan (dearest first),
+      // then age, so nothing is starved.
       return (
         rank(a, advocate.id) - rank(b, advocate.id) ||
         getQueuePriority(a) - getQueuePriority(b) ||
@@ -510,7 +509,7 @@ export default function QueuePage() {
 
         {filter === "unclaimed" && rows.length > 0 && (
           <p className="mt-4 text-meta text-muted-fg">
-            Claiming assigns a document to you alone. Senior and enhanced tier
+            Claiming assigns a document to you alone. Premium and Business plan
             work is offered first, then the longest waiting.
           </p>
         )}
@@ -542,7 +541,7 @@ export default function QueuePage() {
               )}
             >
               <span role="columnheader">Document</span>
-              <span role="columnheader">Tier</span>
+              <span role="columnheader">Plan</span>
               <span role="columnheader">Undecided</span>
               <span role="columnheader">Waiting</span>
               <span role="columnheader">State</span>
@@ -565,7 +564,7 @@ export default function QueuePage() {
           answered={buckets.open.filter(clientAnswered)}
           onShow={show}
         />
-        <TierMix docs={buckets.open} />
+        <PlanMix docs={buckets.open} />
         <SignedOffByYou docs={buckets.settled} onShow={() => show("settled")} />
       </div>
 
@@ -674,7 +673,7 @@ function UpNext({
   const partiesLine = upNextPartiesLine(doc);
   const why =
     doc.status === "pending_review"
-      ? `Unclaimed · ${tierLabel(doc.tier).toLowerCase()}`
+      ? `Unclaimed · ${planLabel(doc.plan)} plan`
       : clientAnswered(doc)
         ? "Client responded"
         : "Claimed by you";
@@ -882,21 +881,22 @@ function YourDesk({
   );
 }
 
-const TIERS: { tier: ContractDocument["tier"]; label: string }[] = [
-  { tier: "senior", label: "Senior review" },
-  { tier: "enhanced", label: "Enhanced" },
-  { tier: "standard", label: "Standard" },
+// Freemium never reaches the queue, so it has no bar.
+const PLAN_BARS: { plan: ContractDocument["plan"]; label: string }[] = [
+  { plan: "premium", label: "Premium" },
+  { plan: "business", label: "Business" },
+  { plan: "standard", label: "Standard" },
 ];
 
 /**
- * Open work by tier, and the findings in it by severity: the shape of the
- * queue, read in a glance. Tier routing is what the queue orders by, so
- * the bars run in the order the work is offered.
+ * Open work by plan, and the findings in it by severity: the shape of the
+ * queue, read in a glance. The plan is what the queue orders by, so the
+ * bars run in the order the work is offered.
  */
-function TierMix({ docs }: { docs: ContractDocument[] }) {
-  const counts = TIERS.map((t) => ({
+function PlanMix({ docs }: { docs: ContractDocument[] }) {
+  const counts = PLAN_BARS.map((t) => ({
     ...t,
-    n: docs.filter((d) => d.tier === t.tier).length,
+    n: docs.filter((d) => d.plan === t.plan).length,
   }));
   // Against all open work, so one of two reads as half and none as empty.
   const max = Math.max(1, docs.length);
@@ -919,12 +919,12 @@ function TierMix({ docs }: { docs: ContractDocument[] }) {
   return (
     <SidePanel title="Shape of the queue">
       <p className="text-meta text-muted-fg">
-        Open work by tier, in the order it is offered
+        Open work by plan, in the order it is offered
       </p>
       <ul className="mt-2 space-y-2">
         {counts.map((c) => (
           <li
-            key={c.tier}
+            key={c.plan}
             className="grid grid-cols-[6.5rem_minmax(0,1fr)_1.5rem] items-center gap-3"
           >
             <span className="text-meta text-ink">{c.label}</span>
@@ -1124,7 +1124,7 @@ function QueueRow({
             {partiesVisibleInQueue(doc) && (
               <span className="mx-1.5 text-muted-fg/50">·</span>
             )}
-            {tierLabel(doc.tier)}
+            {planLabel(doc.plan)}
             <span className="mx-1.5 text-muted-fg/50">·</span>
             waiting {days} {days === 1 ? "day" : "days"}
           </span>
@@ -1132,7 +1132,7 @@ function QueueRow({
       </div>
 
       <div role="cell" className="hidden text-meta text-ink lg:block">
-        {tierLabel(doc.tier)}
+        {planLabel(doc.plan)}
       </div>
 
       <div

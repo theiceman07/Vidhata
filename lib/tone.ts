@@ -100,6 +100,8 @@ export const DOCUMENT_TONE: Record<DocumentStatus, StateTone> = {
   draft: { text: "Draft", tone: "outline", icon: "edit" },
   analysing: { text: "Screening", tone: "progress", icon: "hourglass_top" },
   awaiting_payment: { text: "Awaiting payment", tone: "move", icon: "payments" },
+  // Freemium: the client's own, finished as far as it goes, with no advocate behind it.
+  ai_draft: { text: "AI draft · no advocate", tone: "outline", icon: "description" },
   pending_review: { text: "Awaiting advocate", tone: "progress", icon: "schedule" },
   under_review: { text: "Advocate review", tone: "progress", icon: "rate_review" },
   revision: { text: "Changes requested", tone: "move", icon: "reply" },

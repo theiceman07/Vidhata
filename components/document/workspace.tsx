@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
-import { TIER_PENDING_LABEL } from "@/lib/config/pricing";
+import { planLabel } from "@/lib/config/plans";
 import { cn } from "@/lib/utils";
 import { Icon, type IconName } from "@/components/shared/icon";
 import { Tick } from "@/components/shared/tick";
@@ -495,20 +495,14 @@ export function DocumentWorkspace({
 
   // The advocate needs both parties and the revision count; a client reads the
   // counterparty in the title and their own name on the rail, so only the draft
-  // and the tier are left for them, and they sit beside the title.
+  // and the plan are left for them, and they sit beside the title.
   const facts = [
     role === "advocate" ? owner : null,
     role === "advocate" ? doc.clientName : null,
     role === "advocate" ? doc.counterpartyName : null,
     `Draft ${doc.version}`,
     counter,
-    doc.tier ? (
-      <span key="tier">
-        <span className="capitalize">{doc.tier}</span> tier
-      </span>
-    ) : (
-      `Tier ${TIER_PENDING_LABEL.toLowerCase()}`
-    ),
+    `${planLabel(doc.plan)} plan`,
     // A client is told who signed off with the document's other facts, not in the row of tabs.
     role === "client" ? aside : null,
   ];

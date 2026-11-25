@@ -1,4 +1,4 @@
-import { tierLabel } from "@/lib/config/pricing";
+import { planLabel } from "@/lib/config/plans";
 import type { Consultation, ContractDocument, Invoice } from "@/lib/types";
 
 /**
@@ -20,11 +20,11 @@ export const INVOICE_KIND_LABEL: Record<Invoice["kind"], string> = {
   consultation_fee: "Consultation fee",
 };
 
-/** What an invoice's fee was for, in a line: the tier for a document, the advocate for a consultation. */
-export function invoiceBasis(invoice: Pick<Invoice, "kind" | "tier">): string {
+/** What an invoice's fee was for, in a line: the plan for a document, the advocate for a consultation. */
+export function invoiceBasis(invoice: Pick<Invoice, "kind" | "plan">): string {
   return invoice.kind === "consultation_fee"
     ? "Fixed fee · with the advocate who settled the document"
-    : `Fixed fee · ${tierLabel(invoice.tier)} review`;
+    : `${planLabel(invoice.plan)} plan · per contract`;
 }
 
 /** The invoices for these documents and consultations, newest first. */
@@ -41,7 +41,7 @@ export function invoicesFor(
           kind: "document_fee",
           documentId: doc.id,
           description: doc.title,
-          tier: doc.tier,
+          plan: doc.plan,
           amount: doc.payment!.amount,
         }),
       ),
@@ -53,7 +53,7 @@ export function invoicesFor(
           kind: "consultation_fee",
           documentId: c.documentId,
           description: c.documentTitle,
-          tier: null,
+          plan: null,
           amount: c.fee!,
         }),
       ),

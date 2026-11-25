@@ -27,7 +27,7 @@
         "components/domain/esign-guide.tsx",
         "components/domain/execution-checklist.tsx",
         "components/domain/intake-wizard.tsx",
-        "components/domain/payment-panel.tsx",
+        "components/domain/payment-panel.tsx", "components/domain/plan-picker.tsx",
         "components/domain/privacy-settings.tsx",
         "components/domain/pipeline-progress.tsx",
         "components/domain/summary-view.tsx",

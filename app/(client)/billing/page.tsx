@@ -16,7 +16,8 @@ import {
   saveBillingProfile,
 } from "@/lib/api/billing";
 import { INVOICE_KIND_LABEL } from "@/lib/billing";
-import { PRICE_BASIS, rupees, tierLabel } from "@/lib/config/pricing";
+import { rupees } from "@/lib/config/pricing";
+import { planLabel } from "@/lib/config/plans";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { BillingProfile, Invoice } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
@@ -132,9 +133,7 @@ export default function BillingPage() {
         title="Billing"
         description={
           <>
-            One fixed fee per document, set by its review tier, covering every
-            revision round. All amounts are {PRICE_BASIS}. GST is added at the
-            rate in force.
+            One fee per document: the price of the plan you chose for it.
           </>
         }
       />
@@ -184,15 +183,12 @@ export default function BillingPage() {
                         {INVOICE_KIND_LABEL[invoice.kind]} ·{" "}
                         {invoice.kind === "consultation_fee"
                           ? "the advocate who settled it"
-                          : tierLabel(invoice.tier)}
+                          : `${planLabel(invoice.plan)} plan`}
                       </span>
                     </span>
                     <span className="sm:text-right">
                       <span className="block font-display text-h3 tabular-nums text-ink">
                         {rupees(invoice.amount)}
-                      </span>
-                      <span className="block text-meta text-muted-fg">
-                        {PRICE_BASIS}
                       </span>
                     </span>
                   </Link>

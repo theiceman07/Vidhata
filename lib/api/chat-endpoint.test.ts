@@ -189,7 +189,7 @@ describe("the flag and the chat-open rule", () => {
     for (const state of states) {
       const doc = toContractDocument({
         id: DOC, org_id: DOC, doc_type: "nda", state, state_of_execution: null, transaction_value: null,
-        triage_tier: null, assigned_lawyer_id: DOC, created_at: "2026-10-18T08:00:00Z", updated_at: "2026-10-18T09:00:00Z",
+        plan: null, assigned_lawyer_id: DOC, created_at: "2026-10-18T08:00:00Z", updated_at: "2026-10-18T09:00:00Z",
       } as Parameters<typeof toContractDocument>[0]);
       expect(doc.status === "settled", state).toBe(chatOpenForState(state));
     }

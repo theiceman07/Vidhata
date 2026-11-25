@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { INVOICE_KIND_LABEL, invoicesFor } from "./billing";
-import { TIER_PRICING } from "./config/pricing";
+import { PLAN_BY_ID } from "./config/plans";
 import { mockDocuments } from "./mock/documents.mock";
 
 const anaya = mockDocuments.filter((d) => d.orgId === "org-anaya-textiles");
@@ -39,11 +39,11 @@ describe("invoices", () => {
     expect(next.map((i) => i.number)).toEqual(["VID-2027-0001", "VID-2026-0001"]);
   });
 
-  it("carry the flat fee the tier sets, from the payment on the document", () => {
+  it("carry the plan's price, from the payment on the document", () => {
     for (const invoice of invoices) {
       const doc = anaya.find((d) => d.id === invoice.documentId)!;
       expect(invoice.amount).toBe(doc.payment!.amount);
-      expect(invoice.amount).toBe(TIER_PRICING[doc.tier!].amount);
+      expect(invoice.amount).toBe(PLAN_BY_ID[doc.plan].amount);
       expect(invoice.kind).toBe("document_fee");
     }
   });
@@ -59,7 +59,7 @@ describe("invoices", () => {
     const text = JSON.stringify(invoices);
     expect(text).not.toMatch(/finding|layer|severity|citation|advocate/i);
     expect(Object.keys(invoices[0]).sort()).toEqual(
-      ["amount", "description", "documentId", "issuedAt", "kind", "number", "tier"].sort(),
+      ["amount", "description", "documentId", "issuedAt", "kind", "number", "plan"].sort(),
     );
   });
 
@@ -88,7 +88,7 @@ describe("a consultation fee", () => {
       kind: "consultation_fee",
       amount: 2999,
       issuedAt: paidAt,
-      tier: null,
+      plan: null,
       documentId: nda.id,
     });
     // It takes the next number, and every earlier one stays as it was.
@@ -111,7 +111,7 @@ describe("a consultation fee", () => {
     const [newest] = invoicesFor(anaya, [withText]);
     expect(JSON.stringify(newest)).not.toMatch(/only the client wrote|only the advocate wrote/);
     expect(Object.keys(newest).sort()).toEqual(
-      ["amount", "description", "documentId", "issuedAt", "kind", "number", "tier"].sort(),
+      ["amount", "description", "documentId", "issuedAt", "kind", "number", "plan"].sort(),
     );
   });
 });

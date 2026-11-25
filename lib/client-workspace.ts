@@ -29,7 +29,7 @@ export function workspaceDocOf(doc: ClientDocument): WorkspaceDocument {
     title: doc.title,
     type: doc.type,
     status: doc.status,
-    tier: doc.tier,
+    plan: doc.plan,
     clientName: doc.deal.clientName,
     counterpartyName: doc.deal.counterpartyName,
     version: doc.version,

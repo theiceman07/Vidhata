@@ -15,7 +15,11 @@ off. The client gets the settled document plus an execution checklist
 - A finding carries one citation, a string as the backend writes it. The
   UI shows it and never claims it was verified: that is the citation gate,
   layer 5 of the pipeline, and the backend sends no verified field.
-- No document reaches a client without a recorded advocate sign-off.
+- No document reaches a client without a recorded advocate sign-off, except a
+  Freemium AI draft (owner's call, 25 Nov 2026): status ai_draft, the first
+  pass's draft and findings handed back with no advocate, marked "AI draft ·
+  not reviewed or signed off by an advocate" everywhere it shows. It has no
+  sign-off, so no agent, summary, checklist or delivery.
 - The chat agent explains the settled document. It never gives advice.
 - Never invent statute text, section numbers or case names. Use the
   fixtures in lib/mock. If a fixture is missing, ask.
@@ -128,9 +132,9 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
   portal it drafts: readBrief() (lib/api/brief.ts) reads what the brief
   states, a complete brief is drafted at once, and an incomplete one opens
   intake pre-filled at the first missing fact. Nothing unstated is
-  guessed, the state of execution above all. The client never picks a
-  tier: screening assigns it after the first pass (lib/triage.ts), and
-  every price lives in lib/config/pricing.ts.
+  guessed, the state of execution above all. The plan is the client's to
+  choose (the last intake step, PlanPicker): a brief fills it only where one
+  plan covers the type.
 - Access and pricing (owner's call, 25 Nov 2026, after Tejaswi's UX review). Invite-only
   preview. The public DealPrompt says "Request access" (actionLabel) and carries the brief
   into /request-access, which shows it back; nothing on the public site sends anyone to a
@@ -143,9 +147,13 @@ palette and Cormorant Infant / Outfit pairing. Do not reintroduce them.
   with no account gets no profile (backend migration 24) and /auth/callback signs it out and
   opens /request-access pre-filled (sessionStorage, never the URL). The company (Quenta,
   Eachanari, Coimbatore, quenta.contact@gmail.com) lives in lib/config/company.ts and shows
-  in the footer, both sign-in pages and the 404. The public pricing page shows four plans
-  picked up front, priced per contract (lib/config/plans.ts); the portal still runs the
-  screening-assigned tiers in lib/config/pricing.ts until it is moved over. Turnaround, GST,
+  in the footer, both sign-in pages and the 404. Plans (lib/config/plans.ts) replace the
+  review tiers everywhere: the client picks one at intake from those that cover the
+  agreement type, the document carries it (ContractDocument.plan), payment is its price,
+  and the advocate queue offers the dearest plan first. Freemium is one contract per
+  organisation per calendar month. The consultation is off (CONSULTATIONS_ENABLED in
+  lib/config/consultations.ts): every entry point is hidden and its routes say it is not
+  offered; the code stays. Turnaround, GST,
   revisions, refunds, counterparty access, e-signing and liability wording are to be
   confirmed: no copy may depend on them. No advocate or customer count is published.
 - An ink band takes `tile-grain tile-grain-ink`: dark noise cannot show on ink
@@ -339,19 +347,19 @@ Three systems, each with its own state. Never fold them into one label.
   review (advocate trail only, never the client's), no new round can be
   requested (the API refuses too), and asking for more in a round already
   open is still allowed. It never blocks settling or sign-off.
-- Payment: screening ends in awaiting_payment, and the client pays one flat
-  fee for the tier screening assigned. Only a paid document is released
+- Payment: on a plan with an advocate, screening ends in awaiting_payment, and
+  the client pays the price of the plan they chose. A Freemium document ends
+  in ai_draft instead, is never paid for and never released. Only a paid document is released
   (isReleased, lib/api/documents.ts): the advocate reads (the queue, a link to
   /review/[id], claim) refuse an unpaid one exactly as they refuse a missing
   id, so an advocate cannot tell it exists, and it is in no advocate-facing
-  count or metric. Fees are numbers in lib/config/pricing.ts, quoted "before
-  GST", covering every revision round. Never a percentage, share or any figure
+  count or metric. Prices are numbers in lib/config/plans.ts (GST to be
+  confirmed, so none is stated). Never a percentage, share or any figure
   that reads as part of legal fees (BCI fee-sharing rules, Architecture §8).
   The payment step is a plainly fake "Pay (preview)": no card, UPI or bank
   inputs, not even disabled. Pay is idempotent, and a failure leaves the
   document awaiting payment with a retry. The client sees, before paying, only
-  the tier, the fee and the deal facts behind the tier, never a reason drawn
-  from findings.
+  the plan, its price and the deal facts, never anything drawn from findings.
 
 ## Design
 - Fill the screen. Pages use the full width they are given, not a narrow

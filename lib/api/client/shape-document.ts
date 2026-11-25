@@ -17,7 +17,9 @@ import { asClientReads, shapeClientFindings, signOffRecord, type ShapeOptions } 
  * clock.
  *
  * Before sign-off a client reads the status, the clauses behind requests
- * addressed to them, in full, and a count of the rest. After it the whole
+ * addressed to them, in full, and a count of the rest. A Freemium AI draft
+ * (status ai_draft) is the exception: no advocate will sign it off, so the
+ * client reads its clauses and the first pass's findings in full. After it the whole
  * record is theirs, read-only. A document that says it is signed off without an
  * advocate and a date on record is read as not signed off (`asClientReads`).
  */
@@ -33,7 +35,10 @@ export function shapeClientDocument(record: ContractDocument, options: ShapeOpti
       .filter((f) => f.changeRequest !== null)
       .map((f) => clauseNumberFromReference(f.clauseReference)),
   );
-  const shown = signOff ? doc.clauses : doc.clauses.filter((c) => asked.has(c.number));
+  // A Freemium AI draft has no advocate and no sign-off: it is the client's to read in full as
+  // soon as screening hands it back, marked as not reviewed by an advocate.
+  const aiDraft = doc.status === "ai_draft";
+  const shown = signOff || aiDraft ? doc.clauses : doc.clauses.filter((c) => asked.has(c.number));
   const applicable = signOff ? doc.executionSteps.filter((s) => s.applicable) : [];
 
   return {
@@ -41,7 +46,7 @@ export function shapeClientDocument(record: ContractDocument, options: ShapeOpti
     title: doc.title,
     type: doc.type,
     status: doc.status,
-    tier: doc.tier,
+    plan: doc.plan,
     version: doc.version,
     createdAt: doc.createdAt,
     claimedAt: doc.claimedAt,
@@ -89,7 +94,7 @@ export function shapeClientSummary(record: ContractDocument, options: ShapeOptio
     title: doc.title,
     type: doc.type,
     status: doc.status,
-    tier: doc.tier,
+    plan: doc.plan,
     version: doc.version,
     createdAt: doc.createdAt,
     claimedAt: doc.claimedAt,

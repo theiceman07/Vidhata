@@ -1,5 +1,6 @@
 "use client";
 
+import { CONSULTATIONS_ENABLED } from "@/lib/config/consultations";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -110,11 +111,15 @@ export default function DeliveryPage() {
       note: `${delivery.checklist.done} of ${delivery.checklist.total} steps complete.`,
     },
     { href: `${base}/history`, label: "Version history", note: "Drafts and decisions will appear here." },
-    {
-      href: `${base}/consultation`,
-      label: "Consultation",
-      note: `Ask ${advocateLabel(delivery.signOff.advocate)}, who settled it.`,
-    },
+    ...(CONSULTATIONS_ENABLED
+      ? [
+          {
+            href: `${base}/consultation`,
+            label: "Consultation",
+            note: `Ask ${advocateLabel(delivery.signOff.advocate)}, who settled it.`,
+          },
+        ]
+      : []),
   ];
 
   return (

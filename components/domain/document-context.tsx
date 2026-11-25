@@ -7,7 +7,7 @@ import { Icon } from "@/components/shared/icon";
 import { CalmDisclosure, useCalm } from "@/components/domain/calm";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listClientDocuments } from "@/lib/api/client/documents";
-import { tierLabel } from "@/lib/config/pricing";
+import { planLabel } from "@/lib/config/plans";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { groupOf, yourMove } from "@/lib/moves";
 import { termLabel } from "@/lib/term";
@@ -138,7 +138,7 @@ const rupees = new Intl.NumberFormat("en-IN", {
  * The facts of the deal, as the client stated them at intake, in the order they
  * are read. One list for every place that shows them, so none can drift.
  */
-export function dealRows(doc: Pick<ClientDocument, "deal" | "tier">): [string, string][] {
+export function dealRows(doc: Pick<ClientDocument, "deal" | "plan">): [string, string][] {
   const { deal } = doc;
   const rows: [string, string][] = [
     ["Parties", `${deal.clientName} · ${deal.counterpartyName}`],
@@ -148,7 +148,7 @@ export function dealRows(doc: Pick<ClientDocument, "deal" | "tier">): [string, s
   if (deal.transactionValue > 0) rows.push(["Value", rupees.format(deal.transactionValue)]);
   rows.push(["Term", termLabel(deal.durationMonths)]);
   if (deal.counterpartyIsMsme) rows.push(["Counterparty", "Registered MSME"]);
-  rows.push(["Review", tierLabel(doc.tier)]);
+  rows.push(["Plan", planLabel(doc.plan)]);
   return rows;
 }
 
@@ -159,7 +159,7 @@ export function DealOnFile({
   compact = false,
   collapsible = false,
 }: {
-  doc: Pick<ClientDocument, "deal" | "tier">;
+  doc: Pick<ClientDocument, "deal" | "plan">;
   className?: string;
   compact?: boolean;
   collapsible?: boolean;
@@ -347,7 +347,7 @@ function stationsFor(doc: ClientDocument): Station[] {
     return [
       {
         title: "You pay the fee",
-        body: "One fixed fee for the tier screening assigned. Nothing reaches an advocate until it is paid.",
+        body: "The price of the plan you chose. Nothing reaches an advocate until it is paid.",
         current: true,
       },
       {

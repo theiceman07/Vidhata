@@ -22,10 +22,10 @@ import { getClientDocument } from "@/lib/api/client/documents";
 import {
   CONSULTATION,
   PRICE_BASIS,
-  TIER_PRICING,
   rupees,
 } from "@/lib/config/pricing";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
+import { PLAN_BY_ID } from "@/lib/config/plans";
 import type { ClientConsultation, ClientDocument } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { documentIdentity } from "@/lib/documentTitle";
@@ -272,8 +272,8 @@ export default function ConsultationPage() {
                   </span>
                 </span>
                 <span className="text-body text-ink">
-                  {doc.paidAt && doc.tier
-                    ? `${rupees(TIER_PRICING[doc.tier].amount)} ${PRICE_BASIS} · Paid`
+                  {doc.paidAt
+                    ? `${PLAN_BY_ID[doc.plan].price} · ${PLAN_BY_ID[doc.plan].label} plan · Paid`
                     : "Fixed fee"}
                 </span>
               </div>

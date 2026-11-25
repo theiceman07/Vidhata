@@ -1,3 +1,4 @@
+import { CONSULTATIONS_ENABLED } from "@/lib/config/consultations";
 import Link from "next/link";
 import { Icon } from "@/components/shared/icon";
 import { groupSummary } from "@/lib/summaryGroups";
@@ -289,13 +290,15 @@ function SummaryBento({
               Read the settled document
               <Icon name="chevron_right" size={16} />
             </Link>
-            <Link
-              href={`/documents/${summary.documentId}/consultation`}
-              className="link inline-flex min-h-6 items-center gap-0.5 rounded-control text-label focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            >
-              Ask your advocate
-              <Icon name="chevron_right" size={16} />
-            </Link>
+            {CONSULTATIONS_ENABLED && (
+              <Link
+                href={`/documents/${summary.documentId}/consultation`}
+                className="link inline-flex min-h-6 items-center gap-0.5 rounded-control text-label focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                Ask your advocate
+                <Icon name="chevron_right" size={16} />
+              </Link>
+            )}
           </div>
         </section>
       </div>

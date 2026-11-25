@@ -4,14 +4,19 @@ import type { ClauseChangeKind, FindingChangeKind } from "@/lib/diff";
 export type DocumentStatus =
   | "draft" // intake done, pipeline not run
   | "analysing" // pipeline running
-  | "awaiting_payment" // screened and tiered; the client has not paid the fee
+  | "awaiting_payment" // screened; the client has not paid the plan's fee
+  | "ai_draft" // Freemium: screened and handed to the client as an AI draft, with no advocate
   | "pending_review" // in the advocate queue (paid)
   | "under_review" // an advocate has picked it up
   | "revision" // advocate asked for changes
   | "settled" // signed off
   | "executed"; // client confirmed stamping and signature
 
-export type ReviewTier = "standard" | "enhanced" | "senior";
+/**
+ * The plan a client picks at intake (lib/config/plans.ts). It sets the price, which agreement
+ * types are covered, and whether an advocate reviews the document: Freemium does not.
+ */
+export type PlanId = "freemium" | "standard" | "business" | "premium";
 /** Most serious first. The one order severities are ranked, counted and listed in. */
 export const SEVERITY_ORDER = ["critical", "high", "medium", "low"] as const;
 export type Severity = (typeof SEVERITY_ORDER)[number];
@@ -204,11 +209,8 @@ export interface ContractDocument {
    */
   type: ModelledContractType | "other";
   status: DocumentStatus;
-  /**
-   * Assigned by screening (lib/triage.ts) once the first pass has run, not
-   * chosen by the client. Null until then.
-   */
-  tier: ReviewTier | null;
+  /** Chosen by the client at intake, for this agreement type (lib/config/plans.ts). */
+  plan: PlanId;
   // Mock-layer tenant scoping key (QA 3.5). Set from the session's org at
   // creation time; the client dashboard filters on it. Presentation-only,
   // like everything else in lib/session — a real backend must re-derive
@@ -243,8 +245,8 @@ export interface ContractDocument {
    */
   conflictDeclaredAt?: string | null;
   /**
-   * The fixed fee for this document, paid before it reaches an advocate. One
-   * flat amount by tier, covering every revision round, in rupees before GST.
+   * The fixed fee for this document, paid before it reaches an advocate. The
+   * plan's price per contract, covering every revision round, in rupees.
    * Absent until paid. A document with no payment is not released to the
    * advocate queue (isReleased in lib/api/documents.ts).
    */
@@ -424,7 +426,7 @@ export interface ClientFinding extends Pick<Finding, "clauseReference"> {
 export interface ClientDocument
   extends Pick<
     ContractDocument,
-    "id" | "title" | "type" | "status" | "tier" | "version" | "createdAt" | "claimedAt" | "executedAt"
+    "id" | "title" | "type" | "status" | "plan" | "version" | "createdAt" | "claimedAt" | "executedAt"
   > {
   deal: ClientDeal;
   /** When the fee was paid. Null until it is. Never the amount. */
@@ -462,7 +464,7 @@ export interface ClientDocumentSummary
     | "title"
     | "type"
     | "status"
-    | "tier"
+    | "plan"
     | "version"
     | "createdAt"
     | "claimedAt"
@@ -567,7 +569,7 @@ export interface Invoice {
   documentId: string;
   /** What was paid for: the document's title. */
   description: string;
-  tier: ReviewTier | null;
+  plan: PlanId | null;
   amount: number;
 }
 
@@ -611,7 +613,7 @@ export interface WorkspaceDocument
     | "title"
     | "type"
     | "status"
-    | "tier"
+    | "plan"
     | "clientName"
     | "counterpartyName"
     | "version"
@@ -884,7 +886,7 @@ export const PIPELINE_LAYERS: Record<
   6: {
     name: "Risk triage",
     description:
-      "Scores the document's value and risk to assign its review tier, then packages the findings for the advocate.",
+      "Scores the document's value and risk, then packages the findings for the advocate.",
   },
 };
 

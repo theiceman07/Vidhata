@@ -1,5 +1,6 @@
 "use client";
 
+import { CONSULTATIONS_ENABLED } from "@/lib/config/consultations";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/shared/icon";
@@ -193,8 +194,11 @@ export function DocumentAgent({
                   </p>
                   <p className="mt-1 text-body text-ink">
                     That asks what you should do, not what the document says.{" "}
-                    {advocate} settled this document and can advise you.
+                    {CONSULTATIONS_ENABLED
+                      ? `${advocate} settled this document and can advise you.`
+                      : `${advocate} settled this document. Questions about your own situation are for an advocate.`}
                   </p>
+                  {CONSULTATIONS_ENABLED && (<>
                   <Link
                     href={`/documents/${doc.id}/consultation`}
                     className="mt-3 inline-flex items-center gap-1 rounded-full bg-ink px-4 py-2 text-meta font-medium text-paper transition-colors hover:bg-ink/85"
@@ -207,6 +211,7 @@ export function DocumentAgent({
                     {advocate} accepts. A request is free, and the fee is
                     separate from the platform&apos;s fixed document fee.
                   </p>
+                  </>)}
                 </li>
               ) : (
                 <li key={m.id} className="text-meta leading-relaxed text-ink">

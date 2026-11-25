@@ -1,3 +1,4 @@
+import { CONSULTATIONS_ENABLED } from "@/lib/config/consultations";
 import {
   buildClientNotifications,
   type NotifiableConsultation,
@@ -49,7 +50,7 @@ export function notifiableConsultation(c: ClientConsultation): NotifiableConsult
 export async function getClientNotifications(orgId: string): Promise<ClientNotification[]> {
   const [documents, consultations] = await Promise.all([
     listClientDocuments(orgId),
-    listClientOrgConsultations(orgId),
+    CONSULTATIONS_ENABLED ? listClientOrgConsultations(orgId) : Promise.resolve([]),
   ]);
   return buildClientNotifications(
     documents.map(notifiableDocument),

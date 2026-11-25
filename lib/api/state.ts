@@ -1,4 +1,5 @@
-import { CONSULTATION, TIER_PRICING } from "@/lib/config/pricing";
+import { CONSULTATION } from "@/lib/config/pricing";
+import { PLANS } from "@/lib/config/plans";
 import { CORPUS } from "@/lib/mock/corpus.mock";
 import { accountSeed } from "@/lib/mock/account.mock";
 import { advocateProfileSeed } from "@/lib/mock/advocate.mock";
@@ -43,7 +44,7 @@ import type { AdvocateProfile } from "./advocate";
  * can store (docs/api-contract.md, section 9).
  */
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 const STORAGE_KEY = "vidhata-preview-state";
 
 /** Every slice, in the shape it is stored. Maps and sets are stored as lists. */
@@ -82,7 +83,7 @@ export function fingerprint(): string {
       advocateProfileSeed,
       accountSeed,
       CORPUS,
-      TIER_PRICING,
+      PLANS,
       CONSULTATION,
     ]),
   );

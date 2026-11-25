@@ -44,7 +44,7 @@ const clientRow = (over: Record<string, unknown> = {}) => ({
 });
 const docRow = (over: Record<string, unknown> = {}) => ({
   id: DOC, org_id: ORG, doc_type: "nda", state: "pending_lawyer_review", state_of_execution: "Karnataka",
-  transaction_value: 250000, triage_tier: "standard", assigned_lawyer_id: ME,
+  transaction_value: 250000, plan: "standard", assigned_lawyer_id: ME,
   created_at: "2026-10-19T04:00:00Z", updated_at: "2026-10-19T05:00:00Z", ...over,
 });
 

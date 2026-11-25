@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { planCovers } from "@/lib/config/plans";
 
 /**
  * The rules a new draft must meet. The intake form holds them on the screen and the
@@ -18,6 +19,14 @@ export const intakeSchema = z.object({
   stateOfExecution: z.string().min(1, "Choose the state of execution."),
   governingLaw: z.string().min(2, "Enter the governing law."),
   keyTerms: z.string().optional(),
-});
+  plan: z.enum(["freemium", "standard", "business", "premium"], {
+    required_error: "Choose a plan.",
+  }),
+})
+  // The plan has to cover the agreement: an MSA is not in Standard, and so on (lib/config/plans.ts).
+  .refine((v) => planCovers(v.plan, v.type), {
+    path: ["plan"],
+    message: "That plan doesn't cover this agreement type. Choose another plan.",
+  });
 
 export type IntakeFormValues = z.infer<typeof intakeSchema>;

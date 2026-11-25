@@ -1,5 +1,6 @@
 "use client";
 
+import { CONSULTATIONS_ENABLED } from "@/lib/config/consultations";
 import { usePathname } from "next/navigation";
 import { AppShell, type ShellSection } from "@/components/shared/app-shell";
 import { PortalGate } from "@/components/shared/portal-gate";
@@ -11,8 +12,13 @@ const SECTIONS: ShellSection[] = [
     label: "Review",
     links: [
       { href: "/queue", label: "Queue", icon: "description" },
-      { href: "/consultations", label: "Consultations", icon: "mail" },
-      { href: "/payouts", label: "Payouts", icon: "receipt_long" },
+      // Payouts list consultation fees only, so both go while consultations are off.
+      ...(CONSULTATIONS_ENABLED
+        ? ([
+            { href: "/consultations", label: "Consultations", icon: "mail" },
+            { href: "/payouts", label: "Payouts", icon: "receipt_long" },
+          ] as const)
+        : []),
       { href: "/metrics", label: "Metrics", icon: "monitoring" },
     ],
   },

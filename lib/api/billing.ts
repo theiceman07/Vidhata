@@ -1,3 +1,4 @@
+import { CONSULTATIONS_ENABLED } from "@/lib/config/consultations";
 import { invoicesFor } from "@/lib/billing";
 import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import type { BillingProfile, Invoice } from "@/lib/types";
@@ -31,7 +32,7 @@ export async function listInvoices(orgId: string): Promise<Invoice[]> {
   try {
     const [docs, consultations] = await Promise.all([
       listDocuments(orgId),
-      listOrgConsultations(orgId),
+      CONSULTATIONS_ENABLED ? listOrgConsultations(orgId) : Promise.resolve([]),
     ]);
     return invoicesFor(docs, consultations);
   } catch {

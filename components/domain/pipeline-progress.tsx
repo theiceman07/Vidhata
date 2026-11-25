@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Tick } from "@/components/shared/tick";
-import { TIER_PENDING_LABEL } from "@/lib/config/pricing";
 import {
   PIPELINE_LAYERS,
   PIPELINE_DURATION_MS,
@@ -59,11 +58,6 @@ export function PipelineProgress() {
           {minutes}:{seconds.toString().padStart(2, "0")} elapsed
           <span aria-hidden className="mx-2 text-muted-fg">·</span>
           usually under two minutes
-        </p>
-        {/* The tier is set by this very screening, so say so while it runs
-            rather than leaving the first sight of it until afterwards. */}
-        <p className="mt-1 text-meta text-muted-fg">
-          Review tier · {TIER_PENDING_LABEL}
         </p>
         {/* QA 5.4: announce layer transitions, not the per-second ticker
             above — a live region that updates every second is its own

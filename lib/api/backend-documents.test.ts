@@ -20,12 +20,12 @@ const ORG = "22222222-2222-4222-8222-222222222222";
 const LAWYER = "33333333-3333-4333-8333-333333333333";
 const row = (over: Record<string, unknown> = {}) => ({
   id: ID, org_id: ORG, created_by: ORG, doc_type: "nda", state: "drafted", state_of_execution: "Karnataka",
-  transaction_value: 250000, triage_tier: "standard", assigned_lawyer_id: null, draft_for_settlement: false,
+  transaction_value: 250000, plan: "standard", assigned_lawyer_id: null, draft_for_settlement: false,
   created_at: "2026-10-18T08:00:00Z", updated_at: "2026-10-18T09:00:00Z", ...over,
 });
 const queueItem = (over: Record<string, unknown> = {}) => ({
   id: ID, doc_type: "nda", state_of_execution: "Karnataka", transaction_value: "250000.00",
-  triage_tier: "enhanced", queued_at: "2026-10-18T08:30:00Z", org_id: ORG, org_name: "Acme Pvt Ltd", ...over,
+  plan: "business", queued_at: "2026-10-18T08:30:00Z", org_id: ORG, org_name: "Acme Pvt Ltd", ...over,
 });
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 const fetchOf = (...replies: Response[]) => {
@@ -56,15 +56,15 @@ describe("toContractDocument", () => {
   it("fills what the backend does not hold with honest placeholders, never invented facts", () => {
     const d = toContractDocument(row());
     expect(d).toMatchObject({
-      id: ID, orgId: ORG, type: "nda", tier: "standard", stateOfExecution: "Karnataka", transactionValue: 250000,
+      id: ID, orgId: ORG, type: "nda", plan: "standard", stateOfExecution: "Karnataka", transactionValue: 250000,
       counterpartyName: "Not recorded", clauses: [], findings: [], executionSteps: [], advocate: null,
       claimedAt: null, settledAt: null, analysisCompletesAt: null, version: 1, revisionCount: 0,
     });
   });
 
   it("copes with null optional columns", () => {
-    const d = toContractDocument(row({ state_of_execution: null, transaction_value: null, triage_tier: null }));
-    expect(d).toMatchObject({ stateOfExecution: "Not recorded", transactionValue: 0, tier: null });
+    const d = toContractDocument(row({ state_of_execution: null, transaction_value: null, plan: null }));
+    expect(d).toMatchObject({ stateOfExecution: "Not recorded", transactionValue: 0, plan: "standard" });
   });
 
   it("names the assigned advocate only as assigned, since the backend gives no name", () => {
@@ -126,8 +126,8 @@ describe("the lawyer queue", () => {
     const f = fetchOf(json(200, [queueItem()]));
     const [d] = await listBackendQueue(f);
     expect(f.mock.calls[0][0]).toBe("http://localhost:8000/queue");
-    expect(d).toMatchObject({ id: ID, status: "pending_review", tier: "enhanced", clientName: "Acme Pvt Ltd",
-      // Type, tier and state only before a claim: the value and the execution state are not carried.
+    expect(d).toMatchObject({ id: ID, status: "pending_review", plan: "business", clientName: "Acme Pvt Ltd",
+      // Type, plan and state only before a claim: the value and the execution state are not carried.
       transactionValue: 0, stateOfExecution: "Not recorded", createdAt: "2026-10-18T08:30:00Z", advocate: null });
   });
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { CONSULTATIONS_ENABLED } from "@/lib/config/consultations";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { Icon } from "@/components/shared/icon";
@@ -300,8 +301,8 @@ export default function ChatPage() {
               </p>
             )}
             <p className="mt-2 text-small text-muted-fg">
-              Ask about anything in this document. For advice on your
-              situation, book a consultation.
+              Ask about anything in this document.
+              {CONSULTATIONS_ENABLED && " For advice on your situation, book a consultation."}
             </p>
           </div>
         </div>

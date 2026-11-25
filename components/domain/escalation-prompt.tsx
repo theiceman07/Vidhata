@@ -1,3 +1,4 @@
+import { CONSULTATIONS_ENABLED } from "@/lib/config/consultations";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CONSULTATION, PRICE_BASIS, PRICING_IS_INDICATIVE } from "@/lib/config/pricing";
@@ -20,6 +21,12 @@ export function EscalationPrompt({ advocateName, href }: EscalationPromptProps) 
           I can only explain the settled document. I can&apos;t advise on
           your situation.
         </p>
+        {!CONSULTATIONS_ENABLED ? (
+          <p className="mt-3 text-body text-ink">
+            {advocateName} settled this document. Questions about your own situation are for an advocate.
+          </p>
+        ) : (
+        <>
         {/* The button's label is long and its base style does not wrap: on a phone it must wrap inside the card, and be tall enough to tap. */}
         <Button asChild size="sm" className="mt-3 h-auto min-h-11 w-full whitespace-normal py-2 text-center sm:w-auto">
           <Link href={href}>Request a consultation with {advocateName}</Link>
@@ -32,6 +39,8 @@ export function EscalationPrompt({ advocateName, href }: EscalationPromptProps) 
           A request is free. The fee is payable only if the advocate accepts, and it is
           separate from the platform&apos;s fixed document fee.
         </p>
+        </>
+        )}
       </div>
     </div>
   );

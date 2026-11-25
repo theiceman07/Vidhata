@@ -107,6 +107,7 @@ async function screened(app: Loaded) {
       durationMonths: 12,
       governingLaw: "Laws of India",
       keyTerms: "",
+      plan: "standard" as const,
     }),
   );
   await settle(app.documents.startAnalysis(draft.id));
@@ -177,6 +178,7 @@ describe("a refresh", () => {
         durationMonths: 12,
         governingLaw: "Laws of India",
         keyTerms: "",
+        plan: "standard" as const,
       }),
     );
     const running = await settle(first.documents.startAnalysis(draft.id));
@@ -265,10 +267,8 @@ describe("payments and requests, after a refresh", () => {
     const paidAgain = await settle(third.consultations.payConsultation(asked.id));
     expect(paidAgain.paidAt).toBe(paid.paidAt);
     const invoices = await settle(third.billing.listInvoices("org-anaya-textiles"));
-    // One payment for this request, beside the invoices for the ones the preview starts with, paid.
-    expect(invoices.filter((i) => i.kind === "consultation_fee")).toHaveLength(
-      seededFor({ orgId: "org-anaya-textiles", paid: true }) + 1,
-    );
+    // Consultations are off (lib/config/consultations.ts), so no consultation fee is invoiced.
+    expect(invoices.filter((i) => i.kind === "consultation_fee")).toHaveLength(0);
 
     // The answer, once paid, is written once and read back as written.
     await settle(third.consultations.answerConsultation("adv-current", asked.id, "Yes, on thirty days' notice."));

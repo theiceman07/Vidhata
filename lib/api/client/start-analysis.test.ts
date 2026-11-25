@@ -31,6 +31,7 @@ const intake = {
   durationMonths: 12,
   governingLaw: "Laws of India",
   keyTerms: "",
+  plan: "standard" as const,
 };
 
 describe("starting analysis is a thing only a draft does", () => {

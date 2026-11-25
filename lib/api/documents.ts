@@ -5,7 +5,7 @@ import type {
   ExecutionStep,
   Finding,
   NewFinding,
-  ReviewTier,
+  PlanId,
   VersionCreatedBy,
 } from "@/lib/types";
 import { PIPELINE_DURATION_MS, clauseNumberFromReference } from "@/lib/types";
@@ -14,11 +14,10 @@ import { MOCK_CLIENT_ORG } from "@/lib/mock/client.mock";
 import { partitionForRelease, releaseMarked } from "@/lib/settlementNotes";
 import { declaredConflictWith } from "@/lib/conflicts";
 import { esignatureStep } from "@/lib/config/esign";
-import { TIER_PRICING } from "@/lib/config/pricing";
+import { FREEMIUM_MONTHLY_LIMIT, PLAN_BY_ID, PLAN_QUEUE_PRIORITY, planCovers } from "@/lib/config/plans";
 import { SHOW_ADVOCATE_ADDED_AFTER_SIGN_OFF } from "@/lib/config/visibility";
 import { nextNumber } from "@/lib/numbering";
 import { revisionBlockedReason, revisionCycle } from "@/lib/revisions";
-import { assignReviewTier } from "@/lib/triage";
 import { declaredConflictNames } from "./advocate";
 import { MockApiError, randomDelay, shouldSimulateFailure } from "./delay";
 import { register, restored } from "./state";
@@ -35,15 +34,6 @@ import {
 import { claimBackendDocument, listBackendQueue } from "./backend-queue";
 import { refuseInBackendMode } from "./unavailable";
 
-// QA 7.3: tier ordering used to sort the advocate queue, so the pricing
-// page's "Priority turnaround" claim (Enhanced/Senior tiers) is backed by
-// real routing behaviour instead of being decorative copy.
-const TIER_PRIORITY: Record<ReviewTier, number> = {
-  senior: 0,
-  enhanced: 1,
-  standard: 2,
-};
-
 /**
  * Whether a document has been released to the advocate side: screened and
  * paid for. Everything an advocate can read (the queue, a link to a review,
@@ -54,14 +44,15 @@ export function isReleased(doc: Pick<ContractDocument, "status">): boolean {
   return (
     doc.status !== "draft" &&
     doc.status !== "analysing" &&
-    doc.status !== "awaiting_payment"
+    doc.status !== "awaiting_payment" &&
+    // A Freemium document goes to the client as an AI draft and never to an advocate.
+    doc.status !== "ai_draft"
   );
 }
 
-// A document with no tier has not been screened, so it is not in the queue
-// yet; it sorts last rather than ahead of work that is.
-export function getQueuePriority(doc: ContractDocument): number {
-  return doc.tier ? TIER_PRIORITY[doc.tier] : Object.keys(TIER_PRIORITY).length;
+// The queue offers the dearest plans first (lib/config/plans.ts).
+export function getQueuePriority(doc: Pick<ContractDocument, "plan">): number {
+  return PLAN_QUEUE_PRIORITY[doc.plan];
 }
 
 // The checklist of a generated document carries no figure and no rule. Stamp
@@ -176,13 +167,11 @@ function reconcileAnalysis(doc: ContractDocument): void {
   if (doc.status !== "analysing" || !doc.analysisCompletesAt) return;
   if (Date.now() < new Date(doc.analysisCompletesAt).getTime()) return;
 
-  // Screening is done and the tier is known, so the client now pays the fixed
-  // fee. Only a paid document is released to the advocate queue.
-  doc.status = "awaiting_payment";
+  // Screening is done. On a paid plan the client now pays the plan's fee, and only a paid
+  // document is released to the advocate queue. A Freemium document has no advocate: it goes
+  // straight back to the client as an AI draft, with the first pass's findings.
+  doc.status = PLAN_BY_ID[doc.plan].advocateReview ? "awaiting_payment" : "ai_draft";
   doc.analysisCompletesAt = null;
-  // Screening assigns the review tier from the deal facts; the client does
-  // not choose it.
-  doc.tier = assignReviewTier(doc);
   // Demo-only: the pipeline has no real drafting/screening logic to run,
   // so a freshly analysed document is seeded with the same representative
   // finding set used in the pending_review fixture (high non-compete,
@@ -335,6 +324,17 @@ export interface IntakeInput {
   durationMonths: number;
   governingLaw: string;
   keyTerms: string;
+  /** The plan the client chose. It must cover the type. */
+  plan: PlanId;
+}
+
+/** The Freemium documents an organisation has started this calendar month. */
+export function freemiumUsedThisMonth(orgId: string, now = new Date()): number {
+  return store.filter((d) => {
+    if (d.orgId !== orgId || d.plan !== "freemium") return false;
+    const at = new Date(d.createdAt);
+    return at.getFullYear() === now.getFullYear() && at.getMonth() === now.getMonth();
+  }).length;
 }
 
 // A drafted document needs a body, or the workspace has nothing to
@@ -441,6 +441,12 @@ export async function createDraftDocument(
 ): Promise<ContractDocument> {
   refuseInBackendMode();
   await randomDelay();
+  if (!planCovers(input.plan, input.type)) {
+    throw new MockApiError("That plan doesn't cover this agreement type. Choose another plan.");
+  }
+  if (input.plan === "freemium" && freemiumUsedThisMonth(orgId) >= FREEMIUM_MONTHLY_LIMIT) {
+    throw new MockApiError("Freemium covers one contract a month, and this month's is used. Choose Standard for this one.");
+  }
   if (shouldSimulateFailure()) {
     throw new MockApiError("Could not create the draft.");
   }
@@ -454,7 +460,7 @@ export async function createDraftDocument(
     title: input.title,
     type: input.type,
     status: "draft",
-    tier: null,
+    plan: input.plan,
     // The organisation is the caller's, never read from the "your company
     // name" text entered in the wizard (that field is display text on the
     // contract, not a tenant selector). The preview's one client identity is
@@ -502,8 +508,8 @@ export async function startAnalysis(id: string): Promise<ContractDocument> {
 
 /**
  * The client pays the fixed fee, and the document is released to the advocate
- * queue. The fee is one flat amount for the tier screening assigned, before
- * GST, and it covers every revision round.
+ * queue. The fee is the price of the plan the client chose, per contract, and
+ * it covers every revision round. Freemium has no fee and is never paid for.
  *
  * Paying twice is not possible: a document that has been paid for comes back
  * as it is, so a double click makes one payment. A failure leaves the
@@ -515,14 +521,14 @@ export async function payFee(id: string): Promise<ContractDocument> {
   const doc = store.find((d) => d.id === id);
   if (!doc) throw new MockApiError("Document not found.");
   if (doc.payment) return structuredClone(doc);
-  if (doc.status !== "awaiting_payment" || !doc.tier) {
+  if (doc.status !== "awaiting_payment" || !PLAN_BY_ID[doc.plan].advocateReview) {
     throw new MockApiError("This document is not awaiting payment.");
   }
   if (shouldSimulateFailure()) {
     throw new MockApiError("The payment did not go through. Nothing was charged. Try again.");
   }
   doc.payment = {
-    amount: TIER_PRICING[doc.tier].amount,
+    amount: PLAN_BY_ID[doc.plan].amount,
     paidAt: new Date().toISOString(),
   };
   doc.status = "pending_review";

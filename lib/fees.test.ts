@@ -1,53 +1,45 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  CONSULTATION,
-  PRICE_BASIS,
-  TIER_ORDER,
-  TIER_PRICING,
-  rupees,
-  tierRange,
-} from "./config/pricing";
+import { CONSULTATION, rupees } from "./config/pricing";
+import { PLANS, PLAN_BY_ID, planCovers, plansFor } from "./config/plans";
 import { isReleased } from "./api/documents";
 import { mockDocuments } from "./mock/documents.mock";
 
-describe("the fees", () => {
-  it("are flat whole-rupee amounts, dearer as the tier is", () => {
-    const amounts = TIER_ORDER.map((t) => TIER_PRICING[t].amount);
-    for (const amount of amounts) {
-      expect(Number.isInteger(amount)).toBe(true);
-      expect(amount).toBeGreaterThan(0);
-    }
+describe("the plans", () => {
+  it("are whole-rupee amounts per contract, dearer up the list, and only Freemium is free", () => {
+    const amounts = PLANS.map((p) => p.amount);
+    for (const amount of amounts) expect(Number.isInteger(amount)).toBe(true);
     expect([...amounts].sort((a, b) => a - b)).toEqual(amounts);
+    expect(PLANS.filter((p) => p.amount === 0).map((p) => p.id)).toEqual(["freemium"]);
     expect(Number.isInteger(CONSULTATION.amount)).toBe(true);
   });
 
   it("are shown from the number, so the display cannot disagree with it", () => {
-    for (const t of TIER_ORDER) expect(TIER_PRICING[t].price).toBe(rupees(TIER_PRICING[t].amount));
-    expect(CONSULTATION.price).toBe(rupees(CONSULTATION.amount));
-    expect(rupees(4999)).toBe("₹4,999");
-    expect(rupees(24999)).toBe("₹24,999");
+    for (const p of PLANS.filter((p) => p.amount > 0)) expect(p.price).toBe(rupees(p.amount));
+    expect(rupees(2499)).toBe("₹2,499");
   });
 
-  it("give the range a client sees before a tier is assigned", () => {
-    expect(tierRange()).toEqual({
-      low: TIER_PRICING.standard.amount,
-      high: TIER_PRICING.senior.amount,
-    });
+  it("give an advocate to every plan but Freemium", () => {
+    expect(PLANS.filter((p) => !p.advocateReview).map((p) => p.id)).toEqual(["freemium"]);
   });
 
-  it("are quoted before GST, never as a bare total", () => {
-    expect(PRICE_BASIS).toBe("before GST");
+  it("cover each agreement the portal drafts, as the owner's table lists them", () => {
+    expect(plansFor("nda").map((p) => p.id)).toEqual(["freemium", "standard"]);
+    expect(plansFor("vendor").map((p) => p.id)).toEqual(["standard"]);
+    expect(plansFor("msa").map((p) => p.id)).toEqual(["business"]);
+    expect(plansFor("employment").map((p) => p.id)).toEqual(["business"]);
+    expect(planCovers("standard", "msa")).toBe(false);
   });
 });
 
 describe("the fixtures' payments", () => {
-  it("exist for every released document and no other, at the tier's flat fee", () => {
+  it("exist for every released document and no other, at its plan's price", () => {
     for (const doc of mockDocuments) {
+      expect(planCovers(doc.plan, doc.type), doc.id).toBe(true);
       if (isReleased(doc)) {
         expect(doc.payment, doc.id).toBeDefined();
-        expect(doc.payment!.amount, doc.id).toBe(TIER_PRICING[doc.tier!].amount);
+        expect(doc.payment!.amount, doc.id).toBe(PLAN_BY_ID[doc.plan].amount);
       } else {
         expect(doc.payment, doc.id).toBeUndefined();
       }
