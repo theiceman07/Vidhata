@@ -27,19 +27,20 @@ export function PricingTable() {
             </p>
             <p className="mt-1 text-meta text-muted-fg">{plan.per}</p>
 
-            <ul className="mt-6 space-y-1.5 border-t border-line pt-5 text-body">
+            {plan.summary && <p className="mt-6 border-t border-line pt-5 text-body text-ink">{plan.summary}</p>}
+            {plan.warning && (
+              <p className="mt-4 flex items-start gap-2 rounded-control bg-move-tint px-4 py-3 text-meta font-medium text-move-text">
+                <Icon name="warning" size={18} className="mt-0.5 shrink-0" />
+                {plan.warning}
+              </p>
+            )}
+            <ul className={cn("space-y-1.5 text-body", plan.summary ? "mt-4" : "mt-6 border-t border-line pt-5")}>
               {plan.includes.map((item) => (
                 <li key={item} className="flex items-start gap-2 text-ink">
                   <Icon name="check" size={18} className="mt-0.5 shrink-0 text-ink" />
                   {item}
                 </li>
               ))}
-              {!plan.advocateReview && (
-                <li className="flex items-start gap-2 text-muted-fg">
-                  <Icon name="remove" size={18} className="mt-0.5 shrink-0" />
-                  No advocate review or sign-off
-                </li>
-              )}
               {plan.turnaround && (
                 <li className="flex items-start gap-2 text-ink">
                   <Icon name="schedule" size={18} className="mt-0.5 shrink-0 text-ink" />

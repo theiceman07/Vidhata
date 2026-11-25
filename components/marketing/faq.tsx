@@ -23,6 +23,11 @@ const FAQS = [
       "It's held back, not guessed at. The citation gate, the fifth layer of the pipeline, stops it, and it goes to your advocate for judgment. It never reaches you disguised as settled.",
   },
   {
+    question: "Is a Freemium draft safe to sign?",
+    answer:
+      "No, and we would rather say so. Freemium gives you the draft and the findings so you can see what the screen catches and negotiate from something real. An advocate has not read it. Every paid plan includes an advocate settling each finding and signing off under their Bar enrolment. That sign-off is the legal act, and Freemium does not have it.",
+  },
+  {
     question: "Which plan do I need?",
     answer:
       "The one that lists your agreement. Each plan covers a set of agreement types at one fixed price per contract, so you know the price before you start. Freemium includes AI drafting and a basic review with no advocate; every other plan includes an advocate's review.",

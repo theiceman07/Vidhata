@@ -1,5 +1,7 @@
 "use client";
 
+import { AI_DRAFT_NOTICE_BODY } from "@/lib/config/plans";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -431,6 +433,15 @@ function WithAdvocate({ doc }: { doc: ClientDocument }) {
  */
 function AiDraftDocument({ doc, trail }: { doc: ClientDocument; trail: ClientAuditEntry[] }) {
   return (
+    <div className="flex min-h-0 flex-col lg:h-full">
+      {/* A banner, not a footnote (Tejaswi, 25 Nov 2026): always on, never dismissible. */}
+      <div role="note" className="flex items-start gap-3 border-b border-move/40 bg-move-tint px-5 py-4 text-body text-move-text md:px-8">
+        <Icon name="warning" size={24} className="mt-0.5 shrink-0" />
+        <p className="max-w-4xl">
+          <span className="font-semibold">Not reviewed.</span>{" "}
+          {AI_DRAFT_NOTICE_BODY}
+        </p>
+      </div>
     <ClientReader
       doc={doc}
       trail={trail}
@@ -443,6 +454,7 @@ function AiDraftDocument({ doc, trail }: { doc: ClientDocument; trail: ClientAud
       }
       tabs={<DocumentTabs documentId={doc.id} signedOff={false} />}
     />
+    </div>
   );
 }
 

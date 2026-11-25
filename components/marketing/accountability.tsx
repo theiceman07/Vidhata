@@ -61,8 +61,10 @@ export function Accountability() {
             signs it. Their name and Bar enrolment number stay on the record.
           </p>
           <p className="mt-5 max-w-lg text-body text-paper/60">
-            No document reaches you without that sign-off. A finding whose
-            source could not be verified blocks it outright.
+            No reviewed document reaches you without that sign-off. A finding
+            whose source could not be verified blocks it outright. Freemium
+            drafts are not reviewed: they are marked as such, on the page and
+            in the file.
           </p>
         </div>
 

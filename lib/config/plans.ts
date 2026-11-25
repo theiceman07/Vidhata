@@ -21,6 +21,9 @@ export interface Plan {
   price: string;
   /** What the plan includes, as the owner wrote it. */
   includes: string[];
+  /** A plan's own two lines, where it has them (Freemium). Shown on its card in place of the ticks. */
+  summary?: string;
+  warning?: string;
   /** Whether an advocate reviews and signs off. Freemium does not. */
   advocateReview: boolean;
   agreements: string[];
@@ -38,6 +41,9 @@ export const PLANS: Plan[] = [
     label: "Freemium",
     amount: 0,
     per: "per month, 1 contract",
+    summary: "One contract a month. You get the AI draft and every finding the screen raises, immediately.",
+    warning:
+      "No advocate reviews or signs off a Freemium draft. It is a starting point to negotiate from, not a document to sign.",
     includes: ["AI drafting", "Basic review"],
     advocateReview: false,
     agreements: ["NDA", "Letter of Intent", "Offer Letter", "Consultancy Agreement", "Basic Service Agreement"],
@@ -139,3 +145,10 @@ export const PLAN_QUEUE_PRIORITY: Record<PlanId, number> = {
   standard: 2,
   freemium: 3,
 };
+
+/**
+ * The notice on every Freemium AI draft (Tejaswi, 25 Nov 2026): a persistent banner on the page, and
+ * the same line on any export of the file once downloads exist. "Not reviewed." leads it in bold.
+ */
+export const AI_DRAFT_NOTICE_BODY =
+  "This draft was produced by AI and screened against Indian statute. No advocate has reviewed its findings or signed it off. Upgrade to Standard to have an advocate settle every finding and sign.";
