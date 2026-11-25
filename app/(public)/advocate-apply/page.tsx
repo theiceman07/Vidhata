@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AdvocateApplicationForm } from "@/components/marketing/access-forms";
+import { AdvocateApplicationForm, RequestBand } from "@/components/marketing/access-forms";
 import { PageOpening } from "@/components/marketing/page-opening";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
@@ -22,13 +22,16 @@ export default function AdvocateApplyPage() {
           title="Join the advocate panel."
           lead="Empanelled advocates settle every finding on a Vidhataa document and sign it off under their enrolment. Empanelment is by invitation. Tell us about your practice and we'll be in touch."
         />
-        <section className="tile-grain w-full bg-parchment">
-          <div className="site-wrap py-16 md:py-24">
-            <div className="mx-auto w-full max-w-2xl">
-              <AdvocateApplicationForm />
-            </div>
-          </div>
-        </section>
+        <RequestBand
+          title="What happens next"
+          steps={[
+            "You tell us about your enrolment and your practice.",
+            "We read your application and write back to the email you give us.",
+            "Empanelment is by invitation, so an invitation link is how you join.",
+          ]}
+        >
+          <AdvocateApplicationForm />
+        </RequestBand>
       </main>
       <SiteFooter />
     </div>

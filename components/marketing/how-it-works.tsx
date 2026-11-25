@@ -1,13 +1,18 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { Icon } from "@/components/shared/icon";
 import { motion, useReducedMotion, useScroll, useSpring } from "framer-motion";
 import { Reveal } from "./reveal";
 
 /**
- * How it works: the workflow video beside the four steps, on a pale
- * accent band. The steps hang off one rail, which fills as the visitor reads down
- * them. This is where the page explains itself, so the hero does not have to.
+ * How it works: the explainer film beside the four steps, on the parchment band. The film
+ * takes the wide column and stays in view (sticky) while the steps beside it are read; the
+ * steps hang off one rail, which fills as the visitor reads down them. This is where the
+ * page explains itself, so the hero does not have to.
+ *
+ * The film is five minutes with its captions burned in. It never autoplays: it waits on its
+ * poster (its own first frame) and loads only its metadata until someone presses play.
  */
 const STEPS = [
   {
@@ -51,8 +56,9 @@ export function HowItWorks() {
           </p>
         </div>
 
-        {/* The workflow video is not on the page until it exists. */}
-        <div className="mt-16 max-w-3xl">
+        <div className="mt-16 grid items-start gap-x-16 gap-y-14 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+          <ExplainerFilm />
+
           <ol ref={steps} className="relative space-y-12">
             {/* The rail the steps hang off, and its fill. */}
             <span aria-hidden className="absolute bottom-0 left-5 top-0 w-px -translate-x-1/2 bg-ink/15" />
@@ -76,5 +82,62 @@ export function HowItWorks() {
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * The explainer film. At rest it is its own first frame with one quiet control, so it reads as
+ * part of the page rather than a browser player dropped into it; the native controls appear only
+ * once it plays. Nothing loads past the metadata until then, and it never autoplays.
+ */
+function ExplainerFilm() {
+  const video = useRef<HTMLVideoElement>(null);
+  const [started, setStarted] = useState(false);
+
+  function play() {
+    setStarted(true);
+    void video.current?.play();
+  }
+
+  return (
+    <figure className="lg:sticky lg:top-24">
+      <div className="relative overflow-hidden rounded-card bg-paper outline outline-1 -outline-offset-1 outline-black/10">
+        <video
+          ref={video}
+          controls={started}
+          playsInline
+          preload="metadata"
+          poster="/videos/how-it-works-poster.jpg"
+          aria-label="Vidhataa explained: how a contract goes from a brief to a signed-off document"
+          className="block aspect-video w-full"
+          onPlay={() => setStarted(true)}
+        >
+          <source src="/videos/how-it-works.mp4" type="video/mp4" />
+          <a href="/videos/how-it-works.mp4" className="link">
+            Watch how Vidhataa works
+          </a>
+        </video>
+        {!started && (
+          <button
+            type="button"
+            onClick={play}
+            className="group absolute inset-0 flex items-start justify-start p-4 focus-visible:outline-none md:p-6"
+          >
+            <span className="sr-only">Play the film, Vidhataa explained, 5 minutes</span>
+            <span
+              aria-hidden
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-ink pe-5 ps-4 text-body font-medium text-paper transition-[transform,background-color] duration-150 ease-out group-hover:bg-ink/85 group-focus-visible:ring-2 group-focus-visible:ring-accent group-focus-visible:ring-offset-2 group-active:scale-[0.96]"
+            >
+              <Icon name="play_arrow" size={20} filled />
+              Watch the film
+              <span className="tabular-nums text-paper/70">5 min</span>
+            </span>
+          </button>
+        )}
+      </div>
+      <figcaption className="mt-3 text-meta text-muted-fg">
+        Vidhataa, explained · from a brief to a signed-off document · captioned
+      </figcaption>
+    </figure>
   );
 }

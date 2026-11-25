@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ClientAccessForm } from "@/components/marketing/access-forms";
+import { ClientAccessForm, RequestBand } from "@/components/marketing/access-forms";
 import { PageOpening } from "@/components/marketing/page-opening";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
@@ -28,13 +28,16 @@ export default async function RequestAccessPage({
           title="Request access."
           lead="Vidhataa is in preview, and accounts are opened by invitation. Tell us who you are and the contract you need, and we'll be in touch."
         />
-        <section className="tile-grain w-full bg-parchment">
-          <div className="site-wrap py-16 md:py-24">
-            <div className="mx-auto w-full max-w-2xl">
-              <ClientAccessForm fromSignIn={from === "signin"} />
-            </div>
-          </div>
-        </section>
+        <RequestBand
+          title="What happens next"
+          steps={[
+            "You tell us who you are and the contract you need.",
+            "We read it and write back to the email you give us.",
+            "When your account is open, you sign in and start your first document.",
+          ]}
+        >
+          <ClientAccessForm fromSignIn={from === "signin"} />
+        </RequestBand>
       </main>
       <SiteFooter />
     </div>

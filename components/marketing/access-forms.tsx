@@ -22,6 +22,7 @@ import {
   type ProviderPrefill,
 } from "@/lib/api/access-requests";
 import { INDIAN_STATES } from "@/lib/mock/intake-options.mock";
+import { supportEmail } from "@/lib/config/contact";
 import type { AccessRequestInput } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { BRIEF_KEY } from "./deal-prompt";
@@ -123,7 +124,13 @@ function Sent({ title, children }: { title: string; children: React.ReactNode })
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => ref.current?.focus(), []);
   return (
-    <div ref={ref} tabIndex={-1} role="status" className="rounded-card border border-line bg-paper p-8 outline-none md:p-10">
+    <div
+      ref={ref}
+      tabIndex={-1}
+      role="status"
+      // Replaces the form once, so the swap is bridged: 250ms in from 8px below. Reduced motion: none.
+      className="rounded-card border border-line bg-paper p-8 outline-none motion-safe:duration-300 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 md:p-10"
+    >
       <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-done text-paper">
         <Icon name="check" size={20} />
       </span>
@@ -139,6 +146,51 @@ function Failure({ message }: { message: string }) {
     <p role="alert" className="rounded-control bg-blocked-tint px-4 py-3 text-body text-ink">
       {message}
     </p>
+  );
+}
+
+/* ------------------------------------------------------------- page layout */
+
+/**
+ * The band a request form sits in: what happens next on the left, the form on the right, on the
+ * same 5fr / 7fr columns the landing page's questions use, edge to edge on .site-wrap. The steps
+ * promise only what is true: someone reads it and writes back. No timing is stated.
+ */
+export function RequestBand({
+  title,
+  steps,
+  children,
+}: {
+  title: string;
+  steps: string[];
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="tile-grain w-full bg-parchment">
+      <div className="site-wrap grid gap-x-16 gap-y-12 py-20 md:py-28 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+        {/* On a phone the form comes first; what happens next follows it. */}
+        <div className="order-2 lg:sticky lg:top-24 lg:order-1 lg:self-start">
+          <h2 className="font-display text-h1 text-ink">{title}</h2>
+          <ol className="mt-8 space-y-6">
+            {steps.map((step, i) => (
+              <li key={step} className="grid grid-cols-[2.25rem_minmax(0,1fr)] items-baseline gap-x-4">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-ink text-meta font-medium tabular-nums text-paper">
+                  {i + 1}
+                </span>
+                <p className="max-w-md text-body text-ink">{step}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-10 max-w-md text-body text-muted-fg">
+            Questions first? Email{" "}
+            <Link href={`mailto:${supportEmail()}`} className="link">
+              {supportEmail()}
+            </Link>
+          </p>
+        </div>
+        <div className="order-1 min-w-0 lg:order-2">{children}</div>
+      </div>
+    </section>
   );
 }
 

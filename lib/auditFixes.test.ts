@@ -137,9 +137,12 @@ describe("wording and copy", () => {
     expect(login).toContain("supportEmail()");
   });
 
-  it("has no workflow video block on the landing page", () => {
+  it("shows the explainer film under How it works, never a placeholder, and never autoplaying", () => {
     const how = read("components", "marketing", "how-it-works.tsx");
     expect(how).not.toMatch(/VideoPlaceholder|Workflow video|Coming soon/);
+    expect(how).toContain('src="/videos/how-it-works.mp4"');
+    expect(how).toContain("controls");
+    expect(how).not.toMatch(/\bautoPlay\b/);
   });
 
   it("writes no address into the error pages or the login page, and links no mock form", () => {
