@@ -118,6 +118,8 @@ export const FINDING_TONE: Record<FindingState, StateTone> = {
   open: { text: "Open", tone: "progress", icon: "rate_review" },
   with_client: { text: "With client", tone: "move", icon: "reply" },
   settled: { text: "Settled", tone: "done", icon: "check_circle" },
+  // A Freemium AI draft: raised by the first pass, and no advocate will review it.
+  unreviewed: { text: "Not reviewed", tone: "outline", icon: "info" },
 };
 
 export type ConsultationStatusKey = "requested" | "accepted" | "declined" | "answered";

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { findingState } from "@/lib/findings";
+import { useFindingStateOf } from "./review-scope-context";
 import type { WorkspaceFinding } from "@/lib/types";
 import { AddedByLabel } from "./added-by-label";
 import { FindingRule } from "./finding-rule";
@@ -36,7 +36,7 @@ export function FindingBar({
   onSelect: () => void;
   onHover?: (hovering: boolean) => void;
 }) {
-  const state = findingState(finding);
+  const state = useFindingStateOf()(finding);
   const settled = state === "settled";
   const tag = useReviewScope()?.tags[finding.findingId];
 

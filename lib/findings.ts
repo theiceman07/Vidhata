@@ -36,14 +36,18 @@ export function noFindingsLine(status: DocumentStatus, scoped: boolean): string 
  * something and the answer has not come back yet; once it has, the
  * decision is the advocate's again, and the finding is open.
  */
-export type FindingState = "open" | "with_client" | "settled";
+/**
+ * "unreviewed" is never returned by findingState: it is how a Freemium AI draft's workspace says a
+ * finding no advocate will review (useFindingStateOf in components/document/review-scope-context.tsx).
+ */
+export type FindingState = "open" | "with_client" | "settled" | "unreviewed";
 
 /**
  * What a finding's state is read from. The shared workspace holds a client's
  * findings as well as an advocate's, so these take only what they read, and a
  * caller's richer finding comes back as it went in.
  */
-type Decidable = Pick<Finding, "disposition"> & { changeRequest: { response: string | null } | null };
+export type Decidable = Pick<Finding, "disposition"> & { changeRequest: { response: string | null } | null };
 
 export function findingState(finding: Decidable): FindingState {
   if (finding.disposition !== "pending") return "settled";

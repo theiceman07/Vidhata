@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Icon } from "@/components/shared/icon";
 import { Tick } from "@/components/shared/tick";
 import { findingState, severityRank } from "@/lib/findings";
+import { useFindingStateOf, useUnreviewed } from "./review-scope-context";
 import type { Clause, WorkspaceFinding } from "@/lib/types";
 import { clauseNumberFromReference } from "@/lib/types";
 import { SeverityGlyph } from "./severity";
@@ -42,15 +43,18 @@ export function ClauseIndex({
   const byId = new Map(findings.map((f) => [f.findingId, f]));
   const headingByNumber = new Map(clauses.map((c) => [c.number, c.heading]));
 
-  const unsettled = findings.filter((f) => findingState(f) !== "settled");
+  // A Freemium AI draft has no advocate: nothing is undecided, its findings are not reviewed.
+  const unreviewed = useUnreviewed();
+  const stateOf = useFindingStateOf();
+  const unsettled = unreviewed ? [] : findings.filter((f) => findingState(f) !== "settled");
   // A settled document opens on its record; one in review opens on the work.
   const [filter, setFilter] = useState<"all" | "unsettled">(() =>
     unsettled.length > 0 ? "unsettled" : "all",
   );
   // With nothing undecided there is nothing to filter: the findings are one row that opens.
-  const allSettled = findings.length > 0 && unsettled.length === 0;
+  const allSettled = findings.length > 0 && unsettled.length === 0 && !unreviewed;
   const [open, setOpen] = useState(false);
-  const shown = allSettled || filter === "all" ? findings : unsettled;
+  const shown = allSettled || unreviewed || filter === "all" ? findings : unsettled;
 
   const clauseHasFindings = (c: Clause) => c.findingIds.some((id) => byId.has(id));
   const clauseSettled = (c: Clause) =>
@@ -69,7 +73,15 @@ export function ClauseIndex({
             <p className="font-display text-h3 text-ink">Clauses</p>
             <p className="text-label tabular-nums text-muted-fg">{clauses.length}</p>
           </div>
-          {withFindings > 0 && (
+          {withFindings > 0 && unreviewed && (
+            <div className="mt-3 rounded-card border border-line bg-sand px-4 py-3">
+              <p className="text-meta font-semibold text-ink">
+                {findings.length} {findings.length === 1 ? "finding" : "findings"} from the first pass
+              </p>
+              <p className="text-label text-muted-fg">Not reviewed by an advocate</p>
+            </div>
+          )}
+          {withFindings > 0 && !unreviewed && (
             <div className="mt-3 flex items-center gap-3 rounded-card border border-line bg-sand px-4 py-3">
               {settledClauses === withFindings ? (
                 <Tick state="done" size="md" label="All findings settled" />
@@ -136,7 +148,7 @@ export function ClauseIndex({
                         "inline-flex shrink-0 items-center gap-1 font-mono text-label tabular-nums",
                         "text-ink",
                       )}
-                      title={`${pending.length} undecided`}
+                      title={`${pending.length} ${unreviewed ? "not reviewed" : "undecided"}`}
                     >
                       <SeverityGlyph severity={pending[0].severity} />
                       {pending.length}
@@ -176,7 +188,7 @@ export function ClauseIndex({
         ) : (
           <div className="shrink-0 px-4 pb-2 pt-3">
             <p className="text-label font-medium text-ink">Findings</p>
-            {findings.length > 0 && (
+            {findings.length > 0 && !unreviewed && (
               <div
                 role="group"
                 aria-label="Filter findings"
@@ -231,7 +243,7 @@ export function ClauseIndex({
           ) : (
             <ul className="space-y-1.5">
               {shown.map((finding) => {
-                const state = findingState(finding);
+                const state = stateOf(finding);
                 const selected = finding.findingId === selectedFindingId;
                 const number = clauseNumberFromReference(
                   finding.clauseReference,
@@ -276,7 +288,9 @@ export function ClauseIndex({
                           ? "Settled"
                           : state === "with_client"
                             ? "With client"
-                            : "Open"}
+                            : state === "unreviewed"
+                              ? "Not reviewed"
+                              : "Open"}
                       </span>
                     </button>
                   </li>

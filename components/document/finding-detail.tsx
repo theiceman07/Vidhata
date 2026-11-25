@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { DURATION, EASE, duration } from "@/lib/motion";
-import { findingState } from "@/lib/findings";
+import { useFindingStateOf } from "./review-scope-context";
 import type { WorkspaceDocument, WorkspaceFinding } from "@/lib/types";
 import { PIPELINE_LAYERS, clauseNumberFromReference } from "@/lib/types";
 import { AddedByLabel } from "./added-by-label";
@@ -104,7 +104,7 @@ export function FindingDetail({
     setText("");
   }, [finding.findingId]);
 
-  const state = findingState(finding);
+  const state = useFindingStateOf()(finding);
   const settled = state === "settled";
   const tag = useReviewScope()?.tags[finding.findingId];
   const clauseNumber = clauseNumberFromReference(finding.clauseReference);

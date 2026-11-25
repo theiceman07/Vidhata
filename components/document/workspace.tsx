@@ -33,7 +33,7 @@ import type {
   WorkspaceDocument,
 } from "@/lib/types";
 import { ReviewScopePanel } from "@/components/domain/review-scope-panel";
-import { ReviewScopeProvider } from "./review-scope-context";
+import { ReviewScopeProvider, UnreviewedProvider } from "./review-scope-context";
 import { StateLabel } from "./state-label";
 import { SeverityCounts } from "./severity";
 import { ClauseIndex } from "./clause-index";
@@ -520,11 +520,13 @@ export function DocumentWorkspace({
                 <span className="text-meta text-muted-fg">
                   {view.findings.length === 0
                     ? noFindingsLine(doc.status, scoped)
-                    : unsettled.length === 0
+                    : doc.status === "ai_draft"
+                      ? `${view.findings.length} ${view.findings.length === 1 ? "finding" : "findings"} from the first pass · not reviewed by an advocate`
+                      : unsettled.length === 0
                       ? `All ${view.findings.length} findings ${scoped ? "in this round " : ""}settled`
                       : `${unsettled.length} of ${view.findings.length} findings ${scoped ? "in this round " : ""}undecided`}
                 </span>
-                {unsettled.length > 0 && <SeverityCounts counts={counts} />}
+                {(unsettled.length > 0 || doc.status === "ai_draft") && <SeverityCounts counts={counts} />}
               </span>
             )}
 
@@ -578,6 +580,7 @@ export function DocumentWorkspace({
 
   return (
     <ReviewScopeProvider value={activeScope}>
+    <UnreviewedProvider value={doc.status === "ai_draft"}>
       {/* Height-bound only where the three panes scroll for themselves (lg and up).
         Below that the page stacks and scrolls as one, so the clauses and findings
         dropdown has room to open. */}
@@ -877,6 +880,7 @@ export function DocumentWorkspace({
           )}
         </div>
       </div>
+    </UnreviewedProvider>
     </ReviewScopeProvider>
   );
 }
